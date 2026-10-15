@@ -438,3 +438,7 @@ class VideoPlayer {
     this.currentClipIndex = -1;
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.VideoPlayer = VideoPlayer;
+}

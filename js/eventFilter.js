@@ -270,3 +270,7 @@ class EventFilter {
         return { ...this.filters };
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.EventFilter = EventFilter;
+}

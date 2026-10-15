@@ -590,3 +590,7 @@ class ScreenshotCapture {
         ctx.restore();
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.ScreenshotCapture = ScreenshotCapture;
+}

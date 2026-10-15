@@ -1197,3 +1197,7 @@ class EventBrowser {
     return this.selectedEvent;
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.EventBrowser = EventBrowser;
+}

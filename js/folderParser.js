@@ -889,3 +889,7 @@ None`;
     return reason.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.FolderParser = FolderParser;
+}

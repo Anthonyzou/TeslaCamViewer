@@ -257,3 +257,7 @@ class SyncController {
     };
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.SyncController = SyncController;
+}

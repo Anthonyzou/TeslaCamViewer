@@ -291,3 +291,7 @@ class ClipMarking {
         return `${this.formatTime(this.inPoint)} - ${this.formatTime(this.outPoint)} (${this.formatTime(duration)})`;
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.ClipMarking = ClipMarking;
+}

@@ -6155,6 +6155,10 @@ class TeslaCamViewerApp {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.TeslaCamViewerApp = TeslaCamViewerApp;
+}
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize i18n first

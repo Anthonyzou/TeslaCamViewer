@@ -1326,3 +1326,7 @@ class DriveSync {
         return (remaining / speed) * 1000; // in ms
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.DriveSync = DriveSync;
+}

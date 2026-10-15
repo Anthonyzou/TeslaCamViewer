@@ -839,3 +839,7 @@ class LayoutManager {
         return cameras;
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.LayoutManager = LayoutManager;
+}

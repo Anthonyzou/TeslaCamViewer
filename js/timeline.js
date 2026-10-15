@@ -1409,3 +1409,7 @@ class Timeline {
         return `${m}:${r}`;
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.Timeline = Timeline;
+}

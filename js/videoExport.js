@@ -2396,3 +2396,7 @@ class VideoExport {
         }
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.VideoExport = VideoExport;
+}

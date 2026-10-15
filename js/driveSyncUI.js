@@ -1416,3 +1416,7 @@ class DriveSyncUI {
         });
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.DriveSyncUI = DriveSyncUI;
+}

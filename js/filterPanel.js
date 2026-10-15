@@ -405,3 +405,7 @@ class FilterPanel {
         this.render();
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.FilterPanel = FilterPanel;
+}

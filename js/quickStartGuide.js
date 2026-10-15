@@ -284,3 +284,7 @@ class QuickStartGuide {
         localStorage.removeItem(this.STORAGE_KEY);
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.QuickStartGuide = QuickStartGuide;
+}

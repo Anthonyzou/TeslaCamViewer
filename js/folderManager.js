@@ -623,3 +623,7 @@ class FolderManager {
         return drive;
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.FolderManager = FolderManager;
+}
