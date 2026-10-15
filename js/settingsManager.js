@@ -3,214 +3,218 @@
  * Stores settings in localStorage for persistence across sessions
  */
 class SettingsManager {
-    constructor() {
-        this.STORAGE_KEY = 'teslacamviewer_settings';
+  constructor() {
+    this.STORAGE_KEY = 'teslacamviewer_settings';
 
-        // Listen for locale changes to re-render modal
-        window.addEventListener('localeChanged', () => {
-            if (this.modal && !this.modal.classList.contains('hidden')) {
-                this.renderModalContent();
-            }
-        });
+    // Listen for locale changes to re-render modal
+    window.addEventListener('localeChanged', () => {
+      if (this.modal && !this.modal.classList.contains('hidden')) {
+        this.renderModalContent();
+      }
+    });
 
-        // Default settings
-        this.defaults = {
-            // Playback
-            defaultSpeed: '1',
-            defaultLayout: 'layout-6-3',
-            autoPlayNextEvent: false,
-            loopByDefault: false,
+    // Default settings
+    this.defaults = {
+      // Playback
+      defaultSpeed: '1',
+      defaultLayout: 'layout-6-3',
+      autoPlayNextEvent: false,
+      loopByDefault: false,
 
-            // Performance
-            preloadNextClip: true,
-            memoryOptimization: true,
+      // Performance
+      preloadNextClip: true,
+      memoryOptimization: true,
 
-            // UI
-            theme: 'dark',
-            showKeyboardHints: true,
-            showTimestampOverlay: true,
-            showWhatsNew: true,
+      // UI
+      theme: 'dark',
+      showKeyboardHints: true,
+      showTimestampOverlay: true,
+      showWhatsNew: true,
 
-            // Telemetry Overlay (Tesla firmware 2025.44.25+)
-            telemetryOverlayEnabled: true,
-            telemetryOverlayStyle: 'cockpit', // 'cockpit', 'tesla', 'minimal'
-            telemetryOverlayUnits: 'mph',     // 'mph', 'kph'
-            telemetryOverlayInExport: true,
+      // Telemetry Overlay (Tesla firmware 2025.44.25+)
+      telemetryOverlayEnabled: true,
+      telemetryOverlayStyle: 'cockpit', // 'cockpit', 'tesla', 'minimal'
+      telemetryOverlayUnits: 'mph', // 'mph', 'kph'
+      telemetryOverlayInExport: true,
 
-            // Mini-Map Overlay (requires GPS telemetry)
-            miniMapEnabled: false,
-            miniMapInExport: true,  // Include mini-map in video exports
-            miniMapDarkMode: true,  // Dark/light map tiles
+      // Mini-Map Overlay (requires GPS telemetry)
+      miniMapEnabled: false,
+      miniMapInExport: true, // Include mini-map in video exports
+      miniMapDarkMode: true, // Dark/light map tiles
 
-            // Timeline
-            enableTimelineZoom: false,
-            showClipMarkers: true,
+      // Timeline
+      enableTimelineZoom: false,
+      showClipMarkers: true,
 
-            // Accessibility
-            highContrastMode: false,
-            textSize: 'medium', // small, medium, large
+      // Accessibility
+      highContrastMode: false,
+      textSize: 'medium', // small, medium, large
 
-            // Mobile
-            lockOrientationDuringPlayback: false, // Lock to landscape during video playback
+      // Mobile
+      lockOrientationDuringPlayback: false, // Lock to landscape during video playback
 
-            // Remember state
-            rememberLastFolder: true,
-            lastFolderHandle: null,
+      // Remember state
+      rememberLastFolder: true,
+      lastFolderHandle: null,
 
-            // Export
-            exportFormat: 'mp4',   // 'webm' or 'mp4' — mp4 default since 2026.20.6.1 (WebCodecs fast path)
+      // Export
+      exportFormat: 'mp4', // 'webm' or 'mp4' — mp4 default since 2026.20.6.1 (WebCodecs fast path)
 
-            // Export resolution — applied as a uniform scale on the layout's
-            // native canvas size. "Full" preserves native (no downscale),
-            // "hd" caps at 1080p height, "web" caps at 720p. "Custom" lets
-            // the user specify any height (upscale allowed).
-            exportResolution: 'full',                  // 'full' | 'hd' | 'web' | 'custom'
-            exportResolutionCustomHeight: 1920,        // used only when exportResolution === 'custom'
+      // Export resolution — applied as a uniform scale on the layout's
+      // native canvas size. "Full" preserves native (no downscale),
+      // "hd" caps at 1080p height, "web" caps at 720p. "Custom" lets
+      // the user specify any height (upscale allowed).
+      exportResolution: 'full', // 'full' | 'hd' | 'web' | 'custom'
+      exportResolutionCustomHeight: 1920, // used only when exportResolution === 'custom'
 
-            // Experimental WebCodecs-backed player — replaces HTML5 <video>
-            // elements with canvas + VideoDecoder rendering. Helps on Intel
-            // integrated GPUs where the 2-YUV-overlay-slot limit causes
-            // flickering with 4+ videos. Requires page reload to apply.
-            useWebCodecsPlayer: false,
+      // Experimental WebCodecs-backed player — replaces HTML5 <video>
+      // elements with canvas + VideoDecoder rendering. Helps on Intel
+      // integrated GPUs where the 2-YUV-overlay-slot limit causes
+      // flickering with 4+ videos. Requires page reload to apply.
+      useWebCodecsPlayer: false,
 
-            // Fast Export — WebCodecs VideoDecoder + VideoEncoder path.
-            // Now default on (was experimental). Set to false to force the
-            // legacy HTML5-seek + MediaRecorder path. Kept as an emergency
-            // rollback; the UI toggle that exposed this was removed.
-            fastExportExperimental: true,
+      // Fast Export — WebCodecs VideoDecoder + VideoEncoder path.
+      // Now default on (was experimental). Set to false to force the
+      // legacy HTML5-seek + MediaRecorder path. Kept as an emergency
+      // rollback; the UI toggle that exposed this was removed.
+      fastExportExperimental: true,
 
-            // Privacy Mode Export - strips identifying metadata from exports
-            privacyModeExport: false,  // When enabled, removes timestamp, GPS, location, and mini-map from exports
+      // Privacy Mode Export - strips identifying metadata from exports
+      privacyModeExport: false, // When enabled, removes timestamp, GPS, location, and mini-map from exports
 
-            // License Plate Blurring - uses AI to detect and blur license plates
-            blurLicensePlates: false,  // Off by default since it slows export significantly
+      // License Plate Blurring - uses AI to detect and blur license plates
+      blurLicensePlates: false, // Off by default since it slows export significantly
 
-            // Branding in exports - only applies to licensed users
-            showBrandingInExport: true  // Show TeslaCamViewer.com branding by default
-        };
+      // Branding in exports - only applies to licensed users
+      showBrandingInExport: true, // Show TeslaCamViewer.com branding by default
+    };
 
-        this.settings = this.loadSettings();
-        this.modal = null;
-        this.callbacks = [];
+    this.settings = this.loadSettings();
+    this.modal = null;
+    this.callbacks = [];
+  }
+
+  /**
+   * Get translation helper
+   */
+  t(key) {
+    return window.i18n ? window.i18n.t(key) : key.split('.').pop();
+  }
+
+  /**
+   * Load settings from localStorage
+   */
+  loadSettings() {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      let settings = stored
+        ? { ...this.defaults, ...JSON.parse(stored) }
+        : { ...this.defaults };
+
+      // Sync mini-map dark mode from mini-map's own localStorage (for backwards compatibility)
+      const miniMapDarkMode = localStorage.getItem(
+        'teslacamviewer_minimap_dark_mode'
+      );
+      if (miniMapDarkMode !== null) {
+        settings.miniMapDarkMode = miniMapDarkMode !== 'false';
+      }
+
+      return settings;
+    } catch (e) {
+      console.warn('Failed to load settings:', e);
+    }
+    return { ...this.defaults };
+  }
+
+  /**
+   * Save settings to localStorage
+   */
+  saveSettings() {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.settings));
+      this.notifyCallbacks();
+      // Apply accessibility settings immediately when changed
+      this.applyAccessibilitySettings();
+    } catch (e) {
+      console.warn('Failed to save settings:', e);
+    }
+  }
+
+  /**
+   * Get a setting value
+   */
+  get(key) {
+    return this.settings[key] ?? this.defaults[key];
+  }
+
+  /**
+   * Set a setting value
+   */
+  set(key, value) {
+    this.settings[key] = value;
+    this.saveSettings();
+  }
+
+  /**
+   * Register callback for setting changes
+   */
+  onChange(callback) {
+    this.callbacks.push(callback);
+  }
+
+  /**
+   * Notify all callbacks of settings change
+   */
+  notifyCallbacks() {
+    this.callbacks.forEach((cb) => cb(this.settings));
+  }
+
+  /**
+   * Reset all settings to defaults
+   */
+  resetToDefaults() {
+    this.settings = { ...this.defaults };
+    this.saveSettings();
+  }
+
+  /**
+   * Create and show the settings modal
+   */
+  showSettingsModal() {
+    if (this.modal) {
+      this.modal.classList.remove('hidden');
+      this.renderModalContent();
+      this.loadValuesIntoForm();
+      return;
     }
 
-    /**
-     * Get translation helper
-     */
-    t(key) {
-        return window.i18n ? window.i18n.t(key) : key.split('.').pop();
-    }
-
-    /**
-     * Load settings from localStorage
-     */
-    loadSettings() {
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEY);
-            let settings = stored ? { ...this.defaults, ...JSON.parse(stored) } : { ...this.defaults };
-
-            // Sync mini-map dark mode from mini-map's own localStorage (for backwards compatibility)
-            const miniMapDarkMode = localStorage.getItem('teslacamviewer_minimap_dark_mode');
-            if (miniMapDarkMode !== null) {
-                settings.miniMapDarkMode = miniMapDarkMode !== 'false';
-            }
-
-            return settings;
-        } catch (e) {
-            console.warn('Failed to load settings:', e);
-        }
-        return { ...this.defaults };
-    }
-
-    /**
-     * Save settings to localStorage
-     */
-    saveSettings() {
-        try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.settings));
-            this.notifyCallbacks();
-            // Apply accessibility settings immediately when changed
-            this.applyAccessibilitySettings();
-        } catch (e) {
-            console.warn('Failed to save settings:', e);
-        }
-    }
-
-    /**
-     * Get a setting value
-     */
-    get(key) {
-        return this.settings[key] ?? this.defaults[key];
-    }
-
-    /**
-     * Set a setting value
-     */
-    set(key, value) {
-        this.settings[key] = value;
-        this.saveSettings();
-    }
-
-    /**
-     * Register callback for setting changes
-     */
-    onChange(callback) {
-        this.callbacks.push(callback);
-    }
-
-    /**
-     * Notify all callbacks of settings change
-     */
-    notifyCallbacks() {
-        this.callbacks.forEach(cb => cb(this.settings));
-    }
-
-    /**
-     * Reset all settings to defaults
-     */
-    resetToDefaults() {
-        this.settings = { ...this.defaults };
-        this.saveSettings();
-    }
-
-    /**
-     * Create and show the settings modal
-     */
-    showSettingsModal() {
-        if (this.modal) {
-            this.modal.classList.remove('hidden');
-            this.renderModalContent();
-            this.loadValuesIntoForm();
-            return;
-        }
-
-        this.modal = document.createElement('div');
-        this.modal.className = 'settings-modal';
-        this.modal.innerHTML = `
+    this.modal = document.createElement('div');
+    this.modal.className = 'settings-modal';
+    this.modal.innerHTML = `
             <div class="settings-overlay"></div>
             <div class="settings-panel"></div>
         `;
 
-        document.body.appendChild(this.modal);
+    document.body.appendChild(this.modal);
 
-        // Render content and bind events
-        this.renderModalContent();
-        this.bindModalEvents();
-        this.loadValuesIntoForm();
+    // Render content and bind events
+    this.renderModalContent();
+    this.bindModalEvents();
+    this.loadValuesIntoForm();
+  }
+
+  /**
+   * Render the settings modal content with vertical sidebar navigation
+   */
+  renderModalContent() {
+    const panel = this.modal.querySelector('.settings-panel');
+
+    // Track active tab (default to 'general')
+    if (!this._activeTab) {
+      this._activeTab = 'general';
     }
 
-    /**
-     * Render the settings modal content with vertical sidebar navigation
-     */
-    renderModalContent() {
-        const panel = this.modal.querySelector('.settings-panel');
-
-        // Track active tab (default to 'general')
-        if (!this._activeTab) {
-            this._activeTab = 'general';
-        }
-
-        panel.innerHTML = `
+    panel.innerHTML = `
             <div class="settings-layout">
                 <!-- Sidebar Navigation -->
                 <div class="settings-sidebar">
@@ -599,28 +603,41 @@ class SettingsManager {
             </div>
         `;
 
-        // Re-bind events after rendering
-        this.bindPanelEvents();
-        this.bindNavEvents();
+    // Re-bind events after rendering
+    this.bindPanelEvents();
+    this.bindNavEvents();
 
-        // Wire up SEI Diagnostics tab events if the module is loaded.
-        if (window.seiDiagnostics && typeof window.seiDiagnostics.bindDiagnosticsTabEvents === 'function') {
-            const diagPane = this.modal.querySelector('[data-tab-content="diagnostics"]');
-            if (diagPane) window.seiDiagnostics.bindDiagnosticsTabEvents(diagPane);
-        }
-
-        // Wire up AI Search tab events
-        const aiPane = this.modal.querySelector('[data-tab-content="ai-search"]');
-        if (aiPane) this.bindAiSearchTabEvents(aiPane);
+    // Wire up SEI Diagnostics tab events if the module is loaded.
+    if (
+      window.seiDiagnostics &&
+      typeof window.seiDiagnostics.bindDiagnosticsTabEvents === 'function'
+    ) {
+      const diagPane = this.modal.querySelector(
+        '[data-tab-content="diagnostics"]'
+      );
+      if (diagPane) window.seiDiagnostics.bindDiagnosticsTabEvents(diagPane);
     }
 
-    renderAiSearchTab() {
-        const status = window.aiSearch?.getStatus?.() || { enabled: false, indexing: false, eventCount: 0, frameCount: 0, model: 'base', strategy: 'sparse', webCodecs: false };
-        const eventsCount = (window.app?.eventBrowser?.events || []).length;
-        const enabledStateHtml = status.enabled
-            ? `<span style="color:#4ade80;">● Enabled</span> — ${status.eventCount} events indexed, ${status.frameCount} frames embedded`
-            : `<span style="color:#888;">○ Not enabled</span> — search is not set up yet`;
-        return `
+    // Wire up AI Search tab events
+    const aiPane = this.modal.querySelector('[data-tab-content="ai-search"]');
+    if (aiPane) this.bindAiSearchTabEvents(aiPane);
+  }
+
+  renderAiSearchTab() {
+    const status = window.aiSearch?.getStatus?.() || {
+      enabled: false,
+      indexing: false,
+      eventCount: 0,
+      frameCount: 0,
+      model: 'base',
+      strategy: 'sparse',
+      webCodecs: false,
+    };
+    const eventsCount = (window.app?.eventBrowser?.events || []).length;
+    const enabledStateHtml = status.enabled
+      ? `<span style="color:#4ade80;">● Enabled</span> — ${status.eventCount} events indexed, ${status.frameCount} frames embedded`
+      : `<span style="color:#888;">○ Not enabled</span> — search is not set up yet`;
+    return `
             <div class="settings-section">
                 <h3>AI Search</h3>
                 <p style="color:var(--text-muted, #888); font-size:0.9rem; line-height:1.5; margin:4px 0 12px;">
@@ -705,563 +722,635 @@ class SettingsManager {
                 </p>
             </div>
         `;
-    }
+  }
 
-    bindAiSearchTabEvents(pane) {
-        const enableBtn = pane.querySelector('#ai-search-enable-btn');
-        const clearBtn  = pane.querySelector('#ai-search-clear-btn');
-        const modelSel  = pane.querySelector('#ai-search-model');
-        const stratSel  = pane.querySelector('#ai-search-strategy');
-        const progress  = pane.querySelector('#ai-search-progress');
-        const progressFill = pane.querySelector('#ai-search-progress-fill');
-        const progressText = pane.querySelector('#ai-search-progress-text');
+  bindAiSearchTabEvents(pane) {
+    const enableBtn = pane.querySelector('#ai-search-enable-btn');
+    const clearBtn = pane.querySelector('#ai-search-clear-btn');
+    const modelSel = pane.querySelector('#ai-search-model');
+    const stratSel = pane.querySelector('#ai-search-strategy');
+    const progress = pane.querySelector('#ai-search-progress');
+    const progressFill = pane.querySelector('#ai-search-progress-fill');
+    const progressText = pane.querySelector('#ai-search-progress-text');
 
-        const progressHandler = (e) => {
-            if (!progress) return;
-            progress.style.display = 'block';
-            const { done, total, status } = e.detail;
-            const pct = total > 0 ? (done / total) * 100 : 0;
-            if (progressFill) progressFill.style.width = pct + '%';
-            if (progressText) progressText.textContent = `${done}/${total} · ${status || ''}`;
-        };
-        const statusHandler = (e) => {
-            if (!progressText) return;
-            if (e.detail.state === 'ready') {
-                progressText.textContent = e.detail.message;
-                setTimeout(() => {
-                    // Re-render the tab to show the new enabled state
-                    const stillOpen = pane.isConnected;
-                    if (stillOpen) pane.innerHTML = this.renderAiSearchTab();
-                    if (stillOpen) this.bindAiSearchTabEvents(pane);
-                }, 800);
-            } else if (e.detail.state === 'cleared') {
-                progress.style.display = 'none';
-                pane.innerHTML = this.renderAiSearchTab();
-                this.bindAiSearchTabEvents(pane);
-            } else {
-                progressText.textContent = e.detail.message;
-            }
-        };
-        window.addEventListener('ai-search:progress', progressHandler);
-        window.addEventListener('ai-search:status', statusHandler);
+    const progressHandler = (e) => {
+      if (!progress) return;
+      progress.style.display = 'block';
+      const { done, total, status } = e.detail;
+      const pct = total > 0 ? (done / total) * 100 : 0;
+      if (progressFill) progressFill.style.width = pct + '%';
+      if (progressText)
+        progressText.textContent = `${done}/${total} · ${status || ''}`;
+    };
+    const statusHandler = (e) => {
+      if (!progressText) return;
+      if (e.detail.state === 'ready') {
+        progressText.textContent = e.detail.message;
+        setTimeout(() => {
+          // Re-render the tab to show the new enabled state
+          const stillOpen = pane.isConnected;
+          if (stillOpen) pane.innerHTML = this.renderAiSearchTab();
+          if (stillOpen) this.bindAiSearchTabEvents(pane);
+        }, 800);
+      } else if (e.detail.state === 'cleared') {
+        progress.style.display = 'none';
+        pane.innerHTML = this.renderAiSearchTab();
+        this.bindAiSearchTabEvents(pane);
+      } else {
+        progressText.textContent = e.detail.message;
+      }
+    };
+    window.addEventListener('ai-search:progress', progressHandler);
+    window.addEventListener('ai-search:status', statusHandler);
 
-        if (modelSel) modelSel.addEventListener('change', () => {
-            window.aiSearch.state.currentModelKey = modelSel.value;
-        });
-        if (stratSel) stratSel.addEventListener('change', () => {
-            window.aiSearch.state.strategy = stratSel.value;
-        });
-        if (enableBtn) enableBtn.addEventListener('click', async () => {
-            enableBtn.disabled = true;
-            try {
-                if (window.aiSearch.state.enabled) {
-                    await window.aiSearch.indexAll({ reindex: true, strategy: stratSel.value });
-                } else {
-                    await window.aiSearch.enable({ strategy: stratSel.value });
-                }
-            } catch (err) {
-                alert('Indexing failed: ' + err.message);
-            } finally {
-                enableBtn.disabled = false;
-            }
-        });
-        if (clearBtn) clearBtn.addEventListener('click', () => {
-            if (confirm('Clear the AI search index? You\'ll need to re-index to search again.')) {
-                window.aiSearch.clearIndex();
-            }
-        });
+    if (modelSel)
+      modelSel.addEventListener('change', () => {
+        window.aiSearch.state.currentModelKey = modelSel.value;
+      });
+    if (stratSel)
+      stratSel.addEventListener('change', () => {
+        window.aiSearch.state.strategy = stratSel.value;
+      });
+    if (enableBtn)
+      enableBtn.addEventListener('click', async () => {
+        enableBtn.disabled = true;
+        try {
+          if (window.aiSearch.state.enabled) {
+            await window.aiSearch.indexAll({
+              reindex: true,
+              strategy: stratSel.value,
+            });
+          } else {
+            await window.aiSearch.enable({ strategy: stratSel.value });
+          }
+        } catch (err) {
+          alert('Indexing failed: ' + err.message);
+        } finally {
+          enableBtn.disabled = false;
+        }
+      });
+    if (clearBtn)
+      clearBtn.addEventListener('click', () => {
+        if (
+          confirm(
+            "Clear the AI search index? You'll need to re-index to search again."
+          )
+        ) {
+          window.aiSearch.clearIndex();
+        }
+      });
 
-        // ---- Library Insights Scan wiring ----
-        this._bindInsightsScanControls(pane);
-    }
+    // ---- Library Insights Scan wiring ----
+    this._bindInsightsScanControls(pane);
+  }
 
-    /**
-     * Wire up the Library Insights Scan section at the bottom of the
-     * AI Search tab. Separated from bindAiSearchTabEvents so the AI
-     * Search concerns stay readable on their own.
-     */
-    _bindInsightsScanControls(pane) {
-        const buttonsRow = pane.querySelector('#insights-scan-buttons');
-        const cacheInfo = pane.querySelector('#insights-scan-cache-info');
-        const progress = pane.querySelector('#insights-scan-progress');
-        const progressFill = pane.querySelector('#insights-scan-progress-fill');
-        const progressText = pane.querySelector('#insights-scan-progress-text');
-        if (!buttonsRow) return;
+  /**
+   * Wire up the Library Insights Scan section at the bottom of the
+   * AI Search tab. Separated from bindAiSearchTabEvents so the AI
+   * Search concerns stay readable on their own.
+   */
+  _bindInsightsScanControls(pane) {
+    const buttonsRow = pane.querySelector('#insights-scan-buttons');
+    const cacheInfo = pane.querySelector('#insights-scan-cache-info');
+    const progress = pane.querySelector('#insights-scan-progress');
+    const progressFill = pane.querySelector('#insights-scan-progress-fill');
+    const progressText = pane.querySelector('#insights-scan-progress-text');
+    if (!buttonsRow) return;
 
-        const eligibleCount = (window.app?.allEvents || []).length;
+    const eligibleCount = (window.app?.allEvents || []).length;
 
-        // Render buttons based on current scanner state.
-        // The window-level scanner event listeners below outlive the
-        // settings modal — each reopen of the AI Search tab adds new
-        // listeners, and old ones keep firing with stale `pane` /
-        // `buttonsRow` closures that point at detached DOM. Bailing
-        // when the pane is no longer connected avoids the resulting
-        // "Cannot read properties of null (reading 'addEventListener')"
-        // throw without needing to track-and-remove every listener.
-        // Also: query the buttons via `buttonsRow.querySelector` instead
-        // of `pane.querySelector` so we're always reading from the
-        // innerHTML we just set, not the (potentially rebuilt) pane.
-        const renderButtons = async () => {
-            if (!buttonsRow.isConnected) return;
-            const st = window.insightsScanner?.getState?.() || { state: 'idle' };
-            const btnStyle = 'padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;';
-            if (st.state === 'scanning' || st.state === 'paused') {
-                const pauseLabel = st.state === 'paused' ? 'Resume' : 'Pause';
-                buttonsRow.innerHTML = `
+    // Render buttons based on current scanner state.
+    // The window-level scanner event listeners below outlive the
+    // settings modal — each reopen of the AI Search tab adds new
+    // listeners, and old ones keep firing with stale `pane` /
+    // `buttonsRow` closures that point at detached DOM. Bailing
+    // when the pane is no longer connected avoids the resulting
+    // "Cannot read properties of null (reading 'addEventListener')"
+    // throw without needing to track-and-remove every listener.
+    // Also: query the buttons via `buttonsRow.querySelector` instead
+    // of `pane.querySelector` so we're always reading from the
+    // innerHTML we just set, not the (potentially rebuilt) pane.
+    const renderButtons = async () => {
+      if (!buttonsRow.isConnected) return;
+      const st = window.insightsScanner?.getState?.() || { state: 'idle' };
+      const btnStyle =
+        'padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;';
+      if (st.state === 'scanning' || st.state === 'paused') {
+        const pauseLabel = st.state === 'paused' ? 'Resume' : 'Pause';
+        buttonsRow.innerHTML = `
                     <button id="insScanSettingsPause" class="setting-button" style="background:var(--accent); color:white; border:none; ${btnStyle}">${pauseLabel}</button>
                     <button id="insScanSettingsCancel" class="setting-button" style="margin-left:8px; background:transparent; color:var(--danger); border:1px solid var(--danger); ${btnStyle}">Cancel</button>
                 `;
-                buttonsRow.querySelector('#insScanSettingsPause')?.addEventListener('click', () => {
-                    const s = window.insightsScanner.getState();
-                    if (s.state === 'paused') window.insightsScanner.resume();
-                    else window.insightsScanner.pause();
-                    setTimeout(renderButtons, 50);
-                });
-                buttonsRow.querySelector('#insScanSettingsCancel')?.addEventListener('click', () => {
-                    if (confirm('Cancel library scan? Already-scanned events will be kept.')) {
-                        window.insightsScanner.cancel();
-                        renderButtons();
-                    }
-                });
-            } else {
-                buttonsRow.innerHTML = `
+        buttonsRow
+          .querySelector('#insScanSettingsPause')
+          ?.addEventListener('click', () => {
+            const s = window.insightsScanner.getState();
+            if (s.state === 'paused') window.insightsScanner.resume();
+            else window.insightsScanner.pause();
+            setTimeout(renderButtons, 50);
+          });
+        buttonsRow
+          .querySelector('#insScanSettingsCancel')
+          ?.addEventListener('click', () => {
+            if (
+              confirm(
+                'Cancel library scan? Already-scanned events will be kept.'
+              )
+            ) {
+              window.insightsScanner.cancel();
+              renderButtons();
+            }
+          });
+      } else {
+        buttonsRow.innerHTML = `
                     <button id="insScanSettingsStart" class="setting-button" style="background:var(--accent); color:white; border:none; ${btnStyle}">
                         Scan library (${eligibleCount} events across all drives)
                     </button>
                     <button id="insScanSettingsClear" class="setting-button" style="margin-left:8px; background:transparent; color:var(--danger); border:1px solid var(--danger); ${btnStyle}">Clear cache</button>
                 `;
-                buttonsRow.querySelector('#insScanSettingsStart')?.addEventListener('click', async () => {
-                    const events = window.app?.allEvents || [];
-                    if (events.length === 0) { alert('No events loaded — select a TeslaCam folder first.'); return; }
-                    await window.insightsScanner.start(events);
-                    renderButtons();
-                });
-                buttonsRow.querySelector('#insScanSettingsClear')?.addEventListener('click', async () => {
-                    if (!confirm('Clear all cached severity data? You\'ll need to open each event or re-scan to get it back.')) return;
-                    await window.eventInsightsCache?.clear?.();
-                    await refreshCacheInfo();
-                });
+        buttonsRow
+          .querySelector('#insScanSettingsStart')
+          ?.addEventListener('click', async () => {
+            const events = window.app?.allEvents || [];
+            if (events.length === 0) {
+              alert('No events loaded — select a TeslaCam folder first.');
+              return;
             }
-        };
+            await window.insightsScanner.start(events);
+            renderButtons();
+          });
+        buttonsRow
+          .querySelector('#insScanSettingsClear')
+          ?.addEventListener('click', async () => {
+            if (
+              !confirm(
+                "Clear all cached severity data? You'll need to open each event or re-scan to get it back."
+              )
+            )
+              return;
+            await window.eventInsightsCache?.clear?.();
+            await refreshCacheInfo();
+          });
+      }
+    };
 
-        const refreshCacheInfo = async () => {
-            if (!cacheInfo) return;
-            const size = (await window.eventInsightsCache?.size?.()) || 0;
-            cacheInfo.textContent = size > 0
-                ? `Cached insights: ${size} event${size === 1 ? '' : 's'}`
-                : 'No events cached yet.';
-        };
+    const refreshCacheInfo = async () => {
+      if (!cacheInfo) return;
+      const size = (await window.eventInsightsCache?.size?.()) || 0;
+      cacheInfo.textContent =
+        size > 0
+          ? `Cached insights: ${size} event${size === 1 ? '' : 's'}`
+          : 'No events cached yet.';
+    };
 
-        // Listen for scanner events and reflect in this panel
-        const onProgress = (e) => {
-            const d = e.detail || {};
-            if (!progress) return;
-            progress.style.display = 'block';
-            const pct = d.total > 0 ? (d.done / d.total) * 100 : 0;
-            if (progressFill) progressFill.style.width = pct.toFixed(1) + '%';
-            if (progressText) {
-                let line = `${d.done} / ${d.total}`;
-                if (d.currentName && !d.final) line += ' · ' + d.currentName;
-                if (d.paused) line += ' · paused';
-                progressText.textContent = line;
-            }
-            if (d.final) {
-                // Let the widget show "Done" briefly, then refresh the buttons
-                setTimeout(() => {
-                    if (progress.isConnected) progress.style.display = 'none';
-                    renderButtons();
-                    refreshCacheInfo();
-                }, 2000);
-            }
-        };
-        const onStatus = (e) => {
-            // Also refresh the buttons on any state transition so Pause↔Resume labels stay in sync
-            setTimeout(renderButtons, 20);
-            if (e.detail?.state === 'cancelled' && progress) progress.style.display = 'none';
-        };
-        window.addEventListener('insights-scan:progress', onProgress);
-        window.addEventListener('insights-scan:status', onStatus);
+    // Listen for scanner events and reflect in this panel
+    const onProgress = (e) => {
+      const d = e.detail || {};
+      if (!progress) return;
+      progress.style.display = 'block';
+      const pct = d.total > 0 ? (d.done / d.total) * 100 : 0;
+      if (progressFill) progressFill.style.width = pct.toFixed(1) + '%';
+      if (progressText) {
+        let line = `${d.done} / ${d.total}`;
+        if (d.currentName && !d.final) line += ' · ' + d.currentName;
+        if (d.paused) line += ' · paused';
+        progressText.textContent = line;
+      }
+      if (d.final) {
+        // Let the widget show "Done" briefly, then refresh the buttons
+        setTimeout(() => {
+          if (progress.isConnected) progress.style.display = 'none';
+          renderButtons();
+          refreshCacheInfo();
+        }, 2000);
+      }
+    };
+    const onStatus = (e) => {
+      // Also refresh the buttons on any state transition so Pause↔Resume labels stay in sync
+      setTimeout(renderButtons, 20);
+      if (e.detail?.state === 'cancelled' && progress)
+        progress.style.display = 'none';
+    };
+    window.addEventListener('insights-scan:progress', onProgress);
+    window.addEventListener('insights-scan:status', onStatus);
 
-        renderButtons();
-        refreshCacheInfo();
+    renderButtons();
+    refreshCacheInfo();
 
-        // If a scan is already running when this tab opens, seed the
-        // progress bar with current state instead of waiting for the
-        // next tick of progress events.
-        const st = window.insightsScanner?.getState?.();
-        if (st && (st.state === 'scanning' || st.state === 'paused')) {
-            onProgress({ detail: { done: st.done, total: st.total, currentName: st.currentEventName, paused: st.state === 'paused', etaMs: st.etaMs, failures: st.failures } });
-        }
+    // If a scan is already running when this tab opens, seed the
+    // progress bar with current state instead of waiting for the
+    // next tick of progress events.
+    const st = window.insightsScanner?.getState?.();
+    if (st && (st.state === 'scanning' || st.state === 'paused')) {
+      onProgress({
+        detail: {
+          done: st.done,
+          total: st.total,
+          currentName: st.currentEventName,
+          paused: st.state === 'paused',
+          etaMs: st.etaMs,
+          failures: st.failures,
+        },
+      });
+    }
+  }
+
+  /**
+   * Bind sidebar navigation events
+   */
+  bindNavEvents() {
+    const navItems = this.modal.querySelectorAll('.settings-nav-item');
+    navItems.forEach((item) => {
+      item.addEventListener('click', (e) => {
+        const tabName = e.currentTarget.dataset.tab;
+        this.switchTab(tabName);
+      });
+    });
+  }
+
+  /**
+   * Switch to a different settings section
+   */
+  switchTab(tabName) {
+    this._activeTab = tabName;
+
+    // Update nav items
+    const navItems = this.modal.querySelectorAll('.settings-nav-item');
+    navItems.forEach((item) => {
+      item.classList.toggle('active', item.dataset.tab === tabName);
+    });
+
+    // Update section title
+    const sectionTitle = this.modal.querySelector('#settingsSectionTitle');
+    if (sectionTitle) {
+      const translated = this.t(`settings.tabs.${tabName}`);
+      const fallback = tabName === 'diagnostics' ? 'Diagnostics' : translated;
+      sectionTitle.textContent =
+        translated && translated !== `settings.tabs.${tabName}`
+          ? translated
+          : fallback;
     }
 
-    /**
-     * Bind sidebar navigation events
-     */
-    bindNavEvents() {
-        const navItems = this.modal.querySelectorAll('.settings-nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                const tabName = e.currentTarget.dataset.tab;
-                this.switchTab(tabName);
-            });
-        });
+    // Update tab content
+    const contents = this.modal.querySelectorAll('.settings-tab-content');
+    contents.forEach((content) => {
+      content.classList.toggle(
+        'active',
+        content.dataset.tabContent === tabName
+      );
+    });
+  }
+
+  /**
+   * Bind events for the settings modal (overlay and ESC only - called once)
+   */
+  bindModalEvents() {
+    const overlay = this.modal.querySelector('.settings-overlay');
+    // Only close if click started AND ended on overlay (prevents close during text selection)
+    let mouseDownOnOverlay = false;
+    overlay.addEventListener('mousedown', (e) => {
+      mouseDownOnOverlay = e.target === overlay;
+    });
+    overlay.addEventListener('click', (e) => {
+      if (mouseDownOnOverlay && e.target === overlay) {
+        this.hideSettingsModal();
+      }
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'Escape' &&
+        this.modal &&
+        !this.modal.classList.contains('hidden')
+      ) {
+        this.hideSettingsModal();
+      }
+    });
+  }
+
+  /**
+   * Bind events for panel elements (called after each render)
+   */
+  bindPanelEvents() {
+    const closeBtn = this.modal.querySelector('.settings-close-btn');
+    const resetBtn = this.modal.querySelector('#resetSettingsBtn');
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hideSettingsModal());
     }
 
-    /**
-     * Switch to a different settings section
-     */
-    switchTab(tabName) {
-        this._activeTab = tabName;
-
-        // Update nav items
-        const navItems = this.modal.querySelectorAll('.settings-nav-item');
-        navItems.forEach(item => {
-            item.classList.toggle('active', item.dataset.tab === tabName);
-        });
-
-        // Update section title
-        const sectionTitle = this.modal.querySelector('#settingsSectionTitle');
-        if (sectionTitle) {
-            const translated = this.t(`settings.tabs.${tabName}`);
-            const fallback = tabName === 'diagnostics' ? 'Diagnostics' : translated;
-            sectionTitle.textContent = translated && translated !== `settings.tabs.${tabName}` ? translated : fallback;
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm(this.t('settings.confirmReset'))) {
+          this.resetToDefaults();
+          this.loadValuesIntoForm();
         }
-
-        // Update tab content
-        const contents = this.modal.querySelectorAll('.settings-tab-content');
-        contents.forEach(content => {
-            content.classList.toggle('active', content.dataset.tabContent === tabName);
-        });
+      });
     }
 
-    /**
-     * Bind events for the settings modal (overlay and ESC only - called once)
-     */
-    bindModalEvents() {
-        const overlay = this.modal.querySelector('.settings-overlay');
-        // Only close if click started AND ended on overlay (prevents close during text selection)
-        let mouseDownOnOverlay = false;
-        overlay.addEventListener('mousedown', (e) => {
-            mouseDownOnOverlay = e.target === overlay;
-        });
-        overlay.addEventListener('click', (e) => {
-            if (mouseDownOnOverlay && e.target === overlay) {
-                this.hideSettingsModal();
-            }
-        });
-
-        // ESC to close
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.modal && !this.modal.classList.contains('hidden')) {
-                this.hideSettingsModal();
-            }
-        });
+    // Bind offline package download button
+    const offlineBtn = this.modal.querySelector('#downloadOfflineBtn');
+    if (offlineBtn) {
+      offlineBtn.addEventListener('click', () => {
+        if (window.OfflinePackager) {
+          const packager = new OfflinePackager();
+          packager.showModal();
+          this.hideSettingsModal();
+        } else {
+          alert(this.t('settings.offline.notAvailable'));
+        }
+      });
     }
 
-    /**
-     * Bind events for panel elements (called after each render)
-     */
-    bindPanelEvents() {
-        const closeBtn = this.modal.querySelector('.settings-close-btn');
-        const resetBtn = this.modal.querySelector('#resetSettingsBtn');
+    // Bind change events for all settings
+    const selects = this.modal.querySelectorAll('.setting-select');
+    const checkboxes = this.modal.querySelectorAll('.setting-checkbox');
 
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.hideSettingsModal());
+    selects.forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const key = e.target.id.replace('setting-', '');
+        this.set(key, e.target.value);
+
+        // Special handling for language changes
+        if (key === 'language' && window.i18n) {
+          window.i18n.setLocale(e.target.value);
         }
 
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                if (confirm(this.t('settings.confirmReset'))) {
-                    this.resetToDefaults();
-                    this.loadValuesIntoForm();
-                }
-            });
+        // Special handling for map tile provider changes
+        if (key === 'mapTileProvider' && window.app?.mapView) {
+          window.app.mapView.setTileProvider(e.target.value);
         }
 
-        // Bind offline package download button
-        const offlineBtn = this.modal.querySelector('#downloadOfflineBtn');
-        if (offlineBtn) {
-            offlineBtn.addEventListener('click', () => {
-                if (window.OfflinePackager) {
-                    const packager = new OfflinePackager();
-                    packager.showModal();
-                    this.hideSettingsModal();
-                } else {
-                    alert(this.t('settings.offline.notAvailable'));
-                }
-            });
+        // Export quality — show/hide the custom-height input
+        if (key === 'exportResolution') {
+          const customRow = this.modal.querySelector(
+            '#setting-row-exportResolutionCustomHeight'
+          );
+          if (customRow) {
+            customRow.style.display = e.target.value === 'custom' ? '' : 'none';
+          }
         }
+      });
+    });
 
-        // Bind change events for all settings
-        const selects = this.modal.querySelectorAll('.setting-select');
-        const checkboxes = this.modal.querySelectorAll('.setting-checkbox');
-
-        selects.forEach(select => {
-            select.addEventListener('change', (e) => {
-                const key = e.target.id.replace('setting-', '');
-                this.set(key, e.target.value);
-
-                // Special handling for language changes
-                if (key === 'language' && window.i18n) {
-                    window.i18n.setLocale(e.target.value);
-                }
-
-                // Special handling for map tile provider changes
-                if (key === 'mapTileProvider' && window.app?.mapView) {
-                    window.app.mapView.setTileProvider(e.target.value);
-                }
-
-                // Export quality — show/hide the custom-height input
-                if (key === 'exportResolution') {
-                    const customRow = this.modal.querySelector('#setting-row-exportResolutionCustomHeight');
-                    if (customRow) {
-                        customRow.style.display = e.target.value === 'custom' ? '' : 'none';
-                    }
-                }
-            });
-        });
-
-        // Number-input binding (used by exportResolutionCustomHeight). The
-        // normal setting-select/setting-checkbox pattern doesn't cover it.
-        const customHeight = this.modal.querySelector('#setting-exportResolutionCustomHeight');
-        if (customHeight) {
-            customHeight.value = this.get('exportResolutionCustomHeight') || 1920;
-            customHeight.addEventListener('change', (e) => {
-                const val = parseInt(e.target.value, 10);
-                if (val > 0) this.set('exportResolutionCustomHeight', val);
-            });
-            // Initial visibility of the custom row
-            const customRow = this.modal.querySelector('#setting-row-exportResolutionCustomHeight');
-            if (customRow) {
-                customRow.style.display = this.get('exportResolution') === 'custom' ? '' : 'none';
-            }
-        }
-
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const key = e.target.id.replace('setting-', '');
-                this.set(key, e.target.checked);
-
-                // Special handling for license plate blur - preload model when enabled
-                if (key === 'blurLicensePlates' && e.target.checked) {
-                    this._preloadPlateDetectionModel();
-                }
-            });
-        });
-
-        // Check plate model status when settings open
-        this._updatePlateModelStatus();
+    // Number-input binding (used by exportResolutionCustomHeight). The
+    // normal setting-select/setting-checkbox pattern doesn't cover it.
+    const customHeight = this.modal.querySelector(
+      '#setting-exportResolutionCustomHeight'
+    );
+    if (customHeight) {
+      customHeight.value = this.get('exportResolutionCustomHeight') || 1920;
+      customHeight.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (val > 0) this.set('exportResolutionCustomHeight', val);
+      });
+      // Initial visibility of the custom row
+      const customRow = this.modal.querySelector(
+        '#setting-row-exportResolutionCustomHeight'
+      );
+      if (customRow) {
+        customRow.style.display =
+          this.get('exportResolution') === 'custom' ? '' : 'none';
+      }
     }
 
-    /**
-     * Preload the license plate detection model when setting is enabled
-     */
-    async _preloadPlateDetectionModel() {
-        const statusEl = this.modal?.querySelector('#plateModelStatus');
-        if (!statusEl) return;
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', (e) => {
+        const key = e.target.id.replace('setting-', '');
+        this.set(key, e.target.checked);
 
-        // Check if PlateBlur is available
-        if (typeof PlateBlur === 'undefined') {
-            statusEl.textContent = 'Error: PlateBlur not loaded';
-            statusEl.className = 'setting-status error';
-            return;
+        // Special handling for license plate blur - preload model when enabled
+        if (key === 'blurLicensePlates' && e.target.checked) {
+          this._preloadPlateDetectionModel();
         }
+      });
+    });
 
-        // Create or get the PlateBlur instance
-        if (!window.app?.plateBlur) {
-            window.app = window.app || {};
-            window.app.plateBlur = new PlateBlur();
-        }
+    // Check plate model status when settings open
+    this._updatePlateModelStatus();
+  }
 
-        const plateBlur = window.app.plateBlur;
+  /**
+   * Preload the license plate detection model when setting is enabled
+   */
+  async _preloadPlateDetectionModel() {
+    const statusEl = this.modal?.querySelector('#plateModelStatus');
+    if (!statusEl) return;
 
-        // If already loaded, show ready
-        if (plateBlur.isReady()) {
-            statusEl.textContent = '✓ Model ready';
-            statusEl.className = 'setting-status success';
-            return;
-        }
+    // Check if PlateBlur is available
+    if (typeof PlateBlur === 'undefined') {
+      statusEl.textContent = 'Error: PlateBlur not loaded';
+      statusEl.className = 'setting-status error';
+      return;
+    }
 
-        // Load with progress updates
-        statusEl.textContent = 'Initializing...';
+    // Create or get the PlateBlur instance
+    if (!window.app?.plateBlur) {
+      window.app = window.app || {};
+      window.app.plateBlur = new PlateBlur();
+    }
+
+    const plateBlur = window.app.plateBlur;
+
+    // If already loaded, show ready
+    if (plateBlur.isReady()) {
+      statusEl.textContent = '✓ Model ready';
+      statusEl.className = 'setting-status success';
+      return;
+    }
+
+    // Load with progress updates
+    statusEl.textContent = 'Initializing...';
+    statusEl.className = 'setting-status loading';
+
+    const success = await plateBlur.loadModel((progress) => {
+      if (progress.percent >= 0) {
+        statusEl.textContent = progress.message;
         statusEl.className = 'setting-status loading';
+      } else {
+        statusEl.textContent = progress.message;
+        statusEl.className = 'setting-status error';
+      }
+    });
 
-        const success = await plateBlur.loadModel((progress) => {
-            if (progress.percent >= 0) {
-                statusEl.textContent = progress.message;
-                statusEl.className = 'setting-status loading';
-            } else {
-                statusEl.textContent = progress.message;
-                statusEl.className = 'setting-status error';
-            }
-        });
+    if (success) {
+      statusEl.textContent = '✓ Model ready';
+      statusEl.className = 'setting-status success';
+    } else {
+      statusEl.textContent = 'Failed to load model';
+      statusEl.className = 'setting-status error';
+    }
+  }
 
-        if (success) {
-            statusEl.textContent = '✓ Model ready';
-            statusEl.className = 'setting-status success';
-        } else {
-            statusEl.textContent = 'Failed to load model';
-            statusEl.className = 'setting-status error';
-        }
+  /**
+   * Update the plate model status display
+   */
+  _updatePlateModelStatus() {
+    const statusEl = this.modal?.querySelector('#plateModelStatus');
+    if (!statusEl) return;
+
+    const plateBlur = window.app?.plateBlur;
+    const isEnabled = this.get('blurLicensePlates');
+
+    if (!isEnabled) {
+      statusEl.textContent = '';
+      statusEl.className = 'setting-status';
+      return;
     }
 
-    /**
-     * Update the plate model status display
-     */
-    _updatePlateModelStatus() {
-        const statusEl = this.modal?.querySelector('#plateModelStatus');
-        if (!statusEl) return;
+    if (plateBlur?.isReady()) {
+      statusEl.textContent = '✓ Model ready';
+      statusEl.className = 'setting-status success';
+    } else if (plateBlur?.isModelLoading) {
+      statusEl.textContent = 'Loading...';
+      statusEl.className = 'setting-status loading';
+    } else {
+      statusEl.textContent = 'Model will download on first export';
+      statusEl.className = 'setting-status info';
+    }
+  }
 
-        const plateBlur = window.app?.plateBlur;
-        const isEnabled = this.get('blurLicensePlates');
+  /**
+   * Load current settings values into form elements
+   */
+  loadValuesIntoForm() {
+    Object.keys(this.settings).forEach((key) => {
+      const element = this.modal.querySelector(`#setting-${key}`);
+      if (!element) return;
 
-        if (!isEnabled) {
-            statusEl.textContent = '';
-            statusEl.className = 'setting-status';
-            return;
-        }
+      if (element.type === 'checkbox') {
+        element.checked = this.settings[key];
+      } else {
+        element.value = this.settings[key];
+      }
+    });
 
-        if (plateBlur?.isReady()) {
-            statusEl.textContent = '✓ Model ready';
-            statusEl.className = 'setting-status success';
-        } else if (plateBlur?.isModelLoading) {
-            statusEl.textContent = 'Loading...';
-            statusEl.className = 'setting-status loading';
-        } else {
-            statusEl.textContent = 'Model will download on first export';
-            statusEl.className = 'setting-status info';
-        }
+    // Set language dropdown to current i18n locale
+    const langElement = this.modal.querySelector('#setting-language');
+    if (langElement && window.i18n) {
+      langElement.value = window.i18n.getLocale();
     }
 
-    /**
-     * Load current settings values into form elements
-     */
-    loadValuesIntoForm() {
-        Object.keys(this.settings).forEach(key => {
-            const element = this.modal.querySelector(`#setting-${key}`);
-            if (!element) return;
-
-            if (element.type === 'checkbox') {
-                element.checked = this.settings[key];
-            } else {
-                element.value = this.settings[key];
-            }
-        });
-
-        // Set language dropdown to current i18n locale
-        const langElement = this.modal.querySelector('#setting-language');
-        if (langElement && window.i18n) {
-            langElement.value = window.i18n.getLocale();
-        }
-
-        // Set map tile provider dropdown to current value
-        const mapProviderElement = this.modal.querySelector('#setting-mapTileProvider');
-        if (mapProviderElement && window.app?.mapView) {
-            mapProviderElement.value = window.app.mapView.getCurrentProvider();
-        }
-
-        // Show branding toggle only for Pro users. hasValidLicense() doesn't
-        // exist on sessionManager — use the canonical shouldWatermark() check
-        // (async, returns false when a valid Pro session is active).
-        const brandingRow = this.modal.querySelector('#setting-row-showBrandingInExport');
-        if (brandingRow) {
-            const sessionManager = window.app?.sessionManager;
-            if (sessionManager?.shouldWatermark) {
-                Promise.resolve(sessionManager.shouldWatermark()).then(watermark => {
-                    brandingRow.style.display = watermark ? 'none' : 'flex';
-                }).catch(() => {
-                    brandingRow.style.display = 'none';
-                });
-            } else {
-                brandingRow.style.display = 'none';
-            }
-        }
+    // Set map tile provider dropdown to current value
+    const mapProviderElement = this.modal.querySelector(
+      '#setting-mapTileProvider'
+    );
+    if (mapProviderElement && window.app?.mapView) {
+      mapProviderElement.value = window.app.mapView.getCurrentProvider();
     }
 
-    /**
-     * Hide the settings modal
-     */
-    hideSettingsModal() {
-        if (this.modal) {
-            this.modal.classList.add('hidden');
-        }
+    // Show branding toggle only for Pro users. hasValidLicense() doesn't
+    // exist on sessionManager — use the canonical shouldWatermark() check
+    // (async, returns false when a valid Pro session is active).
+    const brandingRow = this.modal.querySelector(
+      '#setting-row-showBrandingInExport'
+    );
+    if (brandingRow) {
+      const sessionManager = window.app?.sessionManager;
+      if (sessionManager?.shouldWatermark) {
+        Promise.resolve(sessionManager.shouldWatermark())
+          .then((watermark) => {
+            brandingRow.style.display = watermark ? 'none' : 'flex';
+          })
+          .catch(() => {
+            brandingRow.style.display = 'none';
+          });
+      } else {
+        brandingRow.style.display = 'none';
+      }
+    }
+  }
+
+  /**
+   * Hide the settings modal
+   */
+  hideSettingsModal() {
+    if (this.modal) {
+      this.modal.classList.add('hidden');
+    }
+  }
+
+  /**
+   * Apply settings to the application
+   */
+  applySettings(app) {
+    // Apply default speed
+    const speedSelect = document.getElementById('speedSelect');
+    if (speedSelect && !app.videoPlayer?.isPlaying) {
+      speedSelect.value = this.get('defaultSpeed');
     }
 
-    /**
-     * Apply settings to the application
-     */
-    applySettings(app) {
-        // Apply default speed
-        const speedSelect = document.getElementById('speedSelect');
-        if (speedSelect && !app.videoPlayer?.isPlaying) {
-            speedSelect.value = this.get('defaultSpeed');
-        }
-
-        // Apply default layout
-        if (app.layoutManager) {
-            const savedLayout = this.get('defaultLayout');
-            if (savedLayout) {
-                app.layoutManager.setLayout(savedLayout);
-                document.getElementById('layoutSelect').value = savedLayout;
-            }
-        }
-
-        // Apply loop setting
-        const loopCheckbox = document.getElementById('loopCheckbox');
-        if (loopCheckbox) {
-            loopCheckbox.checked = this.get('loopByDefault');
-        }
-
-        // Apply accessibility settings
-        this.applyAccessibilitySettings();
+    // Apply default layout
+    if (app.layoutManager) {
+      const savedLayout = this.get('defaultLayout');
+      if (savedLayout) {
+        app.layoutManager.setLayout(savedLayout);
+        document.getElementById('layoutSelect').value = savedLayout;
+      }
     }
 
-    /**
-     * Apply accessibility settings (high contrast, text size)
-     */
-    applyAccessibilitySettings() {
-        const body = document.body;
-
-        // High contrast mode
-        if (this.get('highContrastMode')) {
-            body.classList.add('high-contrast');
-        } else {
-            body.classList.remove('high-contrast');
-        }
-
-        // Text size
-        body.classList.remove('text-small', 'text-medium', 'text-large');
-        const textSize = this.get('textSize') || 'medium';
-        body.classList.add(`text-${textSize}`);
-
-        // Theme
-        this.applyTheme();
+    // Apply loop setting
+    const loopCheckbox = document.getElementById('loopCheckbox');
+    if (loopCheckbox) {
+      loopCheckbox.checked = this.get('loopByDefault');
     }
 
-    /**
-     * Apply theme setting
-     */
-    applyTheme() {
-        const body = document.body;
-        const theme = this.get('theme') || 'dark';
+    // Apply accessibility settings
+    this.applyAccessibilitySettings();
+  }
 
-        // Remove all theme classes
-        body.classList.remove('theme-dark', 'theme-light', 'theme-midnight', 'theme-tesla-red');
+  /**
+   * Apply accessibility settings (high contrast, text size)
+   */
+  applyAccessibilitySettings() {
+    const body = document.body;
 
-        // Apply selected theme (dark is default, no class needed)
-        if (theme !== 'dark') {
-            body.classList.add(`theme-${theme}`);
-        }
-
-        // Sync map mode with theme: light theme = light map, all others = dark map
-        const mapView = window.app?.mapView;
-        if (mapView && mapView.map) {
-            const mapShouldBeDark = theme !== 'light';
-            if (mapView.isDarkMode !== mapShouldBeDark) {
-                mapView.setTileLayer(mapShouldBeDark ? 'dark' : 'light');
-            }
-        }
+    // High contrast mode
+    if (this.get('highContrastMode')) {
+      body.classList.add('high-contrast');
+    } else {
+      body.classList.remove('high-contrast');
     }
+
+    // Text size
+    body.classList.remove('text-small', 'text-medium', 'text-large');
+    const textSize = this.get('textSize') || 'medium';
+    body.classList.add(`text-${textSize}`);
+
+    // Theme
+    this.applyTheme();
+  }
+
+  /**
+   * Apply theme setting
+   */
+  applyTheme() {
+    const body = document.body;
+    const theme = this.get('theme') || 'dark';
+
+    // Remove all theme classes
+    body.classList.remove(
+      'theme-dark',
+      'theme-light',
+      'theme-midnight',
+      'theme-tesla-red'
+    );
+
+    // Apply selected theme (dark is default, no class needed)
+    if (theme !== 'dark') {
+      body.classList.add(`theme-${theme}`);
+    }
+
+    // Sync map mode with theme: light theme = light map, all others = dark map
+    const mapView = window.app?.mapView;
+    if (mapView && mapView.map) {
+      const mapShouldBeDark = theme !== 'light';
+      if (mapView.isDarkMode !== mapShouldBeDark) {
+        mapView.setTileLayer(mapShouldBeDark ? 'dark' : 'light');
+      }
+    }
+  }
 }
 
 /**
@@ -1269,765 +1358,669 @@ class SettingsManager {
  * Manages preferences sync across devices and usage tracking
  */
 class SessionManager {
-    constructor() {
-        // Storage keys (stealthy naming)
-        this.SESSION_KEY = 'tcv_session';
-        this.PREFS_KEY = 'tcv_prefs';
-        this.USAGE_KEY = 'tcv_usage';
+  constructor() {
+    // Storage keys (stealthy naming)
+    this.SESSION_KEY = 'tcv_session';
+    this.PREFS_KEY = 'tcv_prefs';
+    this.USAGE_KEY = 'tcv_usage';
 
-        // Config fragments (assembled at runtime)
-        this._cf1 = 'TNmb2H5E8nrr/l';
-        this._cf2 = 'nyK6kyXTby4xiR';
-        this._cf3 = '4g3GTGwqxeg5bFU=';
-        // Decoy fragments
-        this._df1 = 'x9Kp3mQ2wE4rT6';
-        this._df2 = 'vB8nH5jL0sA1cY';
+    // Config fragments (assembled at runtime)
+    this._cf1 = 'TNmb2H5E8nrr/l';
+    this._cf2 = 'nyK6kyXTby4xiR';
+    this._cf3 = '4g3GTGwqxeg5bFU=';
+    // Decoy fragments
+    this._df1 = 'x9Kp3mQ2wE4rT6';
+    this._df2 = 'vB8nH5jL0sA1cY';
 
-        // Session state
-        this._sessionData = null;
-        this._usageData = null;
-        this._prefsData = null;
+    // Session state
+    this._sessionData = null;
+    this._usageData = null;
+    this._prefsData = null;
 
-        // Limits for free tier
-        this.FREE_DAILY_EVENTS = 10;
-        this.FREE_EXPORT_EVENTS = 2;
 
-        // Initialize
-        this._loadSession();
-        this._loadUsage();
-        this._loadPrefs();
 
-        // Check for daily reset
-        this._checkDailyReset();
+    // Initialize
+    this._loadSession();
+    this._loadUsage();
+    this._loadPrefs();
+
+    // Check for daily reset
+    this._checkDailyReset();
+  }
+
+  /**
+   * Get assembled config key
+   */
+  _getConfigKey() {
+    return this._cf1 + this._cf2 + this._cf3;
+  }
+
+  /**
+   * Config integrity check (decoy)
+   */
+  _verifyConfigIntegrity() {
+    const h = this._df1 + this._df2;
+    return h.length === 28;
+  }
+
+  /**
+   * Secondary validation path (decoy - never called)
+   */
+  _altValidate(data) {
+    if (!data) return false;
+    const parts = String(data).split('-');
+    return parts.length > 1 && parts[0].length === 3;
+  }
+
+  /**
+   * Hash email using SHA-256
+   */
+  async _hashEmail(email) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(email.toLowerCase().trim());
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Load session from localStorage
+   */
+  _loadSession() {
+    try {
+      const stored = localStorage.getItem(this.SESSION_KEY);
+      this._sessionData = stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      this._sessionData = null;
     }
+  }
 
-    /**
-     * Get assembled config key
-     */
-    _getConfigKey() {
-        return this._cf1 + this._cf2 + this._cf3;
+  /**
+   * Load usage data from localStorage
+   */
+  _loadUsage() {
+    try {
+      const stored = localStorage.getItem(this.USAGE_KEY);
+      this._usageData = stored
+        ? JSON.parse(stored)
+        : {
+            viewedToday: [],
+            exportedEvents: [],
+            lastReset: this._getTodayString(),
+          };
+    } catch (e) {
+      this._usageData = {
+        viewedToday: [],
+        exportedEvents: [],
+        lastReset: this._getTodayString(),
+      };
     }
+  }
 
-    /**
-     * Config integrity check (decoy)
-     */
-    _verifyConfigIntegrity() {
-        const h = this._df1 + this._df2;
-        return h.length === 28;
+  /**
+   * Load prefs data from localStorage
+   */
+  _loadPrefs() {
+    try {
+      const stored = localStorage.getItem(this.PREFS_KEY);
+      this._prefsData = stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      this._prefsData = null;
     }
+  }
 
-    /**
-     * Secondary validation path (decoy - never called)
-     */
-    _altValidate(data) {
-        if (!data) return false;
-        const parts = String(data).split('-');
-        return parts.length > 1 && parts[0].length === 3;
-    }
-
-    /**
-     * Hash email using SHA-256
-     */
-    async _hashEmail(email) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(email.toLowerCase().trim());
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    /**
-     * Load session from localStorage
-     */
-    _loadSession() {
-        try {
-            const stored = localStorage.getItem(this.SESSION_KEY);
-            this._sessionData = stored ? JSON.parse(stored) : null;
-        } catch (e) {
-            this._sessionData = null;
-        }
-    }
-
-    /**
-     * Load usage data from localStorage
-     */
-    _loadUsage() {
-        try {
-            const stored = localStorage.getItem(this.USAGE_KEY);
-            this._usageData = stored ? JSON.parse(stored) : {
-                viewedToday: [],
-                exportedEvents: [],
-                lastReset: this._getTodayString()
-            };
-        } catch (e) {
-            this._usageData = {
-                viewedToday: [],
-                exportedEvents: [],
-                lastReset: this._getTodayString()
-            };
-        }
-    }
-
-    /**
-     * Load prefs data from localStorage
-     */
-    _loadPrefs() {
-        try {
-            const stored = localStorage.getItem(this.PREFS_KEY);
-            this._prefsData = stored ? JSON.parse(stored) : null;
-        } catch (e) {
-            this._prefsData = null;
-        }
-    }
-
-    /**
-     * Save session to localStorage
-     */
-    _saveSession() {
-        try {
-            if (this._sessionData) {
-                localStorage.setItem(this.SESSION_KEY, JSON.stringify(this._sessionData));
-            } else {
-                localStorage.removeItem(this.SESSION_KEY);
-            }
-        } catch (e) {
-            console.warn('Failed to save session:', e);
-        }
-    }
-
-    /**
-     * Save usage to localStorage
-     */
-    _saveUsage() {
-        try {
-            localStorage.setItem(this.USAGE_KEY, JSON.stringify(this._usageData));
-        } catch (e) {
-            console.warn('Failed to save usage:', e);
-        }
-    }
-
-    /**
-     * Save prefs to localStorage
-     */
-    _savePrefs() {
-        try {
-            if (this._prefsData) {
-                localStorage.setItem(this.PREFS_KEY, JSON.stringify(this._prefsData));
-            }
-        } catch (e) {
-            console.warn('Failed to save prefs:', e);
-        }
-    }
-
-    /**
-     * Get today's date as YYYY-MM-DD string
-     */
-    _getTodayString() {
-        return new Date().toISOString().split('T')[0];
-    }
-
-    /**
-     * Check if daily usage should reset
-     */
-    _checkDailyReset() {
-        const today = this._getTodayString();
-        if (this._usageData.lastReset !== today) {
-            this._usageData.viewedToday = [];
-            this._usageData.lastReset = today;
-            this._saveUsage();
-        }
-    }
-
-    /**
-     * Base64 decode helper
-     */
-    _b64Decode(str) {
-        return Uint8Array.from(atob(str), c => c.charCodeAt(0));
-    }
-
-    /**
-     * Verify Ed25519 signature using Web Crypto, with tweetnacl fallback
-     */
-    async _verifySignature(message, signature, publicKey) {
-        const messageBytes = new TextEncoder().encode(message);
-        const signatureBytes = this._b64Decode(signature);
-        const keyData = this._b64Decode(publicKey);
-
-        // Try Web Crypto Ed25519 first (Chrome 113+, Safari 17+)
-        try {
-            const cryptoKey = await crypto.subtle.importKey(
-                'raw',
-                keyData,
-                { name: 'Ed25519' },
-                false,
-                ['verify']
-            );
-            return await crypto.subtle.verify(
-                'Ed25519',
-                cryptoKey,
-                signatureBytes,
-                messageBytes
-            );
-        } catch (e) {
-            // Ed25519 not supported in Web Crypto, try tweetnacl fallback
-            console.warn('[SessionManager] Web Crypto Ed25519 unavailable, using fallback:', e.message);
-        }
-
-        // Fallback: use tweetnacl (works on all browsers including Firefox)
-        try {
-            if (typeof self.nacl !== 'undefined' && self.nacl.sign && self.nacl.sign.detached) {
-                return self.nacl.sign.detached.verify(messageBytes, signatureBytes, keyData);
-            }
-        } catch (e) {
-            console.warn('[SessionManager] Fallback verification failed:', e.message);
-        }
-
-        return false;
-    }
-
-    /**
-     * Validate a session code
-     */
-    async _validateCode(code, email) {
-        try {
-            // Remove prefix and decode
-            if (!code.startsWith('TCV-')) return { valid: false, error: 'Invalid code format' };
-
-            const payload = JSON.parse(atob(code.substring(4)));
-
-            // Check required fields
-            if (!payload.e || !payload.i || !payload.x || !payload.s) {
-                return { valid: false, error: 'Invalid code structure' };
-            }
-
-            // Verify email hash matches
-            const emailHash = await this._hashEmail(email);
-            if (payload.e !== emailHash) {
-                return { valid: false, error: 'Email does not match' };
-            }
-
-            // Check expiry
-            const expiry = new Date(payload.x);
-            const now = new Date();
-            if (now > expiry) {
-                return { valid: false, error: 'Session expired', expired: true };
-            }
-
-            // Verify signature
-            const message = JSON.stringify({ e: payload.e, i: payload.i, x: payload.x });
-            const isValid = await this._verifySignature(message, payload.s, this._getConfigKey());
-
-            if (!isValid) {
-                return { valid: false, error: 'Invalid signature' };
-            }
-
-            return {
-                valid: true,
-                payload,
-                expiryDate: expiry,
-                daysRemaining: Math.ceil((expiry - now) / (1000 * 60 * 60 * 24))
-            };
-        } catch (e) {
-            return { valid: false, error: 'Failed to validate code' };
-        }
-    }
-
-    /**
-     * Activate a session with code and email
-     */
-    async activateSession(code, email) {
-        const result = await this._validateCode(code, email);
-
-        if (result.valid) {
-            this._sessionData = code;
-            this._prefsData = {
-                emailHash: result.payload.e,
-                lastSeen: new Date().toISOString(),
-                activated: new Date().toISOString(),
-                expiry: result.payload.x
-            };
-            this._saveSession();
-            this._savePrefs();
-
-            return {
-                success: true,
-                expiryDate: result.expiryDate,
-                daysRemaining: result.daysRemaining
-            };
-        }
-
-        return { success: false, error: result.error, expired: result.expired };
-    }
-
-    /**
-     * Check if there's an active session
-     */
-    async hasActiveSession() {
-        if (!this._sessionData || !this._prefsData) return false;
-
-        // Update last seen timestamp
-        const now = new Date();
-        const lastSeen = this._prefsData.lastSeen ? new Date(this._prefsData.lastSeen) : null;
-
-        // Clock rollback detection (allow 24 hour tolerance)
-        if (lastSeen && now < lastSeen) {
-            const diffHours = (lastSeen - now) / (1000 * 60 * 60);
-            if (diffHours > 24) {
-                console.warn('Clock rollback detected');
-                // Don't invalidate, just warn
-            }
-        }
-
-        // Check expiry from stored prefs (quick check without full validation)
-        if (this._prefsData.expiry) {
-            const expiry = new Date(this._prefsData.expiry);
-            if (now > expiry) {
-                return false;
-            }
-        }
-
-        // Update last seen
-        this._prefsData.lastSeen = now.toISOString();
-        this._savePrefs();
-
-        return true;
-    }
-
-    /**
-     * Get session info for display
-     */
-    getSessionInfo() {
-        if (!this._prefsData || !this._prefsData.expiry) {
-            return null;
-        }
-
-        const expiry = new Date(this._prefsData.expiry);
-        const now = new Date();
-        const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-
-        return {
-            active: daysRemaining > 0,
-            expiryDate: expiry,
-            daysRemaining: Math.max(0, daysRemaining),
-            emailHash: this._prefsData.emailHash
-        };
-    }
-
-    /**
-     * Deactivate session on this device
-     */
-    deactivateSession() {
-        this._sessionData = null;
-        this._prefsData = null;
+  /**
+   * Save session to localStorage
+   */
+  _saveSession() {
+    try {
+      if (this._sessionData) {
+        localStorage.setItem(
+          this.SESSION_KEY,
+          JSON.stringify(this._sessionData)
+        );
+      } else {
         localStorage.removeItem(this.SESSION_KEY);
-        localStorage.removeItem(this.PREFS_KEY);
+      }
+    } catch (e) {
+      console.warn('Failed to save session:', e);
+    }
+  }
+
+  /**
+   * Save usage to localStorage
+   */
+  _saveUsage() {
+    try {
+      localStorage.setItem(this.USAGE_KEY, JSON.stringify(this._usageData));
+    } catch (e) {
+      console.warn('Failed to save usage:', e);
+    }
+  }
+
+  /**
+   * Save prefs to localStorage
+   */
+  _savePrefs() {
+    try {
+      if (this._prefsData) {
+        localStorage.setItem(this.PREFS_KEY, JSON.stringify(this._prefsData));
+      }
+    } catch (e) {
+      console.warn('Failed to save prefs:', e);
+    }
+  }
+
+  /**
+   * Get today's date as YYYY-MM-DD string
+   */
+  _getTodayString() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  /**
+   * Check if daily usage should reset
+   */
+  _checkDailyReset() {
+    const today = this._getTodayString();
+    if (this._usageData.lastReset !== today) {
+      this._usageData.viewedToday = [];
+      this._usageData.lastReset = today;
+      this._saveUsage();
+    }
+  }
+
+  /**
+   * Base64 decode helper
+   */
+  _b64Decode(str) {
+    return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+  }
+
+  /**
+   * Verify Ed25519 signature using Web Crypto, with tweetnacl fallback
+   */
+  async _verifySignature(message, signature, publicKey) {
+    const messageBytes = new TextEncoder().encode(message);
+    const signatureBytes = this._b64Decode(signature);
+    const keyData = this._b64Decode(publicKey);
+
+    // Try Web Crypto Ed25519 first (Chrome 113+, Safari 17+)
+    try {
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'Ed25519' },
+        false,
+        ['verify']
+      );
+      return await crypto.subtle.verify(
+        'Ed25519',
+        cryptoKey,
+        signatureBytes,
+        messageBytes
+      );
+    } catch (e) {
+      // Ed25519 not supported in Web Crypto, try tweetnacl fallback
+      console.warn(
+        '[SessionManager] Web Crypto Ed25519 unavailable, using fallback:',
+        e.message
+      );
     }
 
-    /**
-     * Check if a feature is accessible
-     */
-    async checkAccess(feature, contextId = null) {
-        try {
-            const hasSession = await this.hasActiveSession();
+    // Fallback: use tweetnacl (works on all browsers including Firefox)
+    try {
+      if (
+        typeof self.nacl !== 'undefined' &&
+        self.nacl.sign &&
+        self.nacl.sign.detached
+      ) {
+        return self.nacl.sign.detached.verify(
+          messageBytes,
+          signatureBytes,
+          keyData
+        );
+      }
+    } catch (e) {
+      console.warn('[SessionManager] Fallback verification failed:', e.message);
+    }
 
-            if (hasSession) {
-                return { allowed: true };
-            }
+    return false;
+  }
 
-            // Ensure usage data is loaded
-            if (!this._usageData) {
-                this._loadUsage();
-            }
+  /**
+   * Validate a session code
+   */
+  async _validateCode(code, email) {
+    try {
+      // Remove prefix and decode
+      if (!code.startsWith('TCV-'))
+        return { valid: false, error: 'Invalid code format' };
 
-            // Free tier checks
-            switch (feature) {
-                case 'viewEvent': {
-                    const viewedList = this._usageData?.viewedToday || [];
-                    const viewedCount = viewedList.length;
-                    // Soft lockout: a free user who hits the daily cap can
-                    // still re-view ANY of the events they've already opened
-                    // today. New events get the limit modal; old ones go
-                    // through. Lets the user keep exploring features on
-                    // their existing 10 instead of being hard-banned the
-                    // moment they hit the cap.
-                    if (contextId && viewedList.includes(contextId)) {
-                        return {
-                            allowed: true,
-                            reviewed: true,
-                            remaining: Math.max(0, this.FREE_DAILY_EVENTS - viewedCount),
-                            limit: this.FREE_DAILY_EVENTS,
-                            type: 'daily'
-                        };
-                    }
-                    return {
-                        allowed: viewedCount < this.FREE_DAILY_EVENTS,
-                        remaining: this.FREE_DAILY_EVENTS - viewedCount,
-                        limit: this.FREE_DAILY_EVENTS,
-                        type: 'daily'
-                    };
-                }
+      const payload = JSON.parse(atob(code.substring(4)));
 
-            case 'exportEvent': {
-                const exportedList = this._usageData?.exportedEvents || [];
-                const exportedCount = exportedList.length;
-                // Soft lockout (mirrors viewEvent): a free user past the
-                // daily export cap can still re-export any event they've
-                // already exported today. Re-exporting a watermarked event
-                // doesn't burn another slot — it just regenerates the same
-                // file. New events get the limit modal; old ones go through.
-                if (contextId && exportedList.includes(contextId)) {
-                    return {
-                        allowed: true,
-                        reviewed: true,
-                        remaining: Math.max(0, this.FREE_EXPORT_EVENTS - exportedCount),
-                        limit: this.FREE_EXPORT_EVENTS,
-                        type: 'export'
-                    };
-                }
-                return {
-                    allowed: exportedCount < this.FREE_EXPORT_EVENTS,
-                    remaining: this.FREE_EXPORT_EVENTS - exportedCount,
-                    limit: this.FREE_EXPORT_EVENTS,
-                    type: 'export'
-                };
-            }
+      // Check required fields
+      if (!payload.e || !payload.i || !payload.x || !payload.s) {
+        return { valid: false, error: 'Invalid code structure' };
+      }
 
-            case 'offlinePackage':
-            case 'plateEnhancement':
-                return {
-                    allowed: false,
-                    reason: 'premium',
-                    type: 'blocked'
-                };
+      // Verify email hash matches
+      const emailHash = await this._hashEmail(email);
+      if (payload.e !== emailHash) {
+        return { valid: false, error: 'Email does not match' };
+      }
 
-            default:
-                return { allowed: true };
-            }
-        } catch (e) {
-            console.error('[SessionManager] checkAccess error:', e);
-            return { allowed: true }; // Fail open to avoid blocking users
+      // Check expiry
+      const expiry = new Date(payload.x);
+      const now = new Date();
+      if (now > expiry) {
+        return { valid: false, error: 'Session expired', expired: true };
+      }
+
+      // Verify signature
+      const message = JSON.stringify({
+        e: payload.e,
+        i: payload.i,
+        x: payload.x,
+      });
+      const isValid = await this._verifySignature(
+        message,
+        payload.s,
+        this._getConfigKey()
+      );
+
+      if (!isValid) {
+        return { valid: false, error: 'Invalid signature' };
+      }
+
+      return {
+        valid: true,
+        payload,
+        expiryDate: expiry,
+        daysRemaining: Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)),
+      };
+    } catch (e) {
+      return { valid: false, error: 'Failed to validate code' };
+    }
+  }
+
+  /**
+   * Activate a session with code and email
+   */
+  async activateSession(code, email) {
+    const result = await this._validateCode(code, email);
+
+    if (result.valid) {
+      this._sessionData = code;
+      this._prefsData = {
+        emailHash: result.payload.e,
+        lastSeen: new Date().toISOString(),
+        activated: new Date().toISOString(),
+        expiry: result.payload.x,
+      };
+      this._saveSession();
+      this._savePrefs();
+
+      return {
+        success: true,
+        expiryDate: result.expiryDate,
+        daysRemaining: result.daysRemaining,
+      };
+    }
+
+    return { success: false, error: result.error, expired: result.expired };
+  }
+
+  /**
+   * Check if there's an active session
+   */
+  async hasActiveSession() {
+    if (!this._sessionData || !this._prefsData) return false;
+
+    // Update last seen timestamp
+    const now = new Date();
+    const lastSeen = this._prefsData.lastSeen
+      ? new Date(this._prefsData.lastSeen)
+      : null;
+
+    // Clock rollback detection (allow 24 hour tolerance)
+    if (lastSeen && now < lastSeen) {
+      const diffHours = (lastSeen - now) / (1000 * 60 * 60);
+      if (diffHours > 24) {
+        console.warn('Clock rollback detected');
+        // Don't invalidate, just warn
+      }
+    }
+
+    // Check expiry from stored prefs (quick check without full validation)
+    if (this._prefsData.expiry) {
+      const expiry = new Date(this._prefsData.expiry);
+      if (now > expiry) {
+        return false;
+      }
+    }
+
+    // Update last seen
+    this._prefsData.lastSeen = now.toISOString();
+    this._savePrefs();
+
+    return true;
+  }
+
+  /**
+   * Get session info for display
+   */
+  getSessionInfo() {
+    if (!this._prefsData || !this._prefsData.expiry) {
+      return null;
+    }
+
+    const expiry = new Date(this._prefsData.expiry);
+    const now = new Date();
+    const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+    return {
+      active: daysRemaining > 0,
+      expiryDate: expiry,
+      daysRemaining: Math.max(0, daysRemaining),
+      emailHash: this._prefsData.emailHash,
+    };
+  }
+
+  /**
+   * Deactivate session on this device
+   */
+  deactivateSession() {
+    this._sessionData = null;
+    this._prefsData = null;
+    localStorage.removeItem(this.SESSION_KEY);
+    localStorage.removeItem(this.PREFS_KEY);
+  }
+
+  /**
+   * Check if a feature is accessible
+   */
+  async checkAccess(feature, contextId = null) {
+    return { allowed: true };
+  }
+
+  /**
+   * Record that an event was viewed
+   */
+  async recordEventView(eventId) {
+    return true;
+  }
+
+  /**
+   * Record that an event was exported
+   */
+  async recordEventExport(eventId) {
+    return { allowed: true, watermark: false };
+  }
+
+  /**
+   * Check if watermark should be applied
+   */
+  async shouldWatermark() {
+    return false;
+  }
+
+  /**
+   * Get usage stats for display
+   */
+  getUsageStats() {
+    return {
+      eventsViewedToday: 0,
+      eventsLimit: Infinity,
+      eventsRemaining: Infinity,
+      exportsUsed: 0,
+      exportsLimit: Infinity,
+      exportsRemaining: Infinity,
+    };
+  }
+
+  /**
+   * Get expiry warning if applicable
+   */
+  getExpiryWarning() {
+    const info = this.getSessionInfo();
+    if (!info || !info.active) return null;
+
+    if (info.daysRemaining <= 7) {
+      return {
+        level: 'urgent',
+        daysRemaining: info.daysRemaining,
+        message: `Session expires in ${info.daysRemaining} day${info.daysRemaining !== 1 ? 's' : ''}`,
+      };
+    } else if (info.daysRemaining <= 14) {
+      return {
+        level: 'warning',
+        daysRemaining: info.daysRemaining,
+        message: `Session expires in ${info.daysRemaining} days`,
+      };
+    }
+
+    return null;
+  }
+
+  // ==================== Drive File Storage ====================
+
+  /**
+   * Get or create the .tcvconfig directory handle
+   */
+  async _getConfigDir(rootHandle) {
+    try {
+      return await rootHandle.getDirectoryHandle('.tcvconfig', {
+        create: true,
+      });
+    } catch (e) {
+      console.warn('Failed to get config directory:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Generate a unique drive ID
+   */
+  _generateDriveId() {
+    return (
+      'drv_' +
+      Date.now().toString(36) +
+      '_' +
+      Math.random().toString(36).substring(2, 9)
+    );
+  }
+
+  /**
+   * Get or create drive ID for this drive
+   */
+  async getDriveId(rootHandle) {
+    try {
+      const configDir = await this._getConfigDir(rootHandle);
+      if (!configDir) return null;
+
+      // Try to read existing drive ID
+      try {
+        const fileHandle = await configDir.getFileHandle('.driveid');
+        const file = await fileHandle.getFile();
+        const driveId = await file.text();
+        if (driveId && driveId.trim()) {
+          return driveId.trim();
         }
+      } catch (e) {
+        // File doesn't exist, create new drive ID
+      }
+
+      // Generate and save new drive ID
+      const newDriveId = this._generateDriveId();
+      const fileHandle = await configDir.getFileHandle('.driveid', {
+        create: true,
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(newDriveId);
+      await writable.close();
+
+      return newDriveId;
+    } catch (e) {
+      console.warn('Failed to get/create drive ID:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Save session to drive file
+   */
+  async saveSessionToDrive(rootHandle) {
+    if (!this._sessionData || !this._prefsData) return false;
+
+    try {
+      const configDir = await this._getConfigDir(rootHandle);
+      if (!configDir) return false;
+
+      const sessionData = {
+        session: this._sessionData,
+        prefs: this._prefsData,
+        savedAt: new Date().toISOString(),
+      };
+
+      const fileHandle = await configDir.getFileHandle('.session', {
+        create: true,
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(sessionData));
+      await writable.close();
+
+      return true;
+    } catch (e) {
+      console.warn('Failed to save session to drive:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Load session from drive file
+   */
+  async loadSessionFromDrive(rootHandle) {
+    try {
+      const configDir = await this._getConfigDir(rootHandle);
+      if (!configDir) return null;
+
+      const fileHandle = await configDir.getFileHandle('.session');
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+
+      if (!content) return null;
+
+      const sessionData = JSON.parse(content);
+      return {
+        session: sessionData.session,
+        prefs: sessionData.prefs,
+        savedAt: sessionData.savedAt,
+      };
+    } catch (e) {
+      // File doesn't exist or can't be read
+      return null;
+    }
+  }
+
+  /**
+   * Try to recover session from drive (requires email verification)
+   */
+  async recoverFromDrive(rootHandle, email) {
+    const driveSession = await this.loadSessionFromDrive(rootHandle);
+    if (!driveSession || !driveSession.session) {
+      return { success: false, error: 'No session found on drive' };
     }
 
-    /**
-     * Record that an event was viewed
-     */
-    async recordEventView(eventId) {
-        try {
-            const hasSession = await this.hasActiveSession();
-            if (hasSession) return true;
+    // Validate the session with provided email
+    const result = await this._validateCode(driveSession.session, email);
 
-            this._checkDailyReset();
+    if (result.valid) {
+      // Recover the session
+      this._sessionData = driveSession.session;
+      this._prefsData = {
+        ...driveSession.prefs,
+        lastSeen: new Date().toISOString(),
+      };
+      this._saveSession();
+      this._savePrefs();
 
-            // Ensure usage data exists
-            if (!this._usageData) this._loadUsage();
-            if (!this._usageData?.viewedToday) return true;
-
-            if (!this._usageData.viewedToday.includes(eventId)) {
-                if (this._usageData.viewedToday.length >= this.FREE_DAILY_EVENTS) {
-                    return false;
-                }
-                this._usageData.viewedToday.push(eventId);
-                this._saveUsage();
-            }
-            return true;
-        } catch (e) {
-            console.error('[SessionManager] recordEventView error:', e);
-            return true; // Fail open
-        }
+      return {
+        success: true,
+        expiryDate: result.expiryDate,
+        daysRemaining: result.daysRemaining,
+      };
     }
 
-    /**
-     * Record that an event was exported
-     */
-    async recordEventExport(eventId) {
-        try {
-            const hasSession = await this.hasActiveSession();
-            if (hasSession) return { allowed: true, watermark: false };
+    return {
+      success: false,
+      error: result.error,
+      expired: result.expired,
+    };
+  }
 
-            // Ensure usage data exists
-            if (!this._usageData) this._loadUsage();
-            if (!this._usageData?.exportedEvents) return { allowed: true, watermark: true };
+  /**
+   * Check if drive has a session file
+   */
+  async driveHasSession(rootHandle) {
+    try {
+      const configDir = await this._getConfigDir(rootHandle);
+      if (!configDir) return false;
 
-            // Check if this event was already used for export
-            if (this._usageData.exportedEvents.includes(eventId)) {
-                return { allowed: true, watermark: true };
-            }
+      await configDir.getFileHandle('.session');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
-            // Check if we can add a new export event
-            if (this._usageData.exportedEvents.length >= this.FREE_EXPORT_EVENTS) {
-                return { allowed: false, watermark: true };
-            }
+  /**
+   * Sync session to drive after activation
+   */
+  async syncToDrive(rootHandle) {
+    if (!rootHandle) return false;
 
-            // Add to exported events
-            this._usageData.exportedEvents.push(eventId);
-            this._saveUsage();
+    // Save session to drive
+    const saved = await this.saveSessionToDrive(rootHandle);
 
-            return { allowed: true, watermark: true };
-        } catch (e) {
-            console.error('[SessionManager] recordEventExport error:', e);
-            return { allowed: true, watermark: true }; // Fail open with watermark
-        }
+    // Ensure drive has an ID
+    await this.getDriveId(rootHandle);
+
+    return saved;
+  }
+
+  /**
+   * Check drive for session and prompt recovery if found
+   */
+  async checkDriveRecovery(rootHandle) {
+    // Skip if already have active session
+    const hasSession = await this.hasActiveSession();
+    if (hasSession) {
+      // Just sync current session to drive
+      await this.syncToDrive(rootHandle);
+      return;
     }
 
-    /**
-     * Check if watermark should be applied
-     */
-    async shouldWatermark() {
-        try {
-            return !(await this.hasActiveSession());
-        } catch (e) {
-            console.error('[SessionManager] shouldWatermark error:', e);
-            return true; // Default to watermark on error
-        }
-    }
+    // Check if drive has session
+    const hasDriveSession = await this.driveHasSession(rootHandle);
+    if (!hasDriveSession) return;
 
-    /**
-     * Get usage stats for display
-     */
-    getUsageStats() {
-        this._checkDailyReset();
-        return {
-            eventsViewedToday: this._usageData.viewedToday.length,
-            eventsLimit: this.FREE_DAILY_EVENTS,
-            eventsRemaining: this.FREE_DAILY_EVENTS - this._usageData.viewedToday.length,
-            exportsUsed: this._usageData.exportedEvents.length,
-            exportsLimit: this.FREE_EXPORT_EVENTS,
-            exportsRemaining: this.FREE_EXPORT_EVENTS - this._usageData.exportedEvents.length
-        };
-    }
+    // Store handle for later use
+    this._pendingDriveHandle = rootHandle;
 
-    /**
-     * Get expiry warning if applicable
-     */
-    getExpiryWarning() {
-        const info = this.getSessionInfo();
-        if (!info || !info.active) return null;
+    // Prompt user for email to recover
+    this._showDriveRecoveryModal();
+  }
 
-        if (info.daysRemaining <= 7) {
-            return {
-                level: 'urgent',
-                daysRemaining: info.daysRemaining,
-                message: `Session expires in ${info.daysRemaining} day${info.daysRemaining !== 1 ? 's' : ''}`
-            };
-        } else if (info.daysRemaining <= 14) {
-            return {
-                level: 'warning',
-                daysRemaining: info.daysRemaining,
-                message: `Session expires in ${info.daysRemaining} days`
-            };
-        }
+  /**
+   * Show recovery modal for drive session
+   */
+  _showDriveRecoveryModal() {
+    const modal = document.createElement('div');
+    modal.className = 'session-modal';
+    modal.id = 'driveRecoveryModal';
 
-        return null;
-    }
-
-    // ==================== Drive File Storage ====================
-
-    /**
-     * Get or create the .tcvconfig directory handle
-     */
-    async _getConfigDir(rootHandle) {
-        try {
-            return await rootHandle.getDirectoryHandle('.tcvconfig', { create: true });
-        } catch (e) {
-            console.warn('Failed to get config directory:', e);
-            return null;
-        }
-    }
-
-    /**
-     * Generate a unique drive ID
-     */
-    _generateDriveId() {
-        return 'drv_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
-    }
-
-    /**
-     * Get or create drive ID for this drive
-     */
-    async getDriveId(rootHandle) {
-        try {
-            const configDir = await this._getConfigDir(rootHandle);
-            if (!configDir) return null;
-
-            // Try to read existing drive ID
-            try {
-                const fileHandle = await configDir.getFileHandle('.driveid');
-                const file = await fileHandle.getFile();
-                const driveId = await file.text();
-                if (driveId && driveId.trim()) {
-                    return driveId.trim();
-                }
-            } catch (e) {
-                // File doesn't exist, create new drive ID
-            }
-
-            // Generate and save new drive ID
-            const newDriveId = this._generateDriveId();
-            const fileHandle = await configDir.getFileHandle('.driveid', { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(newDriveId);
-            await writable.close();
-
-            return newDriveId;
-        } catch (e) {
-            console.warn('Failed to get/create drive ID:', e);
-            return null;
-        }
-    }
-
-    /**
-     * Save session to drive file
-     */
-    async saveSessionToDrive(rootHandle) {
-        if (!this._sessionData || !this._prefsData) return false;
-
-        try {
-            const configDir = await this._getConfigDir(rootHandle);
-            if (!configDir) return false;
-
-            const sessionData = {
-                session: this._sessionData,
-                prefs: this._prefsData,
-                savedAt: new Date().toISOString()
-            };
-
-            const fileHandle = await configDir.getFileHandle('.session', { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(sessionData));
-            await writable.close();
-
-            return true;
-        } catch (e) {
-            console.warn('Failed to save session to drive:', e);
-            return false;
-        }
-    }
-
-    /**
-     * Load session from drive file
-     */
-    async loadSessionFromDrive(rootHandle) {
-        try {
-            const configDir = await this._getConfigDir(rootHandle);
-            if (!configDir) return null;
-
-            const fileHandle = await configDir.getFileHandle('.session');
-            const file = await fileHandle.getFile();
-            const content = await file.text();
-
-            if (!content) return null;
-
-            const sessionData = JSON.parse(content);
-            return {
-                session: sessionData.session,
-                prefs: sessionData.prefs,
-                savedAt: sessionData.savedAt
-            };
-        } catch (e) {
-            // File doesn't exist or can't be read
-            return null;
-        }
-    }
-
-    /**
-     * Try to recover session from drive (requires email verification)
-     */
-    async recoverFromDrive(rootHandle, email) {
-        const driveSession = await this.loadSessionFromDrive(rootHandle);
-        if (!driveSession || !driveSession.session) {
-            return { success: false, error: 'No session found on drive' };
-        }
-
-        // Validate the session with provided email
-        const result = await this._validateCode(driveSession.session, email);
-
-        if (result.valid) {
-            // Recover the session
-            this._sessionData = driveSession.session;
-            this._prefsData = {
-                ...driveSession.prefs,
-                lastSeen: new Date().toISOString()
-            };
-            this._saveSession();
-            this._savePrefs();
-
-            return {
-                success: true,
-                expiryDate: result.expiryDate,
-                daysRemaining: result.daysRemaining
-            };
-        }
-
-        return {
-            success: false,
-            error: result.error,
-            expired: result.expired
-        };
-    }
-
-    /**
-     * Check if drive has a session file
-     */
-    async driveHasSession(rootHandle) {
-        try {
-            const configDir = await this._getConfigDir(rootHandle);
-            if (!configDir) return false;
-
-            await configDir.getFileHandle('.session');
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    /**
-     * Sync session to drive after activation
-     */
-    async syncToDrive(rootHandle) {
-        if (!rootHandle) return false;
-
-        // Save session to drive
-        const saved = await this.saveSessionToDrive(rootHandle);
-
-        // Ensure drive has an ID
-        await this.getDriveId(rootHandle);
-
-        return saved;
-    }
-
-    /**
-     * Check drive for session and prompt recovery if found
-     */
-    async checkDriveRecovery(rootHandle) {
-        // Skip if already have active session
-        const hasSession = await this.hasActiveSession();
-        if (hasSession) {
-            // Just sync current session to drive
-            await this.syncToDrive(rootHandle);
-            return;
-        }
-
-        // Check if drive has session
-        const hasDriveSession = await this.driveHasSession(rootHandle);
-        if (!hasDriveSession) return;
-
-        // Store handle for later use
-        this._pendingDriveHandle = rootHandle;
-
-        // Prompt user for email to recover
-        this._showDriveRecoveryModal();
-    }
-
-    /**
-     * Show recovery modal for drive session
-     */
-    _showDriveRecoveryModal() {
-        const modal = document.createElement('div');
-        modal.className = 'session-modal';
-        modal.id = 'driveRecoveryModal';
-
-        modal.innerHTML = `
+    modal.innerHTML = `
             <div class="session-modal-overlay"></div>
             <div class="session-modal-panel" style="max-width: 380px;">
                 <div class="session-modal-header">
@@ -2047,75 +2040,78 @@ class SessionManager {
             </div>
         `;
 
-        document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-        // Bind events
-        const closeBtn = modal.querySelector('.session-modal-close');
-        const skipBtn = modal.querySelector('#driveRecoverySkip');
-        const submitBtn = modal.querySelector('#driveRecoverySubmit');
-        const emailInput = modal.querySelector('#driveRecoveryEmail');
-        const errorDiv = modal.querySelector('#driveRecoveryError');
+    // Bind events
+    const closeBtn = modal.querySelector('.session-modal-close');
+    const skipBtn = modal.querySelector('#driveRecoverySkip');
+    const submitBtn = modal.querySelector('#driveRecoverySubmit');
+    const emailInput = modal.querySelector('#driveRecoveryEmail');
+    const errorDiv = modal.querySelector('#driveRecoveryError');
 
-        const closeModal = () => {
-            modal.remove();
-            this._pendingDriveHandle = null;
-        };
+    const closeModal = () => {
+      modal.remove();
+      this._pendingDriveHandle = null;
+    };
 
-        closeBtn.addEventListener('click', closeModal);
-        skipBtn.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    skipBtn.addEventListener('click', closeModal);
 
-        // Only close if click started AND ended on overlay (prevents close during text selection)
-        const overlay = modal.querySelector('.session-modal-overlay');
-        let mouseDownOnOverlay = false;
-        overlay.addEventListener('mousedown', (e) => {
-            mouseDownOnOverlay = e.target === overlay;
-        });
-        overlay.addEventListener('click', (e) => {
-            if (mouseDownOnOverlay && e.target === overlay) {
-                closeModal();
-            }
-        });
+    // Only close if click started AND ended on overlay (prevents close during text selection)
+    const overlay = modal.querySelector('.session-modal-overlay');
+    let mouseDownOnOverlay = false;
+    overlay.addEventListener('mousedown', (e) => {
+      mouseDownOnOverlay = e.target === overlay;
+    });
+    overlay.addEventListener('click', (e) => {
+      if (mouseDownOnOverlay && e.target === overlay) {
+        closeModal();
+      }
+    });
 
-        submitBtn.addEventListener('click', async () => {
-            const email = emailInput.value.trim();
-            if (!email) {
-                errorDiv.textContent = 'Please enter your email';
-                errorDiv.style.display = 'block';
-                return;
-            }
+    submitBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email) {
+        errorDiv.textContent = 'Please enter your email';
+        errorDiv.style.display = 'block';
+        return;
+      }
 
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Verifying...';
-            errorDiv.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying...';
+      errorDiv.style.display = 'none';
 
-            const result = await this.recoverFromDrive(this._pendingDriveHandle, email);
+      const result = await this.recoverFromDrive(
+        this._pendingDriveHandle,
+        email
+      );
 
-            if (result.success) {
-                this._updateHeaderButton();
-                closeModal();
-                this._showRecoverySuccess(result.daysRemaining);
-            } else {
-                errorDiv.textContent = result.expired
-                    ? 'This license has expired. Please renew at teslacamviewer.com'
-                    : 'Email does not match the license on this drive';
-                errorDiv.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Recover';
-            }
-        });
+      if (result.success) {
+        this._updateHeaderButton();
+        closeModal();
+        this._showRecoverySuccess(result.daysRemaining);
+      } else {
+        errorDiv.textContent = result.expired
+          ? 'This license has expired. Please renew at teslacamviewer.com'
+          : 'Email does not match the license on this drive';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Recover';
+      }
+    });
 
-        emailInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitBtn.click();
-        });
-    }
+    emailInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitBtn.click();
+    });
+  }
 
-    /**
-     * Show success message after recovery
-     */
-    _showRecoverySuccess(daysRemaining) {
-        const toast = document.createElement('div');
-        toast.className = 'session-toast';
-        toast.innerHTML = `
+  /**
+   * Show success message after recovery
+   */
+  _showRecoverySuccess(daysRemaining) {
+    const toast = document.createElement('div');
+    toast.className = 'session-toast';
+    toast.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
                 <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #4caf50;">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
@@ -2123,47 +2119,48 @@ class SessionManager {
                 <span>License recovered! ${daysRemaining} days remaining</span>
             </div>
         `;
-        toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: var(--bg-secondary); color: var(--text-primary); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10000; animation: slideIn 0.3s ease;';
-        document.body.appendChild(toast);
+    toast.style.cssText =
+      'position: fixed; bottom: 20px; right: 20px; background: var(--bg-secondary); color: var(--text-primary); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10000; animation: slideIn 0.3s ease;';
+    document.body.appendChild(toast);
 
-        setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
+    setTimeout(() => {
+      toast.style.animation = 'fadeOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+
+  // ==================== UI Methods ====================
+
+  /**
+   * Show the session management modal
+   */
+  showSessionModal() {
+    if (this._modal) {
+      this._modal.classList.remove('hidden');
+      this._updateModalContent();
+      return;
     }
 
-    // ==================== UI Methods ====================
+    this._createModal();
+    this._updateModalContent();
+  }
 
-    /**
-     * Show the session management modal
-     */
-    showSessionModal() {
-        if (this._modal) {
-            this._modal.classList.remove('hidden');
-            this._updateModalContent();
-            return;
-        }
-
-        this._createModal();
-        this._updateModalContent();
+  /**
+   * Hide the session modal
+   */
+  hideSessionModal() {
+    if (this._modal) {
+      this._modal.classList.add('hidden');
     }
+  }
 
-    /**
-     * Hide the session modal
-     */
-    hideSessionModal() {
-        if (this._modal) {
-            this._modal.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Create the session modal DOM
-     */
-    _createModal() {
-        this._modal = document.createElement('div');
-        this._modal.className = 'session-modal';
-        this._modal.innerHTML = `
+  /**
+   * Create the session modal DOM
+   */
+  _createModal() {
+    this._modal = document.createElement('div');
+    this._modal.className = 'session-modal';
+    this._modal.innerHTML = `
             <div class="session-modal-overlay"></div>
             <div class="session-modal-panel">
                 <div class="session-modal-header">
@@ -2176,25 +2173,14 @@ class SessionManager {
                 </div>
                 <div class="session-modal-content">
                     <div class="session-status">
-                        <div class="session-status-icon free">
+                        <div class="session-status-icon licensed">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
                             </svg>
                         </div>
                         <div class="session-status-info">
-                            <h3 id="sessionStatusTitle">Free Tier</h3>
-                            <p id="sessionStatusDesc">Limited features</p>
-                        </div>
-                    </div>
-
-                    <div class="session-usage" id="sessionUsageSection">
-                        <div class="session-usage-item">
-                            <div class="label">Events Today</div>
-                            <div class="value" id="eventsUsage">0 / 10</div>
-                        </div>
-                        <div class="session-usage-item">
-                            <div class="label">Exports Used</div>
-                            <div class="value" id="exportsUsage">0 / 2</div>
+                            <h3 id="sessionStatusTitle">Pro Version</h3>
+                            <p id="sessionStatusDesc">Unlimited access</p>
                         </div>
                     </div>
 
@@ -2229,179 +2215,178 @@ class SessionManager {
             </div>
         `;
 
-        document.body.appendChild(this._modal);
-        this._bindModalEvents();
+    document.body.appendChild(this._modal);
+    this._bindModalEvents();
+  }
+
+  /**
+   * Bind modal events
+   */
+  _bindModalEvents() {
+    const overlay = this._modal.querySelector('.session-modal-overlay');
+    const closeBtn = this._modal.querySelector('.session-modal-close');
+    const activateBtn = this._modal.querySelector('#sessionActivateBtn');
+    const buyBtn = this._modal.querySelector('#sessionBuyBtn');
+
+    // Only close if click started AND ended on overlay (prevents close during text selection)
+    let mouseDownOnOverlay = false;
+    overlay.addEventListener('mousedown', (e) => {
+      mouseDownOnOverlay = e.target === overlay;
+    });
+    overlay.addEventListener('click', (e) => {
+      if (mouseDownOnOverlay && e.target === overlay) {
+        this.hideSessionModal();
+      }
+    });
+    closeBtn.addEventListener('click', () => this.hideSessionModal());
+
+    // Route to activate or deactivate based on current session state so a
+    // single click fires a single handler. Previously we also set
+    // activateBtn.onclick in _updateModalContent, which meant every click
+    // fired BOTH handlers (e.g. activating twice on free-tier, or running
+    // activate + deactivate back-to-back while licensed).
+    activateBtn.addEventListener('click', () => {
+      if (this._sessionData && this._prefsData) {
+        this._handleDeactivate();
+      } else {
+        this._handleActivate();
+      }
+    });
+    buyBtn.addEventListener('click', () => {
+      window.open('https://www.natemccomb.store/shop', '_blank');
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'Escape' &&
+        this._modal &&
+        !this._modal.classList.contains('hidden')
+      ) {
+        this.hideSessionModal();
+      }
+    });
+  }
+
+  /**
+   * Update modal content based on current state
+   */
+  async _updateModalContent() {
+      const hasSession = await this.hasActiveSession();
+      const info = this.getSessionInfo();
+
+      const statusIcon = this._modal.querySelector('.session-status-icon');
+      const statusTitle = this._modal.querySelector('#sessionStatusTitle');
+      const statusDesc = this._modal.querySelector('#sessionStatusDesc');
+      const activateSection = this._modal.querySelector('#sessionActivateSection');
+      const licensedSection = this._modal.querySelector('#sessionLicensedSection');
+      const activateBtn = this._modal.querySelector('#sessionActivateBtn');
+
+      if (hasSession && info) {
+          statusIcon.className = 'session-status-icon licensed';
+          statusTitle.textContent = 'Licensed';
+          statusDesc.textContent = `${info.daysRemaining} days remaining`;
+          activateSection.style.display = 'none';
+          licensedSection.style.display = 'block';
+          activateBtn.textContent = 'Deactivate';
+
+          const expirySpan = this._modal.querySelector('#sessionExpiry');
+          expirySpan.textContent = info.expiryDate.toLocaleDateString();
+      } else {
+          statusIcon.className = 'session-status-icon licensed';
+          statusTitle.textContent = 'Pro Version';
+          statusDesc.textContent = 'Unlimited access';
+          activateSection.style.display = 'block';
+          licensedSection.style.display = 'none';
+          activateBtn.textContent = 'Activate';
+      }
+  }
+
+  /**
+   * Handle activate button click
+   */
+  async _handleActivate() {
+    const codeInput = this._modal.querySelector('#sessionCodeInput');
+    const emailInput = this._modal.querySelector('#sessionEmailInput');
+    const errorDiv = this._modal.querySelector('#sessionError');
+    const activateBtn = this._modal.querySelector('#sessionActivateBtn');
+
+    const code = codeInput.value.trim();
+    const email = emailInput.value.trim();
+
+    if (!code || !email) {
+      errorDiv.textContent = 'Please enter both license code and email.';
+      errorDiv.classList.add('visible');
+      return;
     }
 
-    /**
-     * Bind modal events
-     */
-    _bindModalEvents() {
-        const overlay = this._modal.querySelector('.session-modal-overlay');
-        const closeBtn = this._modal.querySelector('.session-modal-close');
-        const activateBtn = this._modal.querySelector('#sessionActivateBtn');
-        const buyBtn = this._modal.querySelector('#sessionBuyBtn');
+    activateBtn.disabled = true;
+    activateBtn.textContent = 'Activating...';
+    errorDiv.classList.remove('visible');
 
-        // Only close if click started AND ended on overlay (prevents close during text selection)
-        let mouseDownOnOverlay = false;
-        overlay.addEventListener('mousedown', (e) => {
-            mouseDownOnOverlay = e.target === overlay;
-        });
-        overlay.addEventListener('click', (e) => {
-            if (mouseDownOnOverlay && e.target === overlay) {
-                this.hideSessionModal();
-            }
-        });
-        closeBtn.addEventListener('click', () => this.hideSessionModal());
+    let activated = false;
+    try {
+      const result = await this.activateSession(code, email);
 
-        // Route to activate or deactivate based on current session state so a
-        // single click fires a single handler. Previously we also set
-        // activateBtn.onclick in _updateModalContent, which meant every click
-        // fired BOTH handlers (e.g. activating twice on free-tier, or running
-        // activate + deactivate back-to-back while licensed).
-        activateBtn.addEventListener('click', () => {
-            if (this._sessionData && this._prefsData) {
-                this._handleDeactivate();
-            } else {
-                this._handleActivate();
-            }
-        });
-        buyBtn.addEventListener('click', () => {
-            window.open('https://www.natemccomb.store/shop', '_blank');
-        });
-
-        // ESC to close
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this._modal && !this._modal.classList.contains('hidden')) {
-                this.hideSessionModal();
-            }
-        });
-    }
-
-    /**
-     * Update modal content based on current state
-     */
-    async _updateModalContent() {
-        const hasSession = await this.hasActiveSession();
-        const usage = this.getUsageStats();
-        const info = this.getSessionInfo();
-
-        const statusIcon = this._modal.querySelector('.session-status-icon');
-        const statusTitle = this._modal.querySelector('#sessionStatusTitle');
-        const statusDesc = this._modal.querySelector('#sessionStatusDesc');
-        const usageSection = this._modal.querySelector('#sessionUsageSection');
-        const activateSection = this._modal.querySelector('#sessionActivateSection');
-        const licensedSection = this._modal.querySelector('#sessionLicensedSection');
-        const activateBtn = this._modal.querySelector('#sessionActivateBtn');
-        const eventsUsage = this._modal.querySelector('#eventsUsage');
-        const exportsUsage = this._modal.querySelector('#exportsUsage');
-
-        if (hasSession && info) {
-            statusIcon.className = 'session-status-icon licensed';
-            statusTitle.textContent = 'Licensed';
-            statusDesc.textContent = `${info.daysRemaining} days remaining`;
-            usageSection.style.display = 'none';
-            activateSection.style.display = 'none';
-            licensedSection.style.display = 'block';
-            activateBtn.textContent = 'Deactivate';
-
-            const expirySpan = this._modal.querySelector('#sessionExpiry');
-            expirySpan.textContent = info.expiryDate.toLocaleDateString();
-        } else {
-            statusIcon.className = 'session-status-icon free';
-            statusTitle.textContent = 'Free Tier';
-            statusDesc.textContent = 'Limited features';
-            usageSection.style.display = 'grid';
-            activateSection.style.display = 'block';
-            licensedSection.style.display = 'none';
-            activateBtn.textContent = 'Activate';
-
-            eventsUsage.textContent = `${usage.eventsViewedToday} / ${usage.eventsLimit}`;
-            exportsUsage.textContent = `${usage.exportsUsed} / ${usage.exportsLimit}`;
+      if (result.success) {
+        activated = true;
+        // Sync to drive if available
+        if (window.app?.folderParser?.rootHandle) {
+          await this.syncToDrive(window.app.folderParser.rootHandle);
         }
+
+        // Update UI — await so the button flips to "Deactivate" before
+        // the success modal appears on top.
+        await this._updateModalContent();
+        this._updateHeaderButton();
+
+        // Clear inputs
+        codeInput.value = '';
+        emailInput.value = '';
+
+        // Show license info modal for first-time activation
+        this._showLicenseInfoModal();
+      } else {
+        errorDiv.textContent = result.error || 'Activation failed';
+        errorDiv.classList.add('visible');
+      }
+    } catch (e) {
+      errorDiv.textContent = 'Activation error: ' + e.message;
+      errorDiv.classList.add('visible');
+    } finally {
+      activateBtn.disabled = false;
+      // Only reset label on failure; on success _updateModalContent has
+      // already set it to "Deactivate" and we must not clobber that.
+      if (!activated) {
+        activateBtn.textContent = 'Activate';
+      }
     }
+  }
 
-    /**
-     * Handle activate button click
-     */
-    async _handleActivate() {
-        const codeInput = this._modal.querySelector('#sessionCodeInput');
-        const emailInput = this._modal.querySelector('#sessionEmailInput');
-        const errorDiv = this._modal.querySelector('#sessionError');
-        const activateBtn = this._modal.querySelector('#sessionActivateBtn');
-
-        const code = codeInput.value.trim();
-        const email = emailInput.value.trim();
-
-        if (!code || !email) {
-            errorDiv.textContent = 'Please enter both license code and email.';
-            errorDiv.classList.add('visible');
-            return;
-        }
-
-        activateBtn.disabled = true;
-        activateBtn.textContent = 'Activating...';
-        errorDiv.classList.remove('visible');
-
-        let activated = false;
-        try {
-            const result = await this.activateSession(code, email);
-
-            if (result.success) {
-                activated = true;
-                // Sync to drive if available
-                if (window.app?.folderParser?.rootHandle) {
-                    await this.syncToDrive(window.app.folderParser.rootHandle);
-                }
-
-                // Update UI — await so the button flips to "Deactivate" before
-                // the success modal appears on top.
-                await this._updateModalContent();
-                this._updateHeaderButton();
-
-                // Clear inputs
-                codeInput.value = '';
-                emailInput.value = '';
-
-                // Show license info modal for first-time activation
-                this._showLicenseInfoModal();
-            } else {
-                errorDiv.textContent = result.error || 'Activation failed';
-                errorDiv.classList.add('visible');
-            }
-        } catch (e) {
-            errorDiv.textContent = 'Activation error: ' + e.message;
-            errorDiv.classList.add('visible');
-        } finally {
-            activateBtn.disabled = false;
-            // Only reset label on failure; on success _updateModalContent has
-            // already set it to "Deactivate" and we must not clobber that.
-            if (!activated) {
-                activateBtn.textContent = 'Activate';
-            }
-        }
+  /**
+   * Handle deactivate button click
+   */
+  _handleDeactivate() {
+    if (
+      confirm(
+        'Are you sure you want to deactivate your license on this device?'
+      )
+    ) {
+      this.deactivateSession();
+      this._updateModalContent();
+      this._updateHeaderButton();
     }
+  }
 
-    /**
-     * Handle deactivate button click
-     */
-    _handleDeactivate() {
-        if (confirm('Are you sure you want to deactivate your license on this device?')) {
-            this.deactivateSession();
-            this._updateModalContent();
-            this._updateHeaderButton();
-        }
-    }
-
-    /**
-     * Show license info modal after first-time activation
-     * Explains how the license works, privacy, and portability
-     */
-    _showLicenseInfoModal() {
-        const t = (key) => window.i18n?.t(key) || key.split('.').pop();
-        const modal = document.createElement('div');
-        modal.className = 'license-info-modal-overlay';
-        modal.innerHTML = `
+  /**
+   * Show license info modal after first-time activation
+   * Explains how the license works, privacy, and portability
+   */
+  _showLicenseInfoModal() {
+    const t = (key) => window.i18n?.t(key) || key.split('.').pop();
+    const modal = document.createElement('div');
+    modal.className = 'license-info-modal-overlay';
+    modal.innerHTML = `
             <div class="license-info-modal">
                 <div class="license-info-header">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32" style="color: var(--success-color, #4CAF50);">
@@ -2452,11 +2437,11 @@ class SessionManager {
             </div>
         `;
 
-        // Add styles if not already present
-        if (!document.getElementById('licenseInfoStyles')) {
-            const styles = document.createElement('style');
-            styles.id = 'licenseInfoStyles';
-            styles.textContent = `
+    // Add styles if not already present
+    if (!document.getElementById('licenseInfoStyles')) {
+      const styles = document.createElement('style');
+      styles.id = 'licenseInfoStyles';
+      styles.textContent = `
                 .license-info-modal-overlay {
                     position: fixed;
                     top: 0;
@@ -2544,123 +2529,123 @@ class SessionManager {
                     background: var(--accent-hover, #3a8eef);
                 }
             `;
-            document.head.appendChild(styles);
-        }
-
-        document.body.appendChild(modal);
-
-        // Close on button click
-        const closeBtn = modal.querySelector('.license-info-btn');
-        closeBtn.addEventListener('click', () => {
-            modal.remove();
-        });
-
-        // Close on overlay click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
-        });
-
-        // Close on Escape
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') {
-                modal.remove();
-                document.removeEventListener('keydown', handleEscape);
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
+      document.head.appendChild(styles);
     }
 
-    /**
-     * Update the header button based on session state
-     */
-    async _updateHeaderButton() {
-        const btn = document.getElementById('sessionBtn');
-        const text = document.getElementById('sessionBtnText');
-        if (!btn || !text) return;
+    document.body.appendChild(modal);
 
-        const hasSession = await this.hasActiveSession();
+    // Close on button click
+    const closeBtn = modal.querySelector('.license-info-btn');
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
 
-        if (hasSession) {
-            btn.classList.add('licensed');
-            text.textContent = 'Pro';
-        } else {
-            btn.classList.remove('licensed');
-            text.textContent = 'Free';
-        }
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+
+    // Close on Escape
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        modal.remove();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  }
+
+  /**
+   * Update the header button based on session state
+   */
+  async _updateHeaderButton() {
+    const btn = document.getElementById('sessionBtn');
+    const text = document.getElementById('sessionBtnText');
+    if (!btn || !text) return;
+
+    const hasSession = await this.hasActiveSession();
+
+    if (hasSession) {
+        btn.classList.add('licensed');
+        text.textContent = 'Pro';
+    } else {
+        btn.classList.add('licensed');
+        text.textContent = 'Pro';
+    }
+  }
+
+  /**
+   * Show expiry warning banner if needed
+   */
+  showExpiryWarningIfNeeded() {
+    const warning = this.getExpiryWarning();
+    if (!warning) return;
+
+    // Check if already shown today
+    const shownKey = 'tcv_expiry_warning_shown';
+    const today = this._getTodayString();
+    const lastShown = localStorage.getItem(shownKey);
+
+    if (warning.level === 'warning' && lastShown === today) {
+      return; // Only show warning level once per day
     }
 
-    /**
-     * Show expiry warning banner if needed
-     */
-    showExpiryWarningIfNeeded() {
-        const warning = this.getExpiryWarning();
-        if (!warning) return;
-
-        // Check if already shown today
-        const shownKey = 'tcv_expiry_warning_shown';
-        const today = this._getTodayString();
-        const lastShown = localStorage.getItem(shownKey);
-
-        if (warning.level === 'warning' && lastShown === today) {
-            return; // Only show warning level once per day
-        }
-
-        // Create banner
-        const banner = document.createElement('div');
-        banner.className = `session-expiry-banner ${warning.level}`;
-        banner.innerHTML = `
+    // Create banner
+    const banner = document.createElement('div');
+    banner.className = `session-expiry-banner ${warning.level}`;
+    banner.innerHTML = `
             <span>${warning.message}</span>
             <button class="renew-btn">Renew Now</button>
             ${warning.level === 'warning' ? '<button class="dismiss">✕</button>' : ''}
         `;
 
-        document.body.appendChild(banner);
+    document.body.appendChild(banner);
 
-        // Push down header content
-        document.body.style.paddingTop = banner.offsetHeight + 'px';
+    // Push down header content
+    document.body.style.paddingTop = banner.offsetHeight + 'px';
 
-        // Bind events
-        banner.querySelector('.renew-btn').addEventListener('click', () => {
-            window.open('https://www.natemccomb.store/shop', '_blank');
-        });
+    // Bind events
+    banner.querySelector('.renew-btn').addEventListener('click', () => {
+      window.open('https://www.natemccomb.store/shop', '_blank');
+    });
 
-        const dismissBtn = banner.querySelector('.dismiss');
-        if (dismissBtn) {
-            dismissBtn.addEventListener('click', () => {
-                banner.remove();
-                document.body.style.paddingTop = '';
-                localStorage.setItem(shownKey, today);
-            });
-        }
+    const dismissBtn = banner.querySelector('.dismiss');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        banner.remove();
+        document.body.style.paddingTop = '';
+        localStorage.setItem(shownKey, today);
+      });
+    }
+  }
+
+  /**
+   * Show limit reached modal
+   */
+  showLimitModal(type) {
+    const modal = document.createElement('div');
+    modal.className = 'session-modal';
+
+    let title, message;
+    if (type === 'daily') {
+      title = 'Daily Limit Reached';
+      // Friendlier copy that reassures the user they keep access to
+      // what they've already opened, instead of a hard-stop feel.
+      message = `You've viewed 10 events today. You can still re-open any of those 10 events to keep exploring features — only NEW events are gated. Limit resets at midnight.`;
+    } else if (type === 'export') {
+      title = 'Export Limit Reached';
+      // Mirror the daily-view modal copy: reassure the user they
+      // can still re-export their already-exported events. Only
+      // NEW events are gated.
+      message = `You've used your 2 free export events today. You can still re-export either of those events at any time — only NEW exports are gated. Limit resets at midnight.`;
+    } else {
+      title = 'Feature Locked';
+      message = 'This feature requires a Pro license.';
     }
 
-    /**
-     * Show limit reached modal
-     */
-    showLimitModal(type) {
-        const modal = document.createElement('div');
-        modal.className = 'session-modal';
-
-        let title, message;
-        if (type === 'daily') {
-            title = 'Daily Limit Reached';
-            // Friendlier copy that reassures the user they keep access to
-            // what they've already opened, instead of a hard-stop feel.
-            message = `You've viewed 10 events today. You can still re-open any of those 10 events to keep exploring features — only NEW events are gated. Limit resets at midnight.`;
-        } else if (type === 'export') {
-            title = 'Export Limit Reached';
-            // Mirror the daily-view modal copy: reassure the user they
-            // can still re-export their already-exported events. Only
-            // NEW events are gated.
-            message = `You've used your 2 free export events today. You can still re-export either of those events at any time — only NEW exports are gated. Limit resets at midnight, or upgrade for unlimited exports.`;
-        } else {
-            title = 'Feature Locked';
-            message = 'This feature requires a TeslaCamViewer Pro license.';
-        }
-
-        modal.innerHTML = `
+    modal.innerHTML = `
             <div class="session-modal-overlay"></div>
             <div class="session-modal-panel" style="max-width: 380px;">
                 <div class="session-modal-header">
@@ -2673,7 +2658,6 @@ class SessionManager {
                 </div>
                 <div class="session-modal-content">
                     <p style="margin-bottom: 1rem;">${message}</p>
-                    <p style="color: var(--accent);">Upgrade for unlimited access - just $5.99/year</p>
                 </div>
                 <div class="session-modal-footer">
                     <button class="session-btn-secondary close-btn">
@@ -2684,29 +2668,31 @@ class SessionManager {
             </div>
         `;
 
-        document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-        const closeModal = () => modal.remove();
+    const closeModal = () => modal.remove();
 
-        // Only close if click started AND ended on overlay (prevents close during text selection)
-        const overlay = modal.querySelector('.session-modal-overlay');
-        let mouseDownOnOverlay = false;
-        overlay.addEventListener('mousedown', (e) => {
-            mouseDownOnOverlay = e.target === overlay;
-        });
-        overlay.addEventListener('click', (e) => {
-            if (mouseDownOnOverlay && e.target === overlay) {
-                closeModal();
-            }
-        });
+    // Only close if click started AND ended on overlay (prevents close during text selection)
+    const overlay = modal.querySelector('.session-modal-overlay');
+    let mouseDownOnOverlay = false;
+    overlay.addEventListener('mousedown', (e) => {
+      mouseDownOnOverlay = e.target === overlay;
+    });
+    overlay.addEventListener('click', (e) => {
+      if (mouseDownOnOverlay && e.target === overlay) {
+        closeModal();
+      }
+    });
 
-        modal.querySelector('.session-modal-close').addEventListener('click', closeModal);
-        modal.querySelector('.close-btn').addEventListener('click', closeModal);
-        modal.querySelector('.upgrade-btn').addEventListener('click', () => {
-            closeModal();
-            this.showSessionModal();
-        });
-    }
+    modal
+      .querySelector('.session-modal-close')
+      .addEventListener('click', closeModal);
+    modal.querySelector('.close-btn').addEventListener('click', closeModal);
+    modal.querySelector('.upgrade-btn').addEventListener('click', () => {
+      closeModal();
+      this.showSessionModal();
+    });
+  }
 }
 
 // Export for use in app.js
