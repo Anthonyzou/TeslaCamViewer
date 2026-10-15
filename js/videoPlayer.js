@@ -58,7 +58,9 @@ class VideoPlayer {
     this.seek(t);
   }
 
-  get duration() { return this.videos.front.duration; }
+  get duration() {
+    return this.videos.front.duration;
+  }
 
   /**
    * Backward compatibility getter for components that still expect an array
@@ -66,10 +68,14 @@ class VideoPlayer {
    */
   get cachedClipDurations() {
     if (!this.currentEvent) return [];
-    return this.currentEvent.clipGroups.map(g => g.clips.front?.duration || 60);
+    return this.currentEvent.clipGroups.map(
+      (g) => g.clips.front?.duration || 60
+    );
   }
 
-  get paused() { return this.videos.front.paused; }
+  get paused() {
+    return this.videos.front.paused;
+  }
   get playbackRate() {
     return this.videos.front.playbackRate;
   }
@@ -134,10 +140,8 @@ class VideoPlayer {
       video.addEventListener('waiting', () =>
         this.handleBufferingStart(camera)
       );
-      video.addEventListener('stalled', () =>
-        this.handleBufferingStart(camera)
-      );
       video.addEventListener('canplay', () => this.handleBufferingEnd(camera));
+      video.addEventListener('error', () => this.handleBufferingEnd(camera));
 
       video.controls = false;
       video.muted = true;
@@ -183,6 +187,7 @@ class VideoPlayer {
     const currentRate = this.playbackRate;
 
     if (wasPlaying) this.pause();
+    this.resetBufferingState();
 
     this.resetAllVideoLabelStates();
     this.currentClipIndex = clipIndex;
@@ -324,6 +329,14 @@ class VideoPlayer {
     for (const video of Object.values(this.videos)) video.src = '';
     this.currentEvent = null;
     this.currentClipIndex = -1;
+    this.resetBufferingState();
+  }
+
+  resetBufferingState() {
+    this.bufferingState.bufferingCameras.clear();
+    this.bufferingState.isBuffering = false;
+    if (this.onBufferingChange)
+      this.onBufferingChange(this.getBufferingState());
   }
 
   handleBufferingStart(camera) {
