@@ -156,7 +156,6 @@ TeslaCamViewer connects to the following external services for enhanced function
 | Provider                                       | Attribution                   |
 | ---------------------------------------------- | ----------------------------- |
 | [OpenStreetMap](https://www.openstreetmap.org) | © OpenStreetMap contributors  |
-| [Carto](https://carto.com)                     | © OpenStreetMap © CARTO       |
 | [Stadia Maps](https://stadiamaps.com)          | © Stadia Maps © OpenStreetMap |
 
 ### User-Initiated Links

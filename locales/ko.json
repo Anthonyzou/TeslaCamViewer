@@ -252,9 +252,8 @@
       "darkMode": "Dark Mode Map",
       "darkModeHint": "Use dark map tiles (recommended for dashcam viewing)",
       "tileProvider": "Map Tile Provider",
-      "tileProviderHint": "Try OpenStreetMap if maps don't load (e.g., in China)",
-      "providerCarto": "Carto (Default)",
-      "providerOsm": "OpenStreetMap",
+      "tileProviderHint": "OpenStreetMap이 로드되지 않으면 Stadia Maps를 사용해 보세요",
+      "providerOsm": "OpenStreetMap (기본값)",
       "providerStadia": "Stadia Maps",
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }

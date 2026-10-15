@@ -460,7 +460,6 @@ class SettingsManager {
                         <div class="setting-row">
                             <label for="setting-mapTileProvider">${this.t('settings.miniMap.tileProvider')}</label>
                             <select id="setting-mapTileProvider" class="setting-select">
-                                <option value="carto">${this.t('settings.miniMap.providerCarto')}</option>
                                 <option value="osm">${this.t('settings.miniMap.providerOsm')}</option>
                                 <option value="stadia">${this.t('settings.miniMap.providerStadia')}</option>
                             </select>

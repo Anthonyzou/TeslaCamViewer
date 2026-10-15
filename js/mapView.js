@@ -35,25 +35,10 @@ class MapView {
     this.currentTileLayer = null;
     this.isDarkMode = false;
     this.tileProvider =
-      localStorage.getItem('teslacam_map_provider') || 'carto';
+      localStorage.getItem('teslacam_map_provider') || 'osm';
 
     // Tile provider configurations
     this.TILE_PROVIDERS = {
-      carto: {
-        name: 'Carto (Default)',
-        light: {
-          url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?api_key=eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfMWI3enc5anciLCJqdGkiOiI0NzNiNjlhZGQwZTBmNTc3NDg0MTRhNGM0ZTlkODg4NiJ9.d-9N7s1ccuJm_qDiVQK8kM8nuD2tJwgADsgH1Fy9tFw',
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-        },
-        dark: {
-          url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfMWI3enc5anciLCJqdGkiOiI0NzNiNjlhZGQwZTBmNTc3NDg0MTRhNGM0ZTlkODg4NiJ9.d-9N7s1ccuJm_qDiVQK8kM8nuD2tJwgADsgH1Fy9tFw',
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-        },
-      },
       osm: {
         name: 'OpenStreetMap',
         light: {
@@ -89,7 +74,7 @@ class MapView {
 
     // Legacy TILE_LAYERS for backward compatibility
     this.TILE_LAYERS =
-      this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.carto;
+      this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
     this.DARK_MODE_KEY = 'teslacam_map_dark_mode';
 
     // Cache keys for localStorage persistence

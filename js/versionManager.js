@@ -296,7 +296,7 @@ class VersionManager {
         features: [
           {
             id: 'map-tile-provider',
-            text: 'New map tile provider setting: switch between Carto, OpenStreetMap, or Stadia Maps (fixes maps not loading in China)',
+            text: 'New map tile provider setting: switch between OpenStreetMap or Stadia Maps',
             elementSelector: null,
           },
           {
@@ -318,7 +318,7 @@ class VersionManager {
         features: [
           {
             id: 'map-light-tiles',
-            text: 'Fixed map light mode tiles not loading (switched to CARTO)',
+            text: 'Fixed map light mode tiles not loading',
             elementSelector: null,
           },
           {
