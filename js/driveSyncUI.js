@@ -158,14 +158,6 @@ class DriveSyncUI {
                             <div class="sync-results-scroll">
                                 <div id="resultsGrid" class="sync-results-grid-compact"></div>
                             </div>
-
-                            <div id="notesComparisonSection" class="sync-notes-compact hidden">
-                                <label class="sync-checkbox-compact">
-                                    <input type="checkbox" id="syncNotesCheckbox" checked>
-                                    <span>${this.t('driveSync.includeNotes')}</span>
-                                    <span id="notesComparisonText" class="sync-notes-count">(0)</span>
-                                </label>
-                            </div>
                         </div>
 
                         <!-- Progress Section -->
@@ -279,10 +271,6 @@ class DriveSyncUI {
                             <span>${this.t('syncSettings.verifyAfterCopy')}</span>
                         </label>
                         <label class="sync-checkbox-label">
-                            <input type="checkbox" id="settingSyncNotes" ${this.driveSync.settings.syncNotes ? 'checked' : ''}>
-                            <span>${this.t('syncSettings.syncNotes')}</span>
-                        </label>
-                        <label class="sync-checkbox-label">
                             <input type="checkbox" id="settingWriteSyncFile" ${this.driveSync.settings.writeSyncFile ? 'checked' : ''}>
                             <span>${this.t('syncSettings.writeSyncFile')}</span>
                         </label>
@@ -290,14 +278,6 @@ class DriveSyncUI {
                             <input type="checkbox" id="settingConfirmDelete" ${this.driveSync.settings.confirmBeforeDelete ? 'checked' : ''}>
                             <span>${this.t('syncSettings.confirmBeforeDelete')}</span>
                         </label>
-
-                        <div class="sync-settings-group">
-                            <label>${this.t('syncSettings.noteConflict')}</label>
-                            <select id="settingNoteConflict" class="sync-settings-select">
-                                <option value="ask" ${this.driveSync.settings.noteConflictMode === 'ask' ? 'selected' : ''}>${this.t('syncSettings.askEachTime')}</option>
-                                <option value="merge" ${this.driveSync.settings.noteConflictMode === 'merge' ? 'selected' : ''}>${this.t('syncSettings.mergeAutomatically')}</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="sync-settings-actions">
                         <button id="saveSettingsBtn" class="sync-save-btn">${this.t('syncSettings.saveSettings')}</button>
@@ -570,18 +550,6 @@ class DriveSyncUI {
             ${this.renderResultCategory('same', 'Already synced', results.same, false, true)}
         `;
 
-        // Notes comparison
-        const notesSection = document.getElementById('notesComparisonSection');
-        const notesComparison = results.notesComparison;
-        const notesCount = notesComparison.sourceOnly.length +
-                          notesComparison.newerOnSource.length +
-                          notesComparison.conflict.length;
-
-        if (notesCount > 0) {
-            notesSection.classList.remove('hidden');
-            document.getElementById('notesComparisonText').textContent = `(${notesCount})`;
-        }
-
         // Attach checkbox listeners
         document.querySelectorAll('.sync-category-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => this.onCategoryToggle(e));
@@ -744,8 +712,7 @@ class DriveSyncUI {
         try {
             await this.driveSync.startSync({
                 selectedEvents,
-                mode: this.syncMode,
-                syncNotes: document.getElementById('syncNotesCheckbox')?.checked
+                mode: this.syncMode
             });
         } catch (error) {
             console.error('Sync failed:', error);
@@ -956,10 +923,8 @@ class DriveSyncUI {
     saveSettings() {
         this.driveSync.updateSettings({
             verifyAfterCopy: document.getElementById('settingVerify').checked,
-            syncNotes: document.getElementById('settingSyncNotes').checked,
             writeSyncFile: document.getElementById('settingWriteSyncFile').checked,
-            confirmBeforeDelete: document.getElementById('settingConfirmDelete').checked,
-            noteConflictMode: document.getElementById('settingNoteConflict').value
+            confirmBeforeDelete: document.getElementById('settingConfirmDelete').checked
         });
 
         this.hideSettings();

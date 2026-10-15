@@ -111,7 +111,6 @@ class TeslaCamViewerApp {
     this.sessionManager = new SessionManager();
     this.versionManager = new VersionManager();
     this.statisticsManager = new StatisticsManager();
-    this.notesManager = new NotesManager();
     this.helpModal = new HelpModal();
     this.quickStartGuide = new QuickStartGuide();
     this.b2Client = new B2Client();
@@ -144,16 +143,8 @@ class TeslaCamViewerApp {
         this._onDriveContentsChanged(driveId);
     }
 
-    // Wire up cross-references for backup system
-    this.notesManager.setBookmarksGetter((eventKey) => {
-      return this.timeline.getAllSavedBookmarks()[eventKey] || [];
-    });
-    this.timeline.setNotesGetter((eventKey) => {
-      return this.notesManager.getNotes(eventKey);
-    });
-
     // Drive sync
-    this.driveSync = new DriveSync(this.folderManager, this.notesManager);
+    this.driveSync = new DriveSync(this.folderManager);
     this.driveSyncUI = new DriveSyncUI(this.driveSync, this.folderManager);
 
     // Link settings to versionManager
@@ -185,7 +176,6 @@ class TeslaCamViewerApp {
     this.pipBtn = document.getElementById('pipBtn');
     this.enhanceBtn = document.getElementById('enhanceBtn');
     this.enhanceRegionBtn = document.getElementById('enhanceRegionBtn');
-    this.notesBtn = document.getElementById('notesBtn');
     this.markInBtn = document.getElementById('markInBtn');
     this.markOutBtn = document.getElementById('markOutBtn');
     this.clearMarksBtn = document.getElementById('clearMarksBtn');
@@ -718,20 +708,6 @@ class TeslaCamViewerApp {
     if (this.streetViewBtn) {
       this._setupStreetViewButton();
     }
-
-    // Notes & Tags
-    this.notesBtn.addEventListener('click', () => this.openNotesModal());
-    this.notesManager.onNotesChanged = (eventName) => {
-      this.updateNotesButtonState();
-      // Refresh event browser indicators if available
-      if (this.eventBrowser?.refreshNotesIndicators) {
-        this.eventBrowser.refreshNotesIndicators();
-      }
-      // Refresh filter panel to update tag dropdown
-      if (this.filterPanel?.refresh) {
-        this.filterPanel.refresh();
-      }
-    };
 
     // Clip marking
     this.markInBtn.addEventListener('click', () => this.markIn());
@@ -2518,8 +2494,7 @@ class TeslaCamViewerApp {
   async registerEventsAndLoadBackups(events) {
     if (!events || events.length === 0) return;
 
-    // Register events with NotesManager and Timeline
-    this.notesManager.registerEvents(events);
+    // Register events with Timeline
     this.timeline.registerEvents(events);
 
     // Load backup data from event folders
@@ -2533,26 +2508,6 @@ class TeslaCamViewerApp {
 
           // Merge backup data with localStorage
           for (const [eventKey, backupData] of backups) {
-            // Merge notes
-            const localNotes = this.notesManager.getNotes(eventKey);
-            const mergedNotes = window.eventDataBackup.mergeNotes(
-              localNotes,
-              backupData,
-              null // We don't track lastModified in localStorage
-            );
-
-            // Save merged notes to localStorage (won't trigger backup since it's already from backup)
-            if (mergedNotes.text || mergedNotes.tags?.length > 0) {
-              const allNotes = JSON.parse(
-                localStorage.getItem('teslacamviewer_notes') || '{}'
-              );
-              allNotes[eventKey] = mergedNotes;
-              localStorage.setItem(
-                'teslacamviewer_notes',
-                JSON.stringify(allNotes)
-              );
-            }
-
             // Merge bookmarks
             const localBookmarks =
               this.timeline.getAllSavedBookmarks()[eventKey] || [];
@@ -3323,7 +3278,6 @@ class TeslaCamViewerApp {
     this.pipBtn.disabled = true;
     this.enhanceBtn.disabled = true;
     if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = true;
-    this.notesBtn.disabled = true;
     this.markInBtn.disabled = true;
     this.markOutBtn.disabled = true;
     this.clearMarksBtn.disabled = true;
@@ -3352,7 +3306,6 @@ class TeslaCamViewerApp {
     this.pipBtn.disabled = true;
     this.enhanceBtn.disabled = true;
     if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = true;
-    this.notesBtn.disabled = true;
     this.markInBtn.disabled = true;
     this.markOutBtn.disabled = true;
     this.clearMarksBtn.disabled = true;
@@ -3390,8 +3343,6 @@ class TeslaCamViewerApp {
     this.pipBtn.disabled = !document.pictureInPictureEnabled; // Only enable if PiP is supported
     this.enhanceBtn.disabled = false;
     if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = false;
-    this.notesBtn.disabled = false;
-    this.updateNotesButtonState();
     this.markInBtn.disabled = false;
     this.markOutBtn.disabled = false;
     this.clearMarksBtn.disabled = false;
@@ -3961,37 +3912,6 @@ class TeslaCamViewerApp {
       console.error('Error generating insurance report:', error);
       this.hideLoading();
       alert(`Failed to generate insurance report: ${error.message}`);
-    }
-  }
-
-  /**
-   * Open notes modal for current event
-   */
-  openNotesModal() {
-    if (!this.currentEvent) {
-      alert('No event loaded. Please select an event first.');
-      return;
-    }
-    this.notesManager.showModal(this.currentEvent);
-  }
-
-  /**
-   * Update notes button state based on whether current event has notes
-   */
-  updateNotesButtonState() {
-    if (!this.currentEvent || !this.notesBtn) return;
-
-    // Use compoundKey for storage (multi-drive support), fallback to name for legacy events
-    const storageKey =
-      this.currentEvent.compoundKey ||
-      this.currentEvent.name ||
-      this.currentEvent.folder?.name;
-    const hasNotes = this.notesManager.hasNotes(storageKey);
-
-    if (hasNotes) {
-      this.notesBtn.classList.add('has-notes');
-    } else {
-      this.notesBtn.classList.remove('has-notes');
     }
   }
 
@@ -4750,14 +4670,6 @@ class TeslaCamViewerApp {
         event.preventDefault();
         if (!this.pipBtn.disabled) {
           this.togglePictureInPicture();
-        }
-        break;
-
-      case 'KeyN':
-        // N for Notes
-        event.preventDefault();
-        if (!this.notesBtn.disabled) {
-          this.openNotesModal();
         }
         break;
 
@@ -6568,16 +6480,6 @@ class TeslaCamViewerApp {
         category: 'App',
         keywords: 'statistics stats analytics',
         action: safe(() => this.statisticsManager?.show()),
-      },
-      {
-        id: 'open-notes',
-        title: 'Open Event Notes',
-        category: 'App',
-        shortcut: 'N',
-        keywords: 'notes tags comments',
-        action: safe(() => {
-          if (!this.notesBtn?.disabled) this.notesBtn?.click();
-        }),
       },
 
       // Tools

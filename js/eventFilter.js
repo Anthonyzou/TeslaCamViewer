@@ -16,12 +16,9 @@ class EventFilter {
             },
             searchQuery: '',
             sortOrder: 'newest', // 'newest' or 'oldest'
-            hasBookmarks: false, // Only show events with bookmarks
-            hasNotes: false, // Only show events with notes/tags
-            selectedTag: '' // Filter by specific tag
+            hasBookmarks: false // Only show events with bookmarks
         };
         this.BOOKMARKS_STORAGE_KEY = 'teslacamviewer_bookmarks';
-        this.NOTES_STORAGE_KEY = 'teslacamviewer_notes';
     }
 
     /**
@@ -45,35 +42,6 @@ class EventFilter {
     }
 
     /**
-     * Get all notes/tags data from localStorage
-     * @returns {Object}
-     */
-    getNotesData() {
-        try {
-            const stored = localStorage.getItem(this.NOTES_STORAGE_KEY);
-            return stored ? JSON.parse(stored) : {};
-        } catch (e) {
-            console.warn('Failed to load notes for filtering:', e);
-            return {};
-        }
-    }
-
-    /**
-     * Get all unique tags across all events
-     * @returns {Array<string>}
-     */
-    getAllTags() {
-        const notesData = this.getNotesData();
-        const tags = new Set();
-        Object.values(notesData).forEach(note => {
-            if (note.tags && Array.isArray(note.tags)) {
-                note.tags.forEach(tag => tags.add(tag.toLowerCase()));
-            }
-        });
-        return Array.from(tags).sort();
-    }
-
-    /**
      * Apply all active filters to events array
      * @param {Array} events
      * @returns {Array} Filtered and sorted events
@@ -86,49 +54,12 @@ class EventFilter {
         // Get bookmarked event IDs once for efficiency
         const bookmarkedIds = this.filters.hasBookmarks ? this.getBookmarkedEventIds() : null;
 
-        // Get notes data once for efficiency
-        const notesData = (this.filters.hasNotes || this.filters.selectedTag) ? this.getNotesData() : null;
-
         return events
             .filter(event => this.filterByType(event))
             .filter(event => this.filterByDate(event))
             .filter(event => this.filterBySearch(event))
             .filter(event => this.filterByBookmarks(event, bookmarkedIds))
-            .filter(event => this.filterByNotes(event, notesData))
-            .filter(event => this.filterByTag(event, notesData))
             .sort((a, b) => this.sortEvents(a, b));
-    }
-
-    /**
-     * Filter by notes/tags presence
-     * @param {Object} event
-     * @param {Object|null} notesData - Pre-fetched notes data
-     * @returns {boolean}
-     */
-    filterByNotes(event, notesData) {
-        if (!this.filters.hasNotes || !notesData) {
-            return true;
-        }
-        const notes = notesData[event.name];
-        return notes && (notes.text?.trim() || notes.tags?.length > 0);
-    }
-
-    /**
-     * Filter by specific tag
-     * @param {Object} event
-     * @param {Object|null} notesData - Pre-fetched notes data
-     * @returns {boolean}
-     */
-    filterByTag(event, notesData) {
-        if (!this.filters.selectedTag || !notesData) {
-            return true;
-        }
-        const notes = notesData[event.name];
-        if (!notes || !notes.tags) {
-            return false;
-        }
-        const searchTag = this.filters.selectedTag.toLowerCase();
-        return notes.tags.some(tag => tag.toLowerCase() === searchTag);
     }
 
     /**
@@ -273,12 +204,6 @@ class EventFilter {
         if (newFilters.hasBookmarks !== undefined) {
             this.filters.hasBookmarks = newFilters.hasBookmarks;
         }
-        if (newFilters.hasNotes !== undefined) {
-            this.filters.hasNotes = newFilters.hasNotes;
-        }
-        if (newFilters.selectedTag !== undefined) {
-            this.filters.selectedTag = newFilters.selectedTag;
-        }
     }
 
     /**
@@ -297,9 +222,7 @@ class EventFilter {
             },
             searchQuery: '',
             sortOrder: 'newest',
-            hasBookmarks: false,
-            hasNotes: false,
-            selectedTag: ''
+            hasBookmarks: false
         };
     }
 
@@ -333,16 +256,6 @@ class EventFilter {
 
         // Check bookmark filter
         if (this.filters.hasBookmarks) {
-            count++;
-        }
-
-        // Check notes filter
-        if (this.filters.hasNotes) {
-            count++;
-        }
-
-        // Check tag filter
-        if (this.filters.selectedTag) {
             count++;
         }
 

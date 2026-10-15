@@ -77,19 +77,6 @@ class FilterPanel {
                         </label>
                     </div>
 
-                    <!-- Notes/Tags Filter -->
-                    <div class="filter-group">
-                        <label class="filter-checkbox-label notes-filter">
-                            <input type="checkbox"
-                                   id="filterHasNotes"
-                                   ${filters.hasNotes ? 'checked' : ''}>
-                            <span class="notes-filter-text">${t('filter.onlyWithNotes')}</span>
-                        </label>
-                    </div>
-
-                    <!-- Tag Dropdown -->
-                    ${this.renderTagDropdown(filters)}
-
                     <!-- Sort Order -->
                     <div class="filter-group">
                         <label class="filter-label" for="sortOrder">${t('filter.sortBy')}</label>
@@ -180,22 +167,6 @@ class FilterPanel {
         if (bookmarkedCheckbox) {
             bookmarkedCheckbox.addEventListener('change', (e) => {
                 this.handleBookmarkFilterChange(e.target.checked);
-            });
-        }
-
-        // Notes/Tags filter
-        const notesCheckbox = document.getElementById('filterHasNotes');
-        if (notesCheckbox) {
-            notesCheckbox.addEventListener('change', (e) => {
-                this.handleNotesFilterChange(e.target.checked);
-            });
-        }
-
-        // Tag dropdown
-        const tagFilter = document.getElementById('tagFilter');
-        if (tagFilter) {
-            tagFilter.addEventListener('change', (e) => {
-                this.handleTagFilterChange(e.target.value);
             });
         }
 
@@ -416,66 +387,6 @@ class FilterPanel {
             filterContent.appendChild(btn);
         } else if (filterCount === 0 && clearAllBtn) {
             clearAllBtn.remove();
-        }
-    }
-
-    /**
-     * Render tag dropdown if tags exist
-     * @param {Object} filters - Current filter state
-     * @returns {string} HTML string
-     */
-    renderTagDropdown(filters) {
-        const allTags = this.eventFilter.getAllTags();
-        const t = (key) => window.i18n ? window.i18n.t(key) : key.split('.').pop();
-
-        if (allTags.length === 0) {
-            return '';
-        }
-
-        return `
-            <div class="filter-group">
-                <label class="filter-label" for="tagFilter">${t('filter.filterByTag')}</label>
-                <select id="tagFilter" class="filter-select">
-                    <option value="">${t('filter.allTags')}</option>
-                    ${allTags.map(tag => `
-                        <option value="${tag}" ${filters.selectedTag === tag ? 'selected' : ''}>
-                            ${tag}
-                        </option>
-                    `).join('')}
-                </select>
-            </div>
-        `;
-    }
-
-    /**
-     * Handle notes filter change
-     * @param {boolean} checked
-     */
-    handleNotesFilterChange(checked) {
-        this.eventFilter.setFilters({
-            hasNotes: checked
-        });
-
-        this.updateFilterBadge();
-
-        if (this.onFilterChange) {
-            this.onFilterChange();
-        }
-    }
-
-    /**
-     * Handle tag filter change
-     * @param {string} tag
-     */
-    handleTagFilterChange(tag) {
-        this.eventFilter.setFilters({
-            selectedTag: tag
-        });
-
-        this.updateFilterBadge();
-
-        if (this.onFilterChange) {
-            this.onFilterChange();
         }
     }
 

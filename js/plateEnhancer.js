@@ -3248,13 +3248,6 @@ class PlateEnhancer {
                     </svg>
                     Crop Region
                 </button>
-                <button class="plate-enhancer-btn plate-enhancer-btn-secondary" data-action="save-notes" title="Save OCR result to event notes (Pro)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                    </svg>
-                    Save to Notes
-                    <span class="plate-enhancer-pro-badge">PRO</span>
-                </button>
                 <button class="plate-enhancer-btn plate-enhancer-btn-secondary" data-action="copy" title="Copy image to clipboard (Pro)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
                         <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
@@ -3287,28 +3280,6 @@ class PlateEnhancer {
             </div>
         `;
         modal.appendChild(actions);
-
-        // Save to Notes handler (Pro feature)
-        actions.querySelector('[data-action="save-notes"]')?.addEventListener('click', async () => {
-            if (!await this.checkProAccess('save to notes')) return;
-            if (!this.lastOCRResult?.text) {
-                this.showToast('No OCR result to save');
-                return;
-            }
-            // Save to notes via NotesManager
-            if (window.app?.notesManager) {
-                const currentEvent = window.app.eventBrowser?.selectedEvent;
-                if (currentEvent) {
-                    const noteText = `License Plate: ${this.lastOCRResult.text} (${this.lastOCRResult.confidence.toFixed(0)}% confidence)`;
-                    await window.app.notesManager.addNote(currentEvent.id, noteText);
-                    this.showToast('Saved to notes!');
-                } else {
-                    this.showToast('No event selected', 'error');
-                }
-            } else {
-                this.showToast('Notes feature not available', 'error');
-            }
-        });
 
         // Retry Shorter handler - reprocess existing frames with subset
         actions.querySelector('[data-action="retry-shorter"]')?.addEventListener('click', async () => {

@@ -4,12 +4,10 @@
     "locale": "nl",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "Bekijk Tesla dashcam beelden met gesynchroniseerde weergave"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "Doneren",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "Bekijk op GitHub",
     "supportProject": "Steun dit project"
   },
-
   "sidebar": {
     "events": "Gebeurtenissen",
     "map": "Kaart",
@@ -31,7 +28,6 @@
     "emptyState": "Klik op \"Selecteer TeslaCam-map\" om te beginnen",
     "emptyStateHint": "U kunt de TeslaCam-map selecteren, of elke map die Tesla dashcam-opnames bevat"
   },
-
   "player": {
     "noEventSelected": "Geen gebeurtenis geselecteerd",
     "selectEventHint": "👈 Selecteer een gebeurtenis uit de zijbalk",
@@ -40,7 +36,6 @@
     "fullscreen": "Volledig scherm",
     "exitFullscreen": "Volledig scherm verlaten"
   },
-
   "cameras": {
     "front": "Voor",
     "back": "Achter",
@@ -51,7 +46,6 @@
     "hideLeft": "Linker camera verbergen",
     "hideRight": "Rechter camera verbergen"
   },
-
   "controls": {
     "play": "Afspelen",
     "pause": "Pauze",
@@ -76,7 +70,6 @@
     "layout": "Indeling:",
     "camera": "Camera:"
   },
-
   "bookmarks": {
     "title": "Bladwijzers",
     "previous": "Vorige bladwijzer ([)",
@@ -86,7 +79,6 @@
     "clearAll": "Alles wissen",
     "noBookmarks": "Nog geen bladwijzers"
   },
-
   "export": {
     "header": "Camera exporteren",
     "allCameras": "Alle camera's (Raster)",
@@ -101,7 +93,6 @@
     "cancelled": "Export geannuleerd",
     "failed": "Export mislukt"
   },
-
   "layouts": {
     "grid2x2": "2×2 Raster",
     "layout63": "6:3 Gecentreerd",
@@ -112,28 +103,15 @@
     "frontRepeaters": "Voor + Zijcamera's",
     "focus": "Focusmodus"
   },
-
   "loading": {
     "loading": "Laden...",
     "buffering": "Bufferen...",
     "bufferHealth": "Bufferstatus"
   },
-
-  "notes": {
-    "title": "Notities en tags (N)",
-    "notes": "Notities",
-    "tags": "Tags",
-    "tagPlaceholder": "Typ tag, druk op Enter of klik +",
-    "addTag": "Tag toevoegen",
-    "existingTags": "Bestaande tags",
-    "placeholder": "Notities toevoegen over deze gebeurtenis..."
-  },
-
   "help": {
     "title": "Sneltoetsen",
     "close": "Sluiten",
     "tip": "Tip: De meeste sneltoetsen werken alleen wanneer u niet in een tekstveld typt",
-
     "sections": {
       "playback": "Afspelen",
       "navigation": "Navigatie",
@@ -143,7 +121,6 @@
       "speedControl": "Snelheidsregeling",
       "general": "Algemeen"
     },
-
     "shortcuts": {
       "playPause": "Afspelen / Pauze",
       "previousFrame": "Vorig frame",
@@ -178,14 +155,12 @@
       "closeModal": "Modal sluiten / Markeringen wissen"
     }
   },
-
   "settings": {
     "title": "Instellingen",
     "close": "Sluiten",
     "done": "Gereed",
     "resetToDefaults": "Standaardinstellingen herstellen",
     "confirmReset": "Alle instellingen herstellen naar standaard?",
-
     "sections": {
       "playback": "Afspelen",
       "performance": "Prestaties",
@@ -200,7 +175,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -210,12 +184,10 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "language": {
       "selectLanguage": "Taal",
       "languageHint": "Selecteer uw voorkeurstaal"
     },
-
     "export": {
       "videoFormat": "Videoformaat",
       "webm": "WebM (VP9) - Kleinere bestanden",
@@ -228,7 +200,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -243,7 +214,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -257,7 +227,6 @@
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "filter": {
     "search": "Gebeurtenissen zoeken",
     "type": "Type",
@@ -270,12 +239,10 @@
     "filters": "Filters",
     "eventTypes": "Gebeurtenistypen",
     "onlyBookmarked": "Alleen gebladwijzerde gebeurtenissen",
-    "onlyWithNotes": "Alleen gebeurtenissen met notities/tags",
     "sortBy": "Sorteren op",
     "newestFirst": "Nieuwste eerst",
     "oldestFirst": "Oudste eerst"
   },
-
   "map": {
     "noLocation": "Geen locatiegegevens",
     "showAll": "Alle gebeurtenissen tonen",
@@ -292,7 +259,6 @@
     "phantomBrakeTip": "Deze locatie heeft herhaalde spookremmen - overweeg dit te melden aan Tesla als het een vals positief is.",
     "toggleDarkMode": "Donkere kaartmodus schakelen"
   },
-
   "statistics": {
     "title": "Statistieken",
     "close": "Sluiten",
@@ -350,7 +316,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "Map niet gevonden",
     "noVideosFound": "Geen video's gevonden in deze gebeurtenis",
@@ -360,7 +325,6 @@
     "permissionDenied": "Toestemming geweigerd",
     "fileAccessError": "Fout bij bestandstoegang"
   },
-
   "time": {
     "hours": "u",
     "minutes": "m",
@@ -368,7 +332,6 @@
     "ago": "geleden",
     "justNow": "zojuist"
   },
-
   "quickstart": {
     "skip": "Overslaan",
     "previous": "Vorige",
@@ -409,7 +372,6 @@
       "showAll": "Alle sneltoetsen tonen"
     }
   },
-
   "driveManager": {
     "title": "Schijven beheren",
     "noDrives": "Geen schijven toegevoegd",
@@ -418,7 +380,6 @@
     "addDrive": "Schijf toevoegen",
     "changeColor": "Klik om kleur te wijzigen"
   },
-
   "driveSync": {
     "title": "Schijf synchroniseren",
     "close": "Sluiten (Esc)",
@@ -450,7 +411,6 @@
     "newerOnSource": "Nieuwer op bron",
     "differentSize": "Andere grootte",
     "alreadySynced": "Al gesynchroniseerd",
-    "includeNotes": "Notities & tags opnemen",
     "eta": "Resterende tijd:",
     "sourceEvents": "Brongebeurtenissen",
     "destEvents": "Bestemmingsgebeurtenissen",
@@ -477,20 +437,14 @@
     "syncedOnly": "Alleen gesynchroniseerde",
     "showingFirst": "Toont eerste {{count}} van {{total}} gebeurtenissen"
   },
-
   "syncSettings": {
     "title": "Synchronisatie-instellingen",
     "verifyAfterCopy": "Bestanden verifiëren na kopiëren",
-    "syncNotes": "Notities en tags synchroniseren",
     "writeSyncFile": "Synchronisatie-instellingen schrijven naar bestemming",
     "confirmBeforeDelete": "Bevestigen voor verwijderen bronbestanden",
-    "noteConflict": "Notitieconflictoplossing:",
-    "askEachTime": "Elke keer vragen",
-    "mergeAutomatically": "Automatisch samenvoegen",
     "saveSettings": "Instellingen opslaan",
     "close": "Sluiten"
   },
-
   "presets": {
     "title": "Presets beheren",
     "noPresets": "Geen opgeslagen presets. Selecteer schijven en klik op \"Opslaan\" om er een te maken.",
@@ -511,7 +465,6 @@
     "errors": "Fouten:",
     "noNewPresets": "Geen nieuwe presets gevonden op schijven."
   },
-
   "layoutEditor": {
     "title": "Layout-editor",
     "close": "Sluiten",
@@ -558,7 +511,6 @@
     "failedToUpdate": "Layout bijwerken mislukt",
     "soon": "Binnenkort"
   },
-
   "common": {
     "close": "Sluiten",
     "cancel": "Annuleren",
@@ -575,7 +527,6 @@
     "success": "Succes",
     "warning": "Waarschuwing"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "Incident slow-motion schakelen",
     "slowMoEnabled": "Incident slow-motion: AAN",

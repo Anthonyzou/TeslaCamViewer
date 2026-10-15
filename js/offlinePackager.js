@@ -91,8 +91,7 @@ class OfflinePackager {
             'insuranceReport.js',
             'collisionReconstruction.js',
 
-            // Notes & Data
-            'notesManager.js',
+            // Statistics
             'statisticsManager.js',
 
             // Settings & UI

@@ -4,12 +4,10 @@
     "locale": "ja",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "テスラのダッシュカム映像を同期再生で視聴"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "寄付",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "GitHubで見る",
     "supportProject": "プロジェクトを支援"
   },
-
   "sidebar": {
     "events": "イベント",
     "map": "地図",
@@ -31,7 +28,6 @@
     "emptyState": "「TeslaCamフォルダを選択」をクリックして開始",
     "emptyStateHint": "TeslaCamフォルダ、またはテスラのダッシュカム録画を含む任意のフォルダを選択できます"
   },
-
   "player": {
     "noEventSelected": "イベントが選択されていません",
     "selectEventHint": "👈 サイドバーからイベントを選択してください",
@@ -40,7 +36,6 @@
     "fullscreen": "全画面",
     "exitFullscreen": "全画面を終了"
   },
-
   "cameras": {
     "front": "前",
     "back": "後",
@@ -51,7 +46,6 @@
     "hideLeft": "左カメラを非表示",
     "hideRight": "右カメラを非表示"
   },
-
   "controls": {
     "play": "再生",
     "pause": "一時停止",
@@ -76,7 +70,6 @@
     "layout": "レイアウト：",
     "camera": "カメラ："
   },
-
   "bookmarks": {
     "title": "ブックマーク",
     "previous": "前のブックマーク ([)",
@@ -86,7 +79,6 @@
     "clearAll": "すべてクリア",
     "noBookmarks": "ブックマークはまだありません"
   },
-
   "export": {
     "header": "カメラをエクスポート",
     "allCameras": "すべてのカメラ（グリッド）",
@@ -101,7 +93,6 @@
     "cancelled": "エクスポートがキャンセルされました",
     "failed": "エクスポート失敗"
   },
-
   "layouts": {
     "grid2x2": "2×2 グリッド",
     "layout63": "6:3 センター",
@@ -112,28 +103,15 @@
     "frontRepeaters": "前 + リピーター",
     "focus": "フォーカスモード"
   },
-
   "loading": {
     "loading": "読み込み中...",
     "buffering": "バッファリング中...",
     "bufferHealth": "バッファ状態"
   },
-
-  "notes": {
-    "title": "メモとタグ (N)",
-    "notes": "メモ",
-    "tags": "タグ",
-    "tagPlaceholder": "タグを入力し、Enter または + をクリック",
-    "addTag": "タグを追加",
-    "existingTags": "既存のタグ",
-    "placeholder": "このイベントについてのメモを追加..."
-  },
-
   "help": {
     "title": "キーボードショートカット",
     "close": "閉じる",
     "tip": "ヒント：ほとんどのショートカットはテキスト入力中は動作しません",
-
     "sections": {
       "playback": "再生",
       "navigation": "ナビゲーション",
@@ -143,7 +121,6 @@
       "speedControl": "速度調整",
       "general": "一般"
     },
-
     "shortcuts": {
       "playPause": "再生 / 一時停止",
       "previousFrame": "前のフレーム",
@@ -178,14 +155,12 @@
       "closeModal": "モーダルを閉じる / マークをクリア"
     }
   },
-
   "settings": {
     "title": "設定",
     "close": "閉じる",
     "done": "完了",
     "resetToDefaults": "デフォルトに戻す",
     "confirmReset": "すべての設定をデフォルトに戻しますか？",
-
     "sections": {
       "playback": "再生",
       "performance": "パフォーマンス",
@@ -200,7 +175,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -210,12 +184,10 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "language": {
       "selectLanguage": "言語",
       "languageHint": "お好みの言語を選択してください"
     },
-
     "export": {
       "videoFormat": "ビデオ形式",
       "webm": "WebM (VP9) - ファイルサイズ小",
@@ -228,7 +200,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -243,7 +214,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -257,7 +227,6 @@
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "filter": {
     "search": "イベントを検索",
     "type": "タイプ",
@@ -270,12 +239,10 @@
     "filters": "フィルター",
     "eventTypes": "イベントタイプ",
     "onlyBookmarked": "ブックマーク付きのみ",
-    "onlyWithNotes": "メモ/タグ付きのみ",
     "sortBy": "並び替え",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順"
   },
-
   "map": {
     "noLocation": "位置データなし",
     "showAll": "すべてのイベントを表示",
@@ -292,7 +259,6 @@
     "phantomBrakeTip": "この場所で繰り返しファントムブレーキが発生しています - 誤検知の場合はテスラに報告を検討してください。",
     "toggleDarkMode": "マップダークモード切替"
   },
-
   "statistics": {
     "title": "統計",
     "close": "閉じる",
@@ -350,7 +316,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "フォルダが見つかりません",
     "noVideosFound": "このイベントにビデオがありません",
@@ -360,7 +325,6 @@
     "permissionDenied": "権限が拒否されました",
     "fileAccessError": "ファイルアクセスエラー"
   },
-
   "time": {
     "hours": "時間",
     "minutes": "分",
@@ -368,7 +332,6 @@
     "ago": "前",
     "justNow": "たった今"
   },
-
   "quickstart": {
     "skip": "スキップ",
     "previous": "戻る",
@@ -409,7 +372,6 @@
       "showAll": "すべてのショートカットを表示"
     }
   },
-
   "driveManager": {
     "title": "ドライブ管理",
     "noDrives": "ドライブが追加されていません",
@@ -418,7 +380,6 @@
     "addDrive": "ドライブを追加",
     "changeColor": "クリックして色を変更"
   },
-
   "driveSync": {
     "title": "ドライブ同期",
     "close": "閉じる (Esc)",
@@ -450,7 +411,6 @@
     "newerOnSource": "ソースの方が新しい",
     "differentSize": "サイズが異なる",
     "alreadySynced": "同期済み",
-    "includeNotes": "メモとタグを含める",
     "eta": "残り時間：",
     "sourceEvents": "ソースイベント",
     "destEvents": "宛先イベント",
@@ -477,20 +437,14 @@
     "syncedOnly": "同期済みのみ",
     "showingFirst": "{{total}} 件中最初の {{count}} 件を表示"
   },
-
   "syncSettings": {
     "title": "同期設定",
     "verifyAfterCopy": "コピー後にファイルを検証",
-    "syncNotes": "メモとタグを同期",
     "writeSyncFile": "宛先に同期設定ファイルを書き込む",
     "confirmBeforeDelete": "ソースファイル削除前に確認",
-    "noteConflict": "メモの競合解決：",
-    "askEachTime": "毎回確認",
-    "mergeAutomatically": "自動的にマージ",
     "saveSettings": "設定を保存",
     "close": "閉じる"
   },
-
   "presets": {
     "title": "プリセット管理",
     "noPresets": "保存されたプリセットはありません。ドライブを選択して「保存」をクリックしてください。",
@@ -511,7 +465,6 @@
     "errors": "エラー：",
     "noNewPresets": "ドライブに新しいプリセットが見つかりませんでした。"
   },
-
   "layoutEditor": {
     "title": "レイアウトエディター",
     "close": "閉じる",
@@ -558,7 +511,6 @@
     "failedToUpdate": "レイアウトの更新に失敗しました",
     "soon": "近日公開"
   },
-
   "common": {
     "close": "閉じる",
     "cancel": "キャンセル",
@@ -575,7 +527,6 @@
     "success": "成功",
     "warning": "警告"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "インシデントスローモーションを切り替え",
     "slowMoEnabled": "インシデントスローモーション：オン",

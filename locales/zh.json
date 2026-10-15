@@ -4,12 +4,10 @@
     "locale": "zh",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "查看特斯拉行车记录仪录像，支持同步播放"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "捐赠",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "在 GitHub 上查看",
     "supportProject": "支持此项目"
   },
-
   "sidebar": {
     "events": "事件",
     "map": "地图",
@@ -31,7 +28,6 @@
     "emptyState": "点击\"选择 TeslaCam 文件夹\"开始使用",
     "emptyStateHint": "您可以选择 TeslaCam 文件夹，或任何包含特斯拉行车记录仪录像的文件夹"
   },
-
   "player": {
     "noEventSelected": "未选择事件",
     "selectEventHint": "👈 从侧边栏选择一个事件查看",
@@ -40,7 +36,6 @@
     "fullscreen": "全屏",
     "exitFullscreen": "退出全屏"
   },
-
   "cameras": {
     "front": "前",
     "back": "后",
@@ -51,7 +46,6 @@
     "hideLeft": "隐藏左侧摄像头",
     "hideRight": "隐藏右侧摄像头"
   },
-
   "controls": {
     "play": "播放",
     "pause": "暂停",
@@ -76,7 +70,6 @@
     "layout": "布局：",
     "camera": "摄像头："
   },
-
   "bookmarks": {
     "title": "书签",
     "previous": "上一个书签 ([)",
@@ -86,7 +79,6 @@
     "clearAll": "全部清除",
     "noBookmarks": "暂无书签"
   },
-
   "export": {
     "header": "导出摄像头",
     "allCameras": "所有摄像头（网格）",
@@ -101,7 +93,6 @@
     "cancelled": "导出已取消",
     "failed": "导出失败"
   },
-
   "layouts": {
     "grid2x2": "2×2 网格",
     "layout63": "6:3 居中",
@@ -112,28 +103,15 @@
     "frontRepeaters": "前 + 侧翼",
     "focus": "专注模式"
   },
-
   "loading": {
     "loading": "加载中...",
     "buffering": "缓冲中...",
     "bufferHealth": "缓冲状态"
   },
-
-  "notes": {
-    "title": "备注和标签 (N)",
-    "notes": "备注",
-    "tags": "标签",
-    "tagPlaceholder": "输入标签，按 Enter 或点击 +",
-    "addTag": "添加标签",
-    "existingTags": "现有标签",
-    "placeholder": "添加关于此事件的备注..."
-  },
-
   "help": {
     "title": "键盘快捷键",
     "close": "关闭",
     "tip": "提示：大多数快捷键只在不输入文本时有效",
-
     "sections": {
       "playback": "播放",
       "navigation": "导航",
@@ -143,7 +121,6 @@
       "speedControl": "速度控制",
       "general": "常规"
     },
-
     "shortcuts": {
       "playPause": "播放 / 暂停",
       "previousFrame": "上一帧",
@@ -178,14 +155,12 @@
       "closeModal": "关闭窗口 / 清除标记"
     }
   },
-
   "settings": {
     "title": "设置",
     "close": "关闭",
     "done": "完成",
     "resetToDefaults": "恢复默认设置",
     "confirmReset": "确定要恢复所有默认设置吗？",
-
     "sections": {
       "playback": "播放",
       "performance": "性能",
@@ -200,7 +175,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -210,12 +184,10 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "language": {
       "selectLanguage": "语言",
       "languageHint": "选择您的首选语言"
     },
-
     "export": {
       "videoFormat": "视频格式",
       "webm": "WebM (VP9) - 文件更小",
@@ -228,7 +200,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -243,7 +214,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -257,7 +227,6 @@
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "filter": {
     "search": "搜索事件",
     "type": "类型",
@@ -270,12 +239,10 @@
     "filters": "筛选",
     "eventTypes": "事件类型",
     "onlyBookmarked": "仅显示已收藏事件",
-    "onlyWithNotes": "仅显示有备注/标签的事件",
     "sortBy": "排序方式",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先"
   },
-
   "map": {
     "noLocation": "无位置数据",
     "showAll": "显示所有事件",
@@ -292,7 +259,6 @@
     "phantomBrakeTip": "此位置反复发生幽灵刹车 - 如果是误报，请考虑向特斯拉反馈。",
     "toggleDarkMode": "切换地图深色模式"
   },
-
   "statistics": {
     "title": "统计",
     "close": "关闭",
@@ -350,7 +316,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "文件夹未找到",
     "noVideosFound": "此事件中未找到视频",
@@ -360,7 +325,6 @@
     "permissionDenied": "权限被拒绝",
     "fileAccessError": "文件访问错误"
   },
-
   "time": {
     "hours": "时",
     "minutes": "分",
@@ -368,7 +332,6 @@
     "ago": "前",
     "justNow": "刚刚"
   },
-
   "quickstart": {
     "skip": "跳过",
     "previous": "上一步",
@@ -409,7 +372,6 @@
       "showAll": "显示所有快捷键"
     }
   },
-
   "driveManager": {
     "title": "管理驱动器",
     "noDrives": "尚未添加驱动器",
@@ -418,7 +380,6 @@
     "addDrive": "添加驱动器",
     "changeColor": "点击更改颜色"
   },
-
   "driveSync": {
     "title": "驱动器同步",
     "close": "关闭 (Esc)",
@@ -450,7 +411,6 @@
     "newerOnSource": "源更新",
     "differentSize": "大小不同",
     "alreadySynced": "已同步",
-    "includeNotes": "包含备注和标签",
     "eta": "预计时间：",
     "sourceEvents": "源事件",
     "destEvents": "目标事件",
@@ -477,23 +437,17 @@
     "syncedOnly": "仅已同步",
     "showingFirst": "显示前 {{count}} 个，共 {{total}} 个事件"
   },
-
   "syncSettings": {
     "title": "同步设置",
     "verifyAfterCopy": "复制后验证文件",
-    "syncNotes": "同步备注和标签",
     "writeSyncFile": "将同步设置文件写入目标",
     "confirmBeforeDelete": "删除源文件前确认",
-    "noteConflict": "备注冲突处理：",
-    "askEachTime": "每次询问",
-    "mergeAutomatically": "自动合并",
     "saveSettings": "保存设置",
     "close": "关闭"
   },
-
   "presets": {
     "title": "管理预设",
-    "noPresets": "没有保存的预设。选择驱动器并点击"保存"创建。",
+    "noPresets": "没有保存的预设。选择驱动器并点击\"保存\"创建。",
     "importFromDrives": "从驱动器导入",
     "close": "关闭",
     "delete": "删除",
@@ -511,7 +465,6 @@
     "errors": "错误：",
     "noNewPresets": "在驱动器上未找到新预设。"
   },
-
   "layoutEditor": {
     "title": "布局编辑器",
     "close": "关闭",
@@ -558,7 +511,6 @@
     "failedToUpdate": "更新布局失败",
     "soon": "即将推出"
   },
-
   "common": {
     "close": "关闭",
     "cancel": "取消",
@@ -575,7 +527,6 @@
     "success": "成功",
     "warning": "警告"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "切换事故慢动作",
     "slowMoEnabled": "事故慢动作：开启",

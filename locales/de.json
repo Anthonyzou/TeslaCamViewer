@@ -4,12 +4,10 @@
     "locale": "de",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "Tesla Dashcam-Aufnahmen mit synchronisierter Wiedergabe ansehen"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "Spenden",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "Auf GitHub ansehen",
     "supportProject": "Dieses Projekt unterstützen"
   },
-
   "sidebar": {
     "events": "Ereignisse",
     "map": "Karte",
@@ -31,7 +28,6 @@
     "emptyState": "Klicken Sie auf \"TeslaCam-Ordner auswählen\" um zu beginnen",
     "emptyStateHint": "Sie können den TeslaCam-Ordner oder einen beliebigen Ordner mit Tesla-Dashcam-Aufnahmen auswählen"
   },
-
   "player": {
     "noEventSelected": "Kein Ereignis ausgewählt",
     "selectEventHint": "👈 Wählen Sie ein Ereignis aus der Seitenleiste",
@@ -40,7 +36,6 @@
     "fullscreen": "Vollbild",
     "exitFullscreen": "Vollbild beenden"
   },
-
   "cameras": {
     "front": "Vorne",
     "back": "Hinten",
@@ -51,7 +46,6 @@
     "hideLeft": "Linke Kamera ausblenden",
     "hideRight": "Rechte Kamera ausblenden"
   },
-
   "controls": {
     "play": "Abspielen",
     "pause": "Pause",
@@ -76,7 +70,6 @@
     "layout": "Layout:",
     "camera": "Kamera:"
   },
-
   "bookmarks": {
     "title": "Lesezeichen",
     "previous": "Vorheriges Lesezeichen ([)",
@@ -86,7 +79,6 @@
     "clearAll": "Alle löschen",
     "noBookmarks": "Noch keine Lesezeichen"
   },
-
   "export": {
     "header": "Kamera exportieren",
     "allCameras": "Alle Kameras (Raster)",
@@ -101,7 +93,6 @@
     "cancelled": "Export abgebrochen",
     "failed": "Export fehlgeschlagen"
   },
-
   "layouts": {
     "grid2x2": "2×2 Raster",
     "layout63": "6:3 Zentriert",
@@ -112,28 +103,15 @@
     "frontRepeaters": "Vorne + Seitenkameras",
     "focus": "Fokusmodus"
   },
-
   "loading": {
     "loading": "Lädt...",
     "buffering": "Puffern...",
     "bufferHealth": "Pufferzustand"
   },
-
-  "notes": {
-    "title": "Notizen & Tags (N)",
-    "notes": "Notizen",
-    "tags": "Tags",
-    "tagPlaceholder": "Tag eingeben, Enter drücken oder + klicken",
-    "addTag": "Tag hinzufügen",
-    "existingTags": "Vorhandene Tags",
-    "placeholder": "Notizen zu diesem Ereignis hinzufügen..."
-  },
-
   "help": {
     "title": "Tastenkürzel",
     "close": "Schließen",
     "tip": "Tipp: Die meisten Tastenkürzel funktionieren nur, wenn Sie nicht in einem Textfeld schreiben",
-
     "sections": {
       "playback": "Wiedergabe",
       "navigation": "Navigation",
@@ -143,7 +121,6 @@
       "speedControl": "Geschwindigkeitsregelung",
       "general": "Allgemein"
     },
-
     "shortcuts": {
       "playPause": "Abspielen / Pause",
       "previousFrame": "Vorheriges Bild",
@@ -178,14 +155,12 @@
       "closeModal": "Modal schließen / Markierungen löschen"
     }
   },
-
   "settings": {
     "title": "Einstellungen",
     "close": "Schließen",
     "done": "Fertig",
     "resetToDefaults": "Auf Standard zurücksetzen",
     "confirmReset": "Alle Einstellungen auf Standard zurücksetzen?",
-
     "sections": {
       "playback": "Wiedergabe",
       "performance": "Leistung",
@@ -200,7 +175,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -210,12 +184,10 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "language": {
       "selectLanguage": "Sprache",
       "languageHint": "Wählen Sie Ihre bevorzugte Sprache"
     },
-
     "export": {
       "videoFormat": "Videoformat",
       "webm": "WebM (VP9) - Kleinere Dateien",
@@ -228,7 +200,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -243,7 +214,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -253,12 +223,10 @@
       "darkModeHint": "Use dark map tiles (recommended for dashcam viewing)",
       "tileProvider": "Map Tile Provider",
       "tileProviderHint": "Versuchen Sie es mit Stadia Maps, wenn OpenStreetMap nicht geladen wird",
-
       "providerStadia": "Stadia Maps",
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "filter": {
     "search": "Ereignisse suchen",
     "type": "Typ",
@@ -274,7 +242,6 @@
     "sentry": "Wächter",
     "recent": "Aktuell",
     "onlyBookmarked": "Nur Ereignisse mit Lesezeichen",
-    "onlyWithNotes": "Nur Ereignisse mit Notizen/Tags",
     "sortBy": "Sortieren nach",
     "newestFirst": "Neueste zuerst",
     "oldestFirst": "Älteste zuerst",
@@ -286,7 +253,6 @@
     "filterByTag": "Nach Tag filtern",
     "allTags": "Alle Tags"
   },
-
   "map": {
     "noLocation": "Keine Standortdaten",
     "showAll": "Alle Ereignisse anzeigen",
@@ -303,7 +269,6 @@
     "phantomBrakeTip": "Dieser Ort hat wiederholte Phantombremsungen - melden Sie es bei Tesla, wenn es ein Fehlalarm ist.",
     "toggleDarkMode": "Dunkelmodus der Karte umschalten"
   },
-
   "statistics": {
     "title": "Statistiken",
     "close": "Schließen",
@@ -361,7 +326,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "Ordner nicht gefunden",
     "noVideosFound": "Keine Videos in diesem Ereignis",
@@ -371,7 +335,6 @@
     "permissionDenied": "Berechtigung verweigert",
     "fileAccessError": "Fehler beim Dateizugriff"
   },
-
   "time": {
     "hours": "Std",
     "minutes": "Min",
@@ -379,7 +342,6 @@
     "ago": "vor",
     "justNow": "gerade eben"
   },
-
   "quickstart": {
     "skip": "Überspringen",
     "previous": "Zurück",
@@ -420,7 +382,6 @@
       "showAll": "Alle Tastenkürzel anzeigen"
     }
   },
-
   "driveManager": {
     "title": "Laufwerke verwalten",
     "noDrives": "Keine Laufwerke hinzugefügt",
@@ -429,7 +390,6 @@
     "addDrive": "Laufwerk hinzufügen",
     "changeColor": "Klicken um Farbe zu ändern"
   },
-
   "driveSync": {
     "title": "Laufwerk-Synchronisation",
     "close": "Schließen (Esc)",
@@ -461,7 +421,6 @@
     "newerOnSource": "Neuer an Quelle",
     "differentSize": "Unterschiedliche Größe",
     "alreadySynced": "Bereits synchronisiert",
-    "includeNotes": "Notizen & Tags einschließen",
     "eta": "Verbleibend:",
     "sourceEvents": "Quell-Ereignisse",
     "destEvents": "Ziel-Ereignisse",
@@ -488,20 +447,14 @@
     "syncedOnly": "Nur synchronisierte",
     "showingFirst": "Zeige erste {{count}} von {{total}} Ereignissen"
   },
-
   "syncSettings": {
     "title": "Sync-Einstellungen",
     "verifyAfterCopy": "Dateien nach Kopieren verifizieren",
-    "syncNotes": "Notizen und Tags synchronisieren",
     "writeSyncFile": "Sync-Einstellungsdatei am Ziel schreiben",
     "confirmBeforeDelete": "Vor dem Löschen von Quelldateien bestätigen",
-    "noteConflict": "Notiz-Konfliktlösung:",
-    "askEachTime": "Jedes Mal fragen",
-    "mergeAutomatically": "Automatisch zusammenführen",
     "saveSettings": "Einstellungen speichern",
     "close": "Schließen"
   },
-
   "presets": {
     "title": "Voreinstellungen verwalten",
     "noPresets": "Keine Voreinstellungen gespeichert. Wählen Sie Laufwerke und klicken Sie auf \"Speichern\".",
@@ -522,7 +475,6 @@
     "errors": "Fehler:",
     "noNewPresets": "Keine neuen Voreinstellungen auf Laufwerken gefunden."
   },
-
   "layoutEditor": {
     "title": "Layout-Editor",
     "close": "Schließen",
@@ -569,7 +521,6 @@
     "failedToUpdate": "Layout aktualisieren fehlgeschlagen",
     "soon": "Bald"
   },
-
   "common": {
     "close": "Schließen",
     "cancel": "Abbrechen",
@@ -586,7 +537,6 @@
     "success": "Erfolg",
     "warning": "Warnung"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "Zeitlupen-Vorfälle umschalten",
     "slowMoEnabled": "Vorfall-Zeitlupe: EIN",

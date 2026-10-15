@@ -298,36 +298,6 @@ class EventBrowser {
   }
 
   /**
-   * Refresh notes indicators on all event cards
-   */
-  refreshNotesIndicators() {
-    if (!window.app?.notesManager) return;
-
-    const eventItems = this.container.querySelectorAll('.event-item');
-    for (const item of eventItems) {
-      const eventName = item.dataset.eventName;
-      const existingIndicator = item.querySelector('.notes-indicator');
-      const hasNotes = window.app.notesManager.hasNotes(eventName);
-
-      if (hasNotes) {
-        if (!existingIndicator) {
-          // Add new indicator
-          const header = item.querySelector('.event-item-header');
-          if (header) {
-            const indicator = document.createElement('span');
-            indicator.className = 'notes-indicator';
-            indicator.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>`;
-            indicator.title = 'Has notes/tags';
-            header.appendChild(indicator);
-          }
-        }
-      } else if (existingIndicator) {
-        existingIndicator.remove();
-      }
-    }
-  }
-
-  /**
    * Get cached near-miss data for an event
    * @param {string} eventKey - Event identifier
    * @returns {Object|null} Near-miss data or null
@@ -808,13 +778,6 @@ class EventBrowser {
         ? `<span class="bookmark-indicator" title="${bookmarkCount} bookmark${bookmarkCount > 1 ? 's' : ''}">[${bookmarkCount}]</span>`
         : '';
 
-    // Check for notes/tags
-    const notesKey = event.compoundKey || event.name;
-    const hasNotes = window.app?.notesManager?.hasNotes(notesKey);
-    const notesHTML = hasNotes
-      ? `<span class="notes-indicator" title="Has notes/tags">📝</span>`
-      : '';
-
     // Drive badge
     const driveBadgeHTML = event.driveLabel
       ? `<span class="drive-badge" style="background: ${event.driveColor || 'var(--accent)'};" title="${event.driveLabel}">${event.driveLabel}</span>`
@@ -839,7 +802,6 @@ class EventBrowser {
                 <span class="event-type ${typeClass}">${typeClass}</span>
                 ${healthBadgeHTML}
                 ${bookmarkHTML}
-                ${notesHTML}
                 <span class="event-item-date">${dateStr}</span>
             </div>
             <div class="event-item-time">${timeStr}</div>
@@ -958,13 +920,6 @@ class EventBrowser {
         ? `<span class="bookmark-indicator" title="${bookmarkCount} bookmark${bookmarkCount > 1 ? 's' : ''}">[${bookmarkCount}]</span>`
         : '';
 
-    // Check for notes/tags (use compoundKey for multi-drive support)
-    const notesKey = event.compoundKey || event.name;
-    const hasNotes = window.app?.notesManager?.hasNotes(notesKey);
-    const notesHTML = hasNotes
-      ? `<span class="notes-indicator" title="Has notes/tags">📝</span>`
-      : '';
-
     // Drive badge - always show drive label when available
     const driveBadgeHTML = event.driveLabel
       ? `<span class="drive-badge" style="background: ${event.driveColor || 'var(--accent)'};" title="${event.driveLabel}">${event.driveLabel}</span>`
@@ -985,7 +940,6 @@ class EventBrowser {
                 ${severityBadgeHTML}
                 ${healthBadgeHTML}
                 ${bookmarkHTML}
-                ${notesHTML}
                 <span class="event-item-date">${dateStr}</span>
             </div>
             <div class="event-item-time">${timeStr}</div>

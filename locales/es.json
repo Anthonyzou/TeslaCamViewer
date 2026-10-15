@@ -4,12 +4,10 @@
     "locale": "es",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "Ver grabaciones de la dashcam de Tesla con reproducción sincronizada"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "Donar",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "Ver en GitHub",
     "supportProject": "Apoyar este proyecto"
   },
-
   "sidebar": {
     "events": "Eventos",
     "map": "Mapa",
@@ -31,7 +28,6 @@
     "emptyState": "Haga clic en \"Seleccionar carpeta TeslaCam\" para comenzar",
     "emptyStateHint": "Puede seleccionar la carpeta TeslaCam, o cualquier carpeta que contenga grabaciones de la dashcam de Tesla"
   },
-
   "player": {
     "noEventSelected": "Ningún evento seleccionado",
     "selectEventHint": "👈 Seleccione un evento de la barra lateral para ver",
@@ -40,7 +36,6 @@
     "fullscreen": "Pantalla completa",
     "exitFullscreen": "Salir de pantalla completa"
   },
-
   "cameras": {
     "front": "Frontal",
     "back": "Trasera",
@@ -51,7 +46,6 @@
     "hideLeft": "Ocultar cámara izquierda",
     "hideRight": "Ocultar cámara derecha"
   },
-
   "controls": {
     "play": "Reproducir",
     "pause": "Pausar",
@@ -76,7 +70,6 @@
     "layout": "Diseño:",
     "camera": "Cámara:"
   },
-
   "bookmarks": {
     "title": "Marcadores",
     "previous": "Marcador anterior ([)",
@@ -90,7 +83,6 @@
       "other": "{{count}} marcadores"
     }
   },
-
   "export": {
     "header": "Exportar cámara",
     "allCameras": "Todas las cámaras (Cuadrícula)",
@@ -105,7 +97,6 @@
     "cancelled": "Exportación cancelada",
     "failed": "Exportación fallida"
   },
-
   "layouts": {
     "grid2x2": "Cuadrícula 2×2",
     "layout63": "6:3 Centrado",
@@ -116,28 +107,15 @@
     "frontRepeaters": "Frontal + Repetidores",
     "focus": "Modo enfoque"
   },
-
   "loading": {
     "loading": "Cargando...",
     "buffering": "Almacenando en búfer...",
     "bufferHealth": "Estado del búfer"
   },
-
-  "notes": {
-    "title": "Notas y etiquetas (N)",
-    "notes": "Notas",
-    "tags": "Etiquetas",
-    "tagPlaceholder": "Escriba etiqueta, presione Enter o clic +",
-    "addTag": "Agregar etiqueta",
-    "existingTags": "Etiquetas existentes",
-    "placeholder": "Agregar notas sobre este evento..."
-  },
-
   "help": {
     "title": "Atajos de teclado",
     "close": "Cerrar",
     "tip": "Consejo: La mayoría de los atajos solo funcionan cuando no está escribiendo en un campo de texto",
-
     "sections": {
       "playback": "Reproducción",
       "navigation": "Navegación",
@@ -147,7 +125,6 @@
       "speedControl": "Control de velocidad",
       "general": "General"
     },
-
     "shortcuts": {
       "playPause": "Reproducir / Pausar",
       "previousFrame": "Cuadro anterior",
@@ -182,14 +159,12 @@
       "closeModal": "Cerrar modal / Borrar marcas"
     }
   },
-
   "settings": {
     "title": "Configuración",
     "close": "Cerrar",
     "done": "Listo",
     "resetToDefaults": "Restablecer valores predeterminados",
     "confirmReset": "¿Restablecer todas las configuraciones a los valores predeterminados?",
-
     "sections": {
       "playback": "Reproducción",
       "performance": "Rendimiento",
@@ -204,7 +179,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -214,21 +188,18 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "playback": {
       "defaultSpeed": "Velocidad predeterminada",
       "defaultLayout": "Diseño predeterminado",
       "autoPlayNext": "Reproducir automáticamente siguiente evento",
       "loopByDefault": "Repetir por defecto"
     },
-
     "performance": {
       "preloadNextClip": "Precargar siguiente clip",
       "preloadHint": "Reproducción más fluida, usa más memoria",
       "memoryOptimization": "Optimización de memoria",
       "memoryHint": "Liberar recursos de video no utilizados"
     },
-
     "ui": {
       "theme": "Tema",
       "themeDark": "Oscuro (Predeterminado)",
@@ -240,18 +211,15 @@
       "showWhatsNew": "Mostrar indicadores de \"Novedades\"",
       "whatsNewHint": "Puntos azules en nuevas funciones, notificaciones de actualización"
     },
-
     "timeline": {
       "enableZoom": "Habilitar zoom de línea de tiempo",
       "zoomHint": "Desplazar para acercar/alejar en la línea de tiempo",
       "showClipMarkers": "Mostrar marcadores de clips"
     },
-
     "session": {
       "rememberLastFolder": "Recordar última carpeta",
       "folderHint": "Requiere permiso de carpeta al recargar"
     },
-
     "offline": {
       "downloadPackage": "Descargar paquete sin conexión",
       "downloadHint": "Crear una versión autónoma para unidades USB (~2-3 MB)",
@@ -259,7 +227,6 @@
       "mapNote": "Incluye todos los archivos de la aplicación y bibliotecas. El mapa requiere conexión a Internet.",
       "notAvailable": "El empaquetador sin conexión no está disponible. Por favor recargue la página e intente de nuevo."
     },
-
     "accessibility": {
       "highContrast": "Modo de alto contraste",
       "highContrastHint": "Aumenta el contraste del texto y los bordes",
@@ -268,12 +235,10 @@
       "textMedium": "Mediano (Predeterminado)",
       "textLarge": "Grande"
     },
-
     "mobile": {
       "lockLandscape": "Bloquear horizontal durante reproducción",
       "lockHint": "Bloquear pantalla en horizontal mientras se reproduce el video (solo móvil)"
     },
-
     "export": {
       "videoFormat": "Formato de video",
       "webm": "WebM (VP9) - Archivos más pequeños",
@@ -286,12 +251,10 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "language": {
       "selectLanguage": "Idioma",
       "languageHint": "Seleccione su idioma preferido"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -306,7 +269,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -320,14 +282,12 @@
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "sync": {
     "synced": "Sincronizado (las 4 cámaras en sincronía)",
     "drifted": "Desincronizado (corrigiendo automáticamente)",
     "videosSynced": "Los videos están sincronizados",
     "videosDrifted": "Videos desincronizados - resincronizando"
   },
-
   "events": {
     "stats": "{{total}} eventos ({{saved}} guardados, {{sentry}} centinela, {{recent}} recientes)",
     "saved": "Guardado",
@@ -338,7 +298,6 @@
       "other": "{{count}} eventos"
     }
   },
-
   "filter": {
     "search": "Buscar eventos",
     "type": "Tipo",
@@ -354,7 +313,6 @@
     "sentry": "Centinela",
     "recent": "Reciente",
     "onlyBookmarked": "Solo eventos con marcadores",
-    "onlyWithNotes": "Solo eventos con notas/etiquetas",
     "sortBy": "Ordenar por",
     "newestFirst": "Más reciente primero",
     "oldestFirst": "Más antiguo primero",
@@ -366,7 +324,6 @@
     "filterByTag": "Filtrar por etiqueta",
     "allTags": "Todas las etiquetas"
   },
-
   "map": {
     "noLocation": "Sin datos de ubicación",
     "showAll": "Mostrar todos los eventos",
@@ -383,7 +340,6 @@
     "phantomBrakeTip": "Esta ubicación tiene frenado fantasma repetido - considera reportarlo a Tesla si es un falso positivo.",
     "toggleDarkMode": "Alternar modo oscuro del mapa"
   },
-
   "statistics": {
     "title": "Estadísticas",
     "close": "Cerrar",
@@ -441,7 +397,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "Carpeta no encontrada",
     "noVideosFound": "No se encontraron videos en este evento",
@@ -451,7 +406,6 @@
     "permissionDenied": "Permiso denegado",
     "fileAccessError": "Error al acceder al archivo"
   },
-
   "time": {
     "hours": "h",
     "minutes": "m",
@@ -459,7 +413,6 @@
     "ago": "hace",
     "justNow": "ahora mismo"
   },
-
   "quickstart": {
     "skip": "Omitir",
     "previous": "Anterior",
@@ -500,7 +453,6 @@
       "showAll": "Mostrar todos los atajos"
     }
   },
-
   "driveManager": {
     "title": "Administrar unidades",
     "noDrives": "No hay unidades agregadas",
@@ -509,7 +461,6 @@
     "addDrive": "Agregar unidad",
     "changeColor": "Clic para cambiar color"
   },
-
   "driveSync": {
     "title": "Sincronizar unidades",
     "close": "Cerrar (Esc)",
@@ -541,7 +492,6 @@
     "newerOnSource": "Más nuevos en origen",
     "differentSize": "Tamaño diferente",
     "alreadySynced": "Ya sincronizados",
-    "includeNotes": "Incluir notas y etiquetas",
     "eta": "Tiempo estimado:",
     "sourceEvents": "Eventos de origen",
     "destEvents": "Eventos de destino",
@@ -568,20 +518,14 @@
     "syncedOnly": "Solo sincronizados",
     "showingFirst": "Mostrando primeros {{count}} de {{total}} eventos"
   },
-
   "syncSettings": {
     "title": "Configuración de sincronización",
     "verifyAfterCopy": "Verificar archivos después de copiar",
-    "syncNotes": "Sincronizar notas y etiquetas",
     "writeSyncFile": "Escribir archivo de configuración en destino",
     "confirmBeforeDelete": "Confirmar antes de eliminar archivos de origen",
-    "noteConflict": "Resolución de conflictos de notas:",
-    "askEachTime": "Preguntar cada vez",
-    "mergeAutomatically": "Fusionar automáticamente",
     "saveSettings": "Guardar configuración",
     "close": "Cerrar"
   },
-
   "presets": {
     "title": "Administrar preajustes",
     "noPresets": "Sin preajustes guardados. Seleccione unidades y haga clic en \"Guardar\" para crear uno.",
@@ -602,7 +546,6 @@
     "errors": "Errores:",
     "noNewPresets": "No se encontraron nuevos preajustes en ninguna unidad."
   },
-
   "layoutEditor": {
     "title": "Editor de diseño",
     "close": "Cerrar",
@@ -649,7 +592,6 @@
     "failedToUpdate": "Error al actualizar diseño",
     "soon": "Pronto"
   },
-
   "common": {
     "close": "Cerrar",
     "cancel": "Cancelar",
@@ -666,7 +608,6 @@
     "success": "Éxito",
     "warning": "Advertencia"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "Alternar cámara lenta de incidentes",
     "slowMoEnabled": "Cámara lenta de incidentes: ACTIVADA",

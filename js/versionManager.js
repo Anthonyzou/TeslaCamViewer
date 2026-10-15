@@ -522,8 +522,8 @@ class VersionManager {
         features: [
           {
             id: 'user-data-backup',
-            text: 'Notes, tags, and bookmarks now backed up to event folders - data travels with the drive',
-            elementSelector: '#notesBtn',
+            text: 'Bookmarks now backed up to event folders - data travels with the drive',
+            elementSelector: '#addBookmarkBtn',
           },
           {
             id: 'sync-horizontal-layout',

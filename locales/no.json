@@ -4,12 +4,10 @@
     "locale": "no",
     "status": "complete"
   },
-
   "app": {
     "title": "TeslaCamViewer.com",
     "description": "Se Tesla dashcam-opptak med synkronisert avspilling"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "Donere",
@@ -19,7 +17,6 @@
     "viewOnGitHub": "Se på GitHub",
     "supportProject": "Støtt dette prosjektet"
   },
-
   "sidebar": {
     "events": "Hendelser",
     "map": "Kart",
@@ -31,7 +28,6 @@
     "emptyState": "Klikk på \"Velg TeslaCam-mappe\" for å begynne",
     "emptyStateHint": "Du kan velge TeslaCam-mappen, eller en hvilken som helst mappe som inneholder Tesla dashcam-opptak"
   },
-
   "player": {
     "noEventSelected": "Ingen hendelse valgt",
     "selectEventHint": "👈 Velg en hendelse fra sidepanelet",
@@ -40,7 +36,6 @@
     "fullscreen": "Fullskjerm",
     "exitFullscreen": "Avslutt fullskjerm"
   },
-
   "cameras": {
     "front": "Foran",
     "back": "Bak",
@@ -51,7 +46,6 @@
     "hideLeft": "Skjul venstre kamera",
     "hideRight": "Skjul høyre kamera"
   },
-
   "controls": {
     "play": "Spill",
     "pause": "Pause",
@@ -76,7 +70,6 @@
     "layout": "Oppsett:",
     "camera": "Kamera:"
   },
-
   "bookmarks": {
     "title": "Bokmerker",
     "previous": "Forrige bokmerke ([)",
@@ -86,7 +79,6 @@
     "clearAll": "Fjern alle",
     "noBookmarks": "Ingen bokmerker ennå"
   },
-
   "export": {
     "header": "Eksporter kamera",
     "allCameras": "Alle kameraer (Rutenett)",
@@ -101,7 +93,6 @@
     "cancelled": "Eksport avbrutt",
     "failed": "Eksport mislyktes"
   },
-
   "layouts": {
     "grid2x2": "2×2 Rutenett",
     "layout63": "6:3 Sentrert",
@@ -112,28 +103,15 @@
     "frontRepeaters": "Foran + Sidekameraer",
     "focus": "Fokusmodus"
   },
-
   "loading": {
     "loading": "Laster...",
     "buffering": "Bufrer...",
     "bufferHealth": "Bufferstatus"
   },
-
-  "notes": {
-    "title": "Notater og etiketter (N)",
-    "notes": "Notater",
-    "tags": "Etiketter",
-    "tagPlaceholder": "Skriv etikett, trykk Enter eller klikk +",
-    "addTag": "Legg til etikett",
-    "existingTags": "Eksisterende etiketter",
-    "placeholder": "Legg til notater om denne hendelsen..."
-  },
-
   "help": {
     "title": "Hurtigtaster",
     "close": "Lukk",
     "tip": "Tips: De fleste hurtigtaster fungerer bare når du ikke skriver i et tekstfelt",
-
     "sections": {
       "playback": "Avspilling",
       "navigation": "Navigasjon",
@@ -143,7 +121,6 @@
       "speedControl": "Hastighetskontroll",
       "general": "Generelt"
     },
-
     "shortcuts": {
       "playPause": "Spill / Pause",
       "previousFrame": "Forrige bilde",
@@ -178,14 +155,12 @@
       "closeModal": "Lukk modal / Fjern markeringer"
     }
   },
-
   "settings": {
     "title": "Innstillinger",
     "close": "Lukk",
     "done": "Ferdig",
     "resetToDefaults": "Tilbakestill til standard",
     "confirmReset": "Tilbakestille alle innstillinger til standard?",
-
     "sections": {
       "playback": "Avspilling",
       "performance": "Ytelse",
@@ -200,7 +175,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -210,12 +184,10 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "language": {
       "selectLanguage": "Språk",
       "languageHint": "Velg ditt foretrukne språk"
     },
-
     "export": {
       "videoFormat": "Videoformat",
       "webm": "WebM (VP9) - Mindre filer",
@@ -228,7 +200,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -243,7 +214,6 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -257,7 +227,6 @@
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }
   },
-
   "filter": {
     "search": "Søk etter hendelser",
     "type": "Type",
@@ -270,12 +239,10 @@
     "filters": "Filtre",
     "eventTypes": "Hendelsestyper",
     "onlyBookmarked": "Kun bokmerkede hendelser",
-    "onlyWithNotes": "Kun hendelser med notater/etiketter",
     "sortBy": "Sorter etter",
     "newestFirst": "Nyeste først",
     "oldestFirst": "Eldste først"
   },
-
   "map": {
     "noLocation": "Ingen stedsdata",
     "showAll": "Vis alle hendelser",
@@ -292,7 +259,6 @@
     "phantomBrakeTip": "Dette stedet har gjentatt fantombremsing - vurder å rapportere til Tesla hvis det er en falsk positiv.",
     "toggleDarkMode": "Veksle mørk kartmodus"
   },
-
   "statistics": {
     "title": "Statistikk",
     "close": "Lukk",
@@ -350,7 +316,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "Mappe ikke funnet",
     "noVideosFound": "Ingen videoer funnet i denne hendelsen",
@@ -360,7 +325,6 @@
     "permissionDenied": "Tillatelse nektet",
     "fileAccessError": "Filtilgangsfeil"
   },
-
   "time": {
     "hours": "t",
     "minutes": "m",
@@ -368,7 +332,6 @@
     "ago": "siden",
     "justNow": "akkurat nå"
   },
-
   "quickstart": {
     "skip": "Hopp over",
     "previous": "Forrige",
@@ -409,7 +372,6 @@
       "showAll": "Vis alle hurtigtaster"
     }
   },
-
   "driveManager": {
     "title": "Administrer stasjoner",
     "noDrives": "Ingen stasjoner lagt til",
@@ -418,7 +380,6 @@
     "addDrive": "Legg til stasjon",
     "changeColor": "Klikk for å endre farge"
   },
-
   "driveSync": {
     "title": "Synkroniser stasjoner",
     "close": "Lukk (Esc)",
@@ -450,7 +411,6 @@
     "newerOnSource": "Nyere på kilde",
     "differentSize": "Ulik størrelse",
     "alreadySynced": "Allerede synkronisert",
-    "includeNotes": "Inkluder notater og etiketter",
     "eta": "Gjenværende tid:",
     "sourceEvents": "Kildehendelser",
     "destEvents": "Målhendelser",
@@ -477,20 +437,14 @@
     "syncedOnly": "Kun synkroniserte",
     "showingFirst": "Viser første {{count}} av {{total}} hendelser"
   },
-
   "syncSettings": {
     "title": "Synkroniseringsinnstillinger",
     "verifyAfterCopy": "Verifiser filer etter kopiering",
-    "syncNotes": "Synkroniser notater og etiketter",
     "writeSyncFile": "Skriv synkroniseringsinnstillinger til mål",
     "confirmBeforeDelete": "Bekreft før sletting av kildefiler",
-    "noteConflict": "Notatkonfliktløsning:",
-    "askEachTime": "Spør hver gang",
-    "mergeAutomatically": "Slå sammen automatisk",
     "saveSettings": "Lagre innstillinger",
     "close": "Lukk"
   },
-
   "presets": {
     "title": "Administrer forhåndsinnstillinger",
     "noPresets": "Ingen lagrede forhåndsinnstillinger. Velg stasjoner og klikk \"Lagre\" for å opprette en.",
@@ -511,7 +465,6 @@
     "errors": "Feil:",
     "noNewPresets": "Ingen nye forhåndsinnstillinger funnet på stasjoner."
   },
-
   "layoutEditor": {
     "title": "Oppsetteditor",
     "close": "Lukk",
@@ -558,7 +511,6 @@
     "failedToUpdate": "Kunne ikke oppdatere oppsett",
     "soon": "Kommer snart"
   },
-
   "common": {
     "close": "Lukk",
     "cancel": "Avbryt",
@@ -575,7 +527,6 @@
     "success": "Suksess",
     "warning": "Advarsel"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "Veksle hendelsessakte film",
     "slowMoEnabled": "Hendelsessakte film: PÅ",

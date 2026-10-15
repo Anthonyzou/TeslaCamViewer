@@ -3,9 +3,8 @@
  */
 
 class DriveSync {
-    constructor(folderManager, notesManager) {
+    constructor(folderManager) {
         this.folderManager = folderManager;
-        this.notesManager = notesManager;
 
         // Drive references
         this.sourceDrive = null;
@@ -63,8 +62,6 @@ class DriveSync {
         const defaults = {
             defaultMode: 'copy',
             verifyAfterCopy: true,
-            syncNotes: true,
-            noteConflictMode: 'ask', // 'ask' or 'merge'
             writeSyncFile: true,
             showSameFiles: false,
             confirmBeforeDelete: true,
@@ -318,14 +315,6 @@ class DriveSync {
                 same: [],         // Identical
                 destOnly: [],     // Only on destination
 
-                notesComparison: {
-                    sourceOnly: [],
-                    destOnly: [],
-                    newerOnSource: [],
-                    newerOnDest: [],
-                    conflict: []
-                },
-
                 totalSourceSize: 0,
                 totalDestFree: 0,
                 selectedSize: 0,
@@ -396,11 +385,6 @@ class DriveSync {
                         selected: false
                     });
                 }
-            }
-
-            // Compare notes if enabled
-            if (this.settings.syncNotes) {
-                results.notesComparison = await this.compareNotes(sourceMap, destMap);
             }
 
             // Compute comprehensive statistics
@@ -497,60 +481,6 @@ class DriveSync {
 
         // Different file count means source has more/different files
         return source.fileCount > dest.fileCount ? 'newer' : 'different_size';
-    }
-
-    async compareNotes(sourceMap, destMap) {
-        const results = {
-            sourceOnly: [],
-            destOnly: [],
-            newerOnSource: [],
-            newerOnDest: [],
-            conflict: []
-        };
-
-        // Get all notes from NotesManager
-        const allNotes = this.notesManager.notes || {};
-
-        // Compare notes for each event
-        for (const [eventName, sourceEvent] of sourceMap) {
-            const sourceKey = sourceEvent.compoundKey || eventName;
-            const destEvent = destMap.get(eventName);
-            const destKey = destEvent ? (destEvent.compoundKey || eventName) : null;
-
-            const sourceNotes = allNotes[sourceKey];
-            const destNotes = destKey ? allNotes[destKey] : null;
-
-            if (sourceNotes && !destNotes) {
-                results.sourceOnly.push({
-                    eventName,
-                    notes: sourceNotes
-                });
-            } else if (!sourceNotes && destNotes) {
-                results.destOnly.push({
-                    eventName,
-                    notes: destNotes
-                });
-            } else if (sourceNotes && destNotes) {
-                // Both have notes - check for differences
-                const sourceText = sourceNotes.text || '';
-                const destText = destNotes.text || '';
-                const sourceTags = sourceNotes.tags || [];
-                const destTags = destNotes.tags || [];
-
-                if (sourceText !== destText ||
-                    JSON.stringify(sourceTags.sort()) !== JSON.stringify(destTags.sort())) {
-                    // Different - mark as conflict for now
-                    // Could add timestamp comparison if we tracked it
-                    results.conflict.push({
-                        eventName,
-                        sourceNotes,
-                        destNotes
-                    });
-                }
-            }
-        }
-
-        return results;
     }
 
     // ========================================
@@ -835,8 +765,7 @@ class DriveSync {
     async startSync(options = {}) {
         const {
             selectedEvents = [],
-            mode = this.settings.defaultMode, // 'copy' or 'move'
-            syncNotes = this.settings.syncNotes
+            mode = this.settings.defaultMode // 'copy' or 'move'
         } = options;
 
         if (selectedEvents.length === 0) {
@@ -929,11 +858,6 @@ class DriveSync {
                 }
             }
 
-            // Sync notes if enabled
-            if (syncNotes && this.comparisonResults?.notesComparison) {
-                await this.syncNotes();
-            }
-
             // Write sync settings file
             if (this.settings.writeSyncFile) {
                 await this.writeSyncSettings();
@@ -1012,7 +936,7 @@ class DriveSync {
         // Create event folder
         const destEventFolder = await destTypeFolder.getDirectoryHandle(event.name, { create: true });
 
-        // Check if backup file is included (notes, tags, bookmarks)
+        // Check if backup file is included (bookmarks)
         const hasBackupFile = fingerprint.files.some(f => f.name === this.USERDATA_BACKUP_FILENAME);
         if (hasBackupFile) {
             console.log(`[DriveSync] Event ${event.name} includes user data backup file`);
@@ -1184,48 +1108,6 @@ class DriveSync {
         }
     }
 
-    async syncNotes() {
-        const notes = this.comparisonResults?.notesComparison;
-        if (!notes) return;
-
-        // Copy source-only notes to destination context
-        for (const item of notes.sourceOnly) {
-            const destEvent = this.destDrive.events?.find(e => e.name === item.eventName);
-            if (destEvent) {
-                const destKey = destEvent.compoundKey || item.eventName;
-                this.notesManager.saveNotes(destKey, item.notes);
-            }
-        }
-
-        // Handle conflicts based on settings
-        if (this.settings.noteConflictMode === 'merge') {
-            for (const item of notes.conflict) {
-                const destEvent = this.destDrive.events?.find(e => e.name === item.eventName);
-                if (destEvent) {
-                    const destKey = destEvent.compoundKey || item.eventName;
-                    const merged = this.mergeNotes(item.sourceNotes, item.destNotes);
-                    this.notesManager.saveNotes(destKey, merged);
-                }
-            }
-        }
-        // 'ask' mode is handled in UI
-    }
-
-    mergeNotes(source, dest) {
-        // Combine tags (unique)
-        const allTags = [...new Set([...(source.tags || []), ...(dest.tags || [])])];
-
-        // Combine text with separator
-        let text = '';
-        if (source.text && dest.text && source.text !== dest.text) {
-            text = source.text + '\n---\n' + dest.text;
-        } else {
-            text = source.text || dest.text || '';
-        }
-
-        return { text, tags: allTags };
-    }
-
     // ========================================
     // Sync Settings File
     // ========================================
@@ -1245,8 +1127,7 @@ class DriveSync {
     async writeSyncSettings() {
         const existingSettings = await this.readSyncSettings() || {
             version: 1,
-            syncedEvents: {},
-            notes: {}
+            syncedEvents: {}
         };
 
         // Update with current sync info
@@ -1272,19 +1153,7 @@ class DriveSync {
             }
         }
 
-        // Backup notes for destination events
-        const destNotes = {};
-        for (const event of (this.destDrive.events || [])) {
-            const key = event.compoundKey || event.name;
-            const notes = this.notesManager.notes?.[key];
-            if (notes) {
-                destNotes[event.name] = notes;
-            }
-        }
-        existingSettings.notes = destNotes;
-
         existingSettings.settings = {
-            autoSyncNotes: this.settings.syncNotes,
             verifyAfterCopy: this.settings.verifyAfterCopy,
             deleteAfterVerify: this.settings.defaultMode === 'move'
         };

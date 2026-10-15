@@ -1,7 +1,7 @@
 /**
- * EventDataBackup - Backup notes, tags, and bookmarks to event folders
+ * EventDataBackup - Backup bookmarks to event folders
  *
- * This module ensures user data (notes, tags, bookmarks) is saved directly
+ * This module ensures user data (bookmarks) is saved directly
  * to the event folder on the drive, so it travels with the drive and can't
  * be lost if browser localStorage is cleared.
  *
@@ -16,9 +16,9 @@ class EventDataBackup {
     }
 
     /**
-     * Save user data (notes, tags, bookmarks) to the event folder
+     * Save user data (bookmarks) to the event folder
      * @param {Object} event - Event object with folderHandle
-     * @param {Object} data - { notes: { text, tags }, bookmarks: [] }
+     * @param {Object} data - { bookmarks: [] }
      */
     async saveToEventFolder(event, data) {
         if (!event || !event.folderHandle) {
@@ -93,13 +93,11 @@ class EventDataBackup {
             version: 1,
             eventName: event.name,
             lastModified: new Date().toISOString(),
-            notes: data.notes || { text: '', tags: [] },
             bookmarks: data.bookmarks || []
         };
 
         // Only write if there's actual data
-        const hasData = (backupData.notes.text || backupData.notes.tags?.length > 0 ||
-                        backupData.bookmarks.length > 0);
+        const hasData = backupData.bookmarks.length > 0;
 
         if (!hasData) {
             // Try to delete the backup file if no data
@@ -120,7 +118,7 @@ class EventDataBackup {
     /**
      * Load user data from an event folder's backup file
      * @param {Object} event - Event object with folderHandle
-     * @returns {Object|null} { notes: { text, tags }, bookmarks: [] } or null
+     * @returns {Object|null} { bookmarks: [] } or null
      */
     async loadFromEventFolder(event) {
         if (!event || !event.folderHandle) {
@@ -134,7 +132,6 @@ class EventDataBackup {
             const data = JSON.parse(text);
 
             return {
-                notes: data.notes || { text: '', tags: [] },
                 bookmarks: data.bookmarks || [],
                 lastModified: data.lastModified
             };
@@ -148,7 +145,7 @@ class EventDataBackup {
      * Load all backup data from a drive's events
      * Returns a map of eventName -> backup data
      * @param {Array} events - Array of event objects
-     * @returns {Map} eventName -> { notes, bookmarks }
+     * @returns {Map} eventName -> { bookmarks }
      */
     async loadAllFromDrive(events) {
         const backups = new Map();
@@ -172,45 +169,6 @@ class EventDataBackup {
         }
 
         return backups;
-    }
-
-    /**
-     * Merge backup data with localStorage data
-     * Newer data wins (based on lastModified)
-     * @param {Object} localData - { text, tags } from localStorage
-     * @param {Object} backupData - { notes: { text, tags }, lastModified } from backup
-     * @param {string} localLastModified - ISO timestamp or undefined
-     */
-    mergeNotes(localData, backupData, localLastModified) {
-        if (!backupData || !backupData.notes) {
-            return localData;
-        }
-
-        if (!localData || (!localData.text && !localData.tags?.length)) {
-            return backupData.notes;
-        }
-
-        // If we have timestamps, use the newer one
-        if (localLastModified && backupData.lastModified) {
-            const localTime = new Date(localLastModified).getTime();
-            const backupTime = new Date(backupData.lastModified).getTime();
-
-            if (backupTime > localTime) {
-                return backupData.notes;
-            }
-            return localData;
-        }
-
-        // No timestamps - merge: prefer local text but combine tags
-        const mergedTags = [...new Set([
-            ...(localData.tags || []),
-            ...(backupData.notes.tags || [])
-        ])].sort();
-
-        return {
-            text: localData.text || backupData.notes.text,
-            tags: mergedTags
-        };
     }
 
     /**

@@ -3,7 +3,6 @@
     "title": "TeslaCamViewer.com",
     "description": "View Tesla dashcam footage with synchronized camera playback"
   },
-
   "header": {
     "github": "GitHub",
     "donate": "Donate",
@@ -13,7 +12,6 @@
     "viewOnGitHub": "View on GitHub",
     "supportProject": "Support this project"
   },
-
   "sidebar": {
     "events": "Events",
     "map": "Map",
@@ -25,7 +23,6 @@
     "emptyState": "Click \"Select TeslaCam Folder\" to get started",
     "emptyStateHint": "You can select the TeslaCam folder, or any parent/child folder containing Tesla dashcam footage"
   },
-
   "player": {
     "noEventSelected": "No event selected",
     "selectEventHint": "Select an event from the sidebar to start viewing",
@@ -34,7 +31,6 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit fullscreen"
   },
-
   "cameras": {
     "front": "Front",
     "back": "Back",
@@ -49,7 +45,6 @@
     "hideLeftPillar": "Hide Left Pillar Camera",
     "hideRightPillar": "Hide Right Pillar Camera"
   },
-
   "controls": {
     "play": "Play",
     "pause": "Pause",
@@ -77,7 +72,6 @@
     "repeaters": "Repeaters",
     "pillars": "Pillars"
   },
-
   "bookmarks": {
     "title": "Bookmarks",
     "previous": "Previous Bookmark ([)",
@@ -91,7 +85,6 @@
       "other": "{{count}} bookmarks"
     }
   },
-
   "export": {
     "header": "Export Options",
     "exportVideo": "Export Video",
@@ -109,7 +102,6 @@
     "cancelled": "Export cancelled",
     "failed": "Export failed"
   },
-
   "layouts": {
     "grid2x2": "2×2 Grid",
     "grid3x2": "3×2 Grid (6 Cam)",
@@ -121,28 +113,15 @@
     "frontRepeaters": "Front + Repeaters",
     "focus": "Focus Mode"
   },
-
   "loading": {
     "loading": "Loading...",
     "buffering": "Buffering...",
     "bufferHealth": "Buffer Health"
   },
-
-  "notes": {
-    "title": "Notes & Tags (N)",
-    "notes": "Notes",
-    "tags": "Tags",
-    "tagPlaceholder": "Type tag, press Enter or click +",
-    "addTag": "Add tag",
-    "existingTags": "Existing tags",
-    "placeholder": "Add notes about this event..."
-  },
-
   "help": {
     "title": "Keyboard Shortcuts",
     "close": "Close",
     "tip": "Tip: Most keyboard shortcuts only work when not typing in a text field",
-
     "sections": {
       "playback": "Playback",
       "navigation": "Navigation",
@@ -152,7 +131,6 @@
       "speedControl": "Speed Control",
       "general": "General"
     },
-
     "shortcuts": {
       "playPause": "Play / Pause",
       "previousFrame": "Previous frame",
@@ -188,14 +166,12 @@
       "closeModal": "Close modal / Clear marks"
     }
   },
-
   "settings": {
     "title": "Settings",
     "close": "Close",
     "done": "Done",
     "resetToDefaults": "Reset to Defaults",
     "confirmReset": "Reset all settings to defaults?",
-
     "sections": {
       "playback": "Playback",
       "performance": "Performance",
@@ -210,7 +186,6 @@
       "telemetry": "Telemetry Overlay",
       "miniMap": "Mini-Map"
     },
-
     "tabs": {
       "general": "General",
       "playback": "Playback",
@@ -220,21 +195,18 @@
       "ai-search": "AI Search",
       "diagnostics": "Diagnostics"
     },
-
     "playback": {
       "defaultSpeed": "Default Speed",
       "defaultLayout": "Default Layout",
       "autoPlayNext": "Auto-play next event",
       "loopByDefault": "Loop by default"
     },
-
     "performance": {
       "preloadNextClip": "Preload next clip",
       "preloadHint": "Smoother playback, uses more memory",
       "memoryOptimization": "Memory optimization",
       "memoryHint": "Release unused video resources"
     },
-
     "ui": {
       "theme": "Theme",
       "themeDark": "Dark (Default)",
@@ -246,18 +218,15 @@
       "showWhatsNew": "Show \"What's New\" indicators",
       "whatsNewHint": "Blue dots on new features, update notifications"
     },
-
     "timeline": {
       "enableZoom": "Enable timeline zoom",
       "zoomHint": "Scroll to zoom in/out on timeline",
       "showClipMarkers": "Show clip markers"
     },
-
     "session": {
       "rememberLastFolder": "Remember last folder",
       "folderHint": "Requires folder permission on reload"
     },
-
     "offline": {
       "downloadPackage": "Download Offline Package",
       "downloadHint": "Create a self-contained version for USB drives (~2-3 MB)",
@@ -265,7 +234,6 @@
       "mapNote": "Includes all app files and libraries. Map requires internet connection.",
       "notAvailable": "Offline packager not available. Please reload the page and try again."
     },
-
     "accessibility": {
       "highContrast": "High contrast mode",
       "highContrastHint": "Increases text and border contrast",
@@ -274,12 +242,10 @@
       "textMedium": "Medium (Default)",
       "textLarge": "Large"
     },
-
     "mobile": {
       "lockLandscape": "Lock landscape during playback",
       "lockHint": "Lock screen to landscape while video is playing (mobile only)"
     },
-
     "export": {
       "videoFormat": "Video Format",
       "webm": "WebM (VP9) - Smaller files",
@@ -292,7 +258,6 @@
       "branding": "Show TeslaCamViewer.com branding",
       "brandingHint": "Display branding in the bottom banner of exported videos"
     },
-
     "telemetry": {
       "enabled": "Enable Telemetry Overlay",
       "enabledHint": "Press T to toggle during playback",
@@ -307,13 +272,11 @@
       "inExportHint": "Add telemetry overlay to exported videos",
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
-
     "weather": {
       "units": "Temperature Units",
       "unitsCelsius": "Celsius (°C)",
       "unitsFahrenheit": "Fahrenheit (°F)"
     },
-
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",
@@ -326,20 +289,17 @@
       "providerStadia": "Stadia Maps",
       "description": "GPS map overlay showing vehicle position synced with video playback"
     },
-
     "language": {
       "selectLanguage": "Language",
       "languageHint": "Select your preferred language"
     }
   },
-
   "sync": {
     "synced": "Synced (all cameras in sync)",
     "drifted": "Drifted (auto-correcting)",
     "videosSynced": "Videos are synchronized",
     "videosDrifted": "Videos drifted - resyncing"
   },
-
   "events": {
     "stats": "{{total}} events ({{saved}} saved, {{sentry}} sentry, {{recent}} recent)",
     "saved": "Saved",
@@ -350,7 +310,6 @@
       "other": "{{count}} events"
     }
   },
-
   "filter": {
     "search": "Search events",
     "type": "Type",
@@ -366,7 +325,6 @@
     "sentry": "Sentry",
     "recent": "Recent",
     "onlyBookmarked": "Only Bookmarked Events",
-    "onlyWithNotes": "Only Events with Notes/Tags",
     "sortBy": "Sort By",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",
@@ -378,7 +336,6 @@
     "filterByTag": "Filter by Tag",
     "allTags": "All Tags"
   },
-
   "map": {
     "noLocation": "No location data",
     "showAll": "Show all events",
@@ -399,7 +356,6 @@
     "scanComplete": "Scan complete: {{incidents}} incidents, {{apDisengagements}} AP disengagements found",
     "scanCancelled": "Scan cancelled"
   },
-
   "statistics": {
     "title": "Statistics",
     "close": "Close",
@@ -457,7 +413,6 @@
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available"
   },
-
   "errors": {
     "folderNotFound": "Folder not found",
     "noVideosFound": "No videos found in this event",
@@ -467,7 +422,6 @@
     "permissionDenied": "Permission denied",
     "fileAccessError": "Error accessing file"
   },
-
   "time": {
     "hours": "h",
     "minutes": "m",
@@ -475,7 +429,6 @@
     "ago": "ago",
     "justNow": "just now"
   },
-
   "quickstart": {
     "skip": "Skip",
     "previous": "Previous",
@@ -516,7 +469,6 @@
       "showAll": "Show all shortcuts"
     }
   },
-
   "driveManager": {
     "title": "Manage Drives",
     "noDrives": "No drives added yet",
@@ -530,7 +482,6 @@
     "syncNow": "Load events from this archive drive",
     "editDrive": "Edit drive settings"
   },
-
   "driveSetup": {
     "title": "Drive Setup",
     "editTitle": "Edit Drive Settings",
@@ -553,7 +504,6 @@
     "addDrive": "Add Drive",
     "save": "Save Changes"
   },
-
   "driveSync": {
     "title": "Drive Sync",
     "close": "Close (Esc)",
@@ -585,7 +535,6 @@
     "newerOnSource": "Newer on source",
     "differentSize": "Different size",
     "alreadySynced": "Already synced",
-    "includeNotes": "Include notes & tags",
     "eta": "ETA:",
     "sourceEvents": "Source Events",
     "destEvents": "Destination Events",
@@ -612,20 +561,14 @@
     "syncedOnly": "Synced Only",
     "showingFirst": "Showing first {{count}} of {{total}} events"
   },
-
   "syncSettings": {
     "title": "Sync Settings",
     "verifyAfterCopy": "Verify files after copy",
-    "syncNotes": "Sync notes and tags",
     "writeSyncFile": "Write sync settings file to destination",
     "confirmBeforeDelete": "Confirm before deleting source files",
-    "noteConflict": "Note conflict resolution:",
-    "askEachTime": "Ask each time",
-    "mergeAutomatically": "Merge automatically",
     "saveSettings": "Save Settings",
     "close": "Close"
   },
-
   "presets": {
     "title": "Manage Presets",
     "noPresets": "No saved presets. Select drives and click \"Save\" to create one.",
@@ -646,7 +589,6 @@
     "errors": "Errors:",
     "noNewPresets": "No new presets found on any drives."
   },
-
   "layoutEditor": {
     "title": "Layout Editor",
     "close": "Close",
@@ -693,7 +635,6 @@
     "failedToUpdate": "Failed to update layout",
     "soon": "Soon"
   },
-
   "common": {
     "close": "Close",
     "cancel": "Cancel",
@@ -710,7 +651,6 @@
     "success": "Success",
     "warning": "Warning"
   },
-
   "incidentDetection": {
     "toggleSlowMo": "Toggle Incident Slow-Mo",
     "slowMoEnabled": "Incident Slow-Mo: ON",
@@ -725,7 +665,6 @@
     "birdsEyeMedG": "Med G",
     "birdsEyeHighG": "High G"
   },
-
   "license": {
     "activated": "License Activated!",
     "howItWorks": "Here's how your TeslaCamViewer Pro license works:",
@@ -739,7 +678,6 @@
     "multipleDevicesDesc": "Use your license on any device. Each new browser will ask for your email once to verify, then you're all set.",
     "gotIt": "Got It"
   },
-
   "telemetry": {
     "title": "Telemetry",
     "toggleAnomalyMarkers": "Toggle anomaly markers",
