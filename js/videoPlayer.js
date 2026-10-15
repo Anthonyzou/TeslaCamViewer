@@ -25,12 +25,24 @@ class VideoPlayer {
     };
 
     this.videoLabels = {
-      front: document.querySelector('#videoFront')?.parentElement?.querySelector('.video-label'),
-      back: document.querySelector('#videoBack')?.parentElement?.querySelector('.video-label'),
-      left_repeater: document.querySelector('#videoLeft')?.parentElement?.querySelector('.video-label'),
-      right_repeater: document.querySelector('#videoRight')?.parentElement?.querySelector('.video-label'),
-      left_pillar: document.querySelector('#videoLeftPillar')?.parentElement?.querySelector('.video-label'),
-      right_pillar: document.querySelector('#videoRightPillar')?.parentElement?.querySelector('.video-label'),
+      front: document
+        .querySelector('#videoFront')
+        ?.parentElement?.querySelector('.video-label'),
+      back: document
+        .querySelector('#videoBack')
+        ?.parentElement?.querySelector('.video-label'),
+      left_repeater: document
+        .querySelector('#videoLeft')
+        ?.parentElement?.querySelector('.video-label'),
+      right_repeater: document
+        .querySelector('#videoRight')
+        ?.parentElement?.querySelector('.video-label'),
+      left_pillar: document
+        .querySelector('#videoLeftPillar')
+        ?.parentElement?.querySelector('.video-label'),
+      right_pillar: document
+        .querySelector('#videoRightPillar')
+        ?.parentElement?.querySelector('.video-label'),
     };
 
     this.setupEventListeners();
@@ -39,12 +51,22 @@ class VideoPlayer {
   /**
    * Native-feeling properties that proxy to the front (master) camera
    */
-  get currentTime() { return this.videos.front.currentTime; }
-  set currentTime(t) { this.seek(t); }
+  get currentTime() {
+    return this.videos.front.currentTime;
+  }
+  set currentTime(t) {
+    this.seek(t);
+  }
 
-  get duration() { return this.videos.front.duration; }
-  get paused() { return this.videos.front.paused; }
-  get playbackRate() { return this.videos.front.playbackRate; }
+  get duration() {
+    return this.videos.front.duration;
+  }
+  get paused() {
+    return this.videos.front.paused;
+  }
+  get playbackRate() {
+    return this.videos.front.playbackRate;
+  }
   set playbackRate(r) {
     for (const v of Object.values(this.videos)) v.playbackRate = r;
   }
@@ -103,8 +125,12 @@ class VideoPlayer {
       });
 
       video.addEventListener('pause', onPlayStateToggle);
-      video.addEventListener('waiting', () => this.handleBufferingStart(camera));
-      video.addEventListener('stalled', () => this.handleBufferingStart(camera));
+      video.addEventListener('waiting', () =>
+        this.handleBufferingStart(camera)
+      );
+      video.addEventListener('stalled', () =>
+        this.handleBufferingStart(camera)
+      );
       video.addEventListener('canplay', () => this.handleBufferingEnd(camera));
 
       video.controls = false;
@@ -140,11 +166,16 @@ class VideoPlayer {
   }
 
   async loadClip(clipIndex) {
-    if (!this.currentEvent || clipIndex < 0 || clipIndex >= this.currentEvent.clipGroups.length) return;
+    if (
+      !this.currentEvent ||
+      clipIndex < 0 ||
+      clipIndex >= this.currentEvent.clipGroups.length
+    )
+      return;
 
     const wasPlaying = !this.paused;
     const currentRate = this.playbackRate;
-    
+
     if (wasPlaying) this.pause();
 
     this.resetAllVideoLabelStates();
@@ -154,13 +185,13 @@ class VideoPlayer {
     const cameras = ['front', 'back', 'left_repeater', 'right_repeater'];
     if (this.hasPillarCameras) cameras.push('left_pillar', 'right_pillar');
 
-    const loadPromises = cameras.map(camera => {
+    const loadPromises = cameras.map((camera) => {
       const clip = clipGroup.clips[camera];
       const video = this.videos[camera];
       const url = clip?.url || '';
-      
+
       if (video.getAttribute('src') === url) return Promise.resolve();
-      
+
       return new Promise((resolve) => {
         video.onloadedmetadata = () => resolve();
         video.onerror = () => resolve();
@@ -177,9 +208,11 @@ class VideoPlayer {
   }
 
   play() {
-    const activeVideos = Object.values(this.videos).filter(v => v.getAttribute('src'));
+    const activeVideos = Object.values(this.videos).filter((v) =>
+      v.getAttribute('src')
+    );
     if (activeVideos.length === 0) return;
-    return Promise.all(activeVideos.map(v => v.play()));
+    return Promise.all(activeVideos.map((v) => v.play()));
   }
 
   pause() {
@@ -193,21 +226,33 @@ class VideoPlayer {
       return;
     }
 
-    if (time >= this.duration && this.currentEvent && this.currentClipIndex < this.currentEvent.clipGroups.length - 1) {
+    if (
+      time >= this.duration &&
+      this.currentEvent &&
+      this.currentClipIndex < this.currentEvent.clipGroups.length - 1
+    ) {
       await this.loadClip(this.currentClipIndex + 1);
       this.currentTime = Math.max(0, time - this.duration);
       return;
     }
 
     for (const video of Object.values(this.videos)) {
-      const maxTime = video.duration ? Math.max(0, video.duration - 0.05) : time;
+      const maxTime = video.duration
+        ? Math.max(0, video.duration - 0.05)
+        : time;
       video.currentTime = Math.max(0, Math.min(time, maxTime));
+    }
+
+    for (const video of Object.values(this.videos)) {
+      video.play();
     }
   }
 
   async handleVideoEnded() {
-    const activeVideos = Object.values(this.videos).filter(v => v.getAttribute('src'));
-    const allEnded = activeVideos.every(v => v.ended || v.error);
+    const activeVideos = Object.values(this.videos).filter((v) =>
+      v.getAttribute('src')
+    );
+    const allEnded = activeVideos.every((v) => v.ended || v.error);
     if (!allEnded || this.paused) return;
 
     if (this.disableAutoAdvance) return;
@@ -222,7 +267,10 @@ class VideoPlayer {
   }
 
   async nextClip() {
-    if (this.currentEvent && this.currentClipIndex < this.currentEvent.clipGroups.length - 1) {
+    if (
+      this.currentEvent &&
+      this.currentClipIndex < this.currentEvent.clipGroups.length - 1
+    ) {
       await this.loadClip(this.currentClipIndex + 1);
     }
   }
@@ -250,7 +298,8 @@ class VideoPlayer {
     let timeInClip = 0;
 
     for (let i = 0; i < this.currentEvent.clipGroups.length; i++) {
-      const duration = this.currentEvent.clipGroups[i].clips.front?.duration || 60;
+      const duration =
+        this.currentEvent.clipGroups[i].clips.front?.duration || 60;
       if (accumulatedTime + duration >= eventTime) {
         targetClipIndex = i;
         timeInClip = eventTime - accumulatedTime;
@@ -259,7 +308,8 @@ class VideoPlayer {
       accumulatedTime += duration;
     }
 
-    if (targetClipIndex !== this.currentClipIndex) await this.loadClip(targetClipIndex);
+    if (targetClipIndex !== this.currentClipIndex)
+      await this.loadClip(targetClipIndex);
     this.currentTime = timeInClip;
   }
 
@@ -274,14 +324,16 @@ class VideoPlayer {
     if (this.paused) return;
     this.bufferingState.bufferingCameras.add(camera);
     this.bufferingState.isBuffering = true;
-    if (this.onBufferingChange) this.onBufferingChange(this.getBufferingState());
+    if (this.onBufferingChange)
+      this.onBufferingChange(this.getBufferingState());
   }
 
   handleBufferingEnd(camera) {
     this.bufferingState.bufferingCameras.delete(camera);
     if (this.bufferingState.bufferingCameras.size === 0) {
       this.bufferingState.isBuffering = false;
-      if (this.onBufferingChange) this.onBufferingChange(this.getBufferingState());
+      if (this.onBufferingChange)
+        this.onBufferingChange(this.getBufferingState());
     }
   }
 

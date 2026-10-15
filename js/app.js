@@ -998,7 +998,7 @@ class TeslaCamViewerApp {
     // Speed control
     this.speedSelect.addEventListener('change', (e) => {
       const speed = parseFloat(e.target.value);
-      this.videoPlayer.setPlaybackRate(speed);
+      this.videoPlayer.playbackRate = speed;
     });
 
     // Loop control - checkbox (kept for compatibility)
@@ -2912,7 +2912,7 @@ class TeslaCamViewerApp {
           }
         }
       }
-      
+
       // Fallback if front camera was missing but other cameras existed
       if (!durationLoaded && frontClip && !frontClip.duration) {
         frontClip.duration = 60;
@@ -4822,7 +4822,7 @@ class TeslaCamViewerApp {
         // 0 to reset speed to 1x
         event.preventDefault();
         this.speedSelect.value = '1';
-        this.videoPlayer.setPlaybackRate(1);
+        this.videoPlayer.playBackRate = 1;
         break;
 
       case 'Equal':
@@ -4936,7 +4936,7 @@ class TeslaCamViewerApp {
       Math.min(speeds.length - 1, currentIndex + direction)
     );
     this.speedSelect.value = speeds[newIndex];
-    this.videoPlayer.setPlaybackRate(parseFloat(speeds[newIndex]));
+    this.videoPlayer.playBackRate = parseFloat(speeds[newIndex]);
   }
 
   /**
