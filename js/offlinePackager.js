@@ -27,7 +27,6 @@ class OfflinePackager {
             // Video Playback
             'videoPlayer.js',
             'fastFrameExtractor.js',
-            'videoStateRecorder.js',
             'timeline.js',
             'syncController.js',
             'clipMarking.js',
@@ -42,10 +41,7 @@ class OfflinePackager {
 
             // Telemetry & Data
             'seiExtractor.js',
-            'seiDiagnostics.js',
             'seiInsights.js',
-            'diagnosticsLogger.js',
-            'backgroundScheduler.js',
             'telemetryOverlay.js',
             'telemetryGraphs.js',
             'autopilotTimelineLayer.js',

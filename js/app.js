@@ -68,11 +68,6 @@ class TeslaCamViewerApp {
     this.incidentSlowMo = new IncidentSlowMo(this.videoPlayer);
     this.incidentSlowMo.setTelemetryGraphs(this.telemetryGraphs);
 
-    this.collisionReconstruction = new CollisionReconstruction(
-      this.videoPlayer
-    );
-    this.collisionReconstruction.setTelemetryOverlay(this.telemetryOverlay);
-
     // Speed limit display element
     this.speedLimitDisplay = document.getElementById('speedLimitDisplay');
     this.currentSpeedLimitData = null;
@@ -106,7 +101,7 @@ class TeslaCamViewerApp {
       this.screenshotCapture
     );
 
-    // Settings, Help, Quick Start, Version, Statistics, and Notes
+    // Settings, Help, Quick Start, Version, Statistics
     this.settingsManager = new SettingsManager();
     this.sessionManager = new SessionManager();
     this.versionManager = new VersionManager();
@@ -114,19 +109,6 @@ class TeslaCamViewerApp {
     this.helpModal = new HelpModal();
     this.quickStartGuide = new QuickStartGuide();
     this.b2Client = new B2Client();
-
-    // SEI Diagnostics — future-proofing against Tesla firmware schema changes.
-    // Persists unknown-field observations across sessions, surfaces via Settings.
-    if (window.SeiDiagnostics && window.seiExtractor) {
-      window.seiDiagnostics = new window.SeiDiagnostics(window.seiExtractor);
-      window.seiDiagnostics.init();
-    }
-
-    // Scrub-preview thumbnail cache — generates tiny JPEGs of each event
-    // in the background so hovering the timeline shows a frame preview.
-    if (window.ThumbnailCache) {
-      this.thumbnailCache = new window.ThumbnailCache();
-    }
 
     // Command palette (Ctrl+K / Cmd+K) — searchable action launcher.
     if (window.CommandPalette) {
@@ -692,14 +674,6 @@ class TeslaCamViewerApp {
     this.toggleSlowMoBtn?.addEventListener('click', () => {
       if (this.incidentSlowMo) {
         this.incidentSlowMo.toggle();
-        this._updateOverlayButtonStates();
-      }
-    });
-
-    // Bird's Eye View (Collision Reconstruction) toggle
-    this.toggleBirdsEyeBtn?.addEventListener('click', () => {
-      if (this.collisionReconstruction) {
-        this.collisionReconstruction.toggle();
         this._updateOverlayButtonStates();
       }
     });
@@ -2688,30 +2662,6 @@ class TeslaCamViewerApp {
       // Extract SEI telemetry data (async, non-blocking - after duration calc completes)
       this.extractSeiDataForEvent(event);
 
-      // Start background generation of scrub-preview thumbnails.
-      // Scheduled via the background scheduler so it only begins once
-      // higher-priority event-load work (SEI extraction, elevation,
-      // weather) has finished competing for file I/O and decoder slots.
-      if (
-        this.thumbnailCache &&
-        event.clipGroups &&
-        window.backgroundScheduler
-      ) {
-        const currentEvent = event;
-        window.backgroundScheduler.scheduleIdle(
-          () => {
-            // Guard against user switching events during the idle wait.
-            if (this.currentEvent === currentEvent) {
-              this.thumbnailCache.generateForEvent(
-                currentEvent,
-                currentEvent.clipGroups
-              );
-            }
-          },
-          { timeoutMs: 12000, label: 'thumbnail-gen' }
-        );
-      }
-
       // Detect and display gaps in recording
       const gaps = this.folderParser.detectGaps(event.clipGroups);
       if (gaps.length > 0) {
@@ -3035,31 +2985,21 @@ class TeslaCamViewerApp {
     const lng = parseFloat(event.metadata.est_lon);
     if (isNaN(lat) || isNaN(lng)) return;
 
-    const run = async () => {
-      try {
-        const weather = await window.weatherService?.getWeather(
-          lat,
-          lng,
-          event.metadata.timestamp
-        );
-        if (weather && this.currentEvent === event) {
-          const formatted = window.weatherService.formatForDisplay(weather);
-          this.eventWeatherElement.textContent = formatted;
-          if (this.miniMapOverlay?.isVisible) {
-            this.miniMapOverlay.setWeather(weather);
-          }
+    try {
+      const weather = await window.weatherService?.getWeather(
+        lat,
+        lng,
+        event.metadata.timestamp
+      );
+      if (weather && this.currentEvent === event) {
+        const formatted = window.weatherService.formatForDisplay(weather);
+        this.eventWeatherElement.textContent = formatted;
+        if (this.miniMapOverlay?.isVisible) {
+          this.miniMapOverlay.setWeather(weather);
         }
-      } catch (error) {
-        console.warn('[App] Failed to fetch weather:', error);
       }
-    };
-
-    if (window.backgroundScheduler) {
-      window.backgroundScheduler.scheduleWhenIdle(run, {
-        label: 'weather-api',
-      });
-    } else {
-      run();
+    } catch (error) {
+      console.warn('[App] Failed to fetch weather:', error);
     }
   }
 
@@ -5422,37 +5362,13 @@ class TeslaCamViewerApp {
       clearTimeout(this._elevationLoadTimeout);
     }
 
-    // Replace the old hard-coded 1500ms timeout with an idle-aware
-    // scheduler call. External API fetches (elevation) now wait for
-    // the browser to be genuinely idle rather than racing against
-    // main-thread video decode.
-    if (this._elevationScheduleHandle && window.backgroundScheduler) {
-      window.backgroundScheduler.cancel(this._elevationScheduleHandle);
-    }
-    this._elevationScheduleHandle =
-      window.backgroundScheduler?.scheduleWhenIdle(
-        () => {
-          this._loadElevationData(event);
-          // Sync session-level unknown SEI field stats into persistent diagnostics.
-          if (
-            window.seiDiagnostics &&
-            typeof window.seiDiagnostics.syncFromExtractor === 'function'
-          ) {
-            window.seiDiagnostics.syncFromExtractor();
-          }
-          // Compute event-level insights (road roughness, AP usage, recording health).
-          this.refreshEventInsights();
-        },
-        { timeoutMs: 3000, label: 'elevation+diag+insights' }
-      ) ??
-        // Fallback if scheduler isn't loaded for some reason.
-        {
-          type: 'timeout',
-          token: setTimeout(() => {
-            this._loadElevationData(event);
-            this.refreshEventInsights();
-          }, 1500),
-        };
+    // Load elevation data and compute insights after a short delay
+    // to avoid racing against initial video decoding.
+    this._elevationLoadTimeout = setTimeout(() => {
+      this._loadElevationData(event);
+      // Compute event-level insights (road roughness, AP usage, recording health).
+      this.refreshEventInsights();
+    }, 1500);
   }
 
   /**
@@ -6434,37 +6350,12 @@ class TeslaCamViewerApp {
         ),
       },
       {
-        id: 'toggle-collision',
-        title: 'Toggle Birds-Eye View',
-        category: 'Overlay',
-        keywords: 'collision reconstruction birds eye',
-        action: safe(
-          () =>
-            this.collisionReconstruction?.toggle &&
-            this.collisionReconstruction.toggle()
-        ),
-      },
-
-      // Navigation / modals
-      {
         id: 'open-settings',
         title: 'Open Settings',
         category: 'App',
         shortcut: 'Q',
         keywords: 'settings preferences config',
         action: safe(() => this.settingsManager?.showSettingsModal()),
-      },
-      {
-        id: 'open-diagnostics',
-        title: 'Open Diagnostics',
-        category: 'App',
-        keywords: 'diagnostics debug logs sei',
-        action: safe(() => {
-          if (this.settingsManager) {
-            this.settingsManager._activeTab = 'diagnostics';
-            this.settingsManager.showSettingsModal();
-          }
-        }),
       },
       {
         id: 'open-help',

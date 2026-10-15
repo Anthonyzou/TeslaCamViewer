@@ -149,11 +149,8 @@
                 this._finish();
                 return;
             }
-            // Wrap in idle scheduler so we never compete with live playback.
-            this._schedulerHandle = window.backgroundScheduler?.scheduleWhenIdle(
-                () => this._pumpOne(),
-                { timeoutMs: Math.max(3000, delay * 10), label: 'insightsScanner' }
-            ) || { type: 'timeout', token: setTimeout(() => this._pumpOne(), delay) };
+            // Use setTimeout for the next pump iteration
+            this._schedulerHandle = setTimeout(() => this._pumpOne(), delay);
         }
 
         async _pumpOne() {
@@ -330,10 +327,8 @@
         }
 
         _cancelPending() {
-            if (this._schedulerHandle && window.backgroundScheduler) {
-                window.backgroundScheduler.cancel(this._schedulerHandle);
-            } else if (this._schedulerHandle?.token) {
-                clearTimeout(this._schedulerHandle.token);
+            if (this._schedulerHandle) {
+                clearTimeout(this._schedulerHandle);
             }
             this._schedulerHandle = null;
         }

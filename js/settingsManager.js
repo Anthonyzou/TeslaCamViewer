@@ -256,14 +256,6 @@ class SettingsManager {
                             </svg>
                             <span>AI Search</span>
                         </button>
-                        <button class="settings-nav-item ${this._activeTab === 'diagnostics' ? 'active' : ''}" data-tab="diagnostics">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="12"/>
-                                <line x1="12" y1="16" x2="12.01" y2="16"/>
-                            </svg>
-                            <span>Diagnostics</span>
-                        </button>
                     </nav>
                     <div class="settings-sidebar-footer">
                         <button id="resetSettingsBtn" class="settings-reset-btn">
@@ -596,11 +588,6 @@ class SettingsManager {
                 <div class="settings-tab-content ${this._activeTab === 'ai-search' ? 'active' : ''}" data-tab-content="ai-search">
                     ${this.renderAiSearchTab()}
                 </div>
-
-                <!-- Diagnostics Tab: SEI Unknown-Field Scanner -->
-                <div class="settings-tab-content ${this._activeTab === 'diagnostics' ? 'active' : ''}" data-tab-content="diagnostics">
-                    ${window.seiDiagnostics ? window.seiDiagnostics.renderDiagnosticsTab() : '<div class="settings-section">Diagnostics module not loaded.</div>'}
-                </div>
                     </div>
                 </div>
             </div>
@@ -609,17 +596,6 @@ class SettingsManager {
     // Re-bind events after rendering
     this.bindPanelEvents();
     this.bindNavEvents();
-
-    // Wire up SEI Diagnostics tab events if the module is loaded.
-    if (
-      window.seiDiagnostics &&
-      typeof window.seiDiagnostics.bindDiagnosticsTabEvents === 'function'
-    ) {
-      const diagPane = this.modal.querySelector(
-        '[data-tab-content="diagnostics"]'
-      );
-      if (diagPane) window.seiDiagnostics.bindDiagnosticsTabEvents(diagPane);
-    }
 
     // Wire up AI Search tab events
     const aiPane = this.modal.querySelector('[data-tab-content="ai-search"]');
