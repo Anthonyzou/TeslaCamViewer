@@ -5,9 +5,6 @@
 
 class TeslaCamViewerApp {
   constructor() {
-    // Check for other instances using BroadcastChannel
-    this._initInstanceDetection();
-
     // Initialize components - tcv.0x4E4D43
     this.folderParser = new FolderParser();
     this.folderManager = new FolderManager();
@@ -5825,78 +5822,6 @@ class TeslaCamViewerApp {
       toast.classList.remove('show');
       setTimeout(() => toast.remove(), 300);
     }, duration);
-  }
-
-  /**
-   * Initialize instance detection using BroadcastChannel
-   * Detects if another tab/window has TeslaCamViewer open
-   */
-  _initInstanceDetection() {
-    this._instanceId =
-      Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    this._otherInstancesDetected = false;
-
-    try {
-      this._instanceChannel = new BroadcastChannel('teslacamviewer-instance');
-
-      // Listen for messages from other instances
-      this._instanceChannel.onmessage = (event) => {
-        if (event.data.type === 'ping' && event.data.id !== this._instanceId) {
-          // Another instance is checking - respond with pong
-          this._instanceChannel.postMessage({
-            type: 'pong',
-            id: this._instanceId,
-          });
-        } else if (
-          event.data.type === 'pong' &&
-          event.data.id !== this._instanceId
-        ) {
-          // Received response from another instance
-          if (!this._otherInstancesDetected) {
-            this._otherInstancesDetected = true;
-            this._showInstanceWarning();
-          }
-        }
-      };
-
-      // Send ping to detect other instances
-      this._instanceChannel.postMessage({ type: 'ping', id: this._instanceId });
-
-      // Also respond to pings sent before we started listening
-      setTimeout(() => {
-        this._instanceChannel.postMessage({
-          type: 'ping',
-          id: this._instanceId,
-        });
-      }, 500);
-
-      console.log(
-        '[App] Instance detection initialized, id:',
-        this._instanceId
-      );
-    } catch (e) {
-      console.warn('[App] BroadcastChannel not supported:', e);
-    }
-  }
-
-  /**
-   * Show warning about multiple instances
-   */
-  _showInstanceWarning() {
-    console.warn(
-      '[App] Another TeslaCamViewer instance detected in another tab/window!'
-    );
-
-    // Create persistent warning banner
-    const banner = document.createElement('div');
-    banner.id = 'instance-warning-banner';
-    banner.innerHTML = `
-            <div style="background: #ff6b35; color: white; padding: 10px 20px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; right: 0; z-index: 10001; display: flex; justify-content: center; align-items: center; gap: 15px;">
-                <span>⚠️ Another TeslaCamViewer tab is open. This may cause playback issues. Please close other tabs.</span>
-                <button onclick="this.parentElement.remove()" style="background: white; color: #ff6b35; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Dismiss</button>
-            </div>
-        `;
-    document.body.appendChild(banner);
   }
 
   // ===== Command Palette registration =====
