@@ -218,12 +218,6 @@ class TeslaCamViewerApp {
     this.loadingOverlay = document.getElementById('loadingOverlay');
     this.loadingText = document.getElementById('loadingText');
 
-    // Buffering indicator elements
-    this.bufferingIndicator = document.getElementById('bufferingIndicator');
-    this.bufferingLabel = document.getElementById('bufferingLabel');
-    this.bufferingSpeed = document.getElementById('bufferingSpeed');
-    this.bufferHealthFill = document.getElementById('bufferHealthFill');
-
     // Mobile menu elements
     this.menuToggleBtn = document.getElementById('menuToggleBtn');
     this.sidebar = document.getElementById('sidebar');
@@ -1072,11 +1066,6 @@ class TeslaCamViewerApp {
 
     this.videoPlayer.onPlayStateChange = (isPlaying) => {
       this.updatePlaybackButtons();
-    };
-
-    // Buffering indicator callback
-    this.videoPlayer.onBufferingChange = (state) => {
-      this.updateBufferingIndicator(state);
     };
 
     // Tab switching
@@ -4970,42 +4959,6 @@ class TeslaCamViewerApp {
    */
   updateLoading(message) {
     this.loadingText.textContent = message;
-  }
-
-  /**
-   * Update buffering indicator display
-   * @param {Object} state - Buffering state from VideoPlayer
-   */
-  updateBufferingIndicator(state) {
-    if (!this.bufferingIndicator) return;
-
-    if (state.isBuffering) {
-      // Show the indicator
-      this.bufferingIndicator.classList.remove('hidden');
-
-      // Update label with cameras
-      const cameraNames = {
-        front: 'Front',
-        back: 'Rear',
-        left_repeater: 'Left',
-        right_repeater: 'Right',
-      };
-      const camList = state.cameras.map((c) => cameraNames[c] || c).join(', ');
-      this.bufferingLabel.textContent = `Buffering${camList ? ': ' + camList : '...'}`;
-
-      // Update speed estimate
-      if (state.readSpeed > 0) {
-        this.bufferingSpeed.textContent = `~${state.readSpeed.toFixed(1)} MB/s`;
-      } else {
-        this.bufferingSpeed.textContent = '';
-      }
-
-      // Update buffer health bar
-      this.bufferHealthFill.style.width = `${state.bufferHealth}%`;
-    } else {
-      // Hide the indicator
-      this.bufferingIndicator.classList.add('hidden');
-    }
   }
 
   /**

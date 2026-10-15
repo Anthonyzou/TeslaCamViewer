@@ -323,7 +323,6 @@
       "darkModeHint": "Use dark map tiles (recommended for dashcam viewing)",
       "tileProvider": "Map Tile Provider",
       "tileProviderHint": "Try Stadia Maps if OpenStreetMap doesn't load",
-      "providerOsm": "OpenStreetMap (Default)",
       "providerStadia": "Stadia Maps",
       "description": "GPS map overlay showing vehicle position synced with video playback"
     },

@@ -253,7 +253,6 @@
       "darkModeHint": "Use dark map tiles (recommended for dashcam viewing)",
       "tileProvider": "Map Tile Provider",
       "tileProviderHint": "OpenStreetMap が読み込まれない場合は Stadia Maps をお試しください",
-      "providerOsm": "OpenStreetMap (デフォルト)",
       "providerStadia": "Stadia Maps",
       "description": "GPS map overlay showing vehicle position synced with video playback"
     }

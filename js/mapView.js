@@ -1166,7 +1166,7 @@ class MapView {
 
     // Get the current provider's config
     const provider =
-      this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.carto;
+      this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
     const layerConfig = provider[mode];
 
     if (!layerConfig) {
@@ -1212,7 +1212,7 @@ class MapView {
 
   /**
    * Set the tile provider
-   * @param {string} providerId - Provider ID ('carto', 'osm', 'stadia')
+   * @param {string} providerId - Provider ID ('osm', 'stadia')
    */
   setTileProvider(providerId) {
     if (!this.TILE_PROVIDERS[providerId]) {

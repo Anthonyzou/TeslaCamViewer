@@ -99,7 +99,7 @@ class MiniMapOverlay {
         url = url.replace('{z}', zoom.toString());
         url = url.replace('{x}', x.toString());
         url = url.replace('{y}', y.toString());
-        // Always request retina (512×512) tiles for export — both CartoDB
+        // Always request retina (512×512) tiles for export — both OpenStreetMap
         // and Stadia (the providers TCV ships with) support the @2x
         // variant. The live Leaflet view substitutes @2x on hi-DPI
         // displays which is why it looks crisp; the canvas-rendered

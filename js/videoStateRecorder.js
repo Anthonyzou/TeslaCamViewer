@@ -34,8 +34,6 @@
         events: [],
         startTs: 0,
         _attachedVideos: new Set(),
-        _origHandleBufferingStart: null,
-        _origHandleBufferingEnd: null,
         _mouseTimer: null,
 
         start() {
@@ -44,7 +42,6 @@
             this.events = [];
             this.startTs = performance.now();
             this._attachAll();
-            this._patchVideoPlayer();
             this._log('recorder:start', {});
             console.log('[VideoStateRecorder] Recording started. Events will accumulate until stop() or export().');
         },
@@ -54,7 +51,6 @@
             this._log('recorder:stop', { captured: this.events.length });
             this.enabled = false;
             this._detachAll();
-            this._unpatchVideoPlayer();
             console.log(`[VideoStateRecorder] Stopped. ${this.events.length} events captured. Use export() to download.`);
         },
 
@@ -73,7 +69,6 @@
                 currentEvent: window.app?.currentEvent?.name || null,
                 totalDuration: window.app?.timeline?.totalDuration || null,
                 cachedClipDurations: window.app?.videoPlayer?.cachedClipDurations || null,
-                bufferingStateAtExport: this._snapshotBufferingState(),
                 videoStateAtExport: this._snapshotVideoStates(),
                 eventCount: this.events.length,
                 events: this.events
@@ -138,17 +133,6 @@
             return out;
         },
 
-        _snapshotBufferingState() {
-            const bs = window.app?.videoPlayer?.bufferingState;
-            if (!bs) return null;
-            return {
-                isBuffering: bs.isBuffering,
-                bufferingCameras: Array.from(bs.bufferingCameras || []),
-                bufferHealth: bs.bufferHealth,
-                readSpeed: bs.readSpeedEstimate
-            };
-        },
-
         // --- video element listeners --------------------------------------
         _attachAll() {
             const vp = window.app?.videoPlayer;
@@ -171,8 +155,7 @@
                 btn._vsrAttached = true;
                 btn.addEventListener('click', () => this._log('ui:play-pause-click', {
                     btnPausedIcon: !!btn.querySelector('.pause-icon[style*="block"]'),
-                    snapshot: this._snapshotVideoStates(),
-                    buffering: this._snapshotBufferingState()
+                    snapshot: this._snapshotVideoStates()
                 }), true);
             }
             // Mouse activity — capture with heavy debounce so we know if
@@ -206,69 +189,6 @@
                     paused: v.paused
                 });
             };
-        },
-
-        // --- videoPlayer / syncController patches -------------------------
-        _patchVideoPlayer() {
-            const vp = window.app?.videoPlayer;
-            if (!vp) {
-                setTimeout(() => this.enabled && this._patchVideoPlayer(), 500);
-                return;
-            }
-            if (vp._vsrPatched) return;
-            vp._vsrPatched = true;
-            this._origHandleBufferingStart = vp.handleBufferingStart.bind(vp);
-            this._origHandleBufferingEnd = vp.handleBufferingEnd.bind(vp);
-
-            const self = this;
-            vp.handleBufferingStart = function (camera) {
-                self._log('vp:handleBufferingStart', {
-                    camera,
-                    bufferingCamerasBefore: Array.from(vp.bufferingState.bufferingCameras)
-                });
-                return self._origHandleBufferingStart(camera);
-            };
-            vp.handleBufferingEnd = function (camera) {
-                self._log('vp:handleBufferingEnd', {
-                    camera,
-                    bufferingCamerasBefore: Array.from(vp.bufferingState.bufferingCameras)
-                });
-                return self._origHandleBufferingEnd(camera);
-            };
-
-            // Patch onBufferingChange to see what the UI is told
-            const origOnBufferingChange = vp.onBufferingChange;
-            vp.onBufferingChange = function (state) {
-                self._log('vp:onBufferingChange', {
-                    buffering: state.buffering,
-                    cameras: state.cameras,
-                    bufferHealth: state.bufferHealth
-                });
-                if (origOnBufferingChange) origOnBufferingChange.call(vp, state);
-            };
-
-            // SyncController patches — wrap its sync check
-            const sc = window.app?.syncController;
-            if (sc && !sc._vsrPatched) {
-                sc._vsrPatched = true;
-                for (const method of ['pauseAll', 'playAll', 'resumeAll', 'syncToMaster', 'handleDrift', 'recoverFromCatastrophicDrift']) {
-                    if (typeof sc[method] === 'function') {
-                        const orig = sc[method].bind(sc);
-                        sc[method] = function (...args) {
-                            self._log(`sc:${method}`, { args: args.map(a => (a && typeof a === 'object') ? '[obj]' : a) });
-                            return orig(...args);
-                        };
-                    }
-                }
-            }
-        },
-
-        _unpatchVideoPlayer() {
-            const vp = window.app?.videoPlayer;
-            if (!vp || !vp._vsrPatched) return;
-            if (this._origHandleBufferingStart) vp.handleBufferingStart = this._origHandleBufferingStart;
-            if (this._origHandleBufferingEnd) vp.handleBufferingEnd = this._origHandleBufferingEnd;
-            vp._vsrPatched = false;
         }
     };
 

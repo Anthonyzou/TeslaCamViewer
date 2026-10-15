@@ -18,12 +18,6 @@ class VideoPlayer {
     this.onTimeUpdate = null;
     this.onEnded = null;
     this.onPlayStateChange = null;
-    this.onBufferingChange = null;
-
-    this.bufferingState = {
-      isBuffering: false,
-      bufferingCameras: new Set(),
-    };
 
     this.videoLabels = {
       front: document
@@ -140,16 +134,10 @@ class VideoPlayer {
 
       video.addEventListener('playing', () => {
         this.updateVideoLabelState(camera, false);
-        this.handleBufferingEnd(camera);
         onPlayStateToggle();
       });
 
       video.addEventListener('pause', onPlayStateToggle);
-      video.addEventListener('waiting', () =>
-        this.handleBufferingStart(camera)
-      );
-      video.addEventListener('canplay', () => this.handleBufferingEnd(camera));
-      video.addEventListener('error', () => this.handleBufferingEnd(camera));
 
       video.controls = false;
       video.muted = true;
@@ -196,7 +184,6 @@ class VideoPlayer {
 
     // Use native pause to avoid resetting intent during internal transition
     for (const v of Object.values(this.videos)) v.pause();
-    this.resetBufferingState();
 
     this.resetAllVideoLabelStates();
     this.currentClipIndex = clipIndex;
@@ -343,37 +330,5 @@ class VideoPlayer {
     for (const video of Object.values(this.videos)) video.src = '';
     this.currentEvent = null;
     this.currentClipIndex = -1;
-    this.resetBufferingState();
-  }
-
-  resetBufferingState() {
-    this.bufferingState.bufferingCameras.clear();
-    this.bufferingState.isBuffering = false;
-    if (this.onBufferingChange)
-      this.onBufferingChange(this.getBufferingState());
-  }
-
-  handleBufferingStart(camera) {
-    if (!this._isPlayingIntent) return;
-    this.bufferingState.bufferingCameras.add(camera);
-    this.bufferingState.isBuffering = true;
-    if (this.onBufferingChange)
-      this.onBufferingChange(this.getBufferingState());
-  }
-
-  handleBufferingEnd(camera) {
-    this.bufferingState.bufferingCameras.delete(camera);
-    if (this.bufferingState.bufferingCameras.size === 0) {
-      this.bufferingState.isBuffering = false;
-      if (this.onBufferingChange)
-        this.onBufferingChange(this.getBufferingState());
-    }
-  }
-
-  getBufferingState() {
-    return {
-      isBuffering: this.bufferingState.isBuffering,
-      cameras: Array.from(this.bufferingState.bufferingCameras),
-    };
   }
 }
