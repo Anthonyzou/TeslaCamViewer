@@ -80,14 +80,6 @@ class SyncController {
      * Check sync status and correct if needed
      */
     checkAndCorrectSync() {
-        // WebCodecs master-clock path guarantees zero drift by construction
-        // (all canvases get tick(t) from the same rAF). No need to monitor,
-        // and a stray resync-seek here would trigger decoder resets. Show
-        // as synced and exit.
-        if (window.app?.videoPlayer?._useWebCodecs) {
-            this.updateSyncStatus('synced');
-            return;
-        }
         // Get videos that are still actively playing (not ended, not paused at end)
         const activeVideos = Object.values(this.videos).filter(v =>
             !v.ended && !v.paused && v.currentTime > 0 && isFinite(v.currentTime)

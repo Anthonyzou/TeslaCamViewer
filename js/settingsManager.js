@@ -67,12 +67,6 @@ class SettingsManager {
       exportResolution: 'full', // 'full' | 'hd' | 'web' | 'custom'
       exportResolutionCustomHeight: 1920, // used only when exportResolution === 'custom'
 
-      // Experimental WebCodecs-backed player — replaces HTML5 <video>
-      // elements with canvas + VideoDecoder rendering. Helps on Intel
-      // integrated GPUs where the 2-YUV-overlay-slot limit causes
-      // flickering with 4+ videos. Requires page reload to apply.
-      useWebCodecsPlayer: false,
-
       // Fast Export — WebCodecs VideoDecoder + VideoEncoder path.
       // Now default on (was experimental). Set to false to force the
       // legacy HTML5-seek + MediaRecorder path. Kept as an emergency
@@ -522,11 +516,6 @@ class SettingsManager {
                             <label for="setting-memoryOptimization">${this.t('settings.performance.memoryOptimization')}</label>
                             <input type="checkbox" id="setting-memoryOptimization" class="setting-checkbox">
                             <span class="setting-hint">${this.t('settings.performance.memoryHint')}</span>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-useWebCodecsPlayer">WebCodecs player <span class="ai-search-beta-pill" style="margin-left:6px;">BETA</span></label>
-                            <input type="checkbox" id="setting-useWebCodecsPlayer" class="setting-checkbox">
-                            <span class="setting-hint">BETA: WebCodecs-backed canvas renderer. Try this if playback stutters or feels laggy, especially on Intel integrated graphics. Default-on for everyone is planned for a future release once we've gathered feedback. Requires a page reload to apply.</span>
                         </div>
                     </div>
 

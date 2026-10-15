@@ -787,6 +787,8 @@ class Timeline {
         if (this.zoomLevel > 1) {
             const viewDuration = this.totalDuration / this.zoomLevel;
             time = this.viewStart + (percent * viewDuration);
+            // Stash manual seek time to ignore auto-scroll in updateVisualPosition temporarily
+            this._lastManualSeekTime = Date.now();
         } else {
             time = percent * this.totalDuration;
         }
@@ -843,6 +845,9 @@ class Timeline {
         this.scrubber.classList.remove('dragging');
         this.timeline.classList.remove('seeking');
 
+        // Stash manual seek time to ignore auto-scroll temporarily
+        this._lastManualSeekTime = Date.now();
+
         // Seek to final position
         if (this.onSeek) {
             this.onSeek(this.currentTime);
@@ -861,16 +866,20 @@ class Timeline {
             const absoluteTime = percent * this.totalDuration;
 
             // Auto-scroll to keep current position visible (smooth)
-            // Keep playhead at ~40% from the left edge when auto-scrolling
-            const targetPosition = 0.4;
-            if (absoluteTime < this.viewStart + viewDuration * 0.1) {
-                // Approaching left edge - scroll left
-                this.targetViewStart = Math.max(0, absoluteTime - viewDuration * targetPosition);
-                this.startSmoothScroll();
-            } else if (absoluteTime > this.viewStart + viewDuration * 0.9) {
-                // Approaching right edge - scroll right
-                this.targetViewStart = Math.min(this.totalDuration - viewDuration, absoluteTime - viewDuration * targetPosition);
-                this.startSmoothScroll();
+            // Skip if a manual seek occurred very recently (prevent jump after click)
+            const timeSinceManualSeek = Date.now() - (this._lastManualSeekTime || 0);
+            if (timeSinceManualSeek > 1000) {
+                // Keep playhead at ~40% from the left edge when auto-scrolling
+                const targetPosition = 0.4;
+                if (absoluteTime < this.viewStart + viewDuration * 0.1) {
+                    // Approaching left edge - scroll left
+                    this.targetViewStart = Math.max(0, absoluteTime - viewDuration * targetPosition);
+                    this.startSmoothScroll();
+                } else if (absoluteTime > this.viewStart + viewDuration * 0.9) {
+                    // Approaching right edge - scroll right
+                    this.targetViewStart = Math.min(this.totalDuration - viewDuration, absoluteTime - viewDuration * targetPosition);
+                    this.startSmoothScroll();
+                }
             }
 
             // Calculate position within visible window
@@ -929,7 +938,9 @@ class Timeline {
     setDuration(duration) {
         this.totalDuration = duration;
         this.duration = duration; // Alias
-        this.totalDurationDisplay.textContent = this.formatTime(duration);
+        if (this.totalDurationDisplay) {
+            this.totalDurationDisplay.textContent = this.formatTime(duration);
+        }
         this.resetZoom();
 
         // Show minimap once we have a duration
@@ -978,7 +989,9 @@ class Timeline {
      * Update time display
      */
     updateTimeDisplay() {
-        this.currentTimeDisplay.textContent = this.formatTimeWithFrames(this.currentTime);
+        if (this.currentTimeDisplay) {
+            this.currentTimeDisplay.textContent = this.formatTimeWithFrames(this.currentTime);
+        }
     }
 
     /**
@@ -1205,8 +1218,12 @@ class Timeline {
         this.totalDuration = 0;
         this.currentTime = 0;
         this.updateVisualPosition(0);
-        this.currentTimeDisplay.textContent = '00:00:00:00';
-        this.totalDurationDisplay.textContent = '00:00:00';
+        if (this.currentTimeDisplay) {
+            this.currentTimeDisplay.textContent = '00:00:00:00';
+        }
+        if (this.totalDurationDisplay) {
+            this.totalDurationDisplay.textContent = '00:00:00';
+        }
         this.clipsContainer.innerHTML = '';
         this._gaps = null;
         this._nearMisses = null;

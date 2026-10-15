@@ -26,7 +26,6 @@ class OfflinePackager {
 
             // Video Playback
             'videoPlayer.js',
-            'webCodecsVideoElement.js',
             'fastFrameExtractor.js',
             'videoStateRecorder.js',
             'timeline.js',

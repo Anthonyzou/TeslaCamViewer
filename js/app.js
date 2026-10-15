@@ -49,13 +49,13 @@ class TeslaCamViewerApp {
     this.elevationOverlay = new ElevationOverlay(this.videoPlayer);
     // Wire up elevation overlay callbacks
     this.elevationOverlay.getEventTime = () =>
-      this.getAbsoluteEventTime(this.videoPlayer.getCurrentTime());
+      this.getAbsoluteEventTime(this.videoPlayer.currentTime);
     this.elevationOverlay.onSeek = (time) =>
       this.videoPlayer.seekToEventTime(time);
     this.telemetryGraphs = new TelemetryGraphs(this.videoPlayer);
     // Wire up telemetry graphs callbacks
     this.telemetryGraphs.getEventTime = () =>
-      this.getAbsoluteEventTime(this.videoPlayer.getCurrentTime());
+      this.getAbsoluteEventTime(this.videoPlayer.currentTime);
     this.telemetryGraphs.onSeek = (time) =>
       this.videoPlayer.seekToEventTime(time);
     this.telemetryGraphs.getSpeedLimit = () => this.getCurrentSpeedLimit();
@@ -1122,7 +1122,6 @@ class TeslaCamViewerApp {
     this.bottomSheet = document.getElementById('bottomSheet');
     this.bottomSheetHandle = document.getElementById('bottomSheetHandle');
     this.bottomSheetPlayBtn = document.getElementById('bottomSheetPlayBtn');
-    this.bottomSheetTime = document.getElementById('bottomSheetTime');
     this.bottomSheetProgress = document.getElementById('bottomSheetProgress');
 
     // Enable bottom sheet on portrait mobile
@@ -2679,6 +2678,12 @@ class TeslaCamViewerApp {
       }
     }
 
+    // Cleanup previous event URLs to save memory
+    if (this.currentEvent && this.currentEvent._blobURLs) {
+      this.currentEvent._blobURLs.forEach((url) => URL.revokeObjectURL(url));
+      this.currentEvent._blobURLs = [];
+    }
+
     this.showLoading('Loading event...');
 
     try {
@@ -2690,6 +2695,8 @@ class TeslaCamViewerApp {
       );
 
       // Load event in video player
+      this.showLoading('Preparing video URLs...');
+      await this.prepareEventURLs(event);
       await this.videoPlayer.loadEvent(event);
 
       // Record event view for session tracking
@@ -2850,7 +2857,7 @@ class TeslaCamViewerApp {
 
       // Apply current playback speed before playing
       const currentSpeed = parseFloat(this.speedSelect.value) || 1;
-      this.videoPlayer.setPlaybackRate(currentSpeed);
+      this.videoPlayer.playbackRate = currentSpeed;
 
       // Auto-play the event
       await this.play();
@@ -2861,6 +2868,87 @@ class TeslaCamViewerApp {
         'Unable to load event videos. The drive may have been disconnected.'
       );
     }
+  }
+
+  /**
+   * Pre-generate Blobs for all clips in an event to support URL-only playback.
+   * Also probes durations for accurate timeline mapping.
+   */
+  async prepareEventURLs(event) {
+    const cameras = [
+      'front',
+      'back',
+      'left_repeater',
+      'right_repeater',
+      'left_pillar',
+      'right_pillar',
+    ];
+
+    const promises = event.clipGroups.map(async (group) => {
+      // We only need to probe duration for the front camera (master)
+      const frontClip = group.clips.front;
+      let durationLoaded = false;
+
+      for (const camera of cameras) {
+        const clip = group.clips[camera];
+        if (!clip) continue;
+
+        if (!clip.url && clip.fileHandle) {
+          try {
+            const file = await clip.fileHandle.getFile();
+            if (file.size >= 1024) {
+              clip.url = URL.createObjectURL(file);
+              if (!event._blobURLs) event._blobURLs = [];
+              event._blobURLs.push(clip.url);
+
+              // Probe duration from front camera if not already set
+              if (camera === 'front' && !clip.duration) {
+                clip.duration = await this._probeClipDuration(clip.url);
+                durationLoaded = true;
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to prepare ${camera}:`, e);
+          }
+        }
+      }
+      
+      // Fallback if front camera was missing but other cameras existed
+      if (!durationLoaded && frontClip && !frontClip.duration) {
+        frontClip.duration = 60;
+      }
+    });
+
+    await Promise.all(promises);
+  }
+
+  /**
+   * Helper to probe video duration from a URL
+   */
+  async _probeClipDuration(url) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      const timeout = setTimeout(() => {
+        video.src = '';
+        resolve(60);
+      }, 3000);
+
+      video.onloadedmetadata = () => {
+        clearTimeout(timeout);
+        const d = video.duration;
+        video.src = '';
+        resolve(d && isFinite(d) ? d : 60);
+      };
+
+      video.onerror = () => {
+        clearTimeout(timeout);
+        video.src = '';
+        resolve(60);
+      };
+
+      video.src = url;
+    });
   }
 
   /**
@@ -3087,6 +3175,7 @@ class TeslaCamViewerApp {
    */
   async onTimelineSeeked(time) {
     this.showLoading('Seeking...');
+    await this.videoPlayer.pause();
     await this.videoPlayer.seekToEventTime(time);
     this.hideLoading();
   }
@@ -3098,21 +3187,7 @@ class TeslaCamViewerApp {
    * @returns {number}
    */
   getAbsoluteEventTime(clipTime) {
-    if (!this.currentEvent || this.videoPlayer.currentClipIndex < 0) {
-      return 0;
-    }
-
-    // Sum duration of all previous clips + current time
-    let accumulatedTime = 0;
-    const cachedDurations = this.videoPlayer.cachedClipDurations;
-
-    for (let i = 0; i < this.videoPlayer.currentClipIndex; i++) {
-      // Use cached duration if available, otherwise estimate 60s per clip
-      accumulatedTime +=
-        cachedDurations && cachedDurations[i] ? cachedDurations[i] : 60;
-    }
-
-    return accumulatedTime + clipTime;
+    return this.videoPlayer.absoluteTime;
   }
 
   /**
@@ -3145,10 +3220,10 @@ class TeslaCamViewerApp {
    * Toggle play/pause
    */
   async togglePlayback() {
-    if (this.videoPlayer.getIsPlaying()) {
-      await this.pause();
-    } else {
+    if (this.videoPlayer.paused) {
       await this.play();
+    } else {
+      await this.pause();
     }
   }
 
@@ -3200,7 +3275,7 @@ class TeslaCamViewerApp {
    * Update playback button states
    */
   updatePlaybackButtons() {
-    const isPlaying = this.videoPlayer.getIsPlaying();
+    const isPlaying = !this.videoPlayer.paused;
 
     // Update combined play/pause button icon
     if (this.playPauseBtn) {
@@ -3765,7 +3840,7 @@ class TeslaCamViewerApp {
    */
   startFrameStepping(direction) {
     // Pause playback first
-    if (this.videoPlayer.getIsPlaying()) {
+    if (!this.videoPlayer.paused) {
       this.pause();
     }
 
@@ -3793,7 +3868,7 @@ class TeslaCamViewerApp {
    * @param {number} direction -1 for backward, 1 for forward
    */
   async stepFrame(direction) {
-    const currentTime = this.videoPlayer.getCurrentTime();
+    const currentTime = this.videoPlayer.currentTime;
     const frameRate = 30; // Assume 30fps for Tesla cameras
     const frameDuration = 1 / frameRate;
 
@@ -3807,7 +3882,7 @@ class TeslaCamViewerApp {
    */
   async frameStep(direction) {
     // Pause playback first
-    if (this.videoPlayer.getIsPlaying()) {
+    if (!this.videoPlayer.paused) {
       await this.pause();
     }
     await this.stepFrame(direction);
@@ -4032,7 +4107,7 @@ class TeslaCamViewerApp {
 
       const marks = this.clipMarking.getMarks();
       const currentAbsoluteTime = this.getAbsoluteEventTime(
-        this.videoPlayer.getCurrentTime()
+        this.videoPlayer.currentTime
       );
 
       // Camera label for display
@@ -4573,7 +4648,7 @@ class TeslaCamViewerApp {
     switch (event.code) {
       case 'Space':
         event.preventDefault();
-        if (this.videoPlayer.getIsPlaying()) {
+        if (!this.videoPlayer.paused) {
           this.pause();
         } else {
           this.play();
@@ -4586,7 +4661,7 @@ class TeslaCamViewerApp {
           this.previousClip();
         } else {
           // Seek back 5 seconds (allow negative to trigger previous clip)
-          const currentTime = this.videoPlayer.getCurrentTime();
+          const currentTime = this.videoPlayer.currentTime;
           await this.videoPlayer.seek(currentTime - 5);
         }
         break;
@@ -4597,7 +4672,7 @@ class TeslaCamViewerApp {
           this.nextClip();
         } else {
           // Seek forward 5 seconds
-          const currentTime = this.videoPlayer.getCurrentTime();
+          const currentTime = this.videoPlayer.currentTime;
           await this.videoPlayer.seek(currentTime + 5);
         }
         break;
@@ -5880,8 +5955,8 @@ class TeslaCamViewerApp {
 
       if (this.videoPlayer && this.telemetryOverlay.isVisible) {
         const clipIndex = this.videoPlayer.currentClipIndex || 0;
-        const timeInClip = this.videoPlayer.getCurrentTime() || 0;
-        const videoDuration = this.videoPlayer.getCurrentDuration() || 0;
+        const timeInClip = this.videoPlayer.currentTime || 0;
+        const videoDuration = this.videoPlayer.duration || 0;
         this.telemetryOverlay.updateTelemetry(
           clipIndex,
           timeInClip,
@@ -6321,7 +6396,7 @@ class TeslaCamViewerApp {
         shortcut: 'Space',
         keywords: 'play pause space',
         action: safe(() => {
-          this.videoPlayer.getIsPlaying() ? this.pause() : this.play();
+          this.videoPlayer.paused ? this.play() : this.pause();
         }),
       },
       {
@@ -6363,7 +6438,7 @@ class TeslaCamViewerApp {
         shortcut: '←',
         keywords: 'rewind back',
         action: safe(async () => {
-          const t = this.videoPlayer.getCurrentTime();
+          const t = this.videoPlayer.currentTime;
           await this.videoPlayer.seek(t - 5);
         }),
       },
@@ -6374,7 +6449,7 @@ class TeslaCamViewerApp {
         shortcut: '→',
         keywords: 'forward skip',
         action: safe(async () => {
-          const t = this.videoPlayer.getCurrentTime();
+          const t = this.videoPlayer.currentTime;
           await this.videoPlayer.seek(t + 5);
         }),
       },

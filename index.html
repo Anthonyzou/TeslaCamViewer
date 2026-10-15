@@ -416,10 +416,6 @@
 
                     <!-- Timeline -->
                     <div class="timeline-container">
-                        <div class="timeline-header">
-                            <span id="currentTime" class="time-display">00:00:00</span>
-                            <span id="totalDuration" class="time-display">00:00:00</span>
-                        </div>
                         <!-- Mini-map for zoomed timeline -->
                         <div id="timelineMinimap" class="timeline-minimap hidden">
                             <div id="minimapProgress" class="minimap-progress"></div>
@@ -861,7 +857,6 @@
                         <path d="M8 5v14l11-7z" />
                     </svg>
                 </button>
-                <span id="bottomSheetTime" class="time-display" style="min-width: 60px;">00:00</span>
             </div>
             <div class="bottom-sheet-mini-timeline">
                 <div id="bottomSheetProgress" class="bottom-sheet-mini-progress"></div>
@@ -1026,7 +1021,6 @@
     <!-- AI Search (CLIP + WebCodecs). Loaded but inactive until user opts in via Settings. -->
     <script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js"></script>
     <script src="js/fastFrameExtractor.js?v=4"></script>
-    <script src="js/webCodecsVideoElement.js?v=3"></script>
     <script src="js/videoStateRecorder.js?v=3"></script>
     <script src="js/aiSearch.js?v=17"></script>
     <script src="js/aiSearchUI.js?v=18"></script>

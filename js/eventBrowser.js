@@ -1211,7 +1211,7 @@ class EventBrowser {
 
         // Pause main video player to avoid interference (front camera is used by both)
         if (this.videoPlayer) {
-            this.wasPlayingBeforePreview = this.videoPlayer.getIsPlaying();
+            this.wasPlayingBeforePreview = !this.videoPlayer.paused;
             if (this.wasPlayingBeforePreview) {
                 this.videoPlayer.pause();
             }

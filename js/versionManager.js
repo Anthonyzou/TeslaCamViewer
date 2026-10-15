@@ -28,17 +28,12 @@ class VersionManager {
             {
                 version: '2026.21.1.1',
                 date: '2026-05-18',
-                title: 'AI Search, WebCodecs Player, Recording Health & Launch Highlights',
+                title: 'AI Search, Recording Health & Launch Highlights',
                 features: [
                     {
                         id: 'ai-search-clip',
                         text: 'AI Search (BETA): semantic search across your event clips using a CLIP model that runs locally on your GPU. Type natural-language queries like "parking garage" or "night drive" — opt-in via Settings → AI Search.',
                         elementSelector: ['#settingsBtn', '.settings-nav-item[data-tab="ai-search"]', '#ai-search-enable-btn']
-                    },
-                    {
-                        id: 'webcodecs-player',
-                        text: 'New WebCodecs-backed video player runs in parallel with the standard player — noticeably faster seeks, smoother scrubbing, and less buffering on large events. Opt-in (BETA) under Settings → Advanced → Performance.',
-                        elementSelector: ['#settingsBtn', '.settings-nav-item[data-tab="advanced"]', '#setting-useWebCodecsPlayer']
                     },
                     {
                         id: 'recording-health-badge',

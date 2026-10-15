@@ -2567,19 +2567,6 @@ button svg *,
     overflow: visible;
 }
 
-.timeline-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.25rem;
-}
-
-.time-display {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--accent);
-    text-shadow: 0 0 10px var(--accent-glow);
-}
-
 .speed-limit-display {
     display: none;
     align-items: center;
