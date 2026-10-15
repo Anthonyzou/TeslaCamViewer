@@ -2617,8 +2617,11 @@ class TeslaCamViewerApp {
       }
 
       // Update pillar camera support based on event
-      this.layoutManager.setHasPillarCameras(event.hasPillarCameras || false);
-      this.updatePillarLayoutOptions(event.hasPillarCameras || false);
+
+      const hasPillars = JSON.stringify(event).includes('_pillar');
+
+      this.layoutManager.setHasPillarCameras(hasPillars);
+      this.updatePillarLayoutOptions(hasPillars);
 
       // Get total duration first (before SEI extraction to avoid concurrent file handle access)
       const totalDuration = await this.videoPlayer.getTotalDuration();
@@ -2777,11 +2780,15 @@ class TeslaCamViewerApp {
 
               // Probe duration from front camera if not already set.
               // This is done serially (one clip at a time) to protect hardware slots.
-              if (camera === 'front' && !clip.duration && timeoutCount < MAX_TIMEOUTS) {
+              if (
+                camera === 'front' &&
+                !clip.duration &&
+                timeoutCount < MAX_TIMEOUTS
+              ) {
                 const start = performance.now();
                 clip.duration = await this._probeClipDuration(clip.url);
                 const elapsed = performance.now() - start;
-                
+
                 // If it took more than 2.5s (close to the 3s timeout), count as a near-timeout
                 if (elapsed > 2500) timeoutCount++;
                 durationLoaded = true;

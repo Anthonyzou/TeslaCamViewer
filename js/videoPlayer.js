@@ -222,7 +222,8 @@ class VideoPlayer {
   async loadEvent(event) {
     this.currentEvent = event;
     this.currentClipIndex = -1;
-    this.hasPillarCameras = event.hasPillarCameras || false;
+    this.hasPillarCameras = JSON.stringify(event).includes('_pillar');
+
     await this.loadClip(0);
   }
 
