@@ -562,26 +562,6 @@ class SettingsManager {
                             <span class="setting-hint">${this.t('settings.mobile.lockHint')}</span>
                         </div>
                     </div>
-
-                    <!-- Offline/Portable Section -->
-                    <div class="settings-section">
-                        <h3>${this.t('settings.sections.offline')}</h3>
-                        <div class="setting-row offline-package-row">
-                            <div class="offline-package-info">
-                                <label>${this.t('settings.offline.downloadPackage')}</label>
-                                <span class="setting-hint">${this.t('settings.offline.downloadHint')}</span>
-                            </div>
-                            <button id="downloadOfflineBtn" class="settings-btn primary offline-download-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/>
-                                </svg>
-                                ${this.t('settings.offline.download')}
-                            </button>
-                        </div>
-                        <p class="setting-hint" style="margin-top: 0.5rem;">
-                            ${this.t('settings.offline.mapNote')}
-                        </p>
-                    </div>
                 </div>
 
                 <!-- AI Search Tab -->
@@ -1024,20 +1004,6 @@ class SettingsManager {
         if (confirm(this.t('settings.confirmReset'))) {
           this.resetToDefaults();
           this.loadValuesIntoForm();
-        }
-      });
-    }
-
-    // Bind offline package download button
-    const offlineBtn = this.modal.querySelector('#downloadOfflineBtn');
-    if (offlineBtn) {
-      offlineBtn.addEventListener('click', () => {
-        if (window.OfflinePackager) {
-          const packager = new OfflinePackager();
-          packager.showModal();
-          this.hideSettingsModal();
-        } else {
-          alert(this.t('settings.offline.notAvailable'));
         }
       });
     }

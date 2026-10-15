@@ -178,7 +178,6 @@
       "ui": "User Interface",
       "timeline": "Timeline",
       "session": "Session",
-      "offline": "Offline Mode",
       "accessibility": "Accessibility",
       "mobile": "Mobile",
       "export": "Export",
@@ -226,13 +225,6 @@
     "session": {
       "rememberLastFolder": "Remember last folder",
       "folderHint": "Requires folder permission on reload"
-    },
-    "offline": {
-      "downloadPackage": "Download Offline Package",
-      "downloadHint": "Create a self-contained version for USB drives (~2-3 MB)",
-      "download": "Download",
-      "mapNote": "Includes all app files and libraries. Map requires internet connection.",
-      "notAvailable": "Offline packager not available. Please reload the page and try again."
     },
     "accessibility": {
       "highContrast": "High contrast mode",

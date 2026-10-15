@@ -58,7 +58,6 @@ class TeslaCamViewerApp {
       this.getAbsoluteEventTime(this.videoPlayer.currentTime);
     this.telemetryGraphs.onSeek = (time) =>
       this.videoPlayer.seekToEventTime(time);
-    this.telemetryGraphs.getSpeedLimit = () => this.getCurrentSpeedLimit();
     this.telemetryGraphs.getSeiData = () =>
       this.telemetryOverlay?.clipSeiData || new Map();
     this.telemetryGraphs.getEventTimestamp = () =>
@@ -68,10 +67,6 @@ class TeslaCamViewerApp {
     this.incidentSlowMo = new IncidentSlowMo(this.videoPlayer);
     this.incidentSlowMo.setTelemetryGraphs(this.telemetryGraphs);
 
-    // Speed limit display element
-    this.speedLimitDisplay = document.getElementById('speedLimitDisplay');
-    this.currentSpeedLimitData = null;
-    this.lastSpeedLimitGps = null;
     this.streetViewOverlay = new StreetViewOverlay(this.videoPlayer);
 
     // Wire up visibility change callbacks for all overlays
@@ -2680,20 +2675,6 @@ class TeslaCamViewerApp {
         this.clipMarking.clearMarks();
       }
 
-      // Clear speed limit display for new event
-      this.currentSpeedLimitData = null;
-      this.lastSpeedLimitGps = null;
-      if (this.speedLimitDisplay) {
-        this.speedLimitDisplay.classList.remove('visible');
-      }
-      // Stop any ongoing background speed limit loading
-      if (window.speedLimitService) {
-        window.speedLimitService.stopBackgroundLoading();
-      }
-      // Stop speed limit profile refresh and clear positions
-      this._stopSpeedLimitProfileRefresh();
-      this._speedLimitPositions = null;
-
       // Enable controls
       this.enableControls();
 
@@ -3481,244 +3462,6 @@ class TeslaCamViewerApp {
     const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const index = Math.round((((heading % 360) + 360) % 360) / 45) % 8;
     return dirs[index];
-  }
-
-  /**
-   * Get current speed limit data (for telemetryGraphs callback)
-   */
-  getCurrentSpeedLimit() {
-    return this.currentSpeedLimitData;
-  }
-
-  /**
-   * Update speed limit display in timeline info bar
-   * Fetches from cache (non-blocking) and triggers background loading
-   */
-  async _updateSpeedLimitDisplay(lat, lng) {
-    if (!window.speedLimitService || !this.speedLimitDisplay) return;
-    if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-      this.currentSpeedLimitData = null;
-      this.speedLimitDisplay.classList.remove('visible');
-      return;
-    }
-
-    // Check if position changed significantly (> 50m)
-    if (this.lastSpeedLimitGps) {
-      const dist = this._haversineDistance(
-        lat,
-        lng,
-        this.lastSpeedLimitGps.lat,
-        this.lastSpeedLimitGps.lng
-      );
-      if (dist < 50) return; // Skip update if position hasn't changed much
-    }
-    this.lastSpeedLimitGps = { lat, lng };
-
-    // Try to get cached speed limit first (non-blocking)
-    const cached = window.speedLimitService.getSpeedLimitCached(lat, lng);
-    if (cached) {
-      this._showSpeedLimit(cached);
-    } else {
-      // Trigger async fetch (won't block playback)
-      window.speedLimitService
-        .getSpeedLimit(lat, lng)
-        .then((data) => {
-          if (data) {
-            this._showSpeedLimit(data);
-          }
-        })
-        .catch(() => {});
-    }
-  }
-
-  /**
-   * Show speed limit in the display
-   */
-  _showSpeedLimit(data) {
-    if (!data || data.limit === null) {
-      this.currentSpeedLimitData = null;
-      this.speedLimitDisplay.classList.remove('visible');
-      return;
-    }
-
-    this.currentSpeedLimitData = data;
-
-    // Determine display unit based on user setting
-    const units = this.settingsManager?.get('telemetryOverlayUnits') || 'mph';
-    const useMetric = units === 'kph';
-    const displayLimit = useMetric ? data.limitKph : data.limitMph;
-
-    // Update the display - US rectangular for mph, European circular for km/h
-    if (useMetric) {
-      // European-style circular sign with red border
-      this.speedLimitDisplay.innerHTML = `
-                <div class="limit-sign-eu">
-                    <span class="limit-value">${displayLimit}</span>
-                </div>
-            `;
-    } else {
-      // US-style rectangular sign
-      this.speedLimitDisplay.innerHTML = `
-                <div class="limit-sign-us">
-                    <span class="limit-label">SPEED</span>
-                    <span class="limit-label">LIMIT</span>
-                    <span class="limit-value">${displayLimit}</span>
-                </div>
-            `;
-    }
-    this.speedLimitDisplay.classList.add('visible');
-  }
-
-  /**
-   * Queue GPS positions from telemetry for background speed limit loading
-   */
-  _queueSpeedLimitPositions(clipSeiData, totalDuration) {
-    if (!window.speedLimitService || !clipSeiData) return;
-
-    const positions = [];
-    const clipDuration = 60;
-
-    // Extract GPS positions with their event times
-    Object.keys(clipSeiData).forEach((clipIndexStr) => {
-      const clipIndex = parseInt(clipIndexStr);
-      const clipData = clipSeiData[clipIndexStr];
-      if (!clipData?.frames) return;
-
-      const frameCount = clipData.frames.length;
-      const baseTime = clipIndex * clipDuration;
-
-      // Sample every ~10 seconds (360 frames at 36fps)
-      const sampleInterval = Math.max(1, Math.floor(frameCount / 6));
-
-      for (let i = 0; i < frameCount; i += sampleInterval) {
-        const frame = clipData.frames[i];
-        if (frame.latitude_deg && frame.longitude_deg) {
-          const frameRatio = i / frameCount;
-          const eventTime = baseTime + frameRatio * clipDuration;
-          positions.push({
-            lat: frame.latitude_deg,
-            lng: frame.longitude_deg,
-            time: eventTime,
-          });
-        }
-      }
-    });
-
-    if (positions.length > 0) {
-      // Store positions for building speed limit profile
-      this._speedLimitPositions = positions;
-
-      // Start background loading, prioritizing current playback position
-      const currentTime = this.getAbsoluteEventTime(
-        this.videoPlayer?.currentTime || 0
-      );
-      window.speedLimitService.queueForBackgroundLoading(
-        positions,
-        currentTime
-      );
-
-      // Build initial speed limit profile and update periodically
-      this._buildSpeedLimitProfile();
-      this._startSpeedLimitProfileRefresh();
-    }
-  }
-
-  /**
-   * Build speed limit profile from cached data and pass to telemetry graphs
-   */
-  _buildSpeedLimitProfile() {
-    if (
-      !this._speedLimitPositions?.length ||
-      !window.speedLimitService ||
-      !this.telemetryGraphs
-    )
-      return;
-
-    const profilePoints = [];
-
-    for (const pos of this._speedLimitPositions) {
-      const cached = window.speedLimitService.getSpeedLimitCached(
-        pos.lat,
-        pos.lng
-      );
-      if (
-        cached &&
-        cached.limit !== null &&
-        cached.limitMph !== undefined &&
-        cached.limitKph !== undefined
-      ) {
-        profilePoints.push({
-          time: pos.time,
-          limitMph: cached.limitMph,
-          limitKph: cached.limitKph,
-        });
-      }
-    }
-
-    if (profilePoints.length > 0) {
-      // Sort by time
-      profilePoints.sort((a, b) => a.time - b.time);
-
-      const profile = {
-        points: profilePoints,
-        startTime: profilePoints[0].time,
-        endTime: profilePoints[profilePoints.length - 1].time,
-      };
-
-      this.telemetryGraphs.setSpeedLimitProfile(profile);
-    }
-  }
-
-  /**
-   * Start periodic refresh of speed limit profile to catch newly loaded data
-   */
-  _startSpeedLimitProfileRefresh() {
-    // Clear any existing refresh interval
-    this._stopSpeedLimitProfileRefresh();
-
-    // Refresh every 3 seconds for first 30 seconds, then every 10 seconds
-    let refreshCount = 0;
-    const maxFastRefreshes = 10;
-
-    this._speedLimitProfileRefreshInterval = setInterval(() => {
-      this._buildSpeedLimitProfile();
-      refreshCount++;
-
-      // After 10 fast refreshes, slow down to every 10 seconds
-      if (refreshCount === maxFastRefreshes) {
-        this._stopSpeedLimitProfileRefresh();
-        this._speedLimitProfileRefreshInterval = setInterval(() => {
-          this._buildSpeedLimitProfile();
-        }, 10000);
-      }
-    }, 3000);
-  }
-
-  /**
-   * Stop speed limit profile refresh
-   */
-  _stopSpeedLimitProfileRefresh() {
-    if (this._speedLimitProfileRefreshInterval) {
-      clearInterval(this._speedLimitProfileRefreshInterval);
-      this._speedLimitProfileRefreshInterval = null;
-    }
-  }
-
-  /**
-   * Haversine distance in meters between two GPS coordinates
-   */
-  _haversineDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371000;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
   }
 
   /**
@@ -5515,9 +5258,6 @@ class TeslaCamViewerApp {
       // Set units from settings
       const useMetric = this.settingsManager.get('useMetricUnits');
       this.telemetryGraphs.setUnits(useMetric ? 'kph' : 'mph');
-
-      // Queue GPS positions for background speed limit loading
-      this._queueSpeedLimitPositions(clipSeiData, totalDuration);
     } catch (error) {
       console.warn('[Graphs] Failed to load graphs data:', error);
     }
@@ -5788,8 +5528,6 @@ class TeslaCamViewerApp {
             data.longitude_deg,
             data.heading_deg || 0
           );
-          // Update speed limit display
-          this._updateSpeedLimitDisplay(data.latitude_deg, data.longitude_deg);
         } else {
           this._updateMiniMapFromEventGPS();
         }
@@ -5848,8 +5586,6 @@ class TeslaCamViewerApp {
             data.longitude_deg,
             data.heading_deg || 0
           );
-          // Update speed limit display
-          this._updateSpeedLimitDisplay(data.latitude_deg, data.longitude_deg);
         } else {
           this._updateMiniMapFromEventGPS();
         }

@@ -25,7 +25,7 @@ A powerful browser-based Tesla dashcam viewer with synchronized multi-angle play
 ### Telemetry and Analysis
 
 - **Live Telemetry Overlay** - Speed, G-force, turn signals, brake/throttle from embedded video data
-- **Telemetry Graphs** - Interactive speed, G-force, and steering graphs with speed limit reference
+- **Telemetry Graphs** - Interactive speed, G-force, and steering graphs
 - **GPS Mini-Map** - Real-time vehicle position overlay
 - **Elevation Profile** - Route elevation visualization
 - **Weather Display** - Historical weather conditions for each event
@@ -52,7 +52,6 @@ A powerful browser-based Tesla dashcam viewer with synchronized multi-angle play
 
 - **Theme System** - Dark, Light, Midnight, and Tesla Red themes
 - **Multi-Language Support** - Interface available in multiple languages
-- **Offline Package** - Download for fully offline use
 - **Automatic Updates** - Notifications when new versions are available
 
 ## Browser Requirements
@@ -81,10 +80,6 @@ npx http-server -p 8000
 ```
 
 3. Open http://localhost:8000 in your browser
-
-### Option 3: Offline Package
-
-Use the "Download Offline Version" option in settings to create a portable copy that works without internet.
 
 ## Quick Start
 
@@ -147,7 +142,6 @@ TeslaCamViewer connects to the following external services for enhanced function
 | Service                                          | Data Sent             | Purpose                              |
 | ------------------------------------------------ | --------------------- | ------------------------------------ |
 | [Open-Meteo](https://open-meteo.com)             | GPS coordinates, date | Weather conditions for events        |
-| [Overpass API](https://overpass-api.de)          | GPS coordinates       | Speed limit data from OpenStreetMap  |
 | [Nominatim](https://nominatim.openstreetmap.org) | GPS coordinates       | Address lookup for insurance reports |
 | [TeslaCamViewer.com](https://teslacamviewer.com) | None                  | Version update check only            |
 

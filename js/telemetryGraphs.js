@@ -12,7 +12,6 @@ class TelemetryGraphs {
         // Data
         this.graphData = null; // { points: [], startTime, endTime, dataDuration }
         this.elevationProfile = null; // Elevation data
-        this.speedLimitProfile = null; // Speed limit data: { points: [{time, limitMph, limitKph}], ... }
         this.tripStats = null; // Trip statistics: { totalDistanceMiles, avgSpeedMph, maxSpeedMph, apPercent, ... }
         this.totalDuration = 0;
         this.currentTime = 0;
@@ -110,12 +109,8 @@ class TelemetryGraphs {
         // Callbacks
         this.onSeek = null; // (eventTime) => void
         this.getEventTime = null; // () => number
-        this.getSpeedLimit = null; // () => { limit, limitMph, limitKph } or null
         this.getSeiData = null; // () => Map - raw SEI data from telemetryOverlay
         this.getEventTimestamp = null; // () => string - event timestamp for filename
-
-        // Current speed limit data
-        this.currentSpeedLimit = null;
 
         // Dragging - use percentage-based positioning like mini-map
         this.isDragging = false;
@@ -1071,45 +1066,6 @@ class TelemetryGraphs {
         this._drawAllGraphs();
     }
 
-    /**
-     * Set speed limit profile data
-     * @param {Object} profile - Speed limit profile: { points: [{time, limitMph, limitKph}], startTime, endTime }
-     */
-    setSpeedLimitProfile(profile) {
-        this.speedLimitProfile = profile;
-        this._drawAllGraphs();
-    }
-
-    /**
-     * Get speed limit at a specific time from the profile
-     * @param {number} time - Event time in seconds
-     * @returns {Object|null} - { limitMph, limitKph } or null
-     */
-    _getSpeedLimitAtTime(time) {
-        if (!this.speedLimitProfile?.points?.length) return null;
-
-        const points = this.speedLimitProfile.points;
-
-        // Binary search for closest point
-        let left = 0;
-        let right = points.length - 1;
-
-        while (left < right) {
-            const mid = Math.floor((left + right) / 2);
-            if (points[mid].time < time) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-
-        // Check neighbors for closest
-        if (left > 0 && Math.abs(points[left - 1].time - time) < Math.abs(points[left].time - time)) {
-            return points[left - 1];
-        }
-        return points[left];
-    }
-
     _samplePoints(points, maxPoints) {
         if (points.length <= maxPoints) return points;
         const sampled = [];
@@ -1502,7 +1458,6 @@ class TelemetryGraphs {
     clear() {
         this.graphData = null;
         this.elevationProfile = null;
-        this.speedLimitProfile = null;
         this.nearMisses = [];
         this.incidents = [];
         this.hardBrakeEvents = [];
@@ -1548,11 +1503,6 @@ class TelemetryGraphs {
     }
 
     _updateCurrentValues() {
-        // Get current speed limit
-        if (this.getSpeedLimit) {
-            this.currentSpeedLimit = this.getSpeedLimit();
-        }
-
         // Telemetry values
         if (!this.graphData || !this.graphData.points.length) {
             this.speedValue.textContent = '--';
@@ -1563,29 +1513,9 @@ class TelemetryGraphs {
             const point = this._getPointAtTime(this.currentTime);
             if (point) {
                 const speed = this.units === 'mph' ? point.speed_mph : point.speed_kph;
-
-                // Show speed with limit if available
-                if (this.currentSpeedLimit && this.currentSpeedLimit.limit !== null) {
-                    const limit = this.units === 'mph' ? this.currentSpeedLimit.limitMph : this.currentSpeedLimit.limitKph;
-                    this.speedValue.textContent = `${Math.round(speed)}/${limit}`;
-
-                    // Color based on over-limit
-                    const overLimitData = this.units === 'mph'
-                        ? window.speedLimitService?.calculateOverLimit(speed, this.currentSpeedLimit)
-                        : window.speedLimitService?.calculateOverLimitKph(speed, this.currentSpeedLimit);
-
-                    if (overLimitData && overLimitData.color) {
-                        this.speedValue.style.color = overLimitData.color;
-                        this.speedValue.style.fontWeight = overLimitData.isBold ? '700' : '400';
-                    } else {
-                        this.speedValue.style.color = this._getAccentColor();
-                        this.speedValue.style.fontWeight = '400';
-                    }
-                } else {
-                    this.speedValue.textContent = `${Math.round(speed)}`;
-                    this.speedValue.style.color = this._getAccentColor();
-                    this.speedValue.style.fontWeight = '400';
-                }
+                this.speedValue.textContent = `${Math.round(speed)}`;
+                this.speedValue.style.color = this._getAccentColor();
+                this.speedValue.style.fontWeight = '400';
 
                 this.gforceValue.textContent = `${point.g_force_y.toFixed(2)}g`;
                 this.steeringValue.textContent = `${Math.round(point.steering_angle)}°`;
@@ -1771,7 +1701,6 @@ class TelemetryGraphs {
         } else if (type === 'speed') {
             // Speed graph with throttle/brake coloring
             // Brake = red, Throttle = green (intensity), Coasting = accent color
-            // Line thickness increases when over speed limit
             for (let i = 1; i < points.length; i++) {
                 const prevPoint = points[i - 1];
                 const currPoint = points[i];
@@ -1798,26 +1727,11 @@ class TelemetryGraphs {
                     segmentColor = color;
                 }
 
-                // Check speed limit for line thickness
-                let segmentWidth = lineWidth;
-                if (this.currentSpeedLimit && this.currentSpeedLimit.limit !== null) {
-                    const avgSpeed = (values[i - 1] + values[i]) / 2;
-                    const overLimitData = this.units === 'mph'
-                        ? window.speedLimitService?.calculateOverLimit(avgSpeed, this.currentSpeedLimit)
-                        : window.speedLimitService?.calculateOverLimitKph(avgSpeed, this.currentSpeedLimit);
-
-                    if (overLimitData && overLimitData.isBold) {
-                        segmentWidth = lineWidth * 2;
-                    } else if (overLimitData && overLimitData.overBy > 5) {
-                        segmentWidth = lineWidth * 1.5;
-                    }
-                }
-
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = segmentColor;
-                ctx.lineWidth = segmentWidth;
+                ctx.lineWidth = lineWidth;
                 ctx.stroke();
             }
         } else {
@@ -1835,101 +1749,6 @@ class TelemetryGraphs {
             ctx.strokeStyle = color;
             ctx.lineWidth = lineWidth;
             ctx.stroke();
-        }
-
-        // Draw speed limit reference line for speed graph
-        if (type === 'speed') {
-            // Use speed limit profile if available, otherwise fall back to current speed limit
-            if (this.speedLimitProfile?.points?.length > 1) {
-                // Draw varying speed limit line from profile
-                const limitPoints = this.speedLimitProfile.points;
-                const profileStartTime = this.speedLimitProfile.startTime || limitPoints[0].time;
-                const profileEndTime = this.speedLimitProfile.endTime || limitPoints[limitPoints.length - 1].time;
-                const profileDuration = profileEndTime - profileStartTime;
-
-                ctx.setLineDash([4, 3]);
-                ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
-                ctx.lineWidth = 1;
-
-                let lastDrawnLimit = null;
-                for (let i = 1; i < limitPoints.length; i++) {
-                    const prevPoint = limitPoints[i - 1];
-                    const currPoint = limitPoints[i];
-
-                    // Skip if points are null/undefined
-                    if (!prevPoint || !currPoint) {
-                        continue;
-                    }
-
-                    const prevLimit = this.units === 'mph' ? prevPoint.limitMph : prevPoint.limitKph;
-                    const currLimit = this.units === 'mph' ? currPoint.limitMph : currPoint.limitKph;
-
-                    // Skip if either limit is null/undefined
-                    if (prevLimit === null || prevLimit === undefined || currLimit === null || currLimit === undefined) {
-                        continue;
-                    }
-
-                    // Skip if limit is outside visible range
-                    if ((prevLimit < minVal && currLimit < minVal) || (prevLimit > maxVal && currLimit > maxVal)) {
-                        continue;
-                    }
-
-                    // Calculate x positions based on time
-                    const x1 = padding.left + ((prevPoint.time - dataStartTime) / dataDuration) * graphWidth;
-                    const x2 = padding.left + ((currPoint.time - dataStartTime) / dataDuration) * graphWidth;
-
-                    // Clamp to graph bounds
-                    if (x2 < padding.left || x1 > width - padding.right) continue;
-
-                    const clampedLimit1 = Math.max(minVal, Math.min(maxVal, prevLimit));
-                    const clampedLimit2 = Math.max(minVal, Math.min(maxVal, currLimit));
-
-                    const y1 = padding.top + (1 - (clampedLimit1 - minVal) / range) * graphHeight;
-                    const y2 = padding.top + (1 - (clampedLimit2 - minVal) / range) * graphHeight;
-
-                    ctx.beginPath();
-                    ctx.moveTo(Math.max(padding.left, x1), y1);
-                    ctx.lineTo(Math.min(width - padding.right, x2), y2);
-                    ctx.stroke();
-
-                    lastDrawnLimit = currLimit;
-                }
-
-                ctx.setLineDash([]);
-
-                // Draw label for current speed limit at playhead position
-                if (this.currentSpeedLimit && this.currentSpeedLimit.limit !== null && this.currentSpeedLimit.limitMph !== undefined) {
-                    const currentLimit = this.units === 'mph' ? this.currentSpeedLimit.limitMph : this.currentSpeedLimit.limitKph;
-                    if (currentLimit !== null && currentLimit !== undefined && currentLimit >= minVal && currentLimit <= maxVal) {
-                        const labelY = padding.top + (1 - (currentLimit - minVal) / range) * graphHeight;
-                        ctx.font = '7px system-ui';
-                        ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
-                        ctx.textAlign = 'right';
-                        ctx.fillText(`${currentLimit}`, width - padding.right - 2, labelY - 2);
-                    }
-                }
-            } else if (this.currentSpeedLimit && this.currentSpeedLimit.limit !== null) {
-                // Fall back to single horizontal line if no profile
-                const limit = this.units === 'mph' ? this.currentSpeedLimit.limitMph : this.currentSpeedLimit.limitKph;
-
-                if (limit >= minVal && limit <= maxVal) {
-                    const limitY = padding.top + (1 - (limit - minVal) / range) * graphHeight;
-
-                    ctx.beginPath();
-                    ctx.moveTo(padding.left, limitY);
-                    ctx.lineTo(width - padding.right, limitY);
-                    ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([4, 3]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-
-                    ctx.font = '7px system-ui';
-                    ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
-                    ctx.textAlign = 'right';
-                    ctx.fillText(`${limit}`, width - padding.right - 2, limitY - 2);
-                }
-            }
         }
 
         // Draw incident markers on speed graph

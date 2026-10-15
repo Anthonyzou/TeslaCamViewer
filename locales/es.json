@@ -171,7 +171,6 @@
       "ui": "Interfaz de usuario",
       "timeline": "Línea de tiempo",
       "session": "Sesión",
-      "offline": "Modo sin conexión",
       "accessibility": "Accesibilidad",
       "mobile": "Móvil",
       "export": "Exportar",
@@ -219,13 +218,6 @@
     "session": {
       "rememberLastFolder": "Recordar última carpeta",
       "folderHint": "Requiere permiso de carpeta al recargar"
-    },
-    "offline": {
-      "downloadPackage": "Descargar paquete sin conexión",
-      "downloadHint": "Crear una versión autónoma para unidades USB (~2-3 MB)",
-      "download": "Descargar",
-      "mapNote": "Incluye todos los archivos de la aplicación y bibliotecas. El mapa requiere conexión a Internet.",
-      "notAvailable": "El empaquetador sin conexión no está disponible. Por favor recargue la página e intente de nuevo."
     },
     "accessibility": {
       "highContrast": "Modo de alto contraste",
