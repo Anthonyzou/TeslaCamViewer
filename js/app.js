@@ -36,7 +36,7 @@ class TeslaCamViewerApp {
       (time) => this.onTimelineSeeked(time),
       () => this.eventBrowser.refreshBookmarkIndicators()
     );
-    this.syncController = new SyncController(this.videoPlayer.videos);
+    this.syncController = new SyncController(this.videoPlayer);
     this.layoutManager = new LayoutManager();
     this.layoutEditor = new LayoutEditor(this.layoutManager);
     this.screenshotCapture = new ScreenshotCapture(this.videoPlayer);

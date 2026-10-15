@@ -222,11 +222,12 @@ class LayoutRenderer {
             // which replaces <video> with a <canvas> of matching id/class
             // (see VideoPlayer._resolveVideos). Without this, object-fit
             // and other per-camera inline styles were never applied.
-            const video = container.querySelector('video, canvas.video-player');
+            const videos = Array.from(container.querySelectorAll('video, canvas.video-player'));
+            const firstVideo = videos[0];
             let cameraName = container.dataset.camera;
 
-            if (!cameraName && video) {
-                cameraName = videoIdToCamera[video.id];
+            if (!cameraName && firstVideo) {
+                cameraName = videoIdToCamera[firstVideo.id];
             }
 
             if (!cameraName) return;
@@ -267,10 +268,10 @@ class LayoutRenderer {
                 container.style.clipPath = 'none';
             }
 
-            // Apply object-fit to video element
-            if (video) {
-                video.style.objectFit = camConfig.objectFit || 'contain';
-            }
+            // Apply object-fit to all video elements in the container (Bank A and Bank B)
+            videos.forEach(v => {
+                v.style.objectFit = camConfig.objectFit || 'contain';
+            });
 
             // Position label to avoid being cut off
             const label = container.querySelector('.video-label');

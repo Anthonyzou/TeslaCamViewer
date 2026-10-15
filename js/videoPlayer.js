@@ -5,10 +5,10 @@
  */
 class VideoPlayer {
   constructor() {
-    this.banks = {
-      a: this._resolveVideos('bank-a'),
-      b: this._createSecondBank('bank-b'),
-    };
+    this.banks = {};
+    this.banks.a = this._resolveVideos('bank-a');
+    this.banks.b = this._createSecondBank('bank-b');
+
     this.activeBank = 'a';
     this.currentEvent = null;
     this.currentClipIndex = -1;
@@ -16,6 +16,8 @@ class VideoPlayer {
     this.disableAutoAdvance = false;
     this.hasPillarCameras = false;
     this._isPlayingIntent = false;
+    this._preloading = false;
+    this._intendedPlaybackRate = 1.0; // Source of truth for playback speed
 
     // Callbacks
     this.onClipChange = null;
@@ -30,17 +32,39 @@ class VideoPlayer {
   /**
    * Proxies for the active bank's front camera
    */
-  get videos() { return this.banks[this.activeBank]; }
-  get currentTime() { return this.videos.front.currentTime; }
-  set currentTime(t) { this.seek(t, this._isPlayingIntent); }
-  get duration() { return this.videos.front.duration; }
-  get paused() { return this.videos.front.paused; }
-  get playbackRate() { return this.videos.front.playbackRate; }
+  get videos() {
+    return this.banks[this.activeBank];
+  }
+  get currentTime() {
+    return this.videos.front.currentTime;
+  }
+  set currentTime(t) {
+    this.seek(t, this._isPlayingIntent);
+  }
+  get duration() {
+    return this.videos.front.duration;
+  }
+  get paused() {
+    return this.videos.front.paused;
+  }
+  get playbackRate() {
+    return this._intendedPlaybackRate;
+  }
   set playbackRate(r) {
-    for (const v of Object.values(this.banks.a)) v.playbackRate = r;
-    for (const v of Object.values(this.banks.b)) v.playbackRate = r;
+    this._intendedPlaybackRate = r;
+    this._applyPlaybackRateToAll();
   }
 
+  _applyPlaybackRateToAll() {
+    for (const v of Object.values(this.banks.a))
+      v.playbackRate = this._intendedPlaybackRate;
+    for (const v of Object.values(this.banks.b))
+      v.playbackRate = this._intendedPlaybackRate;
+  }
+
+  /**
+   * Absolute time in the event (sum of previous clips + current clip time)
+   */
   get absoluteTime() {
     if (!this.currentEvent) return 0;
     let offset = 0;
@@ -50,11 +74,20 @@ class VideoPlayer {
     return offset + this.currentTime;
   }
 
+  /**
+   * Backward compatibility getter for components that still expect an array
+   * of clip durations (Telemetry, Export, AI Search Heatmap).
+   */
   get cachedClipDurations() {
     if (!this.currentEvent) return [];
     return this.currentEvent.clipGroups.map((g) => {
+      // Prefer front camera for duration source of truth
       if (g.clips.front?.duration) return g.clips.front.duration;
-      for (const cam of Object.values(g.clips)) if (cam.duration) return cam.duration;
+      // Fallback to any other camera that has a probed duration
+      for (const cam of Object.values(g.clips)) {
+        if (cam.duration) return cam.duration;
+      }
+      // Default to 60s if no probe data found
       return 60;
     });
   }
@@ -71,8 +104,10 @@ class VideoPlayer {
     const out = {};
     for (const [cam, id] of Object.entries(ids)) {
       const el = document.getElementById(id);
-      el.classList.add(className);
-      out[cam] = el;
+      if (el) {
+        el.classList.add(className);
+        out[cam] = el;
+      }
     }
     return out;
   }
@@ -88,7 +123,7 @@ class VideoPlayer {
       el.style.left = '0';
       el.style.width = '100%';
       el.style.height = '100%';
-      el.style.objectFit = 'inherit'; // Follow container/primary fit
+      el.style.objectFit = 'inherit';
       el.muted = true;
       el.playsInline = true;
       primary.parentElement.appendChild(el);
@@ -106,43 +141,63 @@ class VideoPlayer {
   }
 
   setupEventListeners() {
-    const setupBank = (bank) => {
+    const setupBank = (bank, bankId) => {
       bank.front.addEventListener('timeupdate', () => {
-        if (this.activeBank === (bank === this.banks.a ? 'a' : 'b')) {
+        if (this.activeBank === bankId) {
           if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime);
           this._checkPreloadTrigger();
         }
       });
 
+      const onPlayStateToggle = () => {
+        if (this.activeBank === bankId) {
+          if (this.onPlayStateChange)
+            this.onPlayStateChange(this._isPlayingIntent);
+        }
+      };
+
       for (const [camera, video] of Object.entries(bank)) {
         video.addEventListener('ended', () => {
-          if (this.activeBank === (bank === this.banks.a ? 'a' : 'b')) {
+          if (this.activeBank === bankId) {
             this.updateVideoLabelState(camera, true);
             this.handleVideoEnded();
           }
         });
+
         video.addEventListener('playing', () => {
-          if (this.activeBank === (bank === this.banks.a ? 'a' : 'b')) {
+          if (this.activeBank === bankId) {
             this.updateVideoLabelState(camera, false);
-            if (this.onPlayStateChange) this.onPlayStateChange(this._isPlayingIntent);
+            onPlayStateToggle();
           }
         });
-        video.addEventListener('pause', () => {
-          if (this.activeBank === (bank === this.banks.a ? 'a' : 'b')) {
-            if (this.onPlayStateChange) this.onPlayStateChange(this._isPlayingIntent);
+
+        video.addEventListener('pause', onPlayStateToggle);
+
+        video.controls = false;
+        video.muted = true;
+        video.volume = 0;
+
+        video.parentElement.addEventListener('dblclick', () => {
+          if (this.activeBank === bankId) {
+            if (!document.fullscreenElement) {
+              video.parentElement.requestFullscreen().catch(console.error);
+            } else {
+              document.exitFullscreen();
+            }
           }
         });
       }
     };
-    setupBank(this.banks.a);
-    setupBank(this.banks.b);
+
+    setupBank(this.banks.a, 'a');
+    setupBank(this.banks.b, 'b');
   }
 
   _checkPreloadTrigger() {
     // 5 seconds before end, trigger preload of next clip
     if (this._isPlayingIntent && !this._preloading && this.currentEvent) {
       const remaining = this.duration - this.currentTime;
-      if (remaining > 0 && remaining < 5) {
+      if (remaining > 0 && remaining < 5 * this.playbackRate) {
         const nextIndex = this.currentClipIndex + 1;
         if (nextIndex < this.currentEvent.clipGroups.length) {
           this._preloading = true;
@@ -160,14 +215,23 @@ class VideoPlayer {
   }
 
   async loadClip(clipIndex, isPreload = false) {
-    if (!this.currentEvent || clipIndex < 0 || clipIndex >= this.currentEvent.clipGroups.length) return;
+    if (
+      !this.currentEvent ||
+      clipIndex < 0 ||
+      clipIndex >= this.currentEvent.clipGroups.length
+    )
+      return;
 
-    const targetBank = isPreload ? (this.activeBank === 'a' ? 'b' : 'a') : this.activeBank;
-    const videos = this.banks[targetBank];
+    const targetBankId = isPreload
+      ? this.activeBank === 'a'
+        ? 'b'
+        : 'a'
+      : this.activeBank;
+    const videos = this.banks[targetBankId];
     const clipGroup = this.currentEvent.clipGroups[clipIndex];
 
     if (!isPreload) {
-      const wasPlaying = this._isPlayingIntent;
+      // Hardware pause only, preserve user intent
       for (const v of Object.values(this.videos)) v.pause();
       this.currentClipIndex = clipIndex;
       this.resetAllVideoLabelStates();
@@ -180,7 +244,9 @@ class VideoPlayer {
       const clip = clipGroup.clips[camera];
       const video = videos[camera];
       const url = clip?.url || '';
+
       if (video.getAttribute('src') === url) return Promise.resolve();
+
       return new Promise((resolve) => {
         video.onloadedmetadata = () => resolve();
         video.onerror = () => resolve();
@@ -190,7 +256,10 @@ class VideoPlayer {
     });
 
     await Promise.all(loadPromises);
-    
+
+    // Re-apply playback rate because browsers often reset it when src changes
+    this._applyPlaybackRateToAll();
+
     if (!isPreload) {
       if (this.onClipChange) this.onClipChange(clipIndex);
       if (this._isPlayingIntent) this.play();
@@ -203,30 +272,34 @@ class VideoPlayer {
   }
 
   async swapBanks() {
-    const oldBank = this.activeBank;
-    const newBank = this.activeBank === 'a' ? 'b' : 'a';
-    
+    const oldBankId = this.activeBank;
+    const newBankId = this.activeBank === 'a' ? 'b' : 'a';
+
     // Hide old, show new
-    for (const v of Object.values(this.banks[oldBank])) {
+    for (const v of Object.values(this.banks[oldBankId])) {
       v.style.display = 'none';
       v.pause();
     }
-    for (const v of Object.values(this.banks[newBank])) {
+    for (const v of Object.values(this.banks[newBankId])) {
       v.style.display = 'block';
     }
 
-    this.activeBank = newBank;
+    this.activeBank = newBankId;
     this.currentClipIndex++;
     this._preloading = false;
     this.resetAllVideoLabelStates();
-    
+
     if (this.onClipChange) this.onClipChange(this.currentClipIndex);
     if (this._isPlayingIntent) this.play();
   }
 
   play() {
     this._isPlayingIntent = true;
-    const activeVideos = Object.values(this.videos).filter((v) => v.getAttribute('src'));
+    this._applyPlaybackRateToAll(); // Re-enforce speed before playing
+    const activeVideos = Object.values(this.videos).filter((v) =>
+      v.getAttribute('src')
+    );
+    if (activeVideos.length === 0) return;
     return Promise.all(activeVideos.map((v) => v.play()));
   }
 
@@ -236,7 +309,6 @@ class VideoPlayer {
   }
 
   async seek(time, autoPlay = true) {
-    // If seeking causes a clip change, we just load normally (non-preload)
     if (time < 0 && this.currentClipIndex > 0) {
       await this.loadClip(this.currentClipIndex - 1);
       const newTime = Math.max(0, this.duration + time);
@@ -244,7 +316,11 @@ class VideoPlayer {
       return;
     }
 
-    if (time >= this.duration && this.currentEvent && this.currentClipIndex < this.currentEvent.clipGroups.length - 1) {
+    if (
+      time >= this.duration &&
+      this.currentEvent &&
+      this.currentClipIndex < this.currentEvent.clipGroups.length - 1
+    ) {
       await this.loadClip(this.currentClipIndex + 1);
       const overflow = Math.max(0, time - this.duration);
       for (const v of Object.values(this.videos)) v.currentTime = overflow;
@@ -252,15 +328,21 @@ class VideoPlayer {
     }
 
     for (const video of Object.values(this.videos)) {
-      const maxTime = video.duration ? Math.max(0, video.duration - 0.05) : time;
+      const maxTime = video.duration
+        ? Math.max(0, video.duration - 0.05)
+        : time;
       video.currentTime = Math.max(0, Math.min(time, maxTime));
     }
 
-    if (autoPlay) this.play();
+    if (autoPlay) {
+      this.play();
+    }
   }
 
   async handleVideoEnded() {
-    const activeVideos = Object.values(this.videos).filter((v) => v.getAttribute('src'));
+    const activeVideos = Object.values(this.videos).filter((v) =>
+      v.getAttribute('src')
+    );
     const allEnded = activeVideos.every((v) => v.ended || v.error);
     if (!allEnded || !this._isPlayingIntent) return;
 
@@ -277,7 +359,10 @@ class VideoPlayer {
   }
 
   async nextClip() {
-    if (this.currentEvent && this.currentClipIndex < this.currentEvent.clipGroups.length - 1) {
+    if (
+      this.currentEvent &&
+      this.currentClipIndex < this.currentEvent.clipGroups.length - 1
+    ) {
       await this.loadClip(this.currentClipIndex + 1);
     }
   }
@@ -305,7 +390,8 @@ class VideoPlayer {
     let timeInClip = 0;
 
     for (let i = 0; i < this.currentEvent.clipGroups.length; i++) {
-      const duration = this.currentEvent.clipGroups[i].clips.front?.duration || 60;
+      const duration =
+        this.currentEvent.clipGroups[i].clips.front?.duration || 60;
       if (accumulatedTime + duration >= eventTime) {
         targetClipIndex = i;
         timeInClip = eventTime - accumulatedTime;
@@ -314,7 +400,8 @@ class VideoPlayer {
       accumulatedTime += duration;
     }
 
-    if (targetClipIndex !== this.currentClipIndex) await this.loadClip(targetClipIndex);
+    if (targetClipIndex !== this.currentClipIndex)
+      await this.loadClip(targetClipIndex);
     await this.seek(timeInClip, autoPlay);
   }
 
