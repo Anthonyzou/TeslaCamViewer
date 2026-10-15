@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const B2 = require('backblaze-b2');
 const cors = require('cors');
 const path = require('path');
 
@@ -17,55 +18,62 @@ app.use(cors());
 app.use(express.json());
 
 /**
- * Perform the B2 parsing logic
+ * Perform the B2 parsing logic using the backblaze-b2 SDK
  */
 async function performB2Parse(keyId, appKey, bucketName) {
     console.log(`[B2 Server Parser] Starting parse for bucket: ${bucketName}`);
 
-    // A. Authorize
-    const auth = Buffer.from(`${keyId}:${appKey}`).toString('base64');
-    const authResp = await axios.get('https://api.backblazeb2.com/b2api/v3/b2_authorize_account', {
-        headers: { 'Authorization': `Basic ${auth}` }
+    const b2 = new B2({
+        applicationKeyId: keyId,
+        applicationKey: appKey
     });
 
-    const { apiUrl, downloadUrl } = authResp.data.apiInfo.storageApi;
-    const authToken = authResp.data.authorizationToken;
-    const accountId = authResp.data.accountId;
+    await b2.authorize();
 
-    // B. Get Bucket ID
-    const bucketsResp = await axios.post(`${apiUrl}/b2api/v3/b2_list_buckets`, 
-        { accountId, bucketName },
-        { headers: { 'Authorization': authToken } }
-    );
-    
+    // 1. Get Bucket ID
+    const bucketsResp = await b2.getBucket({ bucketName });
     const bucket = bucketsResp.data.buckets.find(b => b.bucketName === bucketName);
     if (!bucket) throw new Error('Bucket not found');
     const bucketId = bucket.bucketId;
 
-    // C. List Files
+    // 2. List all files (with pagination)
     let allFiles = [];
     let startFileName = null;
     while (true) {
-        const listResp = await axios.post(`${apiUrl}/b2api/v3/b2_list_file_names`, 
-            { bucketId, startFileName, maxFileCount: 10000 },
-            { headers: { 'Authorization': authToken } }
-        );
-        
+        const listResp = await b2.listFileNames({
+            bucketId,
+            startFileName,
+            maxFileCount: 10000
+        });
+
         allFiles = allFiles.concat(listResp.data.files);
-        if (listResp.data.nextFileName) startFileName = listResp.data.nextFileName;
-        else break;
+        if (listResp.data.nextFileName) {
+            startFileName = listResp.data.nextFileName;
+        } else {
+            break;
+        }
     }
 
-    // D. Get Download Authorization Token
-    const downloadAuthResp = await axios.post(`${apiUrl}/b2api/v3/b2_get_download_authorization`, 
-        { bucketId, fileNamePrefix: '', validDurationInSeconds: 86400 },
-        { headers: { 'Authorization': authToken } }
-    );
+    // 3. Get Download Authorization Token
+    const downloadAuthResp = await b2.getDownloadAuthorization({
+        bucketId,
+        fileNamePrefix: '',
+        validDurationInSeconds: 86400
+    });
 
     const downloadToken = downloadAuthResp.data.authorizationToken;
+    const downloadUrl = b2.downloadUrl;
 
-    // E. Parse files into events
+    // 4. Parse files into structured events
+    return await organizeB2Events(allFiles, bucketName, downloadUrl, downloadToken);
+}
+
+/**
+ * Group raw B2 files into TeslaCam events and clip groups
+ */
+async function organizeB2Events(allFiles, bucketName, downloadUrl, downloadToken) {
     const eventsMap = new Map();
+    const metadataFetches = [];
 
     for (const file of allFiles) {
         const pathParts = file.fileName.split('/');
@@ -80,10 +88,9 @@ async function performB2Parse(keyId, appKey, bucketName) {
 
         if (!eventsMap.has(eventKey)) {
             const tsMatch = eventFolderName.match(/^(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})$/);
-            let timestamp = eventFolderName;
-            if (tsMatch) {
-                timestamp = `${tsMatch[1]}T${tsMatch[2].replace(/-/g, ':')}`;
-            }
+            const timestamp = tsMatch
+                ? `${tsMatch[1]}T${tsMatch[2].replace(/-/g, ':')}`
+                : eventFolderName;
 
             eventsMap.set(eventKey, {
                 name: eventFolderName,
@@ -101,12 +108,11 @@ async function performB2Parse(keyId, appKey, bucketName) {
         const fileUrl = `${downloadUrl}/file/${bucketName}/${file.fileName}?Authorization=${encodeURIComponent(downloadToken)}`;
 
         if (fileName === 'event.json') {
-            try {
-                const metadataResp = await axios.get(fileUrl);
-                event.metadata = metadataResp.data;
-            } catch (e) {
-                console.warn(`[Parser] Failed to fetch metadata for ${eventKey}`);
-            }
+            metadataFetches.push(
+                axios.get(fileUrl)
+                    .then(resp => { event.metadata = resp.data; })
+                    .catch(() => console.warn(`[Parser] Failed to fetch metadata for ${eventKey}`))
+            );
         } else if (fileName === 'thumb.png') {
             event.thumbnailUrl = fileUrl;
         } else if (fileName === 'event.mp4') {
@@ -122,6 +128,11 @@ async function performB2Parse(keyId, appKey, bucketName) {
                 });
             }
         }
+    }
+
+    // Fetch event metadata concurrently rather than blocking file traversal serially
+    if (metadataFetches.length > 0) {
+        await Promise.all(metadataFetches);
     }
 
     const finalEvents = Array.from(eventsMap.values()).filter(e => e.clips.length > 0);
@@ -141,6 +152,7 @@ async function performB2Parse(keyId, appKey, bucketName) {
         event.clipGroups = Array.from(groups.values());
         event.clipGroups.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
         event.isEmpty = event.clipGroups.length === 0;
+        event.hasPillarCameras = event.clips.some(c => c.camera === 'left_pillar' || c.camera === 'right_pillar');
 
         event.driveId = 'b2';
         event.driveLabel = 'Backblaze B2';
@@ -210,22 +222,26 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, async () => {
-    console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
+if (require.main === module) {
+    app.listen(PORT, async () => {
+        console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
 
-    // Preload if env variables are set
-    if (process.env.B2_KEY_ID && process.env.B2_APP_KEY && process.env.B2_BUCKET_NAME) {
-        console.log('[B2 Server Parser] Preloading data from environment variables...');
-        try {
-            cachedB2Data = await performB2Parse(
-                process.env.B2_KEY_ID, 
-                process.env.B2_APP_KEY, 
-                process.env.B2_BUCKET_NAME
-            );
-            lastParseTime = Date.now();
-            console.log(`[B2 Server Parser] Preload complete: ${cachedB2Data.events.length} events found.`);
-        } catch (e) {
-            console.error('[B2 Server Parser] Preload failed:', e.message);
+        // Preload if env variables are set
+        if (process.env.B2_KEY_ID && process.env.B2_APP_KEY && process.env.B2_BUCKET_NAME) {
+            console.log('[B2 Server Parser] Preloading data from environment variables...');
+            try {
+                cachedB2Data = await performB2Parse(
+                    process.env.B2_KEY_ID, 
+                    process.env.B2_APP_KEY, 
+                    process.env.B2_BUCKET_NAME
+                );
+                lastParseTime = Date.now();
+                console.log(`[B2 Server Parser] Preload complete: ${cachedB2Data.events.length} events found.`);
+            } catch (e) {
+                console.error('[B2 Server Parser] Preload failed:', e.message);
+            }
         }
-    }
-});
+    });
+}
+
+module.exports = { app, performB2Parse, organizeB2Events };
