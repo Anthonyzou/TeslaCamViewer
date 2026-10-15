@@ -36,7 +36,7 @@ class EventBrowser {
                         const eventName = eventItem.dataset.eventName;
                         const event = this.events.find(e => e.name === eventName);
 
-                        if (event && event.thumbnailFile) {
+                        if (event && (event.thumbnailFile || event.thumbnailUrl)) {
                             this.loadThumbnailLazy(event, eventItem);
                         }
 
@@ -58,7 +58,7 @@ class EventBrowser {
      * @param {HTMLElement} eventItem
      */
     async loadThumbnailLazy(event, eventItem) {
-        if (!event.thumbnailFile) return;
+        if (!event.thumbnailFile && !event.thumbnailUrl) return;
 
         const placeholder = eventItem.querySelector('.event-thumbnail-placeholder');
         if (!placeholder) return; // Already has thumbnail
@@ -583,7 +583,7 @@ class EventBrowser {
             fragment.appendChild(eventElement);
 
             // Observe for lazy thumbnail loading if it has a thumbnail
-            if (this.thumbnailObserver && event.thumbnailFile) {
+            if (this.thumbnailObserver && (event.thumbnailFile || event.thumbnailUrl)) {
                 this.thumbnailObserver.observe(eventElement);
             }
         }
@@ -833,7 +833,7 @@ class EventBrowser {
 
         // Get thumbnail or show placeholder
         let thumbnailHTML = '';
-        if (event.thumbnailFile) {
+        if (event.thumbnailFile || event.thumbnailUrl) {
             const thumbURL = await this.getThumbnail(event);
             if (thumbURL) {
                 thumbnailHTML = `<img src="${thumbURL}" alt="Event thumbnail" class="event-thumbnail">`;
@@ -966,6 +966,10 @@ class EventBrowser {
      * @returns {Promise<string|null>}
      */
     async getThumbnail(event) {
+        if (event.thumbnailUrl) {
+            return event.thumbnailUrl;
+        }
+
         if (this.thumbnailCache.has(event.name)) {
             return this.thumbnailCache.get(event.name);
         }

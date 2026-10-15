@@ -103,6 +103,7 @@ class TeslaCamViewerApp {
         this.notesManager = new NotesManager();
         this.helpModal = new HelpModal();
         this.quickStartGuide = new QuickStartGuide();
+        this.b2Client = new B2Client();
 
         // SEI Diagnostics — future-proofing against Tesla firmware schema changes.
         // Persists unknown-field observations across sessions, surfaces via Settings.
@@ -159,6 +160,7 @@ class TeslaCamViewerApp {
 
         // UI elements
         this.selectFolderBtn = document.getElementById('selectFolderBtn');
+        this.loadB2Btn = document.getElementById('loadB2Btn');
         this.playPauseBtn = document.getElementById('playPauseBtn');
         this.frameBackBtn = document.getElementById('frameBackBtn');
         this.frameForwardBtn = document.getElementById('frameForwardBtn');
@@ -316,6 +318,7 @@ class TeslaCamViewerApp {
                     this.updateDriveSelector(this.folderManager.getDrives());
                     this._syncFileSystemObservers(this.folderManager.getDrives());
                     this.selectFolderBtn.classList.add('hidden');
+                    this.loadB2Btn?.classList.add('hidden');
                     console.log(`Migrated ${events.length} events to new drive system`);
                 }
                 this.hideLoading();
@@ -385,6 +388,7 @@ class TeslaCamViewerApp {
                 // unless we do it explicitly here.
                 this._syncFileSystemObservers(this.folderManager.getDrives());
                 this.selectFolderBtn.classList.add('hidden');
+                this.loadB2Btn?.classList.add('hidden');
                 console.log(`Restored ${allEvents.length} total events from ${successCount} drives`);
 
                 // Show diagnostic notification if there were issues
@@ -532,6 +536,7 @@ class TeslaCamViewerApp {
     setupEventListeners() {
         // Folder selection
         this.selectFolderBtn.addEventListener('click', () => this.selectFolder());
+        this.loadB2Btn?.addEventListener('click', () => this.loadFromB2());
 
         // Sync language selectors when locale changes
         window.addEventListener('localeChanged', (e) => {
@@ -2141,6 +2146,7 @@ class TeslaCamViewerApp {
 
                 // Hide select folder button after successful load
                 this.selectFolderBtn.classList.add('hidden');
+                this.loadB2Btn?.classList.add('hidden');
 
                 // Save folder handle if setting is enabled
                 if (this.settingsManager.get('rememberLastFolder')) {
@@ -2161,6 +2167,66 @@ class TeslaCamViewerApp {
             }
 
             break; // Exit loop after successful processing
+        }
+    }
+
+    /**
+     * Load events from Backblaze B2
+     */
+    async loadFromB2() {
+        this.showLoading('Connecting to Backblaze B2...');
+
+        try {
+            // For now, call with nulls to use server-side .env credentials
+            // In the future, this could show a modal to ask for credentials
+            const result = await this.b2Client.parseBucket();
+
+            if (!result || !result.events) {
+                throw new Error('No events found in B2 bucket');
+            }
+
+            const events = result.events;
+            console.log(`Loaded ${events.length} events from B2`);
+
+            // Create or update virtual B2 drive in folderManager
+            let b2Drive = this.folderManager.drives.find(d => d.id === 'b2');
+            if (!b2Drive) {
+                b2Drive = {
+                    id: 'b2',
+                    label: 'Backblaze B2',
+                    color: '#003399',
+                    isArchive: false,
+                    dateFilter: null,
+                    events: events,
+                    handle: null,
+                    isB2: true
+                };
+                this.folderManager.drives.push(b2Drive);
+            } else {
+                b2Drive.events = events;
+            }
+
+            this.folderManager.activeDriveId = 'b2';
+
+            this.allEvents = events;
+            this.statisticsManager.setEvents(events);
+
+            // Register events and load backups
+            await this.registerEventsAndLoadBackups(events);
+
+            this.applyFilters(); // Apply filters and load into UI
+            this.updateDriveSelector(this.folderManager.getDrives());
+
+            // Hide the load buttons
+            this.selectFolderBtn?.classList.add('hidden');
+            if (this.loadB2Btn) this.loadB2Btn.classList.add('hidden');
+
+            this.hideLoading();
+
+        } catch (error) {
+            console.error('B2 Load Error:', error);
+            this.hideLoading();
+            alert('Failed to load from Backblaze B2: ' + error.message);
         }
     }
 

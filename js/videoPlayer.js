@@ -473,58 +473,75 @@ class VideoPlayer {
         const clip = clipGroup.clips[camera];
         const video = this.videos[camera];
 
-        // Revoke previous URL
+        // Revoke previous URL if it was a blob URL
         if (this.videoURLs[camera]) {
-            URL.revokeObjectURL(this.videoURLs[camera]);
+            if (typeof this.videoURLs[camera] === 'string' && this.videoURLs[camera].startsWith('blob:')) {
+                URL.revokeObjectURL(this.videoURLs[camera]);
+            }
             this.videoURLs[camera] = null;
         }
 
-        if (!clip || !clip.fileHandle) {
+        if (!clip || (!clip.fileHandle && !clip.url)) {
             video.src = '';
             return;
         }
 
         try {
-            const file = await clip.fileHandle.getFile();
-            console.log(`[LoadVideo] ${camera}: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+            let url;
+            let displayName = clip.fileName || camera;
 
-            // Skip empty or very small files (likely corrupted)
-            if (file.size < 1024) {
-                console.warn(`[LoadVideo] Skipping corrupted file for ${camera}: ${file.name} (${file.size} bytes)`);
-                video.src = '';
-                return;
+            if (clip.url) {
+                url = clip.url;
+                this.videoURLs[camera] = url;
+                console.log(`[LoadVideo] ${camera}: ${displayName} (Remote URL)`);
+            } else {
+                const file = await clip.fileHandle.getFile();
+                displayName = file.name;
+                console.log(`[LoadVideo] ${camera}: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+
+                // Skip empty or very small files (likely corrupted)
+                if (file.size < 1024) {
+                    console.warn(`[LoadVideo] Skipping corrupted file for ${camera}: ${file.name} (${file.size} bytes)`);
+                    video.src = '';
+                    return;
+                }
+
+                url = URL.createObjectURL(file);
+                this.videoURLs[camera] = url;
             }
 
-            const url = URL.createObjectURL(file);
-            this.videoURLs[camera] = url;
             video.src = url;
 
             // Wait for video to be ready
             await new Promise((resolve) => {
                 const timeout = setTimeout(() => {
-                    console.warn(`[LoadVideo] TIMEOUT for ${camera}: ${file.name}`);
+                    console.warn(`[LoadVideo] TIMEOUT for ${camera}: ${displayName}`);
                     // Clear source to abort the load
                     video.src = '';
+                    if (this.videoURLs[camera] && typeof this.videoURLs[camera] === 'string' && this.videoURLs[camera].startsWith('blob:')) {
+                        URL.revokeObjectURL(url);
+                    }
                     this.videoURLs[camera] = null;
-                    URL.revokeObjectURL(url);
                     resolve();
                 }, 10000); // 10 second timeout
 
                 video.onloadeddata = () => {
                     clearTimeout(timeout);
-                    console.log(`[LoadVideo] Loaded ${camera}: ${file.name}`);
+                    console.log(`[LoadVideo] Loaded ${camera}: ${displayName}`);
                     resolve();
                 };
                 video.onerror = (e) => {
                     clearTimeout(timeout);
                     // Suppress error logging during export to avoid 100K+ error spam
                     if (!window.app?.videoExporter?.isExporting) {
-                        console.error(`[LoadVideo] ERROR for ${camera}: ${file.name}`, e);
+                        console.error(`[LoadVideo] ERROR for ${camera}: ${displayName}`, e);
                     }
                     // Clear the source on error so it doesn't block playback
                     video.src = '';
+                    if (this.videoURLs[camera] && typeof this.videoURLs[camera] === 'string' && this.videoURLs[camera].startsWith('blob:')) {
+                        URL.revokeObjectURL(url);
+                    }
                     this.videoURLs[camera] = null;
-                    URL.revokeObjectURL(url);
                     resolve(); // Don't reject, let other cameras continue
                 };
             });
@@ -925,20 +942,24 @@ class VideoPlayer {
             const clip = clipGroup.clips.front;
             let duration = 0;
 
-            if (clip && clip.fileHandle) {
-                try {
-                    const file = await clip.fileHandle.getFile();
+            if (clip && (clip.fileHandle || clip.url)) {
+                if (clip.url) {
+                    duration = 60; // Standard TeslaCam clip length for remote B2 files
+                } else {
+                    try {
+                        const file = await clip.fileHandle.getFile();
 
-                    // Skip empty/corrupted files
-                    if (file.size < 1024) {
-                        console.warn(`Skipping empty file for duration: ${file.name}`);
+                        // Skip empty/corrupted files
+                        if (file.size < 1024) {
+                            console.warn(`Skipping empty file for duration: ${file.name}`);
+                            duration = 60; // Default
+                        } else {
+                            duration = await this._probeClipDuration(file);
+                        }
+                    } catch (error) {
+                        console.error('Error getting clip duration:', error);
                         duration = 60; // Default
-                    } else {
-                        duration = await this._probeClipDuration(file);
                     }
-                } catch (error) {
-                    console.error('Error getting clip duration:', error);
-                    duration = 60; // Default
                 }
             }
 
@@ -1053,7 +1074,19 @@ class VideoPlayer {
                 const clipGroup = this.currentEvent.clipGroups[i];
                 const clip = clipGroup.clips.front;
 
-                if (!clip || !clip.fileHandle) continue;
+                if (!clip || (!clip.fileHandle && !clip.url)) continue;
+
+                if (clip.url) {
+                    accumulatedTime += 60;
+                    lastValidClipIndex = i;
+                    lastValidDuration = 60;
+                    if (eventTime < accumulatedTime) {
+                        targetClipIndex = i;
+                        targetClipTime = eventTime - (accumulatedTime - 60);
+                        break;
+                    }
+                    continue;
+                }
 
                 try {
                     const file = await clip.fileHandle.getFile();
