@@ -1077,14 +1077,16 @@ class VideoPlayer {
                 if (!clip || (!clip.fileHandle && !clip.url)) continue;
 
                 if (clip.url) {
-                    accumulatedTime += 60;
-                    lastValidClipIndex = i;
-                    lastValidDuration = 60;
-                    if (eventTime < accumulatedTime) {
+                    const duration = 60; // Standard TeslaCam clip length
+                    if (accumulatedTime + duration >= eventTime) {
                         targetClipIndex = i;
-                        targetClipTime = eventTime - (accumulatedTime - 60);
+                        timeInClip = eventTime - accumulatedTime;
+                        foundClip = true;
                         break;
                     }
+                    accumulatedTime += duration;
+                    lastValidClipIndex = i;
+                    lastValidDuration = duration;
                     continue;
                 }
 
