@@ -11,6 +11,7 @@ class VideoPlayer {
     this.loopEnabled = false;
     this.disableAutoAdvance = false;
     this.hasPillarCameras = false;
+    this._isPlayingIntent = false; // Tracks if the user wants the video to be playing
 
     // Callbacks
     this.onClipChange = null;
@@ -55,7 +56,7 @@ class VideoPlayer {
     return this.videos.front.currentTime;
   }
   set currentTime(t) {
-    this.seek(t);
+    this.seek(t, this._isPlayingIntent);
   }
 
   get duration() {
@@ -128,7 +129,7 @@ class VideoPlayer {
     });
 
     const onPlayStateToggle = () => {
-      if (this.onPlayStateChange) this.onPlayStateChange(!this.paused);
+      if (this.onPlayStateChange) this.onPlayStateChange(this._isPlayingIntent);
     };
 
     for (const [camera, video] of Object.entries(this.videos)) {
@@ -190,10 +191,11 @@ class VideoPlayer {
     )
       return;
 
-    const wasPlaying = !this.paused;
+    const wasPlaying = this._isPlayingIntent;
     const currentRate = this.playbackRate;
 
-    if (wasPlaying) this.pause();
+    // Use native pause to avoid resetting intent during internal transition
+    for (const v of Object.values(this.videos)) v.pause();
     this.resetBufferingState();
 
     this.resetAllVideoLabelStates();
@@ -226,6 +228,7 @@ class VideoPlayer {
   }
 
   play() {
+    this._isPlayingIntent = true;
     const activeVideos = Object.values(this.videos).filter((v) =>
       v.getAttribute('src')
     );
@@ -234,6 +237,7 @@ class VideoPlayer {
   }
 
   pause() {
+    this._isPlayingIntent = false;
     for (const video of Object.values(this.videos)) video.pause();
   }
 
@@ -264,9 +268,7 @@ class VideoPlayer {
     }
 
     if (autoPlay) {
-      for (const video of Object.values(this.videos)) {
-        video.play();
-      }
+      this.play();
     }
   }
 
@@ -275,7 +277,7 @@ class VideoPlayer {
       v.getAttribute('src')
     );
     const allEnded = activeVideos.every((v) => v.ended || v.error);
-    if (!allEnded || this.paused) return;
+    if (!allEnded || !this._isPlayingIntent) return;
 
     if (this.disableAutoAdvance) return;
 
@@ -284,6 +286,7 @@ class VideoPlayer {
     } else if (this.loopEnabled) {
       await this.loadClip(0);
     } else {
+      this._isPlayingIntent = false;
       if (this.onEnded) this.onEnded();
     }
   }
@@ -351,7 +354,7 @@ class VideoPlayer {
   }
 
   handleBufferingStart(camera) {
-    if (this.paused) return;
+    if (!this._isPlayingIntent) return;
     this.bufferingState.bufferingCameras.add(camera);
     this.bufferingState.isBuffering = true;
     if (this.onBufferingChange)
