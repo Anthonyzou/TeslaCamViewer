@@ -38,46 +38,15 @@ class TeslaCamViewerApp {
     this.layoutEditor = new LayoutEditor(this.layoutManager);
     this.screenshotCapture = new ScreenshotCapture(this.videoPlayer);
     this.videoEnhancer = new VideoEnhancer();
-    this.telemetryOverlay = new TelemetryOverlay(this.videoPlayer);
-    this.telemetryOverlay.initLayoutCallback(this.layoutManager); // Wire up layout change notifications
     this.miniMapOverlay = new MiniMapOverlay(this.videoPlayer);
     this.miniMapOverlay.initLayoutCallback &&
       this.miniMapOverlay.initLayoutCallback(this.layoutManager);
-    this.elevationOverlay = new ElevationOverlay(this.videoPlayer);
-    // Wire up elevation overlay callbacks
-    this.elevationOverlay.getEventTime = () =>
-      this.getAbsoluteEventTime(this.videoPlayer.currentTime);
-    this.elevationOverlay.onSeek = (time) =>
-      this.videoPlayer.seekToEventTime(time);
-    this.telemetryGraphs = new TelemetryGraphs(this.videoPlayer);
-    // Wire up telemetry graphs callbacks
-    this.telemetryGraphs.getEventTime = () =>
-      this.getAbsoluteEventTime(this.videoPlayer.currentTime);
-    this.telemetryGraphs.onSeek = (time) =>
-      this.videoPlayer.seekToEventTime(time);
-    this.telemetryGraphs.getSeiData = () =>
-      this.telemetryOverlay?.clipSeiData || new Map();
-    this.telemetryGraphs.getEventTimestamp = () =>
-      this.currentEvent?.timestamp || null;
-
-    // Smart Incident Detection modules
-    this.incidentSlowMo = new IncidentSlowMo(this.videoPlayer);
-    this.incidentSlowMo.setTelemetryGraphs(this.telemetryGraphs);
 
     this.streetViewOverlay = new StreetViewOverlay(this.videoPlayer);
 
-    // Wire up visibility change callbacks for all overlays
-    // This ensures button states AND settings update when overlays are closed via their X buttons
-    this.telemetryOverlay.onVisibilityChange = (visible) => {
-      this.settingsManager.set('telemetryOverlayEnabled', visible);
-      this._updateOverlayButtonStates();
-    };
+    // Wire up visibility change callbacks for overlays
     this.miniMapOverlay.onVisibilityChange = (visible) => {
       this.settingsManager.set('miniMapEnabled', visible);
-      this._updateOverlayButtonStates();
-    };
-    this.telemetryGraphs.onVisibilityChange = (visible) => {
-      this.settingsManager.set('telemetryGraphsEnabled', visible);
       this._updateOverlayButtonStates();
     };
     this.streetViewOverlay.onVisibilityChange = (visible) => {
@@ -87,10 +56,6 @@ class TeslaCamViewerApp {
 
     this.videoExport = new VideoExport(this.videoPlayer, this.layoutManager);
     this.clipMarking = new ClipMarking(this.timeline, this.videoPlayer);
-    this.insuranceReport = new InsuranceReport(
-      this.videoPlayer,
-      this.screenshotCapture
-    );
 
     // Settings, Help, Quick Start, Version, Statistics
     this.settingsManager = new SettingsManager();
@@ -171,11 +136,8 @@ class TeslaCamViewerApp {
     this.focusCameraSelect = document.getElementById('focusCameraSelect');
 
     // Overlay toggle buttons
-    this.toggleHudBtn = document.getElementById('toggleHudBtn');
     this.toggleMiniMapBtn = document.getElementById('toggleMiniMapBtn');
-    this.toggleGraphsBtn = document.getElementById('toggleGraphsBtn');
     this.toggleStreetViewBtn = document.getElementById('toggleStreetViewBtn');
-    this.toggleSlowMoBtn = document.getElementById('toggleSlowMoBtn');
     this.toggleBirdsEyeBtn = document.getElementById('toggleBirdsEyeBtn');
     this.loadingOverlay = document.getElementById('loadingOverlay');
     this.loadingText = document.getElementById('loadingText');
@@ -188,7 +150,6 @@ class TeslaCamViewerApp {
     // Mobile more menu elements
     this.mobileMoreBtn = document.getElementById('mobileMoreBtn');
     this.mobileMoreMenu = document.getElementById('mobileMoreMenu');
-    this.mobileHudStatus = document.getElementById('mobileHudStatus');
     this.mobileMiniMapStatus = document.getElementById('mobileMiniMapStatus');
     this.mobileLayoutSelect = document.getElementById('mobileLayoutSelect');
     this.bsMoreBtn = document.getElementById('bsMoreBtn');
@@ -417,16 +378,6 @@ class TeslaCamViewerApp {
     // Apply accessibility settings on load
     this.settingsManager.applyAccessibilitySettings();
 
-    // Apply telemetry overlay settings on load
-    if (this.telemetryOverlay) {
-      this.telemetryOverlay.setStyle(
-        this.settingsManager.get('telemetryOverlayStyle')
-      );
-      this.telemetryOverlay.setUnits(
-        this.settingsManager.get('telemetryOverlayUnits')
-      );
-    }
-
     // Listen for settings changes
     this.settingsManager.onChange(async (settings) => {
       console.log('Settings changed:', settings);
@@ -443,33 +394,10 @@ class TeslaCamViewerApp {
         await this.folderParser.clearSavedFolder();
       }
 
-      // Apply telemetry overlay settings
-      if (this.telemetryOverlay) {
-        this.telemetryOverlay.setStyle(settings.telemetryOverlayStyle);
-        this.telemetryOverlay.setUnits(settings.telemetryOverlayUnits);
-        // Only toggle if state needs to change (avoid infinite loop with onVisibilityChange)
-        if (
-          settings.telemetryOverlayEnabled &&
-          !this.telemetryOverlay.isVisible &&
-          this.telemetryOverlay.hasTelemetryData()
-        ) {
-          this.telemetryOverlay.show();
-        } else if (
-          !settings.telemetryOverlayEnabled &&
-          this.telemetryOverlay.isVisible
-        ) {
-          this.telemetryOverlay.hide();
-        }
-      }
-
       // Apply mini-map settings
       if (this.miniMapOverlay) {
         // Only toggle if state needs to change (avoid infinite loop with onVisibilityChange)
-        if (
-          settings.miniMapEnabled &&
-          !this.miniMapOverlay.isVisible &&
-          this.telemetryOverlay?.hasTelemetryData()
-        ) {
+        if (settings.miniMapEnabled && !this.miniMapOverlay.isVisible) {
           this.miniMapOverlay.show();
         } else if (!settings.miniMapEnabled && this.miniMapOverlay.isVisible) {
           this.miniMapOverlay.hide();
@@ -615,30 +543,9 @@ class TeslaCamViewerApp {
     }
 
     // Overlay toggle buttons
-    this.toggleHudBtn?.addEventListener('click', () => {
-      if (this.telemetryOverlay) {
-        this.telemetryOverlay.toggle();
-        this.settingsManager.set(
-          'telemetryOverlayEnabled',
-          this.telemetryOverlay.isVisible
-        );
-        this._updateOverlayButtonStates();
-      }
-    });
     this.toggleMiniMapBtn?.addEventListener('click', () => {
       if (this.miniMapOverlay) {
         this.miniMapOverlay.toggle();
-        this._updateOverlayButtonStates();
-      }
-    });
-    // Note: Elevation overlay removed - elevation is now integrated into telemetry graphs
-    this.toggleGraphsBtn?.addEventListener('click', () => {
-      if (this.telemetryGraphs) {
-        this.telemetryGraphs.toggle();
-        this.settingsManager.set(
-          'telemetryGraphsEnabled',
-          this.telemetryGraphs.isVisible
-        );
         this._updateOverlayButtonStates();
       }
     });
@@ -649,14 +556,6 @@ class TeslaCamViewerApp {
           'streetViewEnabled',
           this.streetViewOverlay.isVisible
         );
-        this._updateOverlayButtonStates();
-      }
-    });
-
-    // Incident Slow-Mo toggle
-    this.toggleSlowMoBtn?.addEventListener('click', () => {
-      if (this.incidentSlowMo) {
-        this.incidentSlowMo.toggle();
         this._updateOverlayButtonStates();
       }
     });
@@ -693,26 +592,6 @@ class TeslaCamViewerApp {
         this.settingsManager.set('privacyModeExport', e.target.checked);
         console.log(
           'Privacy mode export:',
-          e.target.checked ? 'enabled' : 'disabled'
-        );
-      });
-    }
-
-    // Blur license plates checkbox - syncs with settings
-    const blurPlatesExportCheckbox = document.getElementById(
-      'blurPlatesExportCheckbox'
-    );
-    if (blurPlatesExportCheckbox) {
-      // Initialize from settings (shared key with Settings modal and downstream export code)
-      blurPlatesExportCheckbox.checked =
-        this.settingsManager.get('blurLicensePlates') === true;
-
-      // Update settings when checkbox changes
-      blurPlatesExportCheckbox.addEventListener('change', (e) => {
-        e.stopPropagation();
-        this.settingsManager.set('blurLicensePlates', e.target.checked);
-        console.log(
-          'Blur plates export:',
           e.target.checked ? 'enabled' : 'disabled'
         );
       });
@@ -1047,34 +926,14 @@ class TeslaCamViewerApp {
     this.bottomSheetProgress = document.getElementById('bottomSheetProgress');
 
     // Enable bottom sheet on portrait mobile
-    const telemetryPanel = document.getElementById('telemetryPanel');
-    const telemetryOriginalParent = telemetryPanel?.parentElement;
-    const playerArea = document.querySelector('.player-area');
-
     const checkOrientation = () => {
       const isMobilePortrait =
         window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
 
       if (isMobilePortrait) {
         document.body.classList.add('bottom-sheet-enabled');
-        // Move telemetry panel to player area for proper fixed positioning
-        if (
-          telemetryPanel &&
-          playerArea &&
-          telemetryPanel.parentElement !== playerArea
-        ) {
-          playerArea.insertBefore(telemetryPanel, playerArea.firstChild);
-        }
       } else {
         document.body.classList.remove('bottom-sheet-enabled');
-        // Move telemetry panel back to sidebar
-        if (
-          telemetryPanel &&
-          telemetryOriginalParent &&
-          telemetryPanel.parentElement !== telemetryOriginalParent
-        ) {
-          telemetryOriginalParent.appendChild(telemetryPanel);
-        }
       }
     };
 
@@ -3224,11 +3083,8 @@ class TeslaCamViewerApp {
     this.addBookmarkBtn.disabled = false;
 
     // Enable overlay toggle buttons
-    if (this.toggleHudBtn) this.toggleHudBtn.disabled = false;
     if (this.toggleMiniMapBtn) this.toggleMiniMapBtn.disabled = false;
-    if (this.toggleGraphsBtn) this.toggleGraphsBtn.disabled = false;
     if (this.toggleStreetViewBtn) this.toggleStreetViewBtn.disabled = false;
-    if (this.toggleSlowMoBtn) this.toggleSlowMoBtn.disabled = false;
     if (this.toggleBirdsEyeBtn) this.toggleBirdsEyeBtn.disabled = false;
     this._updateOverlayButtonStates();
     this.nextBookmarkBtn.disabled = false;
@@ -3255,34 +3111,16 @@ class TeslaCamViewerApp {
    * Update overlay button active states
    */
   _updateOverlayButtonStates() {
-    if (this.toggleHudBtn) {
-      this.toggleHudBtn.classList.toggle(
-        'active',
-        this.telemetryOverlay?.isVisible || false
-      );
-    }
     if (this.toggleMiniMapBtn) {
       this.toggleMiniMapBtn.classList.toggle(
         'active',
         this.miniMapOverlay?.isVisible || false
       );
     }
-    if (this.toggleGraphsBtn) {
-      this.toggleGraphsBtn.classList.toggle(
-        'active',
-        this.telemetryGraphs?.isVisible || false
-      );
-    }
     if (this.toggleStreetViewBtn) {
       this.toggleStreetViewBtn.classList.toggle(
         'active',
         this.streetViewOverlay?.isVisible || false
-      );
-    }
-    if (this.toggleSlowMoBtn) {
-      this.toggleSlowMoBtn.classList.toggle(
-        'active',
-        this.incidentSlowMo?.isEnabled || false
       );
     }
     if (this.toggleBirdsEyeBtn) {
@@ -3300,13 +3138,6 @@ class TeslaCamViewerApp {
    * Update mobile more menu status indicators
    */
   _updateMobileMoreMenuStatus() {
-    if (this.mobileHudStatus) {
-      const isHudOn = this.telemetryOverlay?.isVisible || false;
-      this.mobileHudStatus.textContent = isHudOn ? 'ON' : 'OFF';
-      this.mobileHudStatus
-        .closest('.mobile-more-option')
-        ?.classList.toggle('active', isHudOn);
-    }
     if (this.mobileMiniMapStatus) {
       const isMapOn = this.miniMapOverlay?.isVisible || false;
       this.mobileMiniMapStatus.textContent = isMapOn ? 'ON' : 'OFF';
@@ -3325,9 +3156,6 @@ class TeslaCamViewerApp {
    */
   _handleMobileMoreAction(action) {
     switch (action) {
-      case 'toggle-hud':
-        this.toggleHudBtn?.click();
-        break;
       case 'toggle-minimap':
         this.toggleMiniMapBtn?.click();
         break;
@@ -3341,10 +3169,6 @@ class TeslaCamViewerApp {
         break;
       case 'export-video':
         this.exportBtn?.click();
-        this.mobileMoreMenu?.classList.add('hidden');
-        break;
-      case 'insurance-report':
-        document.getElementById('insuranceReportBtn')?.click();
         this.mobileMoreMenu?.classList.add('hidden');
         break;
     }

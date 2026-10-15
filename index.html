@@ -179,21 +179,6 @@
                         <!-- Bird's Eye View canvas will be rendered here -->
                     </div>
                 </div>
-
-                <!-- Telemetry Graphs Panel (collapsible, auto-hides when no data) -->
-                <div id="telemetryPanel" class="sidebar-panel collapsible" style="display: none;">
-                    <div class="sidebar-panel-header" id="telemetryHeader">
-                        <span class="panel-title">Telemetry</span>
-                        <button class="panel-collapse-btn" aria-label="Toggle panel">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="sidebar-panel-content" id="telemetryContent">
-                        <!-- Telemetry graphs will be rendered here -->
-                    </div>
-                </div>
             </aside>
 
             <!-- Main Video Player Area -->
@@ -319,7 +304,6 @@
                         </button>
                         <span id="eventReason" class="event-reason"></span>
                         <span id="eventWeather" class="event-weather"></span>
-                        <span id="eventInsights" class="event-insights" title="Derived from SEI telemetry"></span>
                     </div>
                 </div>
 
@@ -382,9 +366,6 @@
                         </div>
                         <div id="timeline" class="timeline">
                             <div id="timelineProgress" class="timeline-progress"></div>
-                            <canvas id="timelineAiHeatmap" class="timeline-ai-heatmap" style="display:none;"></canvas>
-                            <canvas id="timelineAutopilotLayer" class="timeline-autopilot-layer"
-                                style="display:none;"></canvas>
                             <div id="timelineScrubber" class="timeline-scrubber"></div>
                             <div id="timelineClips" class="timeline-clips"></div>
                         </div>
@@ -453,15 +434,6 @@
                                 <option value="5">5x</option>
                             </select>
                         </div>
-                        <button id="toggleSlowMoBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle Incident Slow-Mo">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12,6 12,12 16,14" />
-                                <path d="M2 12h2M20 12h2" stroke-dasharray="2,2" />
-                            </svg>
-                        </button>
                         <button id="loopBtn" class="control-btn" disabled title="Toggle Loop">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                 <path
@@ -539,16 +511,6 @@
                                     <span>GIF export takes ~10x clip length</span>
                                 </div>
 
-                                <!-- Insurance Report -->
-                                <button class="export-option export-action-btn" data-action="insurance-report"
-                                    id="insuranceReportBtn">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                        <path
-                                            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                                    </svg>
-                                    <span data-i18n="export.insuranceReport">Insurance Report (PDF)</span>
-                                </button>
-
                                 <div class="export-dropdown-divider"></div>
 
                                 <!-- Export Settings -->
@@ -621,25 +583,11 @@
 
                     <!-- Overlay Controls Group (hidden on mobile, accessible via More menu) -->
                     <div class="control-group control-group-overlays">
-                        <button id="toggleHudBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle HUD Overlay (T)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8h2v8H9zm4 0h2v8h-2z" />
-                            </svg>
-                        </button>
                         <button id="toggleMiniMapBtn" class="control-btn overlay-toggle-btn" disabled
                             title="Toggle Mini-Map (M)">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
-                            </svg>
-                        </button>
-                        <button id="toggleGraphsBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle Telemetry Graphs (G)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M23 8c0 1.1-.9 2-2 2-.18 0-.35-.02-.51-.07l-3.56 3.55c.05.16.07.33.07.52 0 1.1-.9 2-2 2s-2-.9-2-2c0-.19.02-.36.07-.52l-2.55-2.55c-.16.05-.33.07-.52.07s-.36-.02-.52-.07l-4.55 4.56c.05.16.07.33.07.52 0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2c.19 0 .36.02.52.07l4.56-4.55C8.02 9.35 8 9.18 8 9c0-1.1.9-2 2-2s2 .9 2 2c0 .19-.02.36-.07.52l2.55 2.55c.16-.05.33-.07.52-.07s.36.02.52.07l3.55-3.56C19.02 8.35 19 8.18 19 8c0-1.1.9-2 2-2s2 .9 2 2z" />
                             </svg>
                         </button>
                         <button id="toggleBirdsEyeBtn" class="control-btn overlay-toggle-btn" disabled
@@ -673,14 +621,6 @@
                             <div id="mobileMoreMenu" class="mobile-more-menu hidden">
                                 <div class="mobile-more-section">
                                     <div class="mobile-more-label">Overlays</div>
-                                    <button class="mobile-more-option" data-action="toggle-hud">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                            <path
-                                                d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8h2v8H9zm4 0h2v8h-2z" />
-                                        </svg>
-                                        <span>HUD Overlay</span>
-                                        <span class="mobile-more-status" id="mobileHudStatus">OFF</span>
-                                    </button>
                                     <button class="mobile-more-option" data-action="toggle-minimap">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                                             <path
@@ -863,10 +803,6 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <!-- Protocol Buffers for Tesla SEI telemetry -->
-    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.6/dist/protobuf.min.js"></script>
-    <!-- jsPDF for insurance report generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- gif.js for animated GIF export -->
     <script src="vendor/gif.js"></script>
     <!-- tweetnacl for Ed25519 signature verification fallback -->

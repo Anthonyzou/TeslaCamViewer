@@ -13,13 +13,6 @@ import '../js/mapView.js';
 import '../js/folderManager.js';
 import '../js/folderParser.js';
 
-// Insights & Analysis
-import '../js/seiInsights.js';
-import '../js/interventionSeverity.js';
-import '../js/eventInsightsCache.js';
-import '../js/insightsScanner.js';
-import '../js/insightsScannerUI.js';
-
 // Playback & UI
 import '../js/eventBrowser.js';
 import '../js/videoPlayer.js';
@@ -37,14 +30,8 @@ import '../js/layoutEditor.js';
 // Overlays & Sensors
 import '../js/screenshotCapture.js';
 import '../js/videoEnhancer.js';
-import '../js/seiExtractor.js';
-import '../js/telemetryOverlay.js';
 import '../js/miniMapOverlay.js';
 import '../js/weatherService.js';
-import '../js/elevationService.js';
-import '../js/elevationOverlay.js';
-import '../js/telemetryGraphs.js';
-import '../js/incidentSlowMo.js';
 import '../js/streetViewOverlay.js';
 
 // Export & Reports
@@ -53,7 +40,6 @@ import '../js/videoExport.js';
 import '../js/videoExportFast.js';
 import '../js/multiCameraExportDecoder.js';
 import '../js/clipMarking.js';
-import '../js/insuranceReport.js';
 
 // Settings & Metadata
 import '../js/settingsManager.js';
@@ -61,9 +47,6 @@ import '../js/versionManager.js';
 import '../js/statisticsManager.js';
 import '../js/helpModal.js';
 import '../js/quickStartGuide.js';
-
-// Timeline Overlays
-import '../js/autopilotTimelineLayer.js';
 
 // Drive Sync
 import '../js/driveSync.js';
