@@ -37,6 +37,9 @@ class SettingsManager {
       telemetryOverlayUnits: 'mph', // 'mph', 'kph'
       telemetryOverlayInExport: true,
 
+      // Weather (Open-Meteo)
+      temperatureUnits: (navigator.language || 'en-US').includes('US') ? 'fahrenheit' : 'celsius', // 'celsius', 'fahrenheit'
+
       // Mini-Map Overlay (requires GPS telemetry)
       miniMapEnabled: false,
       miniMapInExport: true, // Include mini-map in video exports
@@ -418,6 +421,18 @@ class SettingsManager {
                             <label for="setting-telemetryOverlayInExport">${this.t('settings.telemetry.inExport')}</label>
                             <input type="checkbox" id="setting-telemetryOverlayInExport" class="setting-checkbox">
                             <span class="setting-hint">${this.t('settings.telemetry.inExportHint')}</span>
+                        </div>
+                    </div>
+
+                    <!-- Weather Section -->
+                    <div class="settings-section">
+                        <h3>Weather</h3>
+                        <div class="setting-row">
+                            <label for="setting-temperatureUnits">${this.t('settings.weather.units')}</label>
+                            <select id="setting-temperatureUnits" class="setting-select">
+                                <option value="celsius">${this.t('settings.weather.unitsCelsius')}</option>
+                                <option value="fahrenheit">${this.t('settings.weather.unitsFahrenheit')}</option>
+                            </select>
                         </div>
                     </div>
 

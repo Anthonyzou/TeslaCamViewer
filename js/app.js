@@ -2884,9 +2884,11 @@ class TeslaCamViewerApp {
       'right_pillar',
     ];
 
-    const promises = event.clipGroups.map(async (group) => {
-      // We only need to probe duration for the front camera (master)
-      const frontClip = group.clips.front;
+    // Process each clip group serially to avoid overloading decoders during duration probing
+    let timeoutCount = 0;
+    const MAX_TIMEOUTS = 3;
+
+    for (const group of event.clipGroups) {
       let durationLoaded = false;
 
       for (const camera of cameras) {
@@ -2901,9 +2903,15 @@ class TeslaCamViewerApp {
               if (!event._blobURLs) event._blobURLs = [];
               event._blobURLs.push(clip.url);
 
-              // Probe duration from front camera if not already set
-              if (camera === 'front' && !clip.duration) {
+              // Probe duration from front camera if not already set.
+              // This is done serially (one clip at a time) to protect hardware slots.
+              if (camera === 'front' && !clip.duration && timeoutCount < MAX_TIMEOUTS) {
+                const start = performance.now();
                 clip.duration = await this._probeClipDuration(clip.url);
+                const elapsed = performance.now() - start;
+                
+                // If it took more than 2.5s (close to the 3s timeout), count as a near-timeout
+                if (elapsed > 2500) timeoutCount++;
                 durationLoaded = true;
               }
             }
@@ -2914,12 +2922,11 @@ class TeslaCamViewerApp {
       }
 
       // Fallback if front camera was missing but other cameras existed
+      const frontClip = group.clips.front;
       if (!durationLoaded && frontClip && !frontClip.duration) {
         frontClip.duration = 60;
       }
-    });
-
-    await Promise.all(promises);
+    }
   }
 
   /**

@@ -182,7 +182,7 @@ class VideoExport {
         });
 
         // Trigger the seek
-        await this.videoPlayer.seekToEventTime(targetTime);
+        await this.videoPlayer.seekToEventTime(targetTime, false);
 
         // If a video was already at the target time, no `seeked` will fire.
         // Resolve those immediately by checking `readyState >= 2` after a
@@ -449,6 +449,14 @@ class VideoExport {
 
         const clipDurations = this.videoPlayer?.cachedClipDurations || [];
 
+        console.log('[FastDecoder] Starting export init:', {
+            visibleCameras,
+            clipDurations: clipDurations.slice(0, 5),
+            startEventSec: exportStart,
+            endEventSec: exportEnd,
+            totalFrames
+        });
+
         const decoder = new window.MultiCameraExportDecoder();
         await decoder.init({
             event,
@@ -506,6 +514,13 @@ class VideoExport {
                 // Clear canvas
                 renderCtx.fillStyle = '#000000';
                 renderCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // Diagnostic: Check if we have frames
+                if (frameNum % 60 === 0) {
+                    console.log(`[FastDecoder] Frame ${frameNum} at ${absoluteTime.toFixed(2)}s. Frames in Map: ${Array.from(frames.keys()).join(', ')}`);
+                    const nullCameras = Array.from(frames.entries()).filter(([k,v]) => !v).map(([k]) => k);
+                    if (nullCameras.length > 0) console.warn(`[FastDecoder] Missing frames for: ${nullCameras.join(', ')}`);
+                }
 
                 // Composite each visible camera, building cameraInfos for
                 // optional plate blur in the same pass — avoids walking the
@@ -1734,7 +1749,7 @@ class VideoExport {
             const positions = [];
             if (hasTelemetry) {
                 for (let t = exportStart; t <= exportEnd; t += 1) {
-                    await this.videoPlayer.seekToEventTime(t);
+                    await this.videoPlayer.seekToEventTime(t, false);
                     const clipIndex = this.videoPlayer.currentClipIndex || 0;
                     const timeInClip = this.videoPlayer.currentTime || 0;
                     const videoDuration = this.videoPlayer.duration || 60;
@@ -1744,7 +1759,7 @@ class VideoExport {
                         positions.push({ lat: data.latitude_deg, lng: data.longitude_deg });
                     }
                 }
-                await this.videoPlayer.seekToEventTime(exportStart);
+                await this.videoPlayer.seekToEventTime(exportStart, false);
             }
             // Always include the event.json fallback GPS if available. The render
             // path falls back to it whenever a given frame lacks telemetry GPS, so
@@ -2143,7 +2158,7 @@ class VideoExport {
                 const frameTime = exportStart + (frameIndex * frameInterval);
 
                 // Seek to frame time
-                await this.videoPlayer.seekToEventTime(frameTime);
+                await this.videoPlayer.seekToEventTime(frameTime, false);
 
                 // Wait for seek to complete and videos to be fully ready
                 const waitForVideosReady = async (maxWait = 800) => {

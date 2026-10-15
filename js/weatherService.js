@@ -211,16 +211,25 @@ class WeatherService {
     }
 
     /**
-     * Format temperature based on user locale
+     * Format temperature based on user settings
      */
     _formatTemperature(tempC) {
         if (tempC === null || tempC === undefined) {
             return { temp: null, unit: '' };
         }
 
-        // Check if user prefers Fahrenheit (US, Liberia, Myanmar)
-        const locale = navigator.language || 'en-US';
-        const useFahrenheit = locale.includes('US') || locale.includes('LR') || locale.includes('MM');
+        // Check user preference from settings
+        const settings = window.app?.settingsManager;
+        const preference = settings?.get('temperatureUnits');
+        
+        let useFahrenheit;
+        if (preference) {
+            useFahrenheit = preference === 'fahrenheit';
+        } else {
+            // Fallback to locale if setting not yet available
+            const locale = navigator.language || 'en-US';
+            useFahrenheit = locale.includes('US') || locale.includes('LR') || locale.includes('MM');
+        }
 
         if (useFahrenheit) {
             const tempF = Math.round(tempC * 9/5 + 32);
@@ -231,15 +240,25 @@ class WeatherService {
     }
 
     /**
-     * Format wind speed based on user locale
+     * Format wind speed based on user settings
      */
     _formatWindSpeed(speedKmh) {
         if (speedKmh === null || speedKmh === undefined) {
             return null;
         }
 
-        const locale = navigator.language || 'en-US';
-        const useMph = locale.includes('US') || locale.includes('GB');
+        // Use telemetry units setting if available
+        const settings = window.app?.settingsManager;
+        const units = settings?.get('telemetryOverlayUnits');
+
+        let useMph;
+        if (units) {
+            useMph = units === 'mph';
+        } else {
+            // Fallback to locale
+            const locale = navigator.language || 'en-US';
+            useMph = locale.includes('US') || locale.includes('GB');
+        }
 
         if (useMph) {
             return `${Math.round(speedKmh * 0.621371)} mph`;

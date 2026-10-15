@@ -308,6 +308,12 @@
       "description": "Shows vehicle data from Tesla firmware 2025.44.25+ (speed, steering, pedals, etc.)"
     },
 
+    "weather": {
+      "units": "Temperature Units",
+      "unitsCelsius": "Celsius (°C)",
+      "unitsFahrenheit": "Fahrenheit (°F)"
+    },
+
     "miniMap": {
       "enabled": "Enable Mini-Map",
       "enabledHint": "Press M to toggle, right-click for options",

@@ -68,9 +68,16 @@ class VideoPlayer {
    */
   get cachedClipDurations() {
     if (!this.currentEvent) return [];
-    return this.currentEvent.clipGroups.map(
-      (g) => g.clips.front?.duration || 60
-    );
+    return this.currentEvent.clipGroups.map((g) => {
+      // Prefer front camera for duration source of truth
+      if (g.clips.front?.duration) return g.clips.front.duration;
+      // Fallback to any other camera that has a probed duration
+      for (const cam of Object.values(g.clips)) {
+        if (cam.duration) return cam.duration;
+      }
+      // Default to 60s if no probe data found
+      return 60;
+    });
   }
 
   get paused() {
@@ -230,10 +237,11 @@ class VideoPlayer {
     for (const video of Object.values(this.videos)) video.pause();
   }
 
-  async seek(time) {
+  async seek(time, autoPlay = true) {
     if (time < 0 && this.currentClipIndex > 0) {
       await this.loadClip(this.currentClipIndex - 1);
-      this.currentTime = Math.max(0, this.duration + time);
+      const newTime = Math.max(0, this.duration + time);
+      for (const v of Object.values(this.videos)) v.currentTime = newTime;
       return;
     }
 
@@ -243,7 +251,8 @@ class VideoPlayer {
       this.currentClipIndex < this.currentEvent.clipGroups.length - 1
     ) {
       await this.loadClip(this.currentClipIndex + 1);
-      this.currentTime = Math.max(0, time - this.duration);
+      const overflow = Math.max(0, time - this.duration);
+      for (const v of Object.values(this.videos)) v.currentTime = overflow;
       return;
     }
 
@@ -254,8 +263,10 @@ class VideoPlayer {
       video.currentTime = Math.max(0, Math.min(time, maxTime));
     }
 
-    for (const video of Object.values(this.videos)) {
-      video.play();
+    if (autoPlay) {
+      for (const video of Object.values(this.videos)) {
+        video.play();
+      }
     }
   }
 
@@ -299,7 +310,7 @@ class VideoPlayer {
     }, 0);
   }
 
-  async seekToEventTime(eventTime) {
+  async seekToEventTime(eventTime, autoPlay = true) {
     if (!this.currentEvent) return;
     const totalDuration = await this.getTotalDuration();
     eventTime = Math.max(0, Math.min(eventTime, totalDuration - 0.1));
@@ -321,7 +332,7 @@ class VideoPlayer {
 
     if (targetClipIndex !== this.currentClipIndex)
       await this.loadClip(targetClipIndex);
-    this.currentTime = timeInClip;
+    await this.seek(timeInClip, autoPlay);
   }
 
   clear() {

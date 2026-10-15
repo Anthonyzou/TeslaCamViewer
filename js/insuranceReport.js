@@ -561,7 +561,7 @@ class InsuranceReport {
 
             try {
                 // Seek to time and capture frame
-                await this.videoPlayer.seekToEventTime(frame.time);
+                await this.videoPlayer.seekToEventTime(frame.time, false);
 
                 // Wait for all videos to be ready (not just a fixed delay)
                 await this._waitForAllVideosReady();
@@ -736,7 +736,7 @@ class InsuranceReport {
         if (triggerVideo) {
             for (const frameInfo of triggerFrameTimes) {
                 try {
-                    await this.videoPlayer.seekToEventTime(frameInfo.time);
+                    await this.videoPlayer.seekToEventTime(frameInfo.time, false);
                     await new Promise(resolve => setTimeout(resolve, 150));
 
                     const canvas = document.createElement('canvas');
@@ -3011,7 +3011,12 @@ class InsuranceReport {
             // For now, show placeholder - actual fetch happens in generate()
             if (this._weatherData) {
                 doc.setTextColor(50, 50, 50);
-                doc.text(`Temperature: ${this._weatherData.temperature}°F`, this.margin, y);
+                
+                const settings = window.app?.settingsManager;
+                const tempLabel = settings?.get('temperatureUnits') === 'celsius' ? '°C' : '°F';
+                const windLabel = settings?.get('telemetryOverlayUnits') === 'kph' ? 'km/h' : 'mph';
+
+                doc.text(`Temperature: ${this._weatherData.temperature}${tempLabel}`, this.margin, y);
                 y += 12;
                 doc.text(`Conditions: ${this._weatherData.conditions}`, this.margin, y);
                 y += 12;
@@ -3021,7 +3026,7 @@ class InsuranceReport {
                 }
                 doc.text(`Visibility: ${this._weatherData.visibility} km`, this.margin, y);
                 y += 12;
-                doc.text(`Wind: ${this._weatherData.windSpeed} mph ${this._weatherData.windDirection}`, this.margin, y);
+                doc.text(`Wind: ${this._weatherData.windSpeed} ${windLabel} ${this._weatherData.windDirection}`, this.margin, y);
                 y += 12;
             } else {
                 doc.setTextColor(150, 150, 150);
@@ -3115,6 +3120,11 @@ class InsuranceReport {
             const dateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
             const hour = eventDate.getHours();
 
+            // Get unit preferences from settings
+            const settings = window.app?.settingsManager;
+            const tempUnit = settings?.get('temperatureUnits') === 'celsius' ? 'celsius' : 'fahrenheit';
+            const windUnit = settings?.get('telemetryOverlayUnits') === 'kph' ? 'kmh' : 'mph';
+
             // Open-Meteo historical weather API
             const url = `https://archive-api.open-meteo.com/v1/archive?` +
                 `latitude=${startGps.lat.toFixed(4)}` +
@@ -3122,8 +3132,8 @@ class InsuranceReport {
                 `&start_date=${dateStr}` +
                 `&end_date=${dateStr}` +
                 `&hourly=temperature_2m,precipitation,weathercode,visibility,windspeed_10m,winddirection_10m` +
-                `&temperature_unit=fahrenheit` +
-                `&windspeed_unit=mph` +
+                `&temperature_unit=${tempUnit}` +
+                `&windspeed_unit=${windUnit}` +
                 `&timezone=auto`;
 
             console.log('[InsuranceReport] Fetching weather from:', url);

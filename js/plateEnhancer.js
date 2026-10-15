@@ -2543,7 +2543,7 @@ class PlateEnhancer {
         if (vp && vp.seekToEventTime) {
             try {
                 // seekToEventTime loads the right clip and sets currentTime
-                await vp.seekToEventTime(time);
+                await vp.seekToEventTime(time, false);
 
                 // Get the video element (may have changed if clip was loaded)
                 const currentVideo = this.getVideoElement(cameraId);

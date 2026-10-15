@@ -4,10 +4,16 @@
  */
 
 class EventBrowser {
-  constructor(containerElement, onEventSelect, videoPlayer = null) {
+  constructor(
+    containerElement,
+    onEventSelect,
+    videoPlayer = null,
+    settingsManager = null
+  ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
     this.videoPlayer = videoPlayer;
+    this.settingsManager = settingsManager;
     this._src = atob('dGVzbGFjYW12aWV3ZXI='); // source ref
     this.events = [];
     this.selectedEvent = null;
@@ -17,6 +23,27 @@ class EventBrowser {
     // Lazy loading for thumbnails
     this.thumbnailObserver = null;
     this.setupLazyLoading();
+
+    // Listen for settings changes to refresh weather units
+    if (this.settingsManager) {
+      this.settingsManager.onChange(() => {
+        this.refreshAllWeather();
+      });
+    }
+  }
+
+  /**
+   * Refresh weather for all rendered event cards
+   */
+  refreshAllWeather() {
+    const cards = this.container.querySelectorAll('.event-item');
+    cards.forEach((card) => {
+      const eventName = card.dataset.eventName;
+      const event = this.events.find((e) => e.name === eventName);
+      if (event) {
+        this.fetchEventWeather(event, card);
+      }
+    });
   }
 
   /**
