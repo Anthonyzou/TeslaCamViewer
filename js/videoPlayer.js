@@ -55,6 +55,18 @@ class VideoPlayer {
     this._applyPlaybackRateToAll();
   }
 
+  setLoop(enabled) {
+    this.loopEnabled = enabled;
+  }
+
+  getCurrentTime() {
+    return this.currentTime;
+  }
+
+  getCurrentAbsoluteTime() {
+    return this.absoluteTime;
+  }
+
   _applyPlaybackRateToAll() {
     for (const v of Object.values(this.banks.a))
       v.playbackRate = this._intendedPlaybackRate;

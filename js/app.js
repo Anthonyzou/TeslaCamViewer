@@ -4670,7 +4670,7 @@ class TeslaCamViewerApp {
         // 0 to reset speed to 1x
         event.preventDefault();
         this.speedSelect.value = '1';
-        this.videoPlayer.playBackRate = 1;
+        this.videoPlayer.playbackRate = 1;
         break;
 
       case 'Equal':
@@ -4784,7 +4784,7 @@ class TeslaCamViewerApp {
       Math.min(speeds.length - 1, currentIndex + direction)
     );
     this.speedSelect.value = speeds[newIndex];
-    this.videoPlayer.playBackRate = parseFloat(speeds[newIndex]);
+    this.videoPlayer.playbackRate = parseFloat(speeds[newIndex]);
   }
 
   /**
