@@ -79,9 +79,6 @@ class SettingsManager {
       // Privacy Mode Export - strips identifying metadata from exports
       privacyModeExport: false, // When enabled, removes timestamp, GPS, location, and mini-map from exports
 
-      // License Plate Blurring - uses AI to detect and blur license plates
-      blurLicensePlates: false, // Off by default since it slows export significantly
-
       // Branding in exports - only applies to licensed users
       showBrandingInExport: true, // Show TeslaCamViewer.com branding by default
     };
@@ -248,13 +245,6 @@ class SettingsManager {
                                 <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
                             </svg>
                             <span>${this.t('settings.tabs.advanced')}</span>
-                        </button>
-                        <button class="settings-nav-item ${this._activeTab === 'ai-search' ? 'active' : ''}" data-tab="ai-search">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="7"/>
-                                <line x1="16.5" y1="16.5" x2="21" y2="21"/>
-                            </svg>
-                            <span>AI Search</span>
                         </button>
                     </nav>
                     <div class="settings-sidebar-footer">
@@ -494,12 +484,6 @@ class SettingsManager {
                             <input type="checkbox" id="setting-privacyModeExport" class="setting-checkbox">
                             <span class="setting-hint">${this.t('settings.export.privacyModeHint')}</span>
                         </div>
-                        <div class="setting-row">
-                            <label for="setting-blurLicensePlates">${this.t('settings.export.blurPlates')}</label>
-                            <input type="checkbox" id="setting-blurLicensePlates" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.export.blurPlatesHint')}</span>
-                            <div id="plateModelStatus" class="setting-status"></div>
-                        </div>
                         <div class="setting-row" id="setting-row-showBrandingInExport" style="display: none;">
                             <label for="setting-showBrandingInExport">${this.t('settings.export.branding')}</label>
                             <input type="checkbox" id="setting-showBrandingInExport" class="setting-checkbox" checked>
@@ -562,11 +546,30 @@ class SettingsManager {
                             <span class="setting-hint">${this.t('settings.mobile.lockHint')}</span>
                         </div>
                     </div>
-                </div>
 
-                <!-- AI Search Tab -->
-                <div class="settings-tab-content ${this._activeTab === 'ai-search' ? 'active' : ''}" data-tab-content="ai-search">
-                    ${this.renderAiSearchTab()}
+                    <!-- Library Insights Scan Section -->
+                    <div class="settings-section">
+                        <h3>Library Insights Scan</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin:4px 0 12px;">
+                            Pre-compute severity pills for every event in your library so they appear instantly on the sidebar the next
+                            time you open the app. Runs in the background only when you're not actively watching something. Cancel or resume anytime.
+                        </p>
+
+                        <div class="setting-row" style="display:block; padding:10px 0;">
+                            <div id="insights-scan-cache-info" style="color:var(--text-secondary); font-size:0.88rem;"></div>
+                        </div>
+
+                        <div class="setting-row" style="display:block; padding:10px 0;" id="insights-scan-buttons">
+                            <!-- buttons injected by _bindInsightsScanControls — state-driven -->
+                        </div>
+
+                        <div id="insights-scan-progress" style="display:none; padding:6px 0 0;">
+                            <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; overflow:hidden; margin:6px 0;">
+                                <div id="insights-scan-progress-fill" style="height:100%; background:var(--accent); width:0%; transition:width 0.3s ease;"></div>
+                            </div>
+                            <div id="insights-scan-progress-text" style="color:var(--text-muted); font-size:0.85rem;"></div>
+                        </div>
+                    </div>
                 </div>
                     </div>
                 </div>
@@ -577,196 +580,13 @@ class SettingsManager {
     this.bindPanelEvents();
     this.bindNavEvents();
 
-    // Wire up AI Search tab events
-    const aiPane = this.modal.querySelector('[data-tab-content="ai-search"]');
-    if (aiPane) this.bindAiSearchTabEvents(aiPane);
-  }
-
-  renderAiSearchTab() {
-    const status = window.aiSearch?.getStatus?.() || {
-      enabled: false,
-      indexing: false,
-      eventCount: 0,
-      frameCount: 0,
-      model: 'base',
-      strategy: 'sparse',
-      webCodecs: false,
-    };
-    const eventsCount = (window.app?.eventBrowser?.events || []).length;
-    const enabledStateHtml = status.enabled
-      ? `<span style="color:#4ade80;">● Enabled</span> — ${status.eventCount} events indexed, ${status.frameCount} frames embedded`
-      : `<span style="color:#888;">○ Not enabled</span> — search is not set up yet`;
-    return `
-            <div class="settings-section">
-                <h3>AI Search</h3>
-                <p style="color:var(--text-muted, #888); font-size:0.9rem; line-height:1.5; margin:4px 0 12px;">
-                    Find events by describing the scene ("parking garage", "night drive", "pedestrian walking").
-                    Uses an on-device AI model. <strong>No video or data ever leaves your computer.</strong>
-                </p>
-
-                <div class="setting-row" style="display:block; padding:10px 0;">
-                    <div style="margin-bottom:8px;">${enabledStateHtml}</div>
-                    ${!status.webCodecs ? '<div style="color:#ffb800; font-size:0.85rem; margin-top:4px;">⚠ Your browser doesn\'t support WebCodecs — indexing will use a slower fallback path.</div>' : ''}
-                </div>
-
-                <div class="setting-row" style="display:block; padding:10px 0;">
-                    <label for="ai-search-model" style="display:block; margin-bottom:4px;">Model quality</label>
-                    <select id="ai-search-model" class="setting-select" style="width:100%; max-width:420px;">
-                        <option value="base" ${status.model === 'base' ? 'selected' : ''}>Fast — CLIP ViT-B/32 (175 MB download, 3× faster)</option>
-                        <option value="large" ${status.model === 'large' ? 'selected' : ''}>Quality — CLIP ViT-L/14 (~570 MB, more confident tags)</option>
-                    </select>
-                    <div style="color:var(--text-muted, #888); font-size:0.8rem; margin-top:4px;">The model is downloaded once and cached by your browser.</div>
-                </div>
-
-                <div class="setting-row" style="display:block; padding:10px 0;">
-                    <label for="ai-search-strategy" style="display:block; margin-bottom:4px;">Default sampling</label>
-                    <select id="ai-search-strategy" class="setting-select" style="width:100%; max-width:420px;">
-                        <option value="sparse" ${status.strategy === 'sparse' ? 'selected' : ''}>Sparse — 1 frame per clip (fast first-run)</option>
-                        <option value="motion" ${status.strategy === 'motion' ? 'selected' : ''}>Motion-filtered — every scene change (slower, catches short events)</option>
-                    </select>
-                    <div style="color:var(--text-muted, #888); font-size:0.8rem; margin-top:4px;">You can "Deep-index" individual events on demand regardless of this default.</div>
-                </div>
-
-                <div class="setting-row" style="display:block; padding:14px 0;">
-                    <button id="ai-search-enable-btn" class="setting-button" style="background:var(--accent,#4a9eff); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;">
-                        ${status.enabled ? 'Re-index all events' : 'Enable and index ' + eventsCount + ' events'}
-                    </button>
-                    ${status.enabled ? '<button id="ai-search-clear-btn" class="setting-button" style="margin-left:8px; background:transparent; color:var(--err,#f87171); border:1px solid var(--err,#f87171); padding:8px 16px; border-radius:6px; cursor:pointer;">Clear index</button>' : ''}
-                </div>
-
-                <div id="ai-search-progress" style="display:none; padding:10px 0;">
-                    <div style="height:6px; background:var(--bg-tertiary,#141414); border-radius:3px; overflow:hidden; margin:6px 0;">
-                        <div id="ai-search-progress-fill" style="height:100%; background:var(--accent,#4a9eff); width:0%; transition:width 0.3s ease;"></div>
-                    </div>
-                    <div id="ai-search-progress-text" style="color:var(--text-muted,#888); font-size:0.85rem;"></div>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <h3>Library Insights Scan</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin:4px 0 12px;">
-                    Pre-compute severity pills for every event in your library so they appear instantly on the sidebar the next
-                    time you open the app. Runs in the background only when you're not actively watching something, and pauses
-                    automatically if AI Search is indexing. Cancel or resume anytime. <em>This is separate from AI Search — no
-                    models or embeddings involved, just SEI telemetry parsing.</em>
-                </p>
-
-                <div class="setting-row" style="display:block; padding:10px 0;">
-                    <div id="insights-scan-cache-info" style="color:var(--text-secondary); font-size:0.88rem;"></div>
-                </div>
-
-                <div class="setting-row" style="display:block; padding:10px 0;" id="insights-scan-buttons">
-                    <!-- buttons injected by bindAiSearchTabEvents — state-driven -->
-                </div>
-
-                <div id="insights-scan-progress" style="display:none; padding:6px 0 0;">
-                    <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; overflow:hidden; margin:6px 0;">
-                        <div id="insights-scan-progress-fill" style="height:100%; background:var(--accent); width:0%; transition:width 0.3s ease;"></div>
-                    </div>
-                    <div id="insights-scan-progress-text" style="color:var(--text-muted); font-size:0.85rem;"></div>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <h3>About</h3>
-                <p style="color:var(--text-muted, #888); font-size:0.85rem; line-height:1.5;">
-                    AI Search uses CLIP (OpenAI's Contrastive Language-Image Pre-training) to match your natural-language
-                    queries against video frames. The model is loaded in your browser via Transformers.js and runs
-                    entirely on your GPU (or CPU if no WebGPU is available).
-                </p>
-                <p style="color:var(--text-muted, #888); font-size:0.85rem; line-height:1.5;">
-                    Best for: <em>scene types, locations, general objects</em>. Weaker at: <em>specific colors, fine attributes</em>.
-                    If a search doesn't find what you expect, right-click the event and choose "Deep-index" to
-                    sample more frames.
-                </p>
-            </div>
-        `;
-  }
-
-  bindAiSearchTabEvents(pane) {
-    const enableBtn = pane.querySelector('#ai-search-enable-btn');
-    const clearBtn = pane.querySelector('#ai-search-clear-btn');
-    const modelSel = pane.querySelector('#ai-search-model');
-    const stratSel = pane.querySelector('#ai-search-strategy');
-    const progress = pane.querySelector('#ai-search-progress');
-    const progressFill = pane.querySelector('#ai-search-progress-fill');
-    const progressText = pane.querySelector('#ai-search-progress-text');
-
-    const progressHandler = (e) => {
-      if (!progress) return;
-      progress.style.display = 'block';
-      const { done, total, status } = e.detail;
-      const pct = total > 0 ? (done / total) * 100 : 0;
-      if (progressFill) progressFill.style.width = pct + '%';
-      if (progressText)
-        progressText.textContent = `${done}/${total} · ${status || ''}`;
-    };
-    const statusHandler = (e) => {
-      if (!progressText) return;
-      if (e.detail.state === 'ready') {
-        progressText.textContent = e.detail.message;
-        setTimeout(() => {
-          // Re-render the tab to show the new enabled state
-          const stillOpen = pane.isConnected;
-          if (stillOpen) pane.innerHTML = this.renderAiSearchTab();
-          if (stillOpen) this.bindAiSearchTabEvents(pane);
-        }, 800);
-      } else if (e.detail.state === 'cleared') {
-        progress.style.display = 'none';
-        pane.innerHTML = this.renderAiSearchTab();
-        this.bindAiSearchTabEvents(pane);
-      } else {
-        progressText.textContent = e.detail.message;
-      }
-    };
-    window.addEventListener('ai-search:progress', progressHandler);
-    window.addEventListener('ai-search:status', statusHandler);
-
-    if (modelSel)
-      modelSel.addEventListener('change', () => {
-        window.aiSearch.state.currentModelKey = modelSel.value;
-      });
-    if (stratSel)
-      stratSel.addEventListener('change', () => {
-        window.aiSearch.state.strategy = stratSel.value;
-      });
-    if (enableBtn)
-      enableBtn.addEventListener('click', async () => {
-        enableBtn.disabled = true;
-        try {
-          if (window.aiSearch.state.enabled) {
-            await window.aiSearch.indexAll({
-              reindex: true,
-              strategy: stratSel.value,
-            });
-          } else {
-            await window.aiSearch.enable({ strategy: stratSel.value });
-          }
-        } catch (err) {
-          alert('Indexing failed: ' + err.message);
-        } finally {
-          enableBtn.disabled = false;
-        }
-      });
-    if (clearBtn)
-      clearBtn.addEventListener('click', () => {
-        if (
-          confirm(
-            "Clear the AI search index? You'll need to re-index to search again."
-          )
-        ) {
-          window.aiSearch.clearIndex();
-        }
-      });
-
-    // ---- Library Insights Scan wiring ----
-    this._bindInsightsScanControls(pane);
+    // Wire up Insights Scan controls in Advanced tab
+    const advPane = this.modal.querySelector('[data-tab-content="advanced"]');
+    if (advPane) this._bindInsightsScanControls(advPane);
   }
 
   /**
-   * Wire up the Library Insights Scan section at the bottom of the
-   * AI Search tab. Separated from bindAiSearchTabEvents so the AI
-   * Search concerns stay readable on their own.
+   * Wire up the Library Insights Scan section in the Advanced tab.
    */
   _bindInsightsScanControls(pane) {
     const buttonsRow = pane.querySelector('#insights-scan-buttons');
@@ -1064,96 +884,8 @@ class SettingsManager {
       checkbox.addEventListener('change', (e) => {
         const key = e.target.id.replace('setting-', '');
         this.set(key, e.target.checked);
-
-        // Special handling for license plate blur - preload model when enabled
-        if (key === 'blurLicensePlates' && e.target.checked) {
-          this._preloadPlateDetectionModel();
-        }
       });
     });
-
-    // Check plate model status when settings open
-    this._updatePlateModelStatus();
-  }
-
-  /**
-   * Preload the license plate detection model when setting is enabled
-   */
-  async _preloadPlateDetectionModel() {
-    const statusEl = this.modal?.querySelector('#plateModelStatus');
-    if (!statusEl) return;
-
-    // Check if PlateBlur is available
-    if (typeof PlateBlur === 'undefined') {
-      statusEl.textContent = 'Error: PlateBlur not loaded';
-      statusEl.className = 'setting-status error';
-      return;
-    }
-
-    // Create or get the PlateBlur instance
-    if (!window.app?.plateBlur) {
-      window.app = window.app || {};
-      window.app.plateBlur = new PlateBlur();
-    }
-
-    const plateBlur = window.app.plateBlur;
-
-    // If already loaded, show ready
-    if (plateBlur.isReady()) {
-      statusEl.textContent = '✓ Model ready';
-      statusEl.className = 'setting-status success';
-      return;
-    }
-
-    // Load with progress updates
-    statusEl.textContent = 'Initializing...';
-    statusEl.className = 'setting-status loading';
-
-    const success = await plateBlur.loadModel((progress) => {
-      if (progress.percent >= 0) {
-        statusEl.textContent = progress.message;
-        statusEl.className = 'setting-status loading';
-      } else {
-        statusEl.textContent = progress.message;
-        statusEl.className = 'setting-status error';
-      }
-    });
-
-    if (success) {
-      statusEl.textContent = '✓ Model ready';
-      statusEl.className = 'setting-status success';
-    } else {
-      statusEl.textContent = 'Failed to load model';
-      statusEl.className = 'setting-status error';
-    }
-  }
-
-  /**
-   * Update the plate model status display
-   */
-  _updatePlateModelStatus() {
-    const statusEl = this.modal?.querySelector('#plateModelStatus');
-    if (!statusEl) return;
-
-    const plateBlur = window.app?.plateBlur;
-    const isEnabled = this.get('blurLicensePlates');
-
-    if (!isEnabled) {
-      statusEl.textContent = '';
-      statusEl.className = 'setting-status';
-      return;
-    }
-
-    if (plateBlur?.isReady()) {
-      statusEl.textContent = '✓ Model ready';
-      statusEl.className = 'setting-status success';
-    } else if (plateBlur?.isModelLoading) {
-      statusEl.textContent = 'Loading...';
-      statusEl.className = 'setting-status loading';
-    } else {
-      statusEl.textContent = 'Model will download on first export';
-      statusEl.className = 'setting-status info';
-    }
   }
 
   /**

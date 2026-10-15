@@ -293,14 +293,11 @@
             if (this._userPaused) return true;
             // Actively watching something
             if (window.app?.videoPlayer?.isPlaying) return true;
-            // AI Search is busy — don't compete for file handles
-            if (window.aiSearch?.state?.indexing) return true;
             return false;
         }
 
         _autoPauseReason() {
             if (window.app?.videoPlayer?.isPlaying) return 'Paused — playback active';
-            if (window.aiSearch?.state?.indexing) return 'Paused — AI Search indexing';
             return 'Paused';
         }
 

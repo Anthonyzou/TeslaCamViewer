@@ -544,26 +544,6 @@ class VideoExport {
                     };
                 }
 
-                // Plate blur on the fast path. Same processMultiCamera call
-                // the legacy path uses; just operates on ImageBitmap sources
-                // instead of <video> elements.
-                const blurPlatesEnabled = window.app?.settingsManager?.get('blurLicensePlates') === true;
-                if (blurPlatesEnabled && window.app?.plateBlur?.isReady?.()) {
-                    try {
-                        // Detect every 5th frame (~6/sec at 30fps). Tracker
-                        // bridges the 5-frame gap with IoU/EMA + velocity
-                        // prediction so the user can't tell the difference,
-                        // and YOLO inference dominates plate-blur export
-                        // wall-clock. 5-frame cadence ≈ 167ms at 30fps —
-                        // user-confirmed acceptable lower bound.
-                        await window.app.plateBlur.processMultiCamera(renderCtx, camInfosForBlur, {
-                            forceDetection: frameNum % 5 === 0
-                        });
-                    } catch (blurError) {
-                        if (frameNum % 30 === 0) console.warn('[FastDecoder] Plate blur error:', blurError);
-                    }
-                }
-
                 // Watermark (free tier)
                 if (this._shouldWatermark) {
                     this.addWatermarksToFrame(renderCtx, layoutConfig);
@@ -666,12 +646,6 @@ class VideoExport {
         this.exportWallStartTime = Date.now();
         this.onProgress = onProgress;
         this.recordedChunks = [];
-
-        // Reset plate-blur tracker so a previous export's ghost tracks
-        // don't flash onto the first few frames of this one.
-        if (window.app?.plateBlur?.resetTracker) {
-            window.app.plateBlur.resetTracker();
-        }
 
         const videos = this.videoPlayer.videos;
         const primaryCamera = singleCamera || 'front';
@@ -924,37 +898,6 @@ class VideoExport {
                 // Add watermarks for free tier users
                 if (this._shouldWatermark) {
                     this.addWatermarksToFrame(renderCtx, layoutConfig);
-                }
-
-                // Apply license plate blurring if enabled - use multi-camera method for proper coordinate mapping
-                const blurPlatesEnabled = window.app?.settingsManager?.get('blurLicensePlates') === true;
-                if (blurPlatesEnabled && window.app?.plateBlur?.isReady()) {
-                    try {
-                        // Build camera info for multi-camera processing
-                        const cameraInfos = {};
-                        for (const [camPosition, camConfig] of sortedCameras) {
-                            const actualCameraName = cameraMapping[camPosition];
-                            const video = videos[actualCameraName];
-                            if (video && video.src && video.readyState >= 2) {
-                                cameraInfos[actualCameraName] = {
-                                    video: video,
-                                    dx: camConfig.x,
-                                    dy: camConfig.y,
-                                    dw: camConfig.w,
-                                    dh: camConfig.h,
-                                    crop: camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 },
-                                    objectFit: camConfig.objectFit || 'contain'
-                                };
-                            }
-                        }
-                        await window.app.plateBlur.processMultiCamera(renderCtx, cameraInfos, {
-                            forceDetection: frameNum % 5 === 0 // Tracker bridges gaps; halve detection load
-                        });
-                    } catch (blurError) {
-                        if (frameNum % 30 === 0) {
-                            console.warn('[Export] Plate blur error:', blurError);
-                        }
-                    }
                 }
 
                 // Check privacy mode setting
@@ -2235,37 +2178,6 @@ class VideoExport {
                         // Use centralized calculation for source/destination rectangles
                         const { sx, sy, sw, sh, dx, dy, dw, dh } = LayoutRenderer.calculateDrawParams(video, camConfig);
                         ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-                    }
-                }
-
-                // Apply license plate blurring if enabled - use multi-camera method for proper coordinate mapping
-                const blurPlatesEnabled = window.app?.settingsManager?.get('blurLicensePlates') === true;
-                if (blurPlatesEnabled && window.app?.plateBlur?.isReady()) {
-                    try {
-                        // Build camera info for multi-camera processing
-                        const cameraInfos = {};
-                        for (const [camName, camConfig] of sortedCameras) {
-                            const videoSource = cameraMapping[camName] || camName;
-                            const video = videos[videoSource];
-                            if (video && video.src && video.readyState >= 2) {
-                                cameraInfos[videoSource] = {
-                                    video: video,
-                                    dx: camConfig.x,
-                                    dy: camConfig.y,
-                                    dw: camConfig.w,
-                                    dh: camConfig.h,
-                                    crop: camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 },
-                                    objectFit: camConfig.objectFit || 'contain'
-                                };
-                            }
-                        }
-                        await window.app.plateBlur.processMultiCamera(ctx, cameraInfos, {
-                            forceDetection: frameIndex % 5 === 0 // Tracker bridges gaps; detect every 5th frame
-                        });
-                    } catch (blurError) {
-                        if (frameIndex % 30 === 0) {
-                            console.warn('[GIF Export] Plate blur error:', blurError);
-                        }
                     }
                 }
 

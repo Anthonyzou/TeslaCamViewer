@@ -655,11 +655,10 @@ class Timeline {
         }
 
         // Same fix applies to the canvas-based timeline overlays (AP/FSD
-        // strip, AI Search heatmap). They draw absolute time → x against
-        // the timeline's pixel width and have to redraw against the new
-        // visible window when zoom or viewStart changes.
+        // strip). They draw absolute time → x against the timeline's pixel
+        // width and have to redraw against the new visible window when zoom
+        // or viewStart changes.
         try { window.autopilotTimelineLayer?.render?.(); } catch {}
-        try { window.aiSearchHeatmap?.render?.(); } catch {}
 
         // Update current position display relative to zoomed view
         this.updateTime(this.currentTime);

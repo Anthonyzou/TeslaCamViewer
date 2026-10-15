@@ -174,29 +174,6 @@ class HelpModal {
                             <kbd>E</kbd>
                             <span>${this.t('help.shortcuts.exportVideo')}</span>
                         </div>
-                        <div class="shortcut-row">
-                            <kbd>D</kbd>
-                            <span>Auto-Detect License Plates</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plate Detection (Cycling Mode) -->
-                <div class="help-section">
-                    <h3>Plate Detection</h3>
-                    <div class="shortcut-grid">
-                        <div class="shortcut-row">
-                            <kbd>← →</kbd>
-                            <span>Cycle through detected plates</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <kbd>Enter</kbd>
-                            <span>Enhance selected plate</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <kbd>Esc</kbd>
-                            <span>Cancel plate detection</span>
-                        </div>
                     </div>
                 </div>
 

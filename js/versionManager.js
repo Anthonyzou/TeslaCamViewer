@@ -233,7 +233,7 @@ class VersionManager {
           {
             id: 'ai-plate-detection',
             text: 'AI-powered license plate detection - automatically finds plates across all cameras (press D)',
-            elementSelector: '#enhanceRegionBtn',
+            elementSelector: null,
           },
           {
             id: 'plate-size-warnings',

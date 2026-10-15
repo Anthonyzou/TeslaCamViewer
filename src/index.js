@@ -62,22 +62,13 @@ import '../js/statisticsManager.js';
 import '../js/helpModal.js';
 import '../js/quickStartGuide.js';
 
-// AI Search & Vision
-import '../js/fastFrameExtractor.js';
-import '../js/aiSearch.js';
-import '../js/aiSearchUI.js';
-import '../js/aiSearchHeatmap.js';
+// Timeline Overlays
 import '../js/autopilotTimelineLayer.js';
 
-// Drive Sync & Computer Vision (Plate Detection / Enhancement)
+// Drive Sync
 import '../js/driveSync.js';
 import '../js/driveSyncUI.js';
 import '../js/regionTracker.js';
-import '../js/frameStacker.js';
-import '../js/plateRecognizer.js';
-import '../js/plateEnhancer.js';
-import '../js/plateDetector.js';
-import '../js/plateBlur.js';
 
 // B2 Cloud Client & Main App Controller
 import '../js/b2Client.js';

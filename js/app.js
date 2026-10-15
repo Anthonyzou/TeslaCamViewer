@@ -85,7 +85,6 @@ class TeslaCamViewerApp {
       this._updateOverlayButtonStates();
     };
 
-    this.plateBlur = new PlateBlur();
     this.videoExport = new VideoExport(this.videoPlayer, this.layoutManager);
     this.clipMarking = new ClipMarking(this.timeline, this.videoPlayer);
     this.insuranceReport = new InsuranceReport(
@@ -149,7 +148,6 @@ class TeslaCamViewerApp {
     this.screenshotBtn = document.getElementById('screenshotBtn');
     this.pipBtn = document.getElementById('pipBtn');
     this.enhanceBtn = document.getElementById('enhanceBtn');
-    this.enhanceRegionBtn = document.getElementById('enhanceRegionBtn');
     this.markInBtn = document.getElementById('markInBtn');
     this.markOutBtn = document.getElementById('markOutBtn');
     this.clearMarksBtn = document.getElementById('clearMarksBtn');
@@ -615,13 +613,6 @@ class TeslaCamViewerApp {
     if (videoGridContainer) {
       this.videoEnhancer.initialize(videoGridContainer);
     }
-
-    // Enhance Region button
-    this.enhanceRegionBtn?.addEventListener('click', () => {
-      if (window.plateEnhancer) {
-        window.plateEnhancer.startEnhanceRegionMode();
-      }
-    });
 
     // Overlay toggle buttons
     this.toggleHudBtn?.addEventListener('click', () => {
@@ -2565,29 +2556,6 @@ class TeslaCamViewerApp {
       }
     }
 
-    // Check if plate enhancer has active work
-    if (window.plateEnhancer) {
-      const pe = window.plateEnhancer;
-
-      // If processing, block the switch entirely
-      if (pe.isProcessing) {
-        pe.showToast('Cannot switch events while enhancement is processing');
-        return;
-      }
-
-      // If there's an active selection or selecting, ask for confirmation
-      if (pe.isSelecting || pe.selections.size > 0) {
-        const confirmed = confirm(
-          'You have an active plate enhancement selection. Switching events will clear it. Continue?'
-        );
-        if (!confirmed) {
-          return;
-        }
-        // Clear the plate enhancer state
-        pe.clearAllSelections();
-      }
-    }
-
     // Cleanup previous event URLs to save memory
     if (this.currentEvent && this.currentEvent._blobURLs) {
       this.currentEvent._blobURLs.forEach((url) => URL.revokeObjectURL(url));
@@ -2694,31 +2662,13 @@ class TeslaCamViewerApp {
 
       this.hideLoading();
 
-      // AI Search match navigation — if the user clicked an AI-filtered
-      // event, consume the pending seek now (with cached clip durations
-      // available) and use it IN PLACE of the sentry auto-seek below.
-      // Without this, sentry-auto-seek ran after our seek and overwrote
-      // it, sending the player to the sentry trigger instead of the AI
-      // match time.
-      const aiSeekSec = window.aiSearchUI?.consumePendingSeek?.(event.name);
-
       // For Sentry events, seek to 1 minute 4 seconds from the end
       // Treat as sentry if it's in SentryClips folder OR has sentry-related metadata
       const isSentryEvent =
         event.type === 'SentryClips' ||
         event.metadata?.reason?.toLowerCase().includes('sentry');
 
-      if (aiSeekSec != null) {
-        // AI navigation wins — seek there and still mark the sentry
-        // trigger on the timeline if relevant (purely visual).
-        await this.videoPlayer.seekToEventTime(aiSeekSec);
-        if (isSentryEvent) {
-          const triggerTime = Math.max(0, totalDuration - 60);
-          this.timeline.setSentryTriggerMarker(triggerTime);
-        } else {
-          this.timeline.setSentryTriggerMarker(0);
-        }
-      } else if (isSentryEvent) {
+      if (isSentryEvent) {
         const startTime = Math.max(0, totalDuration - 64); // 1:04 from end
         await this.videoPlayer.seekToEventTime(startTime);
 
@@ -3202,7 +3152,6 @@ class TeslaCamViewerApp {
     this.screenshotBtn.disabled = true;
     this.pipBtn.disabled = true;
     this.enhanceBtn.disabled = true;
-    if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = true;
     this.markInBtn.disabled = true;
     this.markOutBtn.disabled = true;
     this.clearMarksBtn.disabled = true;
@@ -3230,7 +3179,6 @@ class TeslaCamViewerApp {
     this.screenshotBtn.disabled = true;
     this.pipBtn.disabled = true;
     this.enhanceBtn.disabled = true;
-    if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = true;
     this.markInBtn.disabled = true;
     this.markOutBtn.disabled = true;
     this.clearMarksBtn.disabled = true;
@@ -3267,7 +3215,6 @@ class TeslaCamViewerApp {
     this.screenshotBtn.disabled = false;
     this.pipBtn.disabled = !document.pictureInPictureEnabled; // Only enable if PiP is supported
     this.enhanceBtn.disabled = false;
-    if (this.enhanceRegionBtn) this.enhanceRegionBtn.disabled = false;
     this.markInBtn.disabled = false;
     this.markOutBtn.disabled = false;
     this.clearMarksBtn.disabled = false;
@@ -3771,36 +3718,6 @@ class TeslaCamViewerApp {
 
       // Disable all controls during export
       this.disableControls();
-
-      // Load plate blur model if plate blurring is enabled
-      const blurPlatesEnabled =
-        this.settingsManager.get('blurLicensePlates') === true;
-      if (blurPlatesEnabled && this.plateBlur && !this.plateBlur.isReady()) {
-        console.log('[Export] Loading license plate detection model...');
-        this.loadingOverlay.classList.remove('hidden');
-        this.loadingOverlay.style.display = 'flex';
-        this.loadingOverlay.style.position = 'fixed';
-        this.loadingOverlay.style.top = '0';
-        this.loadingOverlay.style.left = '0';
-        this.loadingOverlay.style.right = '0';
-        this.loadingOverlay.style.bottom = '0';
-        this.loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-        this.loadingOverlay.style.zIndex = '9999';
-        this.loadingText.innerHTML =
-          '<div style="text-align: center;"><div style="font-size: 1.1rem; color: #ffffff;">Loading AI model for license plate detection...</div><div style="font-size: 0.9rem; color: #a0a0a0; margin-top: 0.5rem;">This may take a moment on first use</div></div>';
-        try {
-          const loaded = await this.plateBlur.loadModel();
-          if (!loaded) {
-            console.warn(
-              '[Export] Failed to load plate blur model, continuing without blur'
-            );
-          } else {
-            console.log('[Export] Plate blur model loaded successfully');
-          }
-        } catch (modelError) {
-          console.warn('[Export] Plate blur model error:', modelError);
-        }
-      }
 
       // Show loading overlay with progress display
       this.loadingOverlay.classList.remove('hidden');
@@ -4365,14 +4282,6 @@ class TeslaCamViewerApp {
         event.preventDefault();
         if (!this.exportBtn.disabled) {
           this.exportVideo();
-        }
-        break;
-
-      case 'KeyD':
-        // D for detect plates
-        event.preventDefault();
-        if (window.plateEnhancer && this.currentEvent) {
-          window.plateEnhancer.autoDetectPlates();
         }
         break;
 
@@ -6185,63 +6094,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
-
-  // Initialize plate enhancer (delayed and wrapped in try-catch)
-  setTimeout(() => {
-    try {
-      if (
-        window.plateEnhancer &&
-        typeof window.plateEnhancer.init === 'function'
-      ) {
-        window.plateEnhancer.init();
-      }
-    } catch (e) {
-      console.error('[PlateEnhancer] Init error (non-fatal):', e);
-    }
-  }, 2000);
-
-  // Preload plate detection model if setting is enabled (delayed to not block startup)
-  setTimeout(async () => {
-    try {
-      const blurEnabled =
-        window.app?.settingsManager?.get('blurLicensePlates') === true;
-      if (
-        blurEnabled &&
-        window.app?.plateBlur &&
-        !window.app.plateBlur.isReady()
-      ) {
-        console.log('[App] Preloading license plate detection model...');
-
-        // Show a toast notification
-        const toast = document.createElement('div');
-        toast.id = 'plate-model-toast';
-        toast.style.cssText =
-          'position: fixed; bottom: 20px; right: 20px; background: #2d2d2d; color: #e0e0e0; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10000; font-size: 14px; display: flex; align-items: center; gap: 10px;';
-        toast.innerHTML =
-          '<div class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid #555; border-top-color: #4a9eff; border-radius: 50%; animation: spin 1s linear infinite;"></div><span>Loading plate detection model...</span>';
-        document.body.appendChild(toast);
-
-        const success = await window.app.plateBlur.loadModel((progress) => {
-          const span = toast.querySelector('span');
-          if (span && progress.percent >= 0) {
-            span.textContent = progress.message;
-          }
-        });
-
-        // Update toast and auto-dismiss
-        if (success) {
-          toast.innerHTML =
-            '<span style="color: #66bb6a;">✓ Plate detection ready</span>';
-        } else {
-          toast.innerHTML =
-            '<span style="color: #ef5350;">⚠ Plate detection failed to load</span>';
-        }
-        setTimeout(() => toast.remove(), 3000);
-      }
-    } catch (e) {
-      console.error('[App] Plate model preload error (non-fatal):', e);
-    }
-  }, 3000);
 
   // Debug helper for export troubleshooting
   window.debugExport = () => {

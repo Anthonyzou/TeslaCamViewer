@@ -150,39 +150,6 @@
                 <div class="tab-content">
                     <!-- Events Tab -->
                     <div id="eventsTab" class="tab-pane active">
-                        <!-- AI Search panel: collapsible, hidden until index is ready -->
-                        <div id="aiSearchBar" class="ai-search-panel" style="display:none;">
-                            <div class="ai-search-header" id="aiSearchHeader">
-                                <div class="ai-search-header-content">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" style="flex-shrink:0;">
-                                        <circle cx="11" cy="11" r="7" />
-                                        <line x1="16.5" y1="16.5" x2="21" y2="21" />
-                                    </svg>
-                                    <span>AI Search</span>
-                                    <span class="ai-search-badge" id="aiSearchBadge"></span>
-                                </div>
-                                <div class="ai-search-header-right">
-                                    <span class="ai-search-beta-pill"
-                                        title="This feature is in beta — you may see occasional issues">BETA</span>
-                                    <svg class="ai-search-collapse-icon" id="aiSearchCollapseIcon" width="10"
-                                        height="10" viewBox="0 0 10 10" fill="currentColor">
-                                        <path d="M2 3.5 L5 6.5 L8 3.5 Z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ai-search-content" id="aiSearchContent">
-                                <div class="ai-search-row">
-                                    <input type="text" id="aiSearchInput" class="ai-search-input"
-                                        placeholder="Search: parking garage, night drive…" />
-                                    <button id="aiSearchClearBtn" class="ai-search-clear"
-                                        title="Clear search">×</button>
-                                </div>
-                                <div id="aiSearchChips" class="ai-search-chips"></div>
-                                <div id="aiSearchResultsHeader" class="ai-search-results-header" style="display:none;">
-                                </div>
-                            </div>
-                        </div>
                         <div id="eventList" class="event-list">
                             <div class="empty-state" id="emptyState">
                                 <p data-i18n="sidebar.emptyState">👆 Click "Select TeslaCam Folder" to get started</p>
@@ -501,18 +468,6 @@
                                     d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />
                             </svg>
                         </button>
-                        <button id="enhanceRegionBtn" class="control-btn" disabled
-                            title="Enhance Region (Right-click video)">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <!-- Crop/region box -->
-                                <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8z" />
-                                <path d="M7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z" />
-                                <!-- Magnifying glass overlay -->
-                                <circle cx="14" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.5" />
-                                <path d="M16.5 12.5L19 15" stroke="currentColor" stroke-width="1.5"
-                                    stroke-linecap="round" />
-                            </svg>
-                        </button>
                         <input type="checkbox" id="loopCheckbox" disabled style="display: none;">
                     </div>
 
@@ -598,12 +553,6 @@
 
                                 <!-- Export Settings -->
                                 <div class="export-settings-header">Settings</div>
-
-                                <label class="export-option export-checkbox-option">
-                                    <input type="checkbox" id="blurPlatesExportCheckbox">
-                                    <span class="export-checkbox-label">Blur License Plates</span>
-                                    <span class="export-option-hint">Adds significant render time</span>
-                                </label>
 
                                 <label class="export-option export-checkbox-option">
                                     <input type="checkbox" id="privacyModeCheckbox">
@@ -918,23 +867,10 @@
     <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.6/dist/protobuf.min.js"></script>
     <!-- jsPDF for insurance report generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- ONNX Runtime Web for license plate detection (uses CDN for proper module resolution) -->
-    <script>
-        // Pre-configure ONNX Runtime before loading
-        window.ortConfig = { numThreads: 1 };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js" defer></script>
-    <!-- UpscalerJS for AI-powered image super-resolution -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@latest/dist/umd/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/esrgan-thick@latest/dist/umd/4x.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/upscaler@latest/dist/browser/umd/upscaler.min.js"></script>
     <!-- gif.js for animated GIF export -->
     <script src="vendor/gif.js"></script>
     <!-- tweetnacl for Ed25519 signature verification fallback -->
     <script src="vendor/nacl-fast.min.js"></script>
-    <!-- mp4box for AI Search MP4 demuxing -->
-    <script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js"></script>
 
     <!-- App Bundle -->
     <script src="dist/app.js"></script>
