@@ -163,8 +163,8 @@ class ScreenshotCapture {
 
         if (!privacyMode && window.app?.telemetryOverlay && telemetryEnabled && window.app.telemetryOverlay.hasTelemetryData()) {
             const clipIndex = this.videoPlayer.currentClipIndex || 0;
-            const timeInClip = this.videoPlayer.getCurrentTime() || 0;
-            const videoDuration = this.videoPlayer.getCurrentDuration() || 60;
+            const timeInClip = this.videoPlayer.currentTime || 0;
+            const videoDuration = this.videoPlayer.duration || 60;
 
             window.app.telemetryOverlay.updateTelemetry(clipIndex, timeInClip, videoDuration);
             const telemetryData = window.app.telemetryOverlay.currentData;
@@ -403,7 +403,7 @@ class ScreenshotCapture {
         if (!event) return;
 
         // Get current playback time info
-        const currentTime = this.videoPlayer.getCurrentTime();
+        const currentTime = this.videoPlayer.currentTime;
         const clipIndex = this.videoPlayer.currentClipIndex;
 
         // Format event timestamp

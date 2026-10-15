@@ -1807,7 +1807,7 @@ class PlateEnhancer {
             if (clipMarking) {
                 this.referenceTime = clipMarking.getAbsoluteTime();
             } else {
-                this.referenceTime = vp ? vp.getCurrentTime() : 0;
+                this.referenceTime = vp ? vp.currentTime : 0;
             }
         }
 

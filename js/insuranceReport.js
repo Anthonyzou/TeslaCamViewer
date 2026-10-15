@@ -4026,7 +4026,7 @@ class InsuranceReport {
         const event = this.videoPlayer.currentEvent;
         if (!event) return;
 
-        const currentTime = this.videoPlayer.getCurrentTime();
+        const currentTime = this.videoPlayer.currentTime;
         const eventDate = new Date(event.timestamp);
 
         // Format timestamp

@@ -58,12 +58,18 @@ class VideoPlayer {
     this.seek(t);
   }
 
-  get duration() {
-    return this.videos.front.duration;
+  get duration() { return this.videos.front.duration; }
+
+  /**
+   * Backward compatibility getter for components that still expect an array
+   * of clip durations (Telemetry, Export, AI Search Heatmap).
+   */
+  get cachedClipDurations() {
+    if (!this.currentEvent) return [];
+    return this.currentEvent.clipGroups.map(g => g.clips.front?.duration || 60);
   }
-  get paused() {
-    return this.videos.front.paused;
-  }
+
+  get paused() { return this.videos.front.paused; }
   get playbackRate() {
     return this.videos.front.playbackRate;
   }

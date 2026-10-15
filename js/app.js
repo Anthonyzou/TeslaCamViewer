@@ -3723,7 +3723,7 @@ class TeslaCamViewerApp {
 
       // Start background loading, prioritizing current playback position
       const currentTime = this.getAbsoluteEventTime(
-        this.videoPlayer?.getCurrentTime() || 0
+        this.videoPlayer?.currentTime || 0
       );
       window.speedLimitService.queueForBackgroundLoading(
         positions,
@@ -6019,8 +6019,8 @@ class TeslaCamViewerApp {
       ) {
         // Need to manually get telemetry data when telemetry overlay is hidden
         const clipIndex = this.videoPlayer?.currentClipIndex || 0;
-        const timeInClip = this.videoPlayer?.getCurrentTime() || 0;
-        const videoDuration = this.videoPlayer?.getCurrentDuration() || 0;
+        const timeInClip = this.videoPlayer?.currentTime || 0;
+        const videoDuration = this.videoPlayer?.duration || 0;
         this.telemetryOverlay.updateTelemetry(
           clipIndex,
           timeInClip,

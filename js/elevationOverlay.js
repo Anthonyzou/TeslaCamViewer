@@ -323,7 +323,7 @@ class ElevationOverlay {
         if (this.getEventTime) {
             currentTime = this.getEventTime();
         } else if (this.videoPlayer) {
-            currentTime = this.videoPlayer.getCurrentTime();
+            currentTime = this.videoPlayer.currentTime;
         }
 
         this.currentTime = currentTime;

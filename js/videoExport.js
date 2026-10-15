@@ -1388,7 +1388,7 @@ class VideoExport {
             // back to the player's live state so we degrade to the old
             // behavior instead of drawing a 0:00 clock.
             clipIndex = this.videoPlayer.currentClipIndex || 0;
-            currentTimeInClip = this.videoPlayer.getCurrentTime() || 0;
+            currentTimeInClip = this.videoPlayer.currentTime || 0;
         }
 
         const clipGroup = event.clipGroups[clipIndex];
@@ -1646,7 +1646,7 @@ class VideoExport {
             console.log('  - MediaRecorder state:', this.mediaRecorder.state);
             console.log('  - Chunks collected:', this.recordedChunks.length);
             console.log('  - Current clip:', this.videoPlayer.currentClipIndex);
-            console.log('  - Time in clip:', this.videoPlayer.getCurrentTime().toFixed(2) + 's');
+            console.log('  - Time in clip:', this.videoPlayer.currentTime.toFixed(2) + 's');
 
             console.log('\n  Video ready states:');
             Object.entries(videos).forEach(([name, video]) => {
@@ -1736,8 +1736,8 @@ class VideoExport {
                 for (let t = exportStart; t <= exportEnd; t += 1) {
                     await this.videoPlayer.seekToEventTime(t);
                     const clipIndex = this.videoPlayer.currentClipIndex || 0;
-                    const timeInClip = this.videoPlayer.getCurrentTime() || 0;
-                    const videoDuration = this.videoPlayer.getCurrentDuration() || 60;
+                    const timeInClip = this.videoPlayer.currentTime || 0;
+                    const videoDuration = this.videoPlayer.duration || 60;
                     window.app.telemetryOverlay.updateTelemetry(clipIndex, timeInClip, videoDuration);
                     const data = window.app.telemetryOverlay.currentData;
                     if (data?.latitude_deg && data?.longitude_deg) {
@@ -1829,21 +1829,22 @@ class VideoExport {
             // Fast export path never touches videoPlayer, so falling back to
             // videoPlayer.currentClipIndex would freeze values at the IN-point.
             let clipIndex, timeInClip, videoDuration;
-            const durations = this.videoPlayer?.cachedClipDurations;
-            if (durations && durations.length > 0) {
+            const clipGroups = this.videoPlayer?.currentEvent?.clipGroups;
+            if (clipGroups && clipGroups.length > 0) {
                 let remaining = absoluteTime;
                 clipIndex = 0;
-                for (let i = 0; i < durations.length; i++) {
-                    if (remaining < durations[i]) { clipIndex = i; break; }
-                    remaining -= durations[i];
+                for (let i = 0; i < clipGroups.length; i++) {
+                    const duration = clipGroups[i].clips.front?.duration || 60;
+                    if (remaining < duration) { clipIndex = i; break; }
+                    remaining -= duration;
                     clipIndex = i;
                 }
                 timeInClip = Math.max(0, remaining);
-                videoDuration = durations[clipIndex] || 60;
+                videoDuration = clipGroups[clipIndex]?.clips.front?.duration || 60;
             } else {
                 clipIndex = this.videoPlayer.currentClipIndex || 0;
-                timeInClip = this.videoPlayer.getCurrentTime() || 0;
-                videoDuration = this.videoPlayer.getCurrentDuration() || 60;
+                timeInClip = this.videoPlayer.currentTime || 0;
+                videoDuration = this.videoPlayer.duration || 60;
             }
             hud.updateTelemetry(clipIndex, timeInClip, videoDuration);
             telemetryData = hud.getCurrentTelemetry();
