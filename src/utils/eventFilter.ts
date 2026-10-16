@@ -1,6 +1,7 @@
 /**
  * EventFilter - Handles filtering and sorting of events
  */
+import dayjs from 'dayjs';
 import { FolderParser } from '../services/folderParser';
 
 class EventFilter {
@@ -53,7 +54,7 @@ class EventFilter {
    * @param {Object} event
    * @returns {boolean}
    */
-  filterByDate(event) {
+  filterByDate(event: any): boolean {
     const { start, end } = this.filters.dateRange;
 
     // No date filter applied
@@ -61,25 +62,16 @@ class EventFilter {
       return true;
     }
 
-    // Parse event timestamp
-    const eventDate = new Date(event.timestamp);
+    const eventDate = dayjs(event.timestamp);
 
-    // Check start date
-    if (start) {
-      const startDate = new Date(start);
-      startDate.setHours(0, 0, 0, 0); // Start of day
-      if (eventDate < startDate) {
-        return false;
-      }
+    // Check start date (inclusive from start of day)
+    if (start && eventDate.isBefore(dayjs(start).startOf('day'))) {
+      return false;
     }
 
-    // Check end date
-    if (end) {
-      const endDate = new Date(end);
-      endDate.setHours(23, 59, 59, 999); // End of day
-      if (eventDate > endDate) {
-        return false;
-      }
+    // Check end date (inclusive through end of day)
+    if (end && eventDate.isAfter(dayjs(end).endOf('day'))) {
+      return false;
     }
 
     return true;

@@ -16,8 +16,6 @@ class VideoEnhancer {
   private controlsContainer = null;
   private controlsVisible = false;
 
-  constructor() {}
-
   /**
    * Load enhancement settings from localStorage
    * @returns {Object} Settings object

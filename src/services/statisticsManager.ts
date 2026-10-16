@@ -372,7 +372,6 @@ class StatisticsManager {
     const sortedEntries = entries.sort(
       (a, b) => (b[1] as number) - (a[1] as number)
     );
-    const eventsText = this.t('statistics.events');
 
     return `
             <div class="stats-camera-distribution">

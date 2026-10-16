@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { LayoutManager } from '../layout/layoutManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
@@ -414,7 +415,7 @@ export class TeslaCamApp {
 
     if (dateEl) {
       dateEl.textContent = event.timestamp
-        ? new Date(event.timestamp).toLocaleString()
+        ? dayjs(event.timestamp).format('M/D/YYYY, h:mm:ss A')
         : '';
     }
 

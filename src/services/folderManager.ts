@@ -2,6 +2,7 @@
  * FolderManager - Manages multiple TeslaCam folders/drives
  * Supports adding, removing, and switching between multiple drives
  */
+import dayjs from 'dayjs';
 
 class FolderManager {
   public drives: any[] = [];
@@ -346,24 +347,27 @@ class FolderManager {
    * @param {string} filter
    * @returns {Date|null} Cutoff date or null for 'all'
    */
-  getDateFilterCutoff(filter) {
+  getDateFilterThreshold(filter: string): Date | null {
     if (filter === 'all') return null;
 
-    const now = new Date();
     switch (filter) {
       case 'week':
-        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return dayjs().subtract(7, 'day').toDate();
       case 'month':
-        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return dayjs().subtract(1, 'month').toDate();
       case '3months':
-        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        return dayjs().subtract(3, 'month').toDate();
       case '6months':
-        return new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+        return dayjs().subtract(6, 'month').toDate();
       case 'year':
-        return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        return dayjs().subtract(1, 'year').toDate();
       default:
         return null;
     }
+  }
+
+  getDateFilterCutoff(filter: string): Date | null {
+    return this.getDateFilterThreshold(filter);
   }
 
   /**
