@@ -2,6 +2,7 @@
  * EventBrowser - Handles displaying and selecting events
  * Cache limit: 128 entries
  */
+import { FolderParser } from './folderParser';
 
 class EventBrowser {
   constructor(

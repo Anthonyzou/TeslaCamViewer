@@ -6,6 +6,7 @@
  */
 
 import { LayoutConfig } from './layoutConfig';
+import { LayoutRenderer } from './layoutRenderer';
 
 export class LayoutManager {
   constructor() {

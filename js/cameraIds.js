@@ -37,67 +37,87 @@
  * place to update when ground truth lands.
  */
 (function () {
-    'use strict';
+  'use strict';
 
-    // Master table. Key = stringified ID or canonical name.
-    // verified: true when user has confirmed against a real event.
-    const TABLE = {
-        // Numeric trigger IDs
-        '0': { short: 'Front',          long: 'Front Camera',          verified: true  },
-        '1': { short: 'Rear',           long: 'Rear Camera',           verified: false },
-        '2': { short: 'Front Wide',     long: 'Front Wide Camera',     verified: false },
-        '3': { short: 'Cabin',          long: 'Cabin Camera',          verified: false },
-        '4': { short: 'Left Pillar',    long: 'Left Pillar Camera',    verified: false },
-        '5': { short: 'Left Repeater',  long: 'Left Side (Repeater)',  verified: true  },
-        '6': { short: 'Right Repeater', long: 'Right Side (Repeater)', verified: true  },
-        '7': { short: 'Right Pillar',   long: 'Right Pillar Camera',   verified: false },
+  // Master table. Key = stringified ID or canonical name.
+  // verified: true when user has confirmed against a real event.
+  const TABLE = {
+    // Numeric trigger IDs
+    0: { short: 'Front', long: 'Front Camera', verified: true },
+    1: { short: 'Rear', long: 'Rear Camera', verified: false },
+    2: { short: 'Front Wide', long: 'Front Wide Camera', verified: false },
+    3: { short: 'Cabin', long: 'Cabin Camera', verified: false },
+    4: { short: 'Left Pillar', long: 'Left Pillar Camera', verified: false },
+    5: { short: 'Left Repeater', long: 'Left Side (Repeater)', verified: true },
+    6: {
+      short: 'Right Repeater',
+      long: 'Right Side (Repeater)',
+      verified: true,
+    },
+    7: { short: 'Right Pillar', long: 'Right Pillar Camera', verified: false },
 
-        // Canonical clip-filename names — always trusted because they
-        // come straight from Tesla's filenames, not the trigger ID.
-        'front':          { short: 'Front',          long: 'Front Camera',          verified: true },
-        'back':           { short: 'Rear',           long: 'Rear Camera',           verified: true },
-        'left_repeater':  { short: 'Left Repeater',  long: 'Left Side (Repeater)',  verified: true },
-        'right_repeater': { short: 'Right Repeater', long: 'Right Side (Repeater)', verified: true },
-        'left_pillar':    { short: 'Left Pillar',    long: 'Left Pillar Camera',    verified: true },
-        'right_pillar':   { short: 'Right Pillar',   long: 'Right Pillar Camera',   verified: true }
-    };
+    // Canonical clip-filename names — always trusted because they
+    // come straight from Tesla's filenames, not the trigger ID.
+    front: { short: 'Front', long: 'Front Camera', verified: true },
+    back: { short: 'Rear', long: 'Rear Camera', verified: true },
+    left_repeater: {
+      short: 'Left Repeater',
+      long: 'Left Side (Repeater)',
+      verified: true,
+    },
+    right_repeater: {
+      short: 'Right Repeater',
+      long: 'Right Side (Repeater)',
+      verified: true,
+    },
+    left_pillar: {
+      short: 'Left Pillar',
+      long: 'Left Pillar Camera',
+      verified: true,
+    },
+    right_pillar: {
+      short: 'Right Pillar',
+      long: 'Right Pillar Camera',
+      verified: true,
+    },
+  };
 
-    /**
-     * Resolve a Tesla camera identifier to a label.
-     *
-     * @param {string|number} id   Numeric trigger ID or canonical name.
-     * @param {Object} [opts]
-     * @param {'short'|'long'} [opts.style='short']  Output flavor.
-     * @param {string} [opts.fallback]  Returned when id is unmapped.
-     *   Defaults to "Camera {id}" so unmapped trigger IDs are still
-     *   informative ("Camera 9") rather than silently empty.
-     * @returns {string}
-     */
-    function label(id, opts = {}) {
-        const style = opts.style === 'long' ? 'long' : 'short';
-        const key = String(id ?? '').toLowerCase();
-        const entry = TABLE[key];
-        if (entry) return entry[style];
-        return opts.fallback ?? `Camera ${id}`;
-    }
+  /**
+   * Resolve a Tesla camera identifier to a label.
+   *
+   * @param {string|number} id   Numeric trigger ID or canonical name.
+   * @param {Object} [opts]
+   * @param {'short'|'long'} [opts.style='short']  Output flavor.
+   * @param {string} [opts.fallback]  Returned when id is unmapped.
+   *   Defaults to "Camera {id}" so unmapped trigger IDs are still
+   *   informative ("Camera 9") rather than silently empty.
+   * @returns {string}
+   */
+  function label(id, opts = {}) {
+    const style = opts.style === 'long' ? 'long' : 'short';
+    const key = String(id ?? '').toLowerCase();
+    const entry = TABLE[key];
+    if (entry) return entry[style];
+    return opts.fallback ?? `Camera ${id}`;
+  }
 
-    /**
-     * @returns {boolean} true when the id maps to a user-verified entry.
-     */
-    function isVerified(id) {
-        const key = String(id ?? '').toLowerCase();
-        return TABLE[key]?.verified === true;
-    }
+  /**
+   * @returns {boolean} true when the id maps to a user-verified entry.
+   */
+  function isVerified(id) {
+    const key = String(id ?? '').toLowerCase();
+    return TABLE[key]?.verified === true;
+  }
 
-    /**
-     * @returns {boolean} true when the id is unmapped entirely (so
-     *   callers can choose to log a "[CameraID] Unknown ..." trace
-     *   for ground-truth collection per task #44).
-     */
-    function isUnknown(id) {
-        const key = String(id ?? '').toLowerCase();
-        return !TABLE[key];
-    }
+  /**
+   * @returns {boolean} true when the id is unmapped entirely (so
+   *   callers can choose to log a "[CameraID] Unknown ..." trace
+   *   for ground-truth collection per task #44).
+   */
+  function isUnknown(id) {
+    const key = String(id ?? '').toLowerCase();
+    return !TABLE[key];
+  }
 
-    window.cameraIds = { label, isVerified, isUnknown, TABLE };
+  // window.cameraIds = { label, isVerified, isUnknown, TABLE };
 })();

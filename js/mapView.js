@@ -2,6 +2,8 @@
  * MapView - Leaflet map integration for displaying event locations
  */
 
+import { FolderParser } from './folderParser';
+
 class MapView {
   constructor(containerElement, onEventSelect) {
     this.container = containerElement;
@@ -34,8 +36,7 @@ class MapView {
     // Tile layer management
     this.currentTileLayer = null;
     this.isDarkMode = false;
-    this.tileProvider =
-      localStorage.getItem('teslacam_map_provider') || 'osm';
+    this.tileProvider = localStorage.getItem('teslacam_map_provider') || 'osm';
 
     // Tile provider configurations
     this.TILE_PROVIDERS = {
@@ -799,7 +800,7 @@ class MapView {
     return;
   }
 
-    addTelemetryGpsPoints(points) {
+  addTelemetryGpsPoints(points) {
     if (!points || !Array.isArray(points)) return;
 
     this.telemetryGpsPoints = this.telemetryGpsPoints.concat(points);
@@ -951,8 +952,6 @@ class MapView {
     this.heatmapEnabled = !this.heatmapEnabled;
 
     if (this.heatmapEnabled) {
-
-
       // Create heatmap if needed
       if (!this.heatLayer) {
         this.createHeatmap();
