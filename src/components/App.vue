@@ -92,6 +92,9 @@
     <HelpModal />
     <QuickStartGuideModal />
     <StatisticsModal />
+    <DriveManagementModal />
+    <DriveSetupModal />
+    <DiagnosticsModal />
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
@@ -114,6 +117,9 @@ import SettingsModal from './SettingsModal.vue';
 import HelpModal from './HelpModal.vue';
 import QuickStartGuideModal from './QuickStartGuideModal.vue';
 import StatisticsModal from './StatisticsModal.vue';
+import DriveManagementModal from './DriveManagementModal.vue';
+import DriveSetupModal from './DriveSetupModal.vue';
+import DiagnosticsModal from './DiagnosticsModal.vue';
 import { useTeslaCam } from '../composables/useTeslaCam';
 
 const {
@@ -161,4 +167,46 @@ const {
   toggleSidebar,
   unhideCamera,
 } = useTeslaCam();
+
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts';
+
+useKeyboardShortcuts({
+  togglePlay,
+  prevClip,
+  nextClip,
+  prevEvent,
+  nextEvent,
+  markIn,
+  markOut,
+  clearMarks,
+  captureScreenshot,
+  exportVideo,
+  openSettings,
+  openHelp,
+  frameBack,
+  frameForward,
+  changeLayout,
+  changeFocusCamera,
+});
+
+import { onMounted } from 'vue';
+import { TeslaCamApp } from '../services/teslaCamApp';
+
+onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    if (window.i18n) {
+      await window.i18n.init();
+    }
+    const app = new TeslaCamApp();
+    await app.tryRestoreLastFolder();
+
+    if (app.b2Client) {
+      app.b2Client.getConfig().then((config: any) => {
+        if (config?.isConfigured && config?.isPreloaded) {
+          app.loadFromB2();
+        }
+      });
+    }
+  }
+});
 </script>

@@ -61,6 +61,5 @@ import '../js/statisticsManager.js';
 import '../js/driveSync.js';
 import '../js/driveSyncUI.js';
 
-// B2 Cloud Client & Main App Controller
+// B2 Cloud Client
 import '../js/b2Client.js';
-import '../js/app.js';

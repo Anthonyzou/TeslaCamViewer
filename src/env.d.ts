@@ -6,6 +6,7 @@ declare module '*.vue' {
 
 interface Window {
   i18n?: {
+    init?: () => Promise<any>;
     t: (key: string, params?: Record<string, any>) => string;
     getLocale: () => string;
     setLocale: (locale: string) => void;

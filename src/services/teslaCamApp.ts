@@ -1,0 +1,923 @@
+import type { TeslaCamEvent, DriveInfo } from '../types';
+
+/**
+ * TeslaCamApp - Central application service orchestrating headless engines
+ * Replaces the monolithic js/app.js file.
+ */
+export class TeslaCamApp {
+  public folderParser: any;
+  public folderManager: any;
+  public eventFilter: any;
+  public filterPanel: any;
+  public mapView: any;
+  public eventBrowser: any;
+  public videoPlayer: any;
+  public timeline: any;
+  public syncController: any;
+  public layoutManager: any;
+  public screenshotCapture: any;
+  public videoEnhancer: any;
+  public videoExport: any;
+  public clipMarking: any;
+  public settingsManager: any;
+  public versionManager: any;
+  public statisticsManager: any;
+  public helpModal: any;
+  public quickStartGuide: any;
+  public b2Client: any;
+  public commandPalette: any;
+  public driveSync: any;
+  public driveSyncUI: any;
+
+  public allEvents: TeslaCamEvent[] = [];
+  public filteredEvents: TeslaCamEvent[] = [];
+  public currentEvent: TeslaCamEvent | null = null;
+  public currentEventIndex: number = -1;
+
+  public isMobileFullscreen: boolean = false;
+  private _isFrameStepping: boolean = false;
+  private _frameStepInterval: any = null;
+
+  constructor() {
+    this.initEngines();
+    this.wireCallbacks();
+    this.applyUserSettings();
+    this.applyPerformanceSettings();
+    this._registerCommandPaletteCommands();
+
+    // Set global reference for backward compatibility
+    (window as any).app = this;
+  }
+
+  public t(key: string, params?: Record<string, any>): string {
+    return (window as any).i18n ? (window as any).i18n.t(key, params) : key.split('.').pop() || '';
+  }
+
+  private initEngines(): void {
+    const w = window as any;
+    this.folderParser = new w.FolderParser();
+    this.folderManager = new w.FolderManager();
+    this.eventFilter = new w.EventFilter();
+
+    this.filterPanel = w.filterPanelInstance || {
+      updateFilterBadge: () => w.filterPanelInstance?.updateBadge(),
+      updateBadge: () => w.filterPanelInstance?.updateBadge(),
+      refresh: () => w.filterPanelInstance?.syncFromEventFilter(),
+      syncFromEventFilter: () => w.filterPanelInstance?.syncFromEventFilter(),
+      clearAllFilters: () => w.filterPanelInstance?.clearAllFilters(),
+      getFilters: () => w.filterPanelInstance?.getFilters() || {},
+      togglePanel: () => w.filterPanelInstance?.togglePanel?.(),
+    };
+
+    const mapEl = document.getElementById('map');
+    this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) => this.onEventSelected(event));
+
+    const eventListEl = document.getElementById('eventList');
+    this.eventBrowser = new w.EventBrowser(eventListEl, (event: TeslaCamEvent) =>
+      this.onEventSelected(event)
+    );
+
+    this.videoPlayer = new w.VideoPlayer();
+
+    const timelineEl = document.getElementById('timeline');
+    this.timeline = new w.Timeline(timelineEl, (time: number) => this.onTimelineSeeked(time));
+
+    this.syncController = new w.SyncController(this.videoPlayer);
+    this.layoutManager = new w.LayoutManager();
+    this.screenshotCapture = new w.ScreenshotCapture(this.videoPlayer);
+    this.videoEnhancer = new w.VideoEnhancer();
+    this.videoExport = new w.VideoExport(this.videoPlayer, this.layoutManager);
+    this.clipMarking = new w.ClipMarking(this.timeline, this.videoPlayer);
+
+    this.settingsManager = new w.SettingsManager();
+    this.versionManager = new w.VersionManager();
+    this.statisticsManager = new w.StatisticsManager();
+
+    this.helpModal = w.helpModalInstance || {
+      show: () => w.helpModalInstance?.open(),
+      hide: () => w.helpModalInstance?.close(),
+      toggle: () => w.helpModalInstance?.toggle(),
+    };
+
+    this.quickStartGuide = w.quickStartGuideInstance || {
+      show: () => w.quickStartGuideInstance?.open(),
+      hide: () => w.quickStartGuideInstance?.close(),
+      showIfFirstRun: () => w.quickStartGuideInstance?.showIfFirstRun(),
+    };
+
+    this.b2Client = new w.B2Client();
+    this.commandPalette = w.commandPaletteInstance || null;
+    this.driveSync = new w.DriveSync();
+    this.driveSyncUI = new w.DriveSyncUI(this.driveSync, this.folderManager);
+  }
+
+  private wireCallbacks(): void {
+    if (this.eventBrowser && this.videoPlayer) {
+      this.eventBrowser.setVideoPlayer(this.videoPlayer);
+    }
+
+    if (this.videoPlayer) {
+      this.videoPlayer.onTimeUpdate = (time: number) => {
+        if (!this.timeline?.isDragging) {
+          const eventTime = this.getAbsoluteEventTime(time);
+          this.timeline?.updateTime(eventTime);
+        }
+      };
+
+      this.videoPlayer.onEnded = () => {
+        if (this.settingsManager?.get('autoPlayNextEvent')) {
+          this.autoPlayNextEvent();
+        }
+      };
+
+      this.videoPlayer.onPlayStateChange = () => {
+        this.updatePlaybackButtons();
+      };
+    }
+  }
+
+  public getAbsoluteEventTime(clipTime?: number): number {
+    return this.videoPlayer?.absoluteTime ?? clipTime ?? 0;
+  }
+
+  public applyUserSettings(): void {
+    if (!this.settingsManager) return;
+    this.settingsManager.applySettings(this);
+  }
+
+  public applyPerformanceSettings(): void {
+    if (!this.settingsManager) return;
+    const preload = this.settingsManager.get('preloadNextClip');
+    if (this.videoPlayer) {
+      this.videoPlayer.disablePreload = !preload;
+    }
+  }
+
+  public async tryRestoreLastFolder(): Promise<void> {
+    if (!this.settingsManager?.get('rememberLastFolder')) return;
+    try {
+      if (this.folderParser?.hasStoredHandle) {
+        const hasStored = await this.folderParser.hasStoredHandle();
+        if (hasStored) {
+          const handle = await this.folderParser.getStoredHandle();
+          if (handle) {
+            console.log('[App] Restoring last folder handle...');
+            this.showLoading('Restoring last folder...');
+            const permission = await handle.queryPermission({ mode: 'read' });
+            if (permission === 'granted') {
+              const drive = await this.folderManager.addDrive(handle, {
+                label: handle.name,
+                isArchive: false,
+                dateFilter: 'all',
+              });
+              this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+              this.folderParser.rootHandle = handle;
+              const events = await this.folderParser.parseFolder();
+              drive.events = events;
+              this.allEvents = events;
+              this.statisticsManager.setEvents(events);
+              this.applyFilters();
+              this.updateDriveSelector(this.folderManager.getDrives());
+              this.hideLoading();
+              return;
+            }
+            this.hideLoading();
+          }
+        }
+      }
+    } catch (e) {
+      console.log('[App] Could not restore folder:', e);
+      this.hideLoading();
+    }
+  }
+
+  public async onEventSelected(event: TeslaCamEvent): Promise<void> {
+    if (this.currentEvent && (this.currentEvent as any)._blobURLs) {
+      (this.currentEvent as any)._blobURLs.forEach((url: string) => URL.revokeObjectURL(url));
+      (this.currentEvent as any)._blobURLs = [];
+    }
+
+    this.showLoading('Loading event...');
+
+    try {
+      this.currentEvent = event;
+      this.currentEventIndex = this.allEvents.findIndex((e) => e.name === event.name);
+
+      this.showLoading('Preparing video URLs...');
+      await this.prepareEventURLs(event);
+      await this.videoPlayer.loadEvent(event);
+
+      const hasPillars = JSON.stringify(event).includes('_pillar');
+      this.layoutManager?.setHasPillarCameras?.(hasPillars);
+      this.updatePillarLayoutOptions(hasPillars);
+
+      // Get total duration and initialize timeline
+      const totalDuration = await this.videoPlayer.getTotalDuration();
+      this.timeline?.setDuration(totalDuration);
+      this.timeline?.setClipMarkers(event.clipGroups);
+
+      if (typeof this.timeline?.resetThumbnailTooltip === 'function') {
+        this.timeline.resetThumbnailTooltip();
+      }
+
+      if (this.folderParser?.detectGaps) {
+        const gaps = this.folderParser.detectGaps(event.clipGroups);
+        if (gaps && gaps.length > 0) {
+          this.timeline?.setGapMarkers(gaps, event.clipGroups);
+        }
+      }
+
+      this.updateEventInfo(event);
+      this.mapView?.selectEvent(event);
+
+      if (this.clipMarking) {
+        this.clipMarking.clearMarks();
+      }
+
+      this.enableControls();
+
+      if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+        this.closeSidebar();
+      }
+
+      const placeholder = document.getElementById('videoGridPlaceholder');
+      if (placeholder) {
+        placeholder.classList.add('hidden');
+      }
+
+      this.syncController?.start?.();
+      this.hideLoading();
+
+      const isSentryEvent =
+        event.type === 'SentryClips' ||
+        event.metadata?.reason?.toLowerCase().includes('sentry');
+
+      if (isSentryEvent) {
+        const startTime = Math.max(0, totalDuration - 64);
+        await this.videoPlayer.seekToEventTime(startTime);
+        const triggerTime = Math.max(0, totalDuration - 60);
+        this.timeline?.setSentryTriggerMarker(triggerTime);
+      } else {
+        this.timeline?.setSentryTriggerMarker(0);
+      }
+
+      if (this.settingsManager?.get('autoPlayNextEvent') || this.currentEventIndex > 0) {
+        await this.play();
+      }
+    } catch (error) {
+      this.hideLoading();
+      console.error('Error loading event:', error);
+      alert('Unable to load event videos. The drive may have been disconnected.');
+    }
+  }
+
+  public async prepareEventURLs(event: TeslaCamEvent): Promise<void> {
+    const cameras = [
+      'front',
+      'back',
+      'left_repeater',
+      'right_repeater',
+      'left_pillar',
+      'right_pillar',
+    ];
+
+    let timeoutCount = 0;
+    const MAX_TIMEOUTS = 3;
+
+    if (!Array.isArray(event.clipGroups)) return;
+
+    for (const group of event.clipGroups) {
+      let durationLoaded = false;
+
+      for (const camera of cameras) {
+        const clip = (group.clips as any)[camera];
+        if (!clip) continue;
+
+        if (!clip.url && clip.fileHandle) {
+          try {
+            const file = await clip.fileHandle.getFile();
+            if (file.size >= 1024) {
+              clip.url = URL.createObjectURL(file);
+              if (!(event as any)._blobURLs) (event as any)._blobURLs = [];
+              (event as any)._blobURLs.push(clip.url);
+
+              if (camera === 'front' && !clip.duration && timeoutCount < MAX_TIMEOUTS) {
+                const start = performance.now();
+                clip.duration = await this._probeClipDuration(clip.url);
+                const elapsed = performance.now() - start;
+                if (elapsed > 2500) timeoutCount++;
+                durationLoaded = true;
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to prepare ${camera}:`, e);
+          }
+        }
+      }
+
+      const frontClip = (group.clips as any).front;
+      if (!durationLoaded && frontClip && !frontClip.duration) {
+        frontClip.duration = 60;
+      }
+    }
+  }
+
+  private async _probeClipDuration(url: string): Promise<number> {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      const timeout = setTimeout(() => {
+        video.src = '';
+        resolve(60);
+      }, 3000);
+
+      video.onloadedmetadata = () => {
+        clearTimeout(timeout);
+        const d = video.duration;
+        video.src = '';
+        resolve(d && isFinite(d) ? d : 60);
+      };
+
+      video.onerror = () => {
+        clearTimeout(timeout);
+        video.src = '';
+        resolve(60);
+      };
+
+      video.src = url;
+    });
+  }
+
+  public updateEventInfo(event: TeslaCamEvent): void {
+    const dateEl = document.getElementById('eventDate');
+    const locEl = document.getElementById('eventLocation');
+    const reasonEl = document.getElementById('eventReason');
+    const weatherEl = document.getElementById('eventWeather');
+
+    if (dateEl) {
+      dateEl.textContent = event.timestamp ? new Date(event.timestamp).toLocaleString() : '';
+    }
+
+    if (locEl) {
+      const parts = [event.metadata?.street, event.metadata?.city].filter(Boolean);
+      locEl.textContent = parts.join(', ') || '';
+    }
+
+    if (reasonEl) {
+      reasonEl.textContent = event.metadata?.reason || event.type || '';
+    }
+
+    if (weatherEl) {
+      this.updateEventWeather(event);
+    }
+  }
+
+  public async updateEventWeather(event: TeslaCamEvent): Promise<void> {
+    const weatherEl = document.getElementById('eventWeather');
+    if (!weatherEl) return;
+
+    if (event.metadata?.weather) {
+      weatherEl.textContent = `${event.metadata.weather.temp}° ${event.metadata.weather.condition}`;
+      return;
+    }
+
+    const weatherService = (window as any).WeatherService?.getInstance?.();
+    if (!weatherService) return;
+
+    const lat = event.metadata?.est_lat;
+    const lon = event.metadata?.est_lon;
+    const time = event.timestamp;
+
+    if (lat && lon && time) {
+      try {
+        const units = this.settingsManager?.get('temperatureUnits') || 'celsius';
+        const weather = await weatherService.getHistoricalWeather(lat, lon, new Date(time), units);
+        if (weather) {
+          weatherEl.textContent = `${weather.temperature}°${units === 'fahrenheit' ? 'F' : 'C'} ${weather.description}`;
+        }
+      } catch (e) {
+        console.warn('[Weather] Could not fetch weather:', e);
+      }
+    }
+  }
+
+  public async onTimelineSeeked(time: number): Promise<void> {
+    if (!this.currentEvent || !this.videoPlayer) return;
+    await this.videoPlayer.seekToEventTime(time);
+  }
+
+  public async play(): Promise<void> {
+    if (!this.videoPlayer) return;
+    await this.videoPlayer.play();
+    this.updatePlaybackButtons();
+  }
+
+  public async pause(): Promise<void> {
+    if (!this.videoPlayer) return;
+    await this.videoPlayer.pause();
+    this.updatePlaybackButtons();
+  }
+
+  public async togglePlayback(): Promise<void> {
+    if (!this.videoPlayer) return;
+    if (this.videoPlayer.paused) {
+      await this.play();
+    } else {
+      await this.pause();
+    }
+  }
+
+  public async previousClip(): Promise<void> {
+    if (this.videoPlayer) await this.videoPlayer.previousClip();
+  }
+
+  public async nextClip(): Promise<void> {
+    if (this.videoPlayer) await this.videoPlayer.nextClip();
+  }
+
+  public startFrameStepping(direction: number): void {
+    this._isFrameStepping = true;
+    this.stepFrame(direction);
+    this._frameStepInterval = setInterval(() => {
+      if (this._isFrameStepping) this.stepFrame(direction);
+    }, 150);
+  }
+
+  public stopFrameStepping(): void {
+    this._isFrameStepping = false;
+    if (this._frameStepInterval) {
+      clearInterval(this._frameStepInterval);
+      this._frameStepInterval = null;
+    }
+  }
+
+  public async stepFrame(direction: number): Promise<void> {
+    if (this.videoPlayer) await this.videoPlayer.stepFrame(direction);
+  }
+
+  public async previousEvent(): Promise<void> {
+    if (this.currentEventIndex > 0) {
+      const prevEvent = this.allEvents[this.currentEventIndex - 1];
+      if (prevEvent) await this.onEventSelected(prevEvent);
+    }
+  }
+
+  public async nextEvent(): Promise<void> {
+    if (this.currentEventIndex >= 0 && this.currentEventIndex < this.allEvents.length - 1) {
+      const nextEv = this.allEvents[this.currentEventIndex + 1];
+      if (nextEv) await this.onEventSelected(nextEv);
+    }
+  }
+
+  public async autoPlayNextEvent(): Promise<void> {
+    if (this.currentEventIndex >= 0 && this.currentEventIndex < this.allEvents.length - 1) {
+      await this.nextEvent();
+      await this.play();
+    }
+  }
+
+  public markIn(): void {
+    if (this.clipMarking) this.clipMarking.setInPoint();
+  }
+
+  public markOut(): void {
+    if (this.clipMarking) this.clipMarking.setOutPoint();
+  }
+
+  public clearMarks(): void {
+    if (this.clipMarking) this.clipMarking.clearMarks();
+  }
+
+  public async exportVideo(camera: string = 'all'): Promise<void> {
+    if (!this.videoExport || !this.currentEvent) return;
+    await this.videoExport.exportEvent(this.currentEvent, camera);
+  }
+
+  public async captureScreenshot(): Promise<void> {
+    if (!this.screenshotCapture || !this.currentEvent) return;
+    await this.screenshotCapture.captureComposite(this.layoutManager?.currentConfig);
+  }
+
+  public changeSpeed(direction: number): void {
+    const speeds = ['0.25', '0.5', '0.75', '1', '1.25', '1.5', '2'];
+    const curSpeed = String(this.videoPlayer?.playbackRate || '1');
+    const idx = speeds.indexOf(curSpeed);
+    const newIdx = Math.max(0, Math.min(speeds.length - 1, (idx === -1 ? 3 : idx) + direction));
+    const newSpeed = parseFloat(speeds[newIdx]);
+    if (this.videoPlayer) this.videoPlayer.playbackRate = newSpeed;
+  }
+
+  public applyFilters(): void {
+    let eventsToFilter = this.allEvents;
+    const activeDriveId = this.folderManager?.activeDriveId;
+
+    if (activeDriveId) {
+      eventsToFilter = this.allEvents.filter((e) => e.driveId === activeDriveId);
+    }
+
+    const filteredEvents = this.eventFilter?.applyFilters(eventsToFilter) || eventsToFilter;
+    this.filteredEvents = filteredEvents;
+
+    this.eventBrowser?.loadEvents(filteredEvents);
+    this.mapView?.loadEvents(filteredEvents);
+    this.filterPanel?.updateFilterBadge();
+  }
+
+  public async selectFolder(): Promise<void> {
+    let handle: any = null;
+
+    while (true) {
+      try {
+        handle = await (window as any).showDirectoryPicker();
+      } catch (error: any) {
+        if (error.name !== 'AbortError') console.error('Error selecting folder:', error);
+        return;
+      }
+
+      const settings = await this.showDriveSetupDialog(handle);
+      if (!settings) return;
+      if (settings.changeFolder) continue;
+
+      this.showLoading('Parsing TeslaCam folder...');
+
+      try {
+        const drive = await this.folderManager.addDrive(handle, {
+          label: settings.label,
+          isArchive: settings.isArchive,
+          dateFilter: settings.dateFilter,
+        });
+
+        if (settings.isArchive) {
+          this.hideLoading();
+          this.updateDriveSelector(this.folderManager.getDrives());
+          return;
+        }
+
+        this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+        this.folderParser.rootHandle = handle;
+        const events = await this.folderParser.parseFolder();
+
+        drive.events = events;
+        this.allEvents = events;
+        this.statisticsManager.setEvents(events);
+        this.applyFilters();
+        this.updateDriveSelector(this.folderManager.getDrives());
+
+        if (this.settingsManager?.get('rememberLastFolder')) {
+          await this.folderParser.saveFolderHandle();
+        }
+
+        this.hideLoading();
+      } catch (error) {
+        this.hideLoading();
+        console.error('Error parsing folder:', error);
+        alert('Unable to read TeslaCam folder.');
+      }
+      break;
+    }
+  }
+
+  public async loadFromB2(): Promise<void> {
+    this.showLoading('Connecting to Backblaze B2...');
+    try {
+      const result = await this.b2Client.parseBucket();
+      if (!result?.events) throw new Error('No events found in B2 bucket');
+
+      const events = result.events;
+      let b2Drive = this.folderManager.drives.find((d: any) => d.id === 'b2');
+      if (!b2Drive) {
+        b2Drive = {
+          id: 'b2',
+          label: 'Backblaze B2',
+          color: '#003399',
+          isArchive: false,
+          dateFilter: null,
+          events: events,
+          handle: null,
+          isB2: true,
+        };
+        this.folderManager.drives.push(b2Drive);
+      } else {
+        b2Drive.events = events;
+      }
+
+      this.folderManager.activeDriveId = 'b2';
+      this.allEvents = events;
+      this.statisticsManager.setEvents(events);
+      this.applyFilters();
+      this.updateDriveSelector(this.folderManager.getDrives());
+      this.hideLoading();
+    } catch (error: any) {
+      console.error('B2 Load Error:', error);
+      this.hideLoading();
+      alert('Failed to load from Backblaze B2: ' + error.message);
+    }
+  }
+
+  public async addNewDrive(): Promise<void> {
+    let handle: any = null;
+    while (true) {
+      try {
+        handle = await (window as any).showDirectoryPicker();
+      } catch (error: any) {
+        if (error.name !== 'AbortError') console.error('Error selecting folder:', error);
+        return;
+      }
+
+      const settings = await this.showDriveSetupDialog(handle);
+      if (!settings) return;
+      if (settings.changeFolder) continue;
+
+      this.showLoading('Adding drive...');
+      try {
+        const drive = await this.folderManager.addDrive(handle, {
+          label: settings.label,
+          isArchive: settings.isArchive,
+          dateFilter: settings.dateFilter,
+        });
+
+        if (!settings.isArchive) {
+          this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+          this.folderParser.rootHandle = handle;
+          const events = await this.folderParser.parseFolder();
+          drive.events = events;
+          this.allEvents = [...this.allEvents, ...events];
+          this.statisticsManager.setEvents(this.allEvents);
+          this.applyFilters();
+        }
+
+        this.updateDriveSelector(this.folderManager.getDrives());
+        this.hideLoading();
+      } catch (e) {
+        this.hideLoading();
+        console.error('Error adding drive:', e);
+      }
+      break;
+    }
+  }
+
+  public async syncArchiveDrive(driveId: string): Promise<void> {
+    const drive = this.folderManager.getDrive(driveId);
+    if (!drive) return;
+
+    this.showLoading(`Loading ${drive.label}...`);
+    try {
+      this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+      this.folderParser.rootHandle = drive.handle;
+      const events = await this.folderParser.parseFolder();
+      drive.events = events;
+      this.allEvents = [...this.allEvents.filter((e) => e.driveId !== driveId), ...events];
+      this.statisticsManager.setEvents(this.allEvents);
+      this.applyFilters();
+      this.updateDriveSelector(this.folderManager.getDrives());
+      this.hideLoading();
+    } catch (e) {
+      this.hideLoading();
+      console.error('Error syncing archive drive:', e);
+    }
+  }
+
+  public async reloadDriveEvents(driveId: string, settings: any): Promise<void> {
+    const drive = this.folderManager.getDrive(driveId);
+    if (!drive) return;
+
+    this.showLoading(`Reloading ${drive.label}...`);
+    try {
+      if (drive.handle && !settings.isArchive) {
+        this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+        this.folderParser.rootHandle = drive.handle;
+        const events = await this.folderParser.parseFolder();
+        drive.events = events;
+        this.allEvents = [...this.allEvents.filter((e) => e.driveId !== driveId), ...events];
+        this.statisticsManager.setEvents(this.allEvents);
+        this.applyFilters();
+      }
+      this.updateDriveSelector(this.folderManager.getDrives());
+      this.hideLoading();
+    } catch (e) {
+      this.hideLoading();
+      console.error('Error reloading drive:', e);
+    }
+  }
+
+  public async showDriveSetupDialog(handle: any, existingDrive: any = null): Promise<any> {
+    const inst = (window as any).driveSetupModalInstance;
+    if (inst) {
+      return await inst.promptSetup(handle, existingDrive);
+    }
+    return null;
+  }
+
+  public showDriveManagementModal(): void {
+    (window as any).driveManagementModalInstance?.open();
+  }
+
+  public showDiagnosticModal(report: string): void {
+    (window as any).diagnosticsModalInstance?.open(report);
+  }
+
+  public async copyDiagnosticReport(): Promise<void> {
+    const report = this.folderParser?.getDiagnosticReport?.();
+    if (!report) {
+      this.showSimpleToast('No diagnostic data available');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(report);
+      this.showSimpleToast('📋 Diagnostic report copied to clipboard!');
+    } catch {
+      this.showDiagnosticModal(report);
+    }
+  }
+
+  public showLoading(message: string = 'Loading...'): void {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = document.getElementById('loadingText');
+    if (overlay) overlay.classList.remove('hidden');
+    if (text) text.textContent = message;
+  }
+
+  public hideLoading(): void {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  }
+
+  public showToast(message: string, kind: string = 'info', durationMs: number = 5000): void {
+    const toast = document.createElement('div');
+    toast.className = `app-toast toast-${kind}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), durationMs);
+  }
+
+  public showSimpleToast(message: string, duration: number = 3000): void {
+    this.showToast(message, 'info', duration);
+  }
+
+  public updateDriveSelector(drives: DriveInfo[]): void {
+    const selector = document.getElementById('driveSelect') as HTMLSelectElement | null;
+    if (selector && Array.isArray(drives)) {
+      // Re-populate options if needed
+    }
+  }
+
+  public updatePlaybackButtons(): void {
+    const isPlaying = this.videoPlayer ? !this.videoPlayer.paused : false;
+    const btn = document.getElementById('playPauseBtn');
+    if (btn) {
+      const playIcon = btn.querySelector('.play-icon') as HTMLElement | null;
+      const pauseIcon = btn.querySelector('.pause-icon') as HTMLElement | null;
+      if (playIcon) playIcon.style.display = isPlaying ? 'none' : '';
+      if (pauseIcon) pauseIcon.style.display = isPlaying ? '' : 'none';
+    }
+  }
+
+  public enableControls(): void {
+    const btns = document.querySelectorAll('.control-btn:disabled');
+    btns.forEach((b) => ((b as HTMLButtonElement).disabled = false));
+  }
+
+  public disableControls(): void {
+    const btns = document.querySelectorAll('.control-btn');
+    btns.forEach((b) => ((b as HTMLButtonElement).disabled = true));
+  }
+
+  public toggleSidebar(): void {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.toggle('open');
+  }
+
+  public openSidebar(): void {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.add('open');
+  }
+
+  public closeSidebar(): void {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+  }
+
+  public toggleCameraVisibility(cam: string): void {
+    if (this.layoutManager) {
+      const current = this.layoutManager.getCameraVisibility(cam);
+      this.layoutManager.setCameraVisibility(cam, !current);
+    }
+  }
+
+  public showCamera(cam: string): void {
+    if (this.layoutManager) {
+      this.layoutManager.setCameraVisibility(cam, true);
+    }
+  }
+
+  public updatePillarLayoutOptions(hasPillars: boolean): void {
+    if (this.layoutManager?.setPillarSupport) {
+      this.layoutManager.setPillarSupport(hasPillars);
+    }
+  }
+
+  public async togglePictureInPicture(): Promise<void> {
+    try {
+      const front = document.getElementById('videoFront') as HTMLVideoElement | null;
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (front && document.pictureInPictureEnabled) {
+        await front.requestPictureInPicture();
+      }
+    } catch (e) {
+      console.warn('PiP failed:', e);
+    }
+  }
+
+  private _registerCommandPaletteCommands(): void {
+    const cp = (window as any).commandPaletteInstance;
+    if (!cp || typeof cp.registerMany !== 'function') return;
+
+    cp.registerMany([
+      {
+        id: 'play-pause',
+        title: 'Play / Pause',
+        category: 'Playback',
+        shortcut: 'Space',
+        action: () => this.togglePlayback(),
+      },
+      {
+        id: 'next-clip',
+        title: 'Next Clip',
+        category: 'Playback',
+        shortcut: 'Shift + →',
+        action: () => this.nextClip(),
+      },
+      {
+        id: 'prev-clip',
+        title: 'Previous Clip',
+        category: 'Playback',
+        shortcut: 'Shift + ←',
+        action: () => this.previousClip(),
+      },
+      {
+        id: 'next-event',
+        title: 'Next Event',
+        category: 'Navigation',
+        shortcut: 'Page Down',
+        action: () => this.nextEvent(),
+      },
+      {
+        id: 'prev-event',
+        title: 'Previous Event',
+        category: 'Navigation',
+        shortcut: 'Page Up',
+        action: () => this.previousEvent(),
+      },
+      {
+        id: 'mark-in',
+        title: 'Mark IN Point',
+        category: 'Editing',
+        shortcut: 'I',
+        action: () => this.markIn(),
+      },
+      {
+        id: 'mark-out',
+        title: 'Mark OUT Point',
+        category: 'Editing',
+        shortcut: 'O',
+        action: () => this.markOut(),
+      },
+      {
+        id: 'clear-marks',
+        title: 'Clear Marks',
+        category: 'Editing',
+        shortcut: 'Esc',
+        action: () => this.clearMarks(),
+      },
+      {
+        id: 'screenshot',
+        title: 'Capture Screenshot',
+        category: 'Capture',
+        shortcut: 'S',
+        action: () => this.captureScreenshot(),
+      },
+      {
+        id: 'export',
+        title: 'Export Video',
+        category: 'Capture',
+        shortcut: 'E',
+        action: () => this.exportVideo(),
+      },
+      {
+        id: 'settings',
+        title: 'Open Settings',
+        category: 'General',
+        shortcut: 'Q',
+        action: () => this.settingsManager?.showSettingsModal(),
+      },
+      {
+        id: 'shortcuts',
+        title: 'Keyboard Shortcuts',
+        category: 'Help',
+        shortcut: '?',
+        action: () => this.helpModal?.show(),
+      },
+    ]);
+  }
+}

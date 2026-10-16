@@ -19,7 +19,11 @@
     </div>
 
     <!-- Drive Selector (multi-drive support) -->
-    <div id="driveSelector" class="drive-selector" :class="{ hidden: !drives || drives.length === 0 }">
+    <div
+      id="driveSelector"
+      class="drive-selector"
+      :class="{ hidden: !drives || drives.length === 0 }"
+    >
       <div class="drive-selector-header">
         <select
           id="driveSelect"
@@ -27,8 +31,12 @@
           v-model="selectedDrive"
           @change="emit('changeDrive', selectedDrive)"
         >
-          <option value="" data-i18n="sidebar.allDrives">{{ t('sidebar.allDrives') }}</option>
-          <option v-for="d in drives" :key="d.id" :value="d.id">{{ d.name }}</option>
+          <option value="" data-i18n="sidebar.allDrives">
+            {{ t('sidebar.allDrives') }}
+          </option>
+          <option v-for="d in drives" :key="d.id" :value="d.id">
+            {{ d.name }}
+          </option>
         </select>
         <button
           id="manageDrivesBtn"
@@ -95,18 +103,41 @@
     </div>
 
     <!-- Folder Selector Button -->
-    <button id="selectFolderBtn" class="select-folder-btn" @click="emit('selectFolder')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+    <button
+      id="selectFolderBtn"
+      class="select-folder-btn"
+      @click="emit('selectFolder')"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        style="margin-right: 8px"
+      >
         <path
           d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"
         />
       </svg>
-      <span data-i18n="sidebar.selectFolder">{{ t('sidebar.selectFolder') }}</span>
+      <span data-i18n="sidebar.selectFolder">{{
+        t('sidebar.selectFolder')
+      }}</span>
     </button>
 
     <!-- Backblaze B2 Button -->
-    <button id="loadB2Btn" class="select-folder-btn b2-btn" style="background: #003399;" @click="emit('loadB2')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+    <button
+      id="loadB2Btn"
+      class="select-folder-btn b2-btn"
+      style="background: #003399"
+      @click="emit('loadB2')"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        style="margin-right: 8px"
+      >
         <path
           d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"
         />
@@ -117,23 +148,41 @@
     <!-- Tab Content -->
     <div class="tab-content">
       <!-- Events Tab -->
-      <div id="eventsTab" class="tab-pane" :class="{ active: activeTab === 'events' }">
+      <div
+        id="eventsTab"
+        class="tab-pane"
+        :class="{ active: activeTab === 'events' }"
+      >
         <div id="eventList" class="event-list">
-          <div class="empty-state" id="emptyState" :class="{ hidden: hasEvents }">
+          <div
+            class="empty-state"
+            id="emptyState"
+            :class="{ hidden: hasEvents }"
+          >
             <p data-i18n="sidebar.emptyState">{{ t('sidebar.emptyState') }}</p>
-            <p class="hint" data-i18n="sidebar.emptyStateHint">{{ t('sidebar.emptyStateHint') }}</p>
+            <p class="hint" data-i18n="sidebar.emptyStateHint">
+              {{ t('sidebar.emptyStateHint') }}
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Map Tab -->
-      <div id="mapTab" class="tab-pane" :class="{ active: activeTab === 'map' }">
+      <div
+        id="mapTab"
+        class="tab-pane"
+        :class="{ active: activeTab === 'map' }"
+      >
         <div id="map"></div>
       </div>
     </div>
 
     <!-- Bird's Eye View Panel -->
-    <div id="birdsEyePanel" class="sidebar-panel collapsible" style="display: none;">
+    <div
+      id="birdsEyePanel"
+      class="sidebar-panel collapsible"
+      style="display: none"
+    >
       <div class="sidebar-panel-header" id="birdsEyeHeader">
         <span class="panel-title">Bird's Eye View</span>
         <button class="panel-collapse-btn" aria-label="Toggle panel">
@@ -148,9 +197,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import FilterPanel from './FilterPanel.vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { DriveInfo } from '../types';
+import FilterPanel from './FilterPanel.vue';
 
 defineProps<{
   drives?: DriveInfo[];
@@ -186,9 +235,11 @@ function getSavedWidth(): number {
   return DEFAULT_WIDTH;
 }
 
-const sidebarWidth = ref<number>(getSavedWidth());
+const sidebarWidth = ref<number>(getSavedWidth() || 10);
 const isResizing = ref(false);
-const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+const isMobile = ref(
+  typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+);
 
 let startX = 0;
 let startWidth = 0;
@@ -234,7 +285,10 @@ function startResize(clientX: number): void {
 
 function doResize(clientX: number): void {
   const deltaX = clientX - startX;
-  const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + deltaX));
+  const newWidth = Math.max(
+    MIN_WIDTH,
+    Math.min(MAX_WIDTH, startWidth + deltaX)
+  );
   sidebarWidth.value = newWidth;
 }
 
