@@ -225,17 +225,28 @@ class MapView {
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
 
-    const content = progressEl.querySelector('.scan-progress-content') as HTMLElement;
-    if (content) content.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+    const content = progressEl.querySelector(
+      '.scan-progress-content'
+    ) as HTMLElement;
+    if (content)
+      content.style.cssText =
+        'display: flex; flex-direction: column; gap: 8px;';
 
-    const header = progressEl.querySelector('.scan-progress-header') as HTMLElement;
-    if (header) header.style.cssText =
-      'display: flex; justify-content: space-between; align-items: center;';
+    const header = progressEl.querySelector(
+      '.scan-progress-header'
+    ) as HTMLElement;
+    if (header)
+      header.style.cssText =
+        'display: flex; justify-content: space-between; align-items: center;';
 
-    const title = progressEl.querySelector('.scan-progress-title') as HTMLElement;
-    if (title) title.style.cssText = 'font-weight: 500; color: var(--text, #e0e0e0);';
+    const title = progressEl.querySelector(
+      '.scan-progress-title'
+    ) as HTMLElement;
+    if (title)
+      title.style.cssText = 'font-weight: 500; color: var(--text, #e0e0e0);';
 
-    if (cancelBtn) (cancelBtn as HTMLElement).style.cssText = `
+    if (cancelBtn)
+      (cancelBtn as HTMLElement).style.cssText = `
             background: none;
             border: none;
             color: var(--text-muted, #888);
@@ -244,8 +255,11 @@ class MapView {
             font-size: 14px;
         `;
 
-    const barContainer = progressEl.querySelector('.scan-progress-bar') as HTMLElement;
-    if (barContainer) barContainer.style.cssText = `
+    const barContainer = progressEl.querySelector(
+      '.scan-progress-bar'
+    ) as HTMLElement;
+    if (barContainer)
+      barContainer.style.cssText = `
             height: 6px;
             background: var(--bg, #1a1a1a);
             border-radius: 3px;
@@ -253,7 +267,8 @@ class MapView {
         `;
 
     const fill = progressEl.querySelector('.scan-progress-fill') as HTMLElement;
-    if (fill) fill.style.cssText = `
+    if (fill)
+      fill.style.cssText = `
             height: 100%;
             background: var(--accent, #4a9eff);
             border-radius: 3px;
@@ -261,7 +276,8 @@ class MapView {
         `;
 
     const text = progressEl.querySelector('.scan-progress-text') as HTMLElement;
-    if (text) text.style.cssText = 'font-size: 12px; color: var(--text-muted, #888);';
+    if (text)
+      text.style.cssText = 'font-size: 12px; color: var(--text-muted, #888);';
 
     document.body.appendChild(progressEl);
     return progressEl;
@@ -1348,7 +1364,9 @@ class MapView {
       let totalLoaded = 0;
       let eventsLoaded = 0;
 
-      for (const [eventKey, data] of Object.entries(cache as Record<string, any>)) {
+      for (const [eventKey, data] of Object.entries(
+        cache as Record<string, any>
+      )) {
         // Skip if cache version doesn't match
         if (data.version !== this.cacheVersion) {
           continue;
@@ -1698,7 +1716,9 @@ class MapView {
       let totalLoaded = 0;
       let eventsLoaded = 0;
 
-      for (const [eventKey, data] of Object.entries(cache as Record<string, any>)) {
+      for (const [eventKey, data] of Object.entries(
+        cache as Record<string, any>
+      )) {
         // Skip if cache version doesn't match
         if (data.version !== this.cacheVersion) {
           continue;

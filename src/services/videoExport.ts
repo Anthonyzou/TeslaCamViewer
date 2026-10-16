@@ -3,168 +3,190 @@
  * Communicates with /api/export endpoints to orchestrate server-side FFmpeg rendering.
  */
 class VideoExport {
-    public videoPlayer: any;
-    public layoutManager: any;
-    public isExporting: boolean = false;
-    public currentJobId: string | null = null;
-    private _pollTimer: any = null;
+  public videoPlayer: any;
+  public layoutManager: any;
+  public isExporting: boolean = false;
+  public currentJobId: string | null = null;
+  private _pollTimer: any = null;
 
-    constructor(videoPlayer: any, layoutManager: any) {
-        this.videoPlayer = videoPlayer;
-        this.layoutManager = layoutManager;
-        this.isExporting = false;
-        this.currentJobId = null;
-        this._pollTimer = null;
+  constructor(videoPlayer: any, layoutManager: any) {
+    this.videoPlayer = videoPlayer;
+    this.layoutManager = layoutManager;
+    this.isExporting = false;
+    this.currentJobId = null;
+    this._pollTimer = null;
+  }
+
+  getExportStatus() {
+    return { isExporting: this.isExporting };
+  }
+
+  async exportVideo(camera = 'all') {
+    return this.startExport({ camera, format: 'mp4' });
+  }
+
+  async exportGif() {
+    return this.startExport({ camera: 'all', format: 'gif' });
+  }
+
+  async startExport(options: any = {}) {
+    const event = this.videoPlayer?.currentEvent;
+    if (!event) {
+      alert('No event loaded to export');
+      return;
     }
 
-    getExportStatus() {
-        return { isExporting: this.isExporting };
+    const camera = options.camera || 'all';
+    const format = options.format || 'mp4';
+
+    // Check if marks exist (inPoint and outPoint from clipMarking are absolute event times in seconds)
+    const marks = window.app?.clipMarking?.getMarks?.() || {};
+    const inPoint = marks.inPoint != null ? marks.inPoint : null;
+    const outPoint = marks.outPoint != null ? marks.outPoint : null;
+
+    // Calculate target clip group and relative in/out offsets
+    const clipGroups = event.clipGroups || [];
+    let targetClipIndex =
+      this.videoPlayer?.currentClipIndex >= 0
+        ? this.videoPlayer.currentClipIndex
+        : 0;
+    let relativeInPoint = null;
+    let relativeOutPoint = null;
+
+    if (clipGroups.length > 0) {
+      const groupOffsets = [];
+      let total = 0;
+      for (let i = 0; i < clipGroups.length; i++) {
+        groupOffsets.push(total);
+        const g = clipGroups[i];
+        const dur = g.clips?.front?.duration || 60;
+        total += dur;
+      }
+
+      if (inPoint != null || outPoint != null) {
+        const refPoint = inPoint != null ? inPoint : outPoint;
+        for (let i = 0; i < clipGroups.length; i++) {
+          const start = groupOffsets[i];
+          const dur = clipGroups[i].clips?.front?.duration || 60;
+          if (
+            refPoint >= start &&
+            (refPoint < start + dur || i === clipGroups.length - 1)
+          ) {
+            targetClipIndex = i;
+            break;
+          }
+        }
+
+        const groupStart = groupOffsets[targetClipIndex];
+        const groupDur =
+          clipGroups[targetClipIndex]?.clips?.front?.duration || 60;
+
+        if (inPoint != null) {
+          relativeInPoint = Math.max(
+            0,
+            Math.min(groupDur - 0.5, inPoint - groupStart)
+          );
+        }
+        if (outPoint != null) {
+          const calculatedOut = outPoint - groupStart;
+          relativeOutPoint = Math.min(
+            groupDur,
+            Math.max((relativeInPoint || 0) + 0.5, calculatedOut)
+          );
+        }
+      }
     }
 
-    async exportVideo(camera = 'all') {
-        return this.startExport({ camera, format: 'mp4' });
+    const clipGroup = clipGroups[targetClipIndex];
+    if (!clipGroup || !clipGroup.clips) {
+      alert('No video clips found for this event');
+      return;
     }
 
-    async exportGif() {
-        return this.startExport({ camera: 'all', format: 'gif' });
+    const clips: Record<string, string> = {};
+    for (const [cam, clip] of Object.entries(
+      clipGroup.clips as Record<string, any>
+    )) {
+      if (clip.url && !clip.url.startsWith('blob:')) {
+        clips[cam] = clip.url;
+      }
     }
 
-    async startExport(options: any = {}) {
-        const event = this.videoPlayer?.currentEvent;
-        if (!event) {
-            alert('No event loaded to export');
-            return;
-        }
-
-        const camera = options.camera || 'all';
-        const format = options.format || 'mp4';
-
-        // Check if marks exist (inPoint and outPoint from clipMarking are absolute event times in seconds)
-        const marks = window.app?.clipMarking?.getMarks?.() || {};
-        const inPoint = marks.inPoint != null ? marks.inPoint : null;
-        const outPoint = marks.outPoint != null ? marks.outPoint : null;
-
-        // Calculate target clip group and relative in/out offsets
-        const clipGroups = event.clipGroups || [];
-        let targetClipIndex = this.videoPlayer?.currentClipIndex >= 0 ? this.videoPlayer.currentClipIndex : 0;
-        let relativeInPoint = null;
-        let relativeOutPoint = null;
-
-        if (clipGroups.length > 0) {
-            const groupOffsets = [];
-            let total = 0;
-            for (let i = 0; i < clipGroups.length; i++) {
-                groupOffsets.push(total);
-                const g = clipGroups[i];
-                const dur = g.clips?.front?.duration || 60;
-                total += dur;
-            }
-
-            if (inPoint != null || outPoint != null) {
-                const refPoint = inPoint != null ? inPoint : outPoint;
-                for (let i = 0; i < clipGroups.length; i++) {
-                    const start = groupOffsets[i];
-                    const dur = clipGroups[i].clips?.front?.duration || 60;
-                    if (refPoint >= start && (refPoint < start + dur || i === clipGroups.length - 1)) {
-                        targetClipIndex = i;
-                        break;
-                    }
-                }
-
-                const groupStart = groupOffsets[targetClipIndex];
-                const groupDur = clipGroups[targetClipIndex]?.clips?.front?.duration || 60;
-
-                if (inPoint != null) {
-                    relativeInPoint = Math.max(0, Math.min(groupDur - 0.5, inPoint - groupStart));
-                }
-                if (outPoint != null) {
-                    const calculatedOut = outPoint - groupStart;
-                    relativeOutPoint = Math.min(groupDur, Math.max((relativeInPoint || 0) + 0.5, calculatedOut));
-                }
-            }
-        }
-
-        const clipGroup = clipGroups[targetClipIndex];
-        if (!clipGroup || !clipGroup.clips) {
-            alert('No video clips found for this event');
-            return;
-        }
-
-        const clips: Record<string, string> = {};
-        for (const [cam, clip] of Object.entries(clipGroup.clips as Record<string, any>)) {
-            if (clip.url && !clip.url.startsWith('blob:')) {
-                clips[cam] = clip.url;
-            }
-        }
-
-        if (Object.keys(clips).length === 0) {
-            alert('Server export requires network/B2 clip URLs. Local file handle upload is not configured.');
-            return;
-        }
-
-        this.isExporting = true;
-        window.app?.disableControls?.();
-
-        // Show export progress UI
-        this._showExportOverlay(camera, format);
-
-        try {
-            const resp = await fetch('/api/export', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    eventName: event.name,
-                    camera,
-                    format,
-                    clips,
-                    inPoint: relativeInPoint,
-                    outPoint: relativeOutPoint
-                })
-            });
-
-            if (!resp.ok) {
-                const err = await resp.json().catch(() => ({ error: 'Export failed to start' }));
-                throw new Error(err.error || 'Server rejected export');
-            }
-
-            const { jobId } = await resp.json();
-            this.currentJobId = jobId;
-
-            // Poll for job completion
-            await this._pollJob(jobId);
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error('[Export] Server export error:', error);
-                alert(`Export failed: ${error.message}`);
-            }
-            this._hideExportOverlay();
-            window.app?.enableControls?.();
-        } finally {
-            this.isExporting = false;
-            this.currentJobId = null;
-        }
+    if (Object.keys(clips).length === 0) {
+      alert(
+        'Server export requires network/B2 clip URLs. Local file handle upload is not configured.'
+      );
+      return;
     }
 
-    _showExportOverlay(camera, format) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-        if (!loadingOverlay || !loadingText) return;
+    this.isExporting = true;
+    window.app?.disableControls?.();
 
-        loadingOverlay.classList.remove('hidden');
-        loadingOverlay.style.display = 'flex';
-        loadingOverlay.style.position = 'fixed';
-        loadingOverlay.style.top = '0';
-        loadingOverlay.style.left = '0';
-        loadingOverlay.style.right = '0';
-        loadingOverlay.style.bottom = '0';
-        loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-        loadingOverlay.style.zIndex = '9999';
+    // Show export progress UI
+    this._showExportOverlay(camera, format);
 
-        const title = format === 'gif' 
-            ? 'Exporting Animated GIF...' 
-            : (camera === 'all' ? 'Exporting 4-Camera Grid...' : `Exporting ${camera} Camera...`);
+    try {
+      const resp = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: event.name,
+          camera,
+          format,
+          clips,
+          inPoint: relativeInPoint,
+          outPoint: relativeOutPoint,
+        }),
+      });
 
-        loadingText.innerHTML = `
+      if (!resp.ok) {
+        const err = await resp
+          .json()
+          .catch(() => ({ error: 'Export failed to start' }));
+        throw new Error(err.error || 'Server rejected export');
+      }
+
+      const { jobId } = await resp.json();
+      this.currentJobId = jobId;
+
+      // Poll for job completion
+      await this._pollJob(jobId);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('[Export] Server export error:', error);
+        alert(`Export failed: ${error.message}`);
+      }
+      this._hideExportOverlay();
+      window.app?.enableControls?.();
+    } finally {
+      this.isExporting = false;
+      this.currentJobId = null;
+    }
+  }
+
+  _showExportOverlay(camera, format) {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    if (!loadingOverlay || !loadingText) return;
+
+    loadingOverlay.classList.remove('hidden');
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.style.position = 'fixed';
+    loadingOverlay.style.top = '0';
+    loadingOverlay.style.left = '0';
+    loadingOverlay.style.right = '0';
+    loadingOverlay.style.bottom = '0';
+    loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    loadingOverlay.style.zIndex = '9999';
+
+    const title =
+      format === 'gif'
+        ? 'Exporting Animated GIF...'
+        : camera === 'all'
+          ? 'Exporting 4-Camera Grid...'
+          : `Exporting ${camera} Camera...`;
+
+    loadingText.innerHTML = `
             <div style="text-align: center;">
                 <div id="exportTitle" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; color: #ffffff;">
                     ${title}
@@ -181,73 +203,77 @@ class VideoExport {
             </div>
         `;
 
-        document.getElementById('cancelExportBtn')?.addEventListener('click', () => {
-            this.cancelExport();
-        });
-    }
+    document
+      .getElementById('cancelExportBtn')
+      ?.addEventListener('click', () => {
+        this.cancelExport();
+      });
+  }
 
-    _hideExportOverlay() {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('hidden');
-            loadingOverlay.style.display = 'none';
+  _hideExportOverlay() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+      loadingOverlay.classList.add('hidden');
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
+  async _pollJob(jobId: string) {
+    return new Promise<void>((resolve, reject) => {
+      const check = async () => {
+        if (!this.isExporting || this.currentJobId !== jobId) {
+          return resolve();
         }
-    }
 
-    async _pollJob(jobId: string) {
-        return new Promise<void>((resolve, reject) => {
-            const check = async () => {
-                if (!this.isExporting || this.currentJobId !== jobId) {
-                    return resolve();
-                }
+        try {
+          const res = await fetch(`/api/export/status/${jobId}`);
+          if (!res.ok) throw new Error('Failed to check export status');
 
-                try {
-                    const res = await fetch(`/api/export/status/${jobId}`);
-                    if (!res.ok) throw new Error('Failed to check export status');
+          const job = await res.json();
+          const progressBar = document.getElementById('exportProgressBar');
+          const progressEl = document.getElementById('exportProgress');
 
-                    const job = await res.json();
-                    const progressBar = document.getElementById('exportProgressBar');
-                    const progressEl = document.getElementById('exportProgress');
+          if (job.status === 'encoding' || job.status === 'starting') {
+            const pct = Math.max(5, job.percent || 0);
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressEl)
+              progressEl.textContent = `Encoding with FFmpeg: ${pct}%`;
+            this._pollTimer = setTimeout(check, 2000);
+          } else if (job.status === 'completed') {
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressEl)
+              progressEl.textContent = 'Encoding complete! Downloading...';
 
-                    if (job.status === 'encoding' || job.status === 'starting') {
-                        const pct = Math.max(5, job.percent || 0);
-                        if (progressBar) progressBar.style.width = `${pct}%`;
-                        if (progressEl) progressEl.textContent = `Encoding with FFmpeg: ${pct}%`;
-                        this._pollTimer = setTimeout(check, 600);
-                    } else if (job.status === 'completed') {
-                        if (progressBar) progressBar.style.width = '100%';
-                        if (progressEl) progressEl.textContent = 'Encoding complete! Downloading...';
+            // Trigger download
+            this._downloadFile(`/api/export/download/${jobId}`, job.filename);
+            this._showComplete(job.filename, `/api/export/download/${jobId}`);
+            resolve();
+          } else if (job.status === 'error') {
+            throw new Error(job.error || 'Server FFmpeg encoding failed');
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
 
-                        // Trigger download
-                        this._downloadFile(`/api/export/download/${jobId}`, job.filename);
-                        this._showComplete(job.filename, `/api/export/download/${jobId}`);
-                        resolve();
-                    } else if (job.status === 'error') {
-                        throw new Error(job.error || 'Server FFmpeg encoding failed');
-                    }
-                } catch (e) {
-                    reject(e);
-                }
-            };
+      check();
+    });
+  }
 
-            check();
-        });
-    }
+  _downloadFile(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'TeslaCam_Export.mp4';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
-    _downloadFile(url, filename) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename || 'TeslaCam_Export.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+  _showComplete(filename, downloadUrl) {
+    const loadingText = document.getElementById('loadingText');
+    if (!loadingText) return;
 
-    _showComplete(filename, downloadUrl) {
-        const loadingText = document.getElementById('loadingText');
-        if (!loadingText) return;
-
-        loadingText.innerHTML = `
+    loadingText.innerHTML = `
             <div style="text-align: center; color: white;">
                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎉</div>
                 <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem;">Export Complete!</div>
@@ -259,28 +285,30 @@ class VideoExport {
             </div>
         `;
 
-        document.getElementById('exportDoneBtn')?.addEventListener('click', () => {
-            this._hideExportOverlay();
-            window.app?.enableControls?.();
+    document.getElementById('exportDoneBtn')?.addEventListener('click', () => {
+      this._hideExportOverlay();
+      window.app?.enableControls?.();
+    });
+  }
+
+  async cancelExport() {
+    if (this._pollTimer) {
+      clearTimeout(this._pollTimer);
+      this._pollTimer = null;
+    }
+
+    if (this.currentJobId) {
+      try {
+        await fetch(`/api/export/cancel/${this.currentJobId}`, {
+          method: 'POST',
         });
+      } catch (e) {}
     }
 
-    async cancelExport() {
-        if (this._pollTimer) {
-            clearTimeout(this._pollTimer);
-            this._pollTimer = null;
-        }
-
-        if (this.currentJobId) {
-            try {
-                await fetch(`/api/export/cancel/${this.currentJobId}`, { method: 'POST' });
-            } catch (e) {}
-        }
-
-        this.isExporting = false;
-        this._hideExportOverlay();
-        window.app?.enableControls?.();
-    }
+    this.isExporting = false;
+    this._hideExportOverlay();
+    window.app?.enableControls?.();
+  }
 }
 
 export { VideoExport };

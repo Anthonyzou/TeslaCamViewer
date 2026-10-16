@@ -9,21 +9,28 @@
   >
     <div class="modal drive-setup-modal" @click.stop>
       <div class="modal-header">
-        <h3>{{ isEdit ? t('driveSetup.editTitle') : t('driveSetup.title') }}</h3>
-        <button class="modal-close-btn" id="closeDriveSetup" :title="t('common.close')" @click="cancel">
+        <h3>
+          {{ isEdit ? t('driveSetup.editTitle') : t('driveSetup.title') }}
+        </h3>
+        <button
+          class="modal-close-btn"
+          id="closeDriveSetup"
+          :title="t('common.close')"
+          @click="cancel"
+        >
           <X :size="20" />
         </button>
       </div>
 
       <div class="modal-content">
         <div class="drive-setup-selected">
-          <Folder :size="20" style="margin-right: 8px;" />
+          <Folder :size="20" style="margin-right: 8px" />
           <span>{{ folderName }}</span>
         </div>
 
         <div v-if="!isEdit" class="drive-setup-tip">
           <div class="drive-setup-tip-header">
-            <Info :size="16" style="margin-right: 6px;" />
+            <Info :size="16" style="margin-right: 6px" />
             {{ t('driveSetup.tipTitle') }}
           </div>
           <ul>
@@ -45,13 +52,21 @@
           </div>
 
           <div class="drive-setup-field">
-            <label for="dateFilter">{{ t('driveSetup.dateFilterField') }}</label>
+            <label for="dateFilter">{{
+              t('driveSetup.dateFilterField')
+            }}</label>
             <select id="dateFilter" v-model="dateFilter">
               <option value="all">{{ t('driveSetup.dateFilterAll') }}</option>
               <option value="week">{{ t('driveSetup.dateFilterWeek') }}</option>
-              <option value="month">{{ t('driveSetup.dateFilterMonth') }}</option>
-              <option value="3months">{{ t('driveSetup.dateFilter3Months') }}</option>
-              <option value="6months">{{ t('driveSetup.dateFilter6Months') }}</option>
+              <option value="month">
+                {{ t('driveSetup.dateFilterMonth') }}
+              </option>
+              <option value="3months">
+                {{ t('driveSetup.dateFilter3Months') }}
+              </option>
+              <option value="6months">
+                {{ t('driveSetup.dateFilter6Months') }}
+              </option>
               <option value="year">{{ t('driveSetup.dateFilterYear') }}</option>
             </select>
           </div>
@@ -59,8 +74,12 @@
           <label class="drive-setup-checkbox">
             <input type="checkbox" id="isArchive" v-model="isArchive" />
             <div class="drive-setup-checkbox-content">
-              <div class="drive-setup-checkbox-label">{{ t('driveSetup.archiveLabel') }}</div>
-              <div class="drive-setup-checkbox-hint">{{ t('driveSetup.archiveHint') }}</div>
+              <div class="drive-setup-checkbox-label">
+                {{ t('driveSetup.archiveLabel') }}
+              </div>
+              <div class="drive-setup-checkbox-hint">
+                {{ t('driveSetup.archiveHint') }}
+              </div>
             </div>
           </label>
         </div>
@@ -88,8 +107,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { X, Folder, Info } from 'lucide-vue-next';
+import { Folder, Info, X } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const isOpen = ref(false);
 const isEdit = ref(false);
@@ -153,11 +172,16 @@ function confirmSetup(): void {
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains('modal-overlay');
+  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
+    'modal-overlay'
+  );
 }
 
 function onOverlayClick(e: MouseEvent): void {
-  if (mouseDownOnOverlay && (e.target as HTMLElement).classList.contains('modal-overlay')) {
+  if (
+    mouseDownOnOverlay &&
+    (e.target as HTMLElement).classList.contains('modal-overlay')
+  ) {
     cancel();
   }
 }

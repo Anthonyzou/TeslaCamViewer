@@ -169,8 +169,8 @@
 </template>
 
 <script setup lang="ts">
+import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Settings, Plus, RefreshCw, Folder, Cloud } from 'lucide-vue-next';
 import type { DriveInfo } from '../types';
 import FilterPanel from './FilterPanel.vue';
 import MapView from './MapView.vue';

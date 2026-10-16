@@ -5,7 +5,12 @@
     </div>
     <div class="bottom-sheet-header">
       <div class="bottom-sheet-mini-controls">
-        <button id="bottomSheetPlayBtn" class="control-btn" title="Play/Pause" @click="emit('togglePlay')">
+        <button
+          id="bottomSheetPlayBtn"
+          class="control-btn"
+          title="Play/Pause"
+          @click="emit('togglePlay')"
+        >
           <Play :size="24" />
         </button>
       </div>
@@ -15,26 +20,61 @@
     </div>
     <div class="bottom-sheet-content">
       <div class="bottom-sheet-controls">
-        <button id="bsFrameBackBtn" class="control-btn" title="Previous Frame" @click="emit('frameBack')">
+        <button
+          id="bsFrameBackBtn"
+          class="control-btn"
+          title="Previous Frame"
+          @click="emit('frameBack')"
+        >
           <ChevronLeft :size="20" />
         </button>
-        <button id="bsFrameForwardBtn" class="control-btn" title="Next Frame" @click="emit('frameForward')">
+        <button
+          id="bsFrameForwardBtn"
+          class="control-btn"
+          title="Next Frame"
+          @click="emit('frameForward')"
+        >
           <ChevronRight :size="20" />
         </button>
-        <button id="bsPrevClipBtn" class="control-btn" title="Previous Clip" @click="emit('prevClip')">
+        <button
+          id="bsPrevClipBtn"
+          class="control-btn"
+          title="Previous Clip"
+          @click="emit('prevClip')"
+        >
           <SkipBack :size="20" />
         </button>
-        <button id="bsNextClipBtn" class="control-btn" title="Next Clip" @click="emit('nextClip')">
+        <button
+          id="bsNextClipBtn"
+          class="control-btn"
+          title="Next Clip"
+          @click="emit('nextClip')"
+        >
           <SkipForward :size="20" />
         </button>
-        <button id="bsPrevEventBtn" class="control-btn" title="Previous Event" @click="emit('prevEvent')">
+        <button
+          id="bsPrevEventBtn"
+          class="control-btn"
+          title="Previous Event"
+          @click="emit('prevEvent')"
+        >
           <ArrowLeft :size="20" />
         </button>
-        <button id="bsNextEventBtn" class="control-btn" title="Next Event" @click="emit('nextEvent')">
+        <button
+          id="bsNextEventBtn"
+          class="control-btn"
+          title="Next Event"
+          @click="emit('nextEvent')"
+        >
           <ArrowRight :size="20" />
         </button>
         <div class="bs-more-container">
-          <button id="bsMoreBtn" class="control-btn" title="More Options" @click="emit('toggleMore')">
+          <button
+            id="bsMoreBtn"
+            class="control-btn"
+            title="More Options"
+            @click="emit('toggleMore')"
+          >
             <MoreHorizontal :size="20" />
           </button>
         </div>
@@ -45,14 +85,14 @@
 
 <script setup lang="ts">
 import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
   Play,
   SkipBack,
   SkipForward,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  ArrowRight,
-  MoreHorizontal,
 } from 'lucide-vue-next';
 
 const emit = defineEmits<{

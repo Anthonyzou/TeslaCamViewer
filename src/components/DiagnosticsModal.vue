@@ -31,16 +31,20 @@
         >
           🐛 Open GitHub Issue
         </a>
-        <button class="diagnostic-btn select-all" @click="selectAll">Select All</button>
-        <button class="diagnostic-btn copy-btn" @click="copyReport">Copy to Clipboard</button>
+        <button class="diagnostic-btn select-all" @click="selectAll">
+          Select All
+        </button>
+        <button class="diagnostic-btn copy-btn" @click="copyReport">
+          Copy to Clipboard
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
 import { X } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const isOpen = ref(false);
 const report = ref('');
@@ -56,7 +60,9 @@ function close(): void {
 }
 
 function onOverlayClick(e: MouseEvent): void {
-  if ((e.target as HTMLElement).classList.contains('diagnostic-modal-overlay')) {
+  if (
+    (e.target as HTMLElement).classList.contains('diagnostic-modal-overlay')
+  ) {
     close();
   }
 }

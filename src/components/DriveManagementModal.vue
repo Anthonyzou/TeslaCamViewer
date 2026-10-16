@@ -10,13 +10,21 @@
     <div class="modal drive-management-modal" @click.stop>
       <div class="modal-header">
         <h3>{{ t('driveManager.title') }}</h3>
-        <button class="modal-close-btn" id="closeDriveModal" :title="t('common.close')" @click="close">
+        <button
+          class="modal-close-btn"
+          id="closeDriveModal"
+          :title="t('common.close')"
+          @click="close"
+        >
           <X :size="20" />
         </button>
       </div>
 
       <div class="modal-content">
-        <p v-if="drivesList.length === 0" style="color: var(--text-muted); text-align: center;">
+        <p
+          v-if="drivesList.length === 0"
+          style="color: var(--text-muted); text-align: center"
+        >
           {{ t('driveManager.noDrives') }}
         </p>
 
@@ -29,7 +37,10 @@
             :data-drive-id="drive.id"
           >
             <!-- Color Picker -->
-            <label class="drive-color-picker" :title="t('driveManager.changeColor')">
+            <label
+              class="drive-color-picker"
+              :title="t('driveManager.changeColor')"
+            >
               <input
                 type="color"
                 class="drive-color-input"
@@ -37,25 +48,37 @@
                 @input="onColorInput(drive, $event)"
                 @change="onColorChange(drive, $event)"
               />
-              <div class="drive-color-preview" :style="{ background: drive.color }"></div>
+              <div
+                class="drive-color-preview"
+                :style="{ background: drive.color }"
+              ></div>
             </label>
 
             <!-- Drive Info & Label -->
-            <div style="flex: 1; min-width: 0;">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="flex: 1; min-width: 0">
+              <div style="display: flex; align-items: center; gap: 0.5rem">
                 <input
                   type="text"
                   class="drive-label-input"
                   :value="drive.label"
-                  style="flex: 1;"
+                  style="flex: 1"
                   @change="onLabelChange(drive, $event)"
                 />
                 <span v-if="drive.isArchive" class="drive-archive-badge">
                   {{ t('driveManager.archive') }}
                 </span>
               </div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
-                <span class="drive-event-count">{{ getEventCountText(drive) }}</span>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  margin-top: 0.25rem;
+                "
+              >
+                <span class="drive-event-count">{{
+                  getEventCountText(drive)
+                }}</span>
                 <span v-if="getDateFilterText(drive)" class="drive-date-filter">
                   • {{ getDateFilterText(drive) }}
                 </span>
@@ -69,7 +92,7 @@
               :title="t('driveManager.syncNow')"
               @click="handleSync(drive.id)"
             >
-              <RefreshCw :size="14" style="margin-right: 4px;" />
+              <RefreshCw :size="14" style="margin-right: 4px" />
               {{ t('driveManager.sync') }}
             </button>
 
@@ -77,7 +100,14 @@
             <button
               class="drive-edit-btn"
               :title="t('driveManager.editDrive')"
-              style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem; border-radius: 4px;"
+              style="
+                background: none;
+                border: none;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: 0.25rem;
+                border-radius: 4px;
+              "
               @click="handleEdit(drive.id)"
             >
               <Pencil :size="16" />
@@ -98,10 +128,10 @@
         <button
           class="btn btn-primary"
           id="addDriveModalBtn"
-          style="width: 100%; margin-top: 1rem;"
+          style="width: 100%; margin-top: 1rem"
           @click="handleAddDrive"
         >
-          <Plus :size="16" style="margin-right: 0.5rem;" />
+          <Plus :size="16" style="margin-right: 0.5rem" />
           {{ t('driveManager.addDrive') }}
         </button>
       </div>
@@ -110,8 +140,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { X, RefreshCw, Pencil, Trash2, Plus } from 'lucide-vue-next';
+import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const isOpen = ref(false);
 const drivesList = ref<any[]>([]);
@@ -140,11 +170,16 @@ function close(): void {
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains('modal-overlay');
+  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
+    'modal-overlay'
+  );
 }
 
 function onOverlayClick(e: MouseEvent): void {
-  if (mouseDownOnOverlay && (e.target as HTMLElement).classList.contains('modal-overlay')) {
+  if (
+    mouseDownOnOverlay &&
+    (e.target as HTMLElement).classList.contains('modal-overlay')
+  ) {
     close();
   }
 }

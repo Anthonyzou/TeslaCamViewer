@@ -5,10 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
-import 'leaflet.markercluster';
 import 'leaflet.heat';
+import 'leaflet.markercluster';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { MapView } from '../services/mapView';
 import type { TeslaCamEvent } from '../types';
 
@@ -40,16 +40,13 @@ function invalidateMapSize(): void {
 onMounted(() => {
   if (!mapContainer.value) return;
 
-  mapViewInstance = new MapView(
-    mapContainer.value,
-    (event: TeslaCamEvent) => {
-      emit('selectEvent', event);
-      const app = (window as any).app;
-      if (app?.onEventSelected) {
-        app.onEventSelected(event);
-      }
+  mapViewInstance = new MapView(mapContainer.value, (event: TeslaCamEvent) => {
+    emit('selectEvent', event);
+    const app = (window as any).app;
+    if (app?.onEventSelected) {
+      app.onEventSelected(event);
     }
-  );
+  });
 
   mapViewInstance.initialize();
 

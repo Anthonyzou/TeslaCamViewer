@@ -6,7 +6,11 @@
       @click="onOverlayClick"
     ></div>
     <div class="quickstart-panel">
-      <button class="quickstart-skip" :title="t('quickstart.skip')" @click="close">
+      <button
+        class="quickstart-skip"
+        :title="t('quickstart.skip')"
+        @click="close"
+      >
         {{ t('quickstart.skip') }}
       </button>
 
@@ -18,16 +22,25 @@
         <!-- Step 0: Welcome -->
         <template v-if="currentStep === 0">
           <p>{{ t('quickstart.welcome.description') }}</p>
-          <p style="color: var(--accent); margin-top: 1rem;">
-            <strong>{{ t('quickstart.welcome.noUpload') }}</strong> - {{ t('quickstart.welcome.videosStay') }}
+          <p style="color: var(--accent); margin-top: 1rem">
+            <strong>{{ t('quickstart.welcome.noUpload') }}</strong> -
+            {{ t('quickstart.welcome.videosStay') }}
           </p>
           <div
             class="quickstart-language-selector"
-            style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);"
+            style="
+              margin-top: 1.5rem;
+              padding-top: 1rem;
+              border-top: 1px solid var(--border);
+            "
           >
             <label
               for="quickstartLanguage"
-              style="color: var(--text-secondary); font-size: 0.9rem; margin-right: 0.5rem;"
+              style="
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                margin-right: 0.5rem;
+              "
             >
               {{ t('quickstart.welcome.language') }}:
             </label>
@@ -36,7 +49,15 @@
               class="quickstart-language-select"
               v-model="currentLocale"
               @change="onLanguageChange"
-              style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.9rem; cursor: pointer;"
+              style="
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 0.4rem 0.6rem;
+                font-size: 0.9rem;
+                cursor: pointer;
+              "
             >
               <option value="en">English</option>
               <option value="es">Español</option>
@@ -54,7 +75,7 @@
         <!-- Step 1: Open Folder -->
         <template v-else-if="currentStep === 1">
           <p>{{ t('quickstart.step1.description') }}</p>
-          <p style="margin-top: 0.5rem; color: var(--text-secondary);">
+          <p style="margin-top: 0.5rem; color: var(--text-secondary)">
             {{ t('quickstart.step1.hint') }}
           </p>
         </template>
@@ -62,32 +83,50 @@
         <!-- Step 2: Event Types -->
         <template v-else-if="currentStep === 2">
           <p>{{ t('quickstart.step2.description') }}</p>
-          <ul style="margin-top: 0.5rem; text-align: left; padding-left: 1.5rem;">
-            <li><strong>SavedClips</strong> - {{ t('quickstart.step2.saved') }}</li>
-            <li><strong>SentryClips</strong> - {{ t('quickstart.step2.sentry') }}</li>
-            <li><strong>RecentClips</strong> - {{ t('quickstart.step2.recent') }}</li>
+          <ul
+            style="margin-top: 0.5rem; text-align: left; padding-left: 1.5rem"
+          >
+            <li>
+              <strong>SavedClips</strong> - {{ t('quickstart.step2.saved') }}
+            </li>
+            <li>
+              <strong>SentryClips</strong> - {{ t('quickstart.step2.sentry') }}
+            </li>
+            <li>
+              <strong>RecentClips</strong> - {{ t('quickstart.step2.recent') }}
+            </li>
           </ul>
         </template>
 
         <!-- Step 3: Multi-cam playback -->
         <template v-else-if="currentStep === 3">
           <p>{{ t('quickstart.step3.description') }}</p>
-          <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-            <strong>{{ t('quickstart.step3.tip') }}:</strong> {{ t('quickstart.step3.tipText') }}
+          <p style="margin-top: 0.5rem; color: var(--text-secondary)">
+            <strong>{{ t('quickstart.step3.tip') }}:</strong>
+            {{ t('quickstart.step3.tipText') }}
           </p>
         </template>
 
         <!-- Step 4: Shortcuts -->
         <template v-else-if="currentStep === 4">
           <div
-            style="display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; text-align: left; max-width: 280px; margin: 0 auto;"
+            style="
+              display: grid;
+              grid-template-columns: auto 1fr;
+              gap: 0.5rem 1rem;
+              text-align: left;
+              max-width: 280px;
+              margin: 0 auto;
+            "
           >
-            <kbd>Space</kbd><span>{{ t('quickstart.shortcuts.playPause') }}</span>
+            <kbd>Space</kbd
+            ><span>{{ t('quickstart.shortcuts.playPause') }}</span>
             <kbd>← / →</kbd><span>{{ t('quickstart.shortcuts.seek') }}</span>
             <kbd>S</kbd><span>{{ t('quickstart.shortcuts.screenshot') }}</span>
-            <kbd>I / O</kbd><span>{{ t('quickstart.shortcuts.markInOut') }}</span>
-            <kbd>E</kbd><span>{{ t('quickstart.shortcuts.export') }}</span>
-            <kbd>?</kbd><span>{{ t('quickstart.shortcuts.showAll') }}</span>
+            <kbd>I / O</kbd
+            ><span>{{ t('quickstart.shortcuts.markInOut') }}</span> <kbd>E</kbd
+            ><span>{{ t('quickstart.shortcuts.export') }}</span> <kbd>?</kbd
+            ><span>{{ t('quickstart.shortcuts.showAll') }}</span>
           </div>
         </template>
       </div>
@@ -118,7 +157,11 @@
           id="quickstartNext"
           @click="nextStep"
         >
-          {{ currentStep === totalSteps - 1 ? t('quickstart.getStarted') : t('quickstart.next') }}
+          {{
+            currentStep === totalSteps - 1
+              ? t('quickstart.getStarted')
+              : t('quickstart.next')
+          }}
         </button>
       </div>
     </div>
@@ -126,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const STORAGE_KEY = 'teslacamviewer_quickstart_shown';
 const totalSteps = 5;
@@ -185,11 +228,16 @@ function nextStep(): void {
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains('quickstart-overlay');
+  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
+    'quickstart-overlay'
+  );
 }
 
 function onOverlayClick(e: MouseEvent): void {
-  if (mouseDownOnOverlay && (e.target as HTMLElement).classList.contains('quickstart-overlay')) {
+  if (
+    mouseDownOnOverlay &&
+    (e.target as HTMLElement).classList.contains('quickstart-overlay')
+  ) {
     close();
   }
 }

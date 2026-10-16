@@ -73,7 +73,12 @@
       >
         <Repeat :size="20" />
       </button>
-      <input type="checkbox" id="loopCheckbox" :checked="isLooping" style="display: none;" />
+      <input
+        type="checkbox"
+        id="loopCheckbox"
+        :checked="isLooping"
+        style="display: none"
+      />
     </div>
 
     <!-- Export Group -->
@@ -129,8 +134,14 @@
           <ChevronDown :size="14" />
         </button>
 
-        <div id="exportDropdown" class="export-dropdown" :class="{ hidden: !isExportDropdownOpen }">
-          <div class="export-dropdown-header" data-i18n="export.header">{{ t('export.header') }}</div>
+        <div
+          id="exportDropdown"
+          class="export-dropdown"
+          :class="{ hidden: !isExportDropdownOpen }"
+        >
+          <div class="export-dropdown-header" data-i18n="export.header">
+            {{ t('export.header') }}
+          </div>
 
           <!-- Capture Screenshot -->
           <button
@@ -138,8 +149,10 @@
             data-action="screenshot"
             @click="onScreenshotClick"
           >
-            <Camera :size="18" style="margin-right: 8px;" />
-            <span data-i18n="controls.screenshot">{{ t('controls.screenshot') }}</span>
+            <Camera :size="18" style="margin-right: 8px" />
+            <span data-i18n="controls.screenshot">{{
+              t('controls.screenshot')
+            }}</span>
           </button>
 
           <!-- Export Video with Format -->
@@ -150,8 +163,10 @@
               id="exportVideoBtn"
               @click="onExportVideoClick"
             >
-              <Video :size="18" style="margin-right: 8px;" />
-              <span data-i18n="export.exportVideo">{{ t('export.exportVideo') }}</span>
+              <Video :size="18" style="margin-right: 8px" />
+              <span data-i18n="export.exportVideo">{{
+                t('export.exportVideo')
+              }}</span>
             </button>
             <select
               id="exportFormatSelect"
@@ -165,7 +180,11 @@
             </select>
           </div>
 
-          <div id="gifWarning" class="gif-warning" :class="{ hidden: exportFormat !== 'gif' }">
+          <div
+            id="gifWarning"
+            class="gif-warning"
+            :class="{ hidden: exportFormat !== 'gif' }"
+          >
             <span class="gif-warning-icon">⏱️</span>
             <span>GIF export takes ~10x clip length</span>
           </div>
@@ -176,9 +195,21 @@
           <div class="export-settings-header">Settings</div>
 
           <label class="export-option export-checkbox-option">
-            <input type="checkbox" id="privacyModeCheckbox" v-model="privacyMode" />
-            <span class="export-checkbox-label" data-i18n="export.privacyMode">{{ t('export.privacyMode') }}</span>
-            <span class="export-option-hint" data-i18n="export.privacyModeHint">{{ t('export.privacyModeHint') }}</span>
+            <input
+              type="checkbox"
+              id="privacyModeCheckbox"
+              v-model="privacyMode"
+            />
+            <span
+              class="export-checkbox-label"
+              data-i18n="export.privacyMode"
+              >{{ t('export.privacyMode') }}</span
+            >
+            <span
+              class="export-option-hint"
+              data-i18n="export.privacyModeHint"
+              >{{ t('export.privacyModeHint') }}</span
+            >
           </label>
         </div>
       </div>
@@ -204,31 +235,105 @@
           v-model="selectedLayout"
           @change="emit('changeLayout', selectedLayout)"
         >
-          <option value="grid-2x2" data-i18n="layouts.grid2x2">{{ t('layouts.grid2x2') }}</option>
-          <option value="grid-3x2" data-i18n="layouts.grid3x2" class="pillar-layout-option" style="display: none;">
+          <option value="grid-2x2" data-i18n="layouts.grid2x2">
+            {{ t('layouts.grid2x2') }}
+          </option>
+          <option
+            value="grid-3x2"
+            data-i18n="layouts.grid3x2"
+            class="pillar-layout-option"
+            style="display: none"
+          >
             3×2 Grid (6 Cam)
           </option>
-          <option value="layout-6-3" data-i18n="layouts.layout63">{{ t('layouts.layout63') }}</option>
-          <option value="layout-4-3" data-i18n="layouts.layout43">{{ t('layouts.layout43') }}</option>
-          <option value="layout-all-16-9" data-i18n="layouts.all169">{{ t('layouts.all169') }}</option>
-          <option value="layout-front-left" data-i18n="layouts.frontLeft">{{ t('layouts.frontLeft') }}</option>
-          <option value="layout-front-right" data-i18n="layouts.frontRight">{{ t('layouts.frontRight') }}</option>
-          <option value="layout-front-repeaters" data-i18n="layouts.frontRepeaters">{{ t('layouts.frontRepeaters') }}</option>
-          <option value="layout-front-pillars" class="pillar-layout-option" style="display: none;">Front + Pillars</option>
-          <option value="layout-front-left-pillar" class="pillar-layout-option" style="display: none;">Front + Left Pillar</option>
-          <option value="layout-front-right-pillar" class="pillar-layout-option" style="display: none;">Front + Right Pillar</option>
-          <option value="layout-focus" data-i18n="layouts.focus">{{ t('layouts.focus') }}</option>
+          <option value="layout-6-3" data-i18n="layouts.layout63">
+            {{ t('layouts.layout63') }}
+          </option>
+          <option value="layout-4-3" data-i18n="layouts.layout43">
+            {{ t('layouts.layout43') }}
+          </option>
+          <option value="layout-all-16-9" data-i18n="layouts.all169">
+            {{ t('layouts.all169') }}
+          </option>
+          <option value="layout-front-left" data-i18n="layouts.frontLeft">
+            {{ t('layouts.frontLeft') }}
+          </option>
+          <option value="layout-front-right" data-i18n="layouts.frontRight">
+            {{ t('layouts.frontRight') }}
+          </option>
+          <option
+            value="layout-front-repeaters"
+            data-i18n="layouts.frontRepeaters"
+          >
+            {{ t('layouts.frontRepeaters') }}
+          </option>
+          <option
+            value="layout-front-pillars"
+            class="pillar-layout-option"
+            style="display: none"
+          >
+            Front + Pillars
+          </option>
+          <option
+            value="layout-front-left-pillar"
+            class="pillar-layout-option"
+            style="display: none"
+          >
+            Front + Left Pillar
+          </option>
+          <option
+            value="layout-front-right-pillar"
+            class="pillar-layout-option"
+            style="display: none"
+          >
+            Front + Right Pillar
+          </option>
+          <option value="layout-focus" data-i18n="layouts.focus">
+            {{ t('layouts.focus') }}
+          </option>
         </select>
       </div>
 
-      <div class="layout-control" id="focusCameraControl" :style="{ display: selectedLayout === 'layout-focus' ? '' : 'none' }">
-        <select id="focusCameraSelect" class="layout-select" title="Focus Camera" v-model="focusCamera" @change="emit('changeFocusCamera', focusCamera)">
-          <option value="front" data-i18n="cameras.front">{{ t('cameras.front') }}</option>
-          <option value="back" data-i18n="cameras.back">{{ t('cameras.back') }}</option>
-          <option value="left_repeater" data-i18n="cameras.left">{{ t('cameras.left') }}</option>
-          <option value="right_repeater" data-i18n="cameras.right">{{ t('cameras.right') }}</option>
-          <option value="left_pillar" data-i18n="cameras.leftPillar" class="pillar-option" style="display: none;">Left Pillar</option>
-          <option value="right_pillar" data-i18n="cameras.rightPillar" class="pillar-option" style="display: none;">Right Pillar</option>
+      <div
+        class="layout-control"
+        id="focusCameraControl"
+        :style="{ display: selectedLayout === 'layout-focus' ? '' : 'none' }"
+      >
+        <select
+          id="focusCameraSelect"
+          class="layout-select"
+          title="Focus Camera"
+          v-model="focusCamera"
+          @change="emit('changeFocusCamera', focusCamera)"
+        >
+          <option value="front" data-i18n="cameras.front">
+            {{ t('cameras.front') }}
+          </option>
+          <option value="back" data-i18n="cameras.back">
+            {{ t('cameras.back') }}
+          </option>
+          <option value="left_repeater" data-i18n="cameras.left">
+            {{ t('cameras.left') }}
+          </option>
+          <option value="right_repeater" data-i18n="cameras.right">
+            {{ t('cameras.right') }}
+          </option>
+          <option
+            value="left_pillar"
+            data-i18n="cameras.leftPillar"
+            class="pillar-option"
+            style="display: none"
+          >
+            Left Pillar
+          </option>
+          <option
+            value="right_pillar"
+            data-i18n="cameras.rightPillar"
+            class="pillar-option"
+            style="display: none"
+          >
+            Right Pillar
+          </option>
         </select>
       </div>
 
@@ -236,7 +341,7 @@
         id="resetLayoutBtn"
         class="control-btn"
         title="Reset camera positions to layout defaults"
-        style="display: none;"
+        style="display: none"
         @click="emit('resetLayout')"
       >
         <RotateCcw :size="20" />
@@ -250,20 +355,38 @@
     <!-- Mobile More Menu -->
     <div class="control-group control-group-mobile-more">
       <div class="mobile-more-container">
-        <button id="mobileMoreBtn" class="control-btn" title="More Options" @click="isMobileMoreOpen = !isMobileMoreOpen">
+        <button
+          id="mobileMoreBtn"
+          class="control-btn"
+          title="More Options"
+          @click="isMobileMoreOpen = !isMobileMoreOpen"
+        >
           <MoreVertical :size="20" />
         </button>
-        <div id="mobileMoreMenu" class="mobile-more-menu" :class="{ hidden: !isMobileMoreOpen }">
+        <div
+          id="mobileMoreMenu"
+          class="mobile-more-menu"
+          :class="{ hidden: !isMobileMoreOpen }"
+        >
           <div class="mobile-more-section">
             <div class="mobile-more-label">View</div>
-            <button class="mobile-more-option" data-action="enhance" @click="emit('toggleEnhance')">
-              <Sun :size="18" style="margin-right: 8px;" />
+            <button
+              class="mobile-more-option"
+              data-action="enhance"
+              @click="emit('toggleEnhance')"
+            >
+              <Sun :size="18" style="margin-right: 8px" />
               <span>Enhancement</span>
             </button>
             <div class="mobile-more-option mobile-layout-selector">
-              <LayoutGrid :size="18" style="margin-right: 8px;" />
+              <LayoutGrid :size="18" style="margin-right: 8px" />
               <span>Layout</span>
-              <select id="mobileLayoutSelect" class="mobile-layout-select" v-model="selectedLayout" @change="emit('changeLayout', selectedLayout)">
+              <select
+                id="mobileLayoutSelect"
+                class="mobile-layout-select"
+                v-model="selectedLayout"
+                @change="emit('changeLayout', selectedLayout)"
+              >
                 <option value="grid-2x2">2x2 Grid</option>
                 <option value="layout-6-3">6:3 Centered</option>
                 <option value="layout-4-3">4:3 Main</option>
@@ -274,12 +397,20 @@
           <div class="mobile-more-divider"></div>
           <div class="mobile-more-section">
             <div class="mobile-more-label">Export</div>
-            <button class="mobile-more-option" data-action="screenshot" @click="emit('captureScreenshot')">
-              <Camera :size="18" style="margin-right: 8px;" />
+            <button
+              class="mobile-more-option"
+              data-action="screenshot"
+              @click="emit('captureScreenshot')"
+            >
+              <Camera :size="18" style="margin-right: 8px" />
               <span>Screenshot</span>
             </button>
-            <button class="mobile-more-option" data-action="export-video" @click="emit('exportVideo')">
-              <Video :size="18" style="margin-right: 8px;" />
+            <button
+              class="mobile-more-option"
+              data-action="export-video"
+              @click="emit('exportVideo')"
+            >
+              <Video :size="18" style="margin-right: 8px" />
               <span>Export Video</span>
             </button>
           </div>
@@ -288,51 +419,86 @@
     </div>
 
     <!-- Hidden buttons kept for keyboard shortcuts / compatibility -->
-    <button id="frameBackBtn" class="control-btn hidden-control" disabled :title="t('controls.previousFrame')" @click="emit('frameBack')">
+    <button
+      id="frameBackBtn"
+      class="control-btn hidden-control"
+      disabled
+      :title="t('controls.previousFrame')"
+      @click="emit('frameBack')"
+    >
       <ChevronLeft :size="20" />
     </button>
-    <button id="frameForwardBtn" class="control-btn hidden-control" disabled :title="t('controls.nextFrame')" @click="emit('frameForward')">
+    <button
+      id="frameForwardBtn"
+      class="control-btn hidden-control"
+      disabled
+      :title="t('controls.nextFrame')"
+      @click="emit('frameForward')"
+    >
       <ChevronRight :size="20" />
     </button>
-    <button id="prevEventBtn" class="control-btn hidden-control" disabled :title="t('controls.previousEvent')" @click="emit('prevEvent')">
+    <button
+      id="prevEventBtn"
+      class="control-btn hidden-control"
+      disabled
+      :title="t('controls.previousEvent')"
+      @click="emit('prevEvent')"
+    >
       <ArrowLeft :size="20" />
     </button>
-    <button id="nextEventBtn" class="control-btn hidden-control" disabled :title="t('controls.nextEvent')" @click="emit('nextEvent')">
+    <button
+      id="nextEventBtn"
+      class="control-btn hidden-control"
+      disabled
+      :title="t('controls.nextEvent')"
+      @click="emit('nextEvent')"
+    >
       <ArrowRight :size="20" />
     </button>
-    <button id="screenshotBtn" class="control-btn hidden-control" disabled :title="t('controls.screenshot')" @click="emit('captureScreenshot')">
+    <button
+      id="screenshotBtn"
+      class="control-btn hidden-control"
+      disabled
+      :title="t('controls.screenshot')"
+      @click="emit('captureScreenshot')"
+    >
       <Camera :size="20" />
     </button>
-    <button id="pipBtn" class="control-btn hidden-control" disabled style="display: none;">
+    <button
+      id="pipBtn"
+      class="control-btn hidden-control"
+      disabled
+      style="display: none"
+    >
       <PictureInPicture2 :size="20" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
 import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Repeat,
-  Bookmark,
-  X,
-  Download,
-  ChevronDown,
-  Camera,
-  Video,
-  Sun,
-  RotateCcw,
-  MoreVertical,
-  LayoutGrid,
-  ChevronLeft,
-  ChevronRight,
   ArrowLeft,
   ArrowRight,
+  Bookmark,
+  Camera,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  LayoutGrid,
+  MoreVertical,
+  Pause,
   PictureInPicture2,
+  Play,
+  Repeat,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Sun,
+  Video,
+  X,
 } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps<{
   hasEvent: boolean;

@@ -172,7 +172,9 @@ class FolderParser {
       }
 
       // Request permission to access the folder
-      const permission = await (handle as any).requestPermission({ mode: 'read' });
+      const permission = await (handle as any).requestPermission({
+        mode: 'read',
+      });
       if (permission !== 'granted') {
         console.log('Permission denied for saved folder');
         return false;

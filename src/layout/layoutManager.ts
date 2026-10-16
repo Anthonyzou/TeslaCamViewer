@@ -232,7 +232,10 @@ export class LayoutManager {
    * Setup drag and drop for camera swapping
    */
   setupDragAndDrop() {
-    for (const [camera, container] of Object.entries(this.videoContainers) as [string, HTMLElement][]) {
+    for (const [camera, container] of Object.entries(this.videoContainers) as [
+      string,
+      HTMLElement,
+    ][]) {
       // Make container draggable
       container.draggable = true;
       container.dataset.camera = camera;
@@ -261,7 +264,9 @@ export class LayoutManager {
         container.classList.remove('dragging');
 
         // Remove all drag-over classes
-        for (const cont of Object.values(this.videoContainers) as HTMLElement[]) {
+        for (const cont of Object.values(
+          this.videoContainers
+        ) as HTMLElement[]) {
           cont.classList.remove('drag-over');
         }
       });
@@ -594,7 +599,10 @@ export class LayoutManager {
    * Update visibility of camera containers
    */
   updateVisibility() {
-    for (const [camera, container] of Object.entries(this.videoContainers) as [string, HTMLElement][]) {
+    for (const [camera, container] of Object.entries(this.videoContainers) as [
+      string,
+      HTMLElement,
+    ][]) {
       if (this.visibleCameras[camera]) {
         container.classList.remove('camera-hidden');
       } else {
@@ -611,7 +619,9 @@ export class LayoutManager {
     this.focusCamera = camera;
 
     // Remove focus class from all
-    for (const container of Object.values(this.videoContainers) as HTMLElement[]) {
+    for (const container of Object.values(
+      this.videoContainers
+    ) as HTMLElement[]) {
       container.classList.remove('camera-focused');
     }
 

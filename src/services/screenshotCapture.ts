@@ -91,7 +91,9 @@ export class ScreenshotCapture {
     if (layoutConfig && layoutConfig.cameras) {
       // Draw using current layout configuration
       // Camera names in config match video element keys directly
-      const sortedCameras = Object.entries(layoutConfig.cameras as Record<string, any>)
+      const sortedCameras = Object.entries(
+        layoutConfig.cameras as Record<string, any>
+      )
         .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
         .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
 
@@ -225,7 +227,8 @@ export class ScreenshotCapture {
     } catch (err: any) {
       console.error('[Screenshot] Canvas export error:', err);
       if (err?.name === 'SecurityError') {
-        const msg = 'Screenshot blocked by browser security (CORS): The video stream from this remote host does not allow pixel extraction.';
+        const msg =
+          'Screenshot blocked by browser security (CORS): The video stream from this remote host does not allow pixel extraction.';
         if ((window as any).app?.showToast) {
           (window as any).app.showToast(msg, 'error');
         } else {
@@ -292,7 +295,9 @@ export class ScreenshotCapture {
   async captureSingle(camera: string, options: ScreenshotOptions = {}) {
     const { includeTimestamp = true, format = 'png', quality = 0.95 } = options;
 
-    const video = (this.videoPlayer.videos as Record<string, HTMLVideoElement>)[camera];
+    const video = (this.videoPlayer.videos as Record<string, HTMLVideoElement>)[
+      camera
+    ];
 
     if (!video || !video.src) {
       throw new Error(`No video loaded for ${camera}`);

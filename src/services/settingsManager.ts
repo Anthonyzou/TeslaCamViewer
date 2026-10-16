@@ -31,7 +31,9 @@ class SettingsManager {
       showWhatsNew: true,
 
       // Weather (Open-Meteo)
-      temperatureUnits: (navigator.language || 'en-US').includes('US') ? 'fahrenheit' : 'celsius', // 'celsius', 'fahrenheit'
+      temperatureUnits: (navigator.language || 'en-US').includes('US')
+        ? 'fahrenheit'
+        : 'celsius', // 'celsius', 'fahrenheit'
 
       // Timeline
       enableTimelineZoom: false,
@@ -174,7 +176,9 @@ class SettingsManager {
    */
   applySettings(app: any) {
     // Apply default speed
-    const speedSelect = document.getElementById('speedSelect') as HTMLSelectElement | null;
+    const speedSelect = document.getElementById(
+      'speedSelect'
+    ) as HTMLSelectElement | null;
     if (speedSelect && !app.videoPlayer?.isPlaying) {
       speedSelect.value = this.get('defaultSpeed');
     }
@@ -184,13 +188,17 @@ class SettingsManager {
       const savedLayout = this.get('defaultLayout');
       if (savedLayout) {
         app.layoutManager.setLayout(savedLayout);
-        const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement | null;
+        const layoutSelect = document.getElementById(
+          'layoutSelect'
+        ) as HTMLSelectElement | null;
         if (layoutSelect) layoutSelect.value = savedLayout;
       }
     }
 
     // Apply loop setting
-    const loopCheckbox = document.getElementById('loopCheckbox') as HTMLInputElement | null;
+    const loopCheckbox = document.getElementById(
+      'loopCheckbox'
+    ) as HTMLInputElement | null;
     if (loopCheckbox) {
       loopCheckbox.checked = this.get('loopByDefault');
     }

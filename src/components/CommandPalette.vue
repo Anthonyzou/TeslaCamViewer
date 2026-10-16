@@ -17,7 +17,9 @@
         <span class="command-palette-hint">Esc</span>
       </div>
       <div ref="listRef" class="command-palette-list" role="listbox">
-        <div v-if="filtered.length === 0" class="command-palette-empty">No matches</div>
+        <div v-if="filtered.length === 0" class="command-palette-empty">
+          No matches
+        </div>
         <template v-else>
           <div
             v-for="(item, idx) in filtered"
@@ -31,9 +33,13 @@
             @click="selectAndExecute(idx)"
           >
             <template v-if="item.kind === 'cmd'">
-              <span v-if="item.cmd.category" class="command-palette-cat">{{ item.cmd.category }}</span>
+              <span v-if="item.cmd.category" class="command-palette-cat">{{
+                item.cmd.category
+              }}</span>
               <span class="command-palette-title">{{ item.cmd.title }}</span>
-              <span v-if="item.cmd.shortcut" class="command-palette-shortcut">{{ item.cmd.shortcut }}</span>
+              <span v-if="item.cmd.shortcut" class="command-palette-shortcut">{{
+                item.cmd.shortcut
+              }}</span>
             </template>
             <template v-else>
               <span class="command-palette-cat">Event</span>
@@ -52,8 +58,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { Search } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { CommandItem, TeslaCamEvent } from '../types';
 
 type FilteredItem =
@@ -85,7 +91,9 @@ function registerMany(cmds: CommandItem[]): void {
 }
 
 function getSearchableEvents(): TeslaCamEvent[] {
-  return props.app && Array.isArray(props.app.allEvents) ? props.app.allEvents : [];
+  return props.app && Array.isArray(props.app.allEvents)
+    ? props.app.allEvents
+    : [];
 }
 
 function formatEventLabel(ev: TeslaCamEvent): string {
@@ -108,7 +116,7 @@ const filtered = computed<FilteredItem[]>(() => {
     const hay = [
       cmd.title,
       cmd.category || '',
-      Array.isArray(cmd.keywords) ? cmd.keywords.join(' ') : (cmd.keywords || ''),
+      Array.isArray(cmd.keywords) ? cmd.keywords.join(' ') : cmd.keywords || '',
     ]
       .join(' ')
       .toLowerCase();
@@ -176,7 +184,8 @@ function toggle(): void {
 function moveSelection(delta: number): void {
   if (filtered.value.length === 0) return;
   selectedIndex.value =
-    (selectedIndex.value + delta + filtered.value.length) % filtered.value.length;
+    (selectedIndex.value + delta + filtered.value.length) %
+    filtered.value.length;
 }
 
 function setSelection(idx: number): void {
@@ -246,8 +255,12 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
 
   const tgt = e.target as HTMLElement | null;
   const isTextInput =
-    tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable);
-  const isPaletteInput = tgt && tgt.classList?.contains('command-palette-input');
+    tgt &&
+    (tgt.tagName === 'INPUT' ||
+      tgt.tagName === 'TEXTAREA' ||
+      tgt.isContentEditable);
+  const isPaletteInput =
+    tgt && tgt.classList?.contains('command-palette-input');
   if (isTextInput && !isPaletteInput) return;
 
   e.preventDefault();

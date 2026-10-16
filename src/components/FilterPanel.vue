@@ -3,13 +3,15 @@
     <div class="filter-header" id="filterHeader" @click="togglePanel">
       <div class="filter-header-content">
         <span>{{ t('filter.filters') }}</span>
-        <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{ filterCount }}</span>
+        <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{
+          filterCount
+        }}</span>
       </div>
       <ChevronDown
         class="collapse-icon-svg"
         :class="{ collapsed: !isExpanded }"
         :size="14"
-        style="transition: transform 0.22s ease; flex-shrink: 0;"
+        style="transition: transform 0.22s ease; flex-shrink: 0"
       />
     </div>
 
@@ -32,7 +34,9 @@
               type="checkbox"
               id="filterSentry"
               v-model="filters.types.SentryClips"
-              @change="handleTypeChange('SentryClips', filters.types.SentryClips)"
+              @change="
+                handleTypeChange('SentryClips', filters.types.SentryClips)
+              "
             />
             <span class="event-type sentry">{{ t('filter.sentry') }}</span>
           </label>
@@ -41,7 +45,9 @@
               type="checkbox"
               id="filterRecent"
               v-model="filters.types.RecentClips"
-              @change="handleTypeChange('RecentClips', filters.types.RecentClips)"
+              @change="
+                handleTypeChange('RecentClips', filters.types.RecentClips)
+              "
             />
             <span class="event-type recent">{{ t('filter.recent') }}</span>
           </label>
@@ -50,7 +56,9 @@
 
       <!-- Sort Order -->
       <div class="filter-group">
-        <label class="filter-label" for="sortOrder">{{ t('filter.sortBy') }}</label>
+        <label class="filter-label" for="sortOrder">{{
+          t('filter.sortBy')
+        }}</label>
         <select
           id="sortOrder"
           class="filter-select"
@@ -64,7 +72,9 @@
 
       <!-- Search -->
       <div class="filter-group">
-        <label class="filter-label" for="searchInput">{{ t('filter.search') }}</label>
+        <label class="filter-label" for="searchInput">{{
+          t('filter.search')
+        }}</label>
         <input
           type="text"
           id="searchInput"
@@ -121,8 +131,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { ChevronDown } from 'lucide-vue-next';
+import { onMounted, onUnmounted, reactive, ref } from 'vue';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{

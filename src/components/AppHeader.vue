@@ -1,18 +1,42 @@
 <template>
   <header class="app-header">
-    <button id="menuToggleBtn" class="menu-toggle-btn" aria-label="Toggle sidebar menu" @click="emit('toggleSidebar')">
+    <button
+      id="menuToggleBtn"
+      class="menu-toggle-btn"
+      aria-label="Toggle sidebar menu"
+      @click="emit('toggleSidebar')"
+    >
       <Menu :size="24" />
     </button>
     <div class="header-brand">
       <svg class="brand-icon" width="36" height="36" viewBox="0 0 64 64">
         <defs>
-          <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#00d4ff" />
-            <stop offset="100%" style="stop-color:#0099cc" />
+          <linearGradient
+            id="brandGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" style="stop-color: #00d4ff" />
+            <stop offset="100%" style="stop-color: #0099cc" />
           </linearGradient>
         </defs>
-        <circle cx="32" cy="32" r="30" fill="url(#brandGradient)" opacity="0.15" />
-        <circle cx="32" cy="32" r="30" fill="none" stroke="url(#brandGradient)" stroke-width="2" />
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          fill="url(#brandGradient)"
+          opacity="0.15"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          fill="none"
+          stroke="url(#brandGradient)"
+          stroke-width="2"
+        />
         <rect x="18" y="24" width="28" height="20" rx="3" fill="#e8eaed" />
         <circle cx="32" cy="34" r="7" fill="#0a0c12" />
         <circle cx="32" cy="34" r="4" fill="#161a24" />
@@ -72,8 +96,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Menu, BarChart3, HelpCircle, Settings } from 'lucide-vue-next';
+import { BarChart3, HelpCircle, Menu, Settings } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const emit = defineEmits<{
   (e: 'toggleSidebar'): void;

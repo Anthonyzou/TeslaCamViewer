@@ -3,8 +3,11 @@
  * Optimized for modern hardware and simplicity.
  * Uses a dual-bank system to preload the next clip and eliminate black flashes.
  */
-class VideoPlayer {
-  public banks: Record<string, Record<string, HTMLVideoElement>> = { a: {}, b: {} };
+export class VideoPlayer {
+  public banks: Record<string, Record<string, HTMLVideoElement>> = {
+    a: {},
+    b: {},
+  };
   public activeBank: string = 'a';
   public currentEvent: any = null;
   public currentClipIndex: number = -1;
@@ -191,7 +194,10 @@ class VideoPlayer {
   }
 
   setupEventListeners() {
-    const setupBank = (bank: Record<string, HTMLVideoElement>, bankId: string) => {
+    const setupBank = (
+      bank: Record<string, HTMLVideoElement>,
+      bankId: string
+    ) => {
       bank.front?.addEventListener('timeupdate', () => {
         if (this.activeBank === bankId) {
           if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime);
@@ -358,8 +364,8 @@ class VideoPlayer {
   play() {
     this._isPlayingIntent = true;
     this._applyPlaybackRateToAll(); // Re-enforce speed before playing
-    const activeVideos = Object.values(this.videos).filter((v) =>
-      v.getAttribute('src') || v.src
+    const activeVideos = Object.values(this.videos).filter(
+      (v) => v.getAttribute('src') || v.src
     );
     if (activeVideos.length === 0) return;
     return Promise.all(
@@ -411,7 +417,10 @@ class VideoPlayer {
     this.pause();
     const fps = 30;
     const delta = (1 / fps) * direction;
-    const target = Math.max(0, Math.min(this.duration || 60, this.currentTime + delta));
+    const target = Math.max(
+      0,
+      Math.min(this.duration || 60, this.currentTime + delta)
+    );
     await this.seek(target, false);
   }
 
@@ -502,5 +511,4 @@ class VideoPlayer {
   }
 }
 
-export { VideoPlayer };
 export default VideoPlayer;

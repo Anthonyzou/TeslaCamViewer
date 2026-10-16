@@ -1,7 +1,9 @@
 <template>
   <div id="eventInfo" class="event-info">
     <div class="event-info-content">
-      <span id="eventDate" class="event-date" data-i18n="player.noEventLoaded">No event loaded</span>
+      <span id="eventDate" class="event-date" data-i18n="player.noEventLoaded"
+        >No event loaded</span
+      >
       <span id="eventLocation" class="event-location"></span>
       <span id="eventReason" class="event-reason"></span>
       <span id="eventWeather" class="event-weather"></span>

@@ -1,5 +1,9 @@
 <template>
-  <div class="app-container" role="application" aria-label="TeslaCam Viewer Application">
+  <div
+    class="app-container"
+    role="application"
+    aria-label="TeslaCam Viewer Application"
+  >
     <AppHeader
       @toggleSidebar="toggleSidebar"
       @openStats="openStats"
@@ -97,28 +101,30 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="loading-spinner"></div>
-      <div id="loadingText" class="loading-text" data-i18n="loading.loading">Loading...</div>
+      <div id="loadingText" class="loading-text" data-i18n="loading.loading">
+        Loading...
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useTeslaCam } from '../composables/useTeslaCam';
 import AppHeader from './AppHeader.vue';
 import AppSidebar from './AppSidebar.vue';
-import VideoGrid from './VideoGrid.vue';
-import EventInfoBar from './EventInfoBar.vue';
-import TimelineBar from './TimelineBar.vue';
-import PlaybackControls from './PlaybackControls.vue';
 import BottomSheet from './BottomSheet.vue';
 import CommandPalette from './CommandPalette.vue';
-import SettingsModal from './SettingsModal.vue';
-import HelpModal from './HelpModal.vue';
-import QuickStartGuideModal from './QuickStartGuideModal.vue';
-import StatisticsModal from './StatisticsModal.vue';
+import DiagnosticsModal from './DiagnosticsModal.vue';
 import DriveManagementModal from './DriveManagementModal.vue';
 import DriveSetupModal from './DriveSetupModal.vue';
-import DiagnosticsModal from './DiagnosticsModal.vue';
-import { useTeslaCam } from '../composables/useTeslaCam';
+import EventInfoBar from './EventInfoBar.vue';
+import HelpModal from './HelpModal.vue';
+import PlaybackControls from './PlaybackControls.vue';
+import QuickStartGuideModal from './QuickStartGuideModal.vue';
+import SettingsModal from './SettingsModal.vue';
+import StatisticsModal from './StatisticsModal.vue';
+import TimelineBar from './TimelineBar.vue';
+import VideoGrid from './VideoGrid.vue';
 
 const {
   currentEvent,

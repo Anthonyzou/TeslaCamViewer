@@ -8,7 +8,11 @@
     <div class="help-panel">
       <div class="help-header">
         <h2>{{ t('help.title') }}</h2>
-        <button class="help-close-btn" :title="t('common.close')" @click="close">
+        <button
+          class="help-close-btn"
+          :title="t('common.close')"
+          @click="close"
+        >
           <X :size="24" />
         </button>
       </div>
@@ -193,8 +197,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
 import { X } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const isOpen = ref(false);
 const localeTick = ref(0);
@@ -218,11 +222,16 @@ function toggle(): void {
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains('help-overlay');
+  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
+    'help-overlay'
+  );
 }
 
 function onOverlayClick(e: MouseEvent): void {
-  if (mouseDownOnOverlay && (e.target as HTMLElement).classList.contains('help-overlay')) {
+  if (
+    mouseDownOnOverlay &&
+    (e.target as HTMLElement).classList.contains('help-overlay')
+  ) {
     close();
   }
 }
@@ -244,7 +253,9 @@ async function copyDiagnostics(): Promise<void> {
       alert('Basic diagnostic info copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy:', err);
-      alert('Could not copy to clipboard. Please manually describe your issue.');
+      alert(
+        'Could not copy to clipboard. Please manually describe your issue.'
+      );
     }
   }
 }

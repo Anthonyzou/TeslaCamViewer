@@ -1,9 +1,10 @@
+import { LayoutManager } from '../layout/layoutManager';
+import type { DriveInfo, TeslaCamEvent } from '../types';
+import { EventFilter } from '../utils/eventFilter';
 import { B2Client } from './b2Client';
 import { EventBrowser } from './eventBrowser';
-import { EventFilter } from '../utils/eventFilter';
 import { FolderManager } from './folderManager';
 import { FolderParser } from './folderParser';
-import { LayoutManager } from '../layout/layoutManager';
 import { ScreenshotCapture } from './screenshotCapture';
 import { SettingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
@@ -12,7 +13,6 @@ import { VersionManager } from './versionManager';
 import { VideoEnhancer } from './videoEnhancer';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
-import type { DriveInfo, TeslaCamEvent } from '../types';
 
 /**
  * TeslaCamApp - Central application service orchestrating headless engines
@@ -202,7 +202,9 @@ export class TeslaCamApp {
           if (handle) {
             console.log('[App] Restoring last folder handle...');
             this.showLoading('Restoring last folder...');
-            const permission = await (handle as any).queryPermission({ mode: 'read' });
+            const permission = await (handle as any).queryPermission({
+              mode: 'read',
+            });
             if (permission === 'granted') {
               const drive = await this.folderManager.addDrive(handle, {
                 label: (handle as any).name,

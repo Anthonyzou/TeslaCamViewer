@@ -18,7 +18,7 @@
       >
         <div id="timelineProgress" class="timeline-progress"></div>
         <div id="timelineScrubber" class="timeline-scrubber"></div>
-        
+
         <div id="timelineClips" class="timeline-clips">
           <!-- Clip Boundary Markers -->
           <div
@@ -36,7 +36,7 @@
             title="Sentry Trigger"
           ></div>
         </div>
-        
+
         <!-- IN / OUT Visual Markers -->
         <div class="clip-markers">
           <div
@@ -91,8 +91,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-vue-next';
+import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useClipMarking } from '../composables/useClipMarking';
 
 defineProps<{
@@ -129,7 +129,8 @@ const timelineInterface = {
     currentTime = time;
     const progressEl = document.getElementById('timelineProgress');
     const scrubberEl = document.getElementById('timelineScrubber');
-    const pct = totalDuration.value > 0 ? (time / totalDuration.value) * 100 : 0;
+    const pct =
+      totalDuration.value > 0 ? (time / totalDuration.value) * 100 : 0;
     const clampedPct = Math.min(100, Math.max(0, pct));
     if (progressEl) progressEl.style.width = `${clampedPct}%`;
     if (scrubberEl) scrubberEl.style.left = `${clampedPct}%`;
@@ -141,7 +142,8 @@ const timelineInterface = {
     const markers: number[] = [];
     if (clipGroups && clipGroups.length > 0 && totalDuration.value > 0) {
       let accum = 0;
-      const cached = (window as any).app?.videoPlayer?.cachedClipDurations || [];
+      const cached =
+        (window as any).app?.videoPlayer?.cachedClipDurations || [];
       for (let i = 0; i < clipGroups.length; i++) {
         const dur = cached[i] || 60;
         if (i > 0) {
