@@ -11,10 +11,40 @@ class TeslaCamViewerApp {
 
     // Filter and map components
     this.eventFilter = new EventFilter();
-    this.filterPanel = window.filterPanelInstance || {
-      updateFilterBadge: () => window.filterPanelInstance?.updateBadge(),
-      refresh: () => window.filterPanelInstance?.syncFromEventFilter(),
-      clearAllFilters: () => window.filterPanelInstance?.clearAllFilters(),
+    this.filterPanel = {
+      updateFilterBadge: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.updateFilterBadge === 'function') fp.updateFilterBadge();
+        else if (typeof fp?.updateBadge === 'function') fp.updateBadge();
+      },
+      updateBadge: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.updateBadge === 'function') fp.updateBadge();
+        else if (typeof fp?.updateFilterBadge === 'function') fp.updateFilterBadge();
+      },
+      refresh: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.refresh === 'function') fp.refresh();
+        else if (typeof fp?.syncFromEventFilter === 'function') fp.syncFromEventFilter();
+      },
+      syncFromEventFilter: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.syncFromEventFilter === 'function') fp.syncFromEventFilter();
+        else if (typeof fp?.refresh === 'function') fp.refresh();
+      },
+      clearAllFilters: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.clearAllFilters === 'function') fp.clearAllFilters();
+        else this.eventFilter?.reset();
+      },
+      getFilters: () => {
+        const fp = window.filterPanelInstance;
+        if (typeof fp?.getFilters === 'function') return fp.getFilters();
+        return this.eventFilter?.getFilters() || {};
+      },
+      togglePanel: () => {
+        window.filterPanelInstance?.togglePanel?.();
+      },
     };
     this.mapView = new MapView(document.getElementById('map'), (event) =>
       this.onEventSelected(event)
@@ -420,10 +450,6 @@ class TeslaCamViewerApp {
    * Setup UI event listeners
    */
   setupEventListeners() {
-    // Folder selection
-    this.selectFolderBtn.addEventListener('click', () => this.selectFolder());
-    this.loadB2Btn?.addEventListener('click', () => this.loadFromB2());
-
     // Sync language selectors when locale changes
     window.addEventListener('localeChanged', (e) => {
       const locale = e.detail.locale;
@@ -438,9 +464,6 @@ class TeslaCamViewerApp {
         quickstartSelect.value = locale;
       }
     });
-
-    // Playback controls - combined play/pause toggle
-    this.playPauseBtn.addEventListener('click', () => this.togglePlayback());
 
     // Frame stepping - single click or hold
     this.frameBackBtn.addEventListener('mousedown', () =>
@@ -475,38 +498,14 @@ class TeslaCamViewerApp {
       this.stopFrameStepping()
     );
 
-    this.prevClipBtn.addEventListener('click', () => this.previousClip());
-    this.nextClipBtn.addEventListener('click', () => this.nextClip());
-
-    // Event navigation
-    this.prevEventBtn.addEventListener('click', () => this.previousEvent());
-    this.nextEventBtn.addEventListener('click', () => this.nextEvent());
-
-    // Screenshot capture
-    this.screenshotBtn.addEventListener('click', () =>
-      this.captureScreenshot()
-    );
-
     // Picture-in-Picture
     this.pipBtn.addEventListener('click', () => this.togglePictureInPicture());
 
-    // Video Enhancement
-    this.enhanceBtn.addEventListener('click', () =>
-      this.videoEnhancer.toggle()
-    );
     // Initialize enhancement controls in video grid container
     const videoGridContainer = document.querySelector('.video-grid-container');
     if (videoGridContainer) {
       this.videoEnhancer.initialize(videoGridContainer);
     }
-
-    // Clip marking
-    this.markInBtn.addEventListener('click', () => this.markIn());
-    this.markOutBtn.addEventListener('click', () => this.markOut());
-    this.clearMarksBtn.addEventListener('click', () => this.clearMarks());
-
-    // Export
-    this.exportBtn.addEventListener('click', () => this.exportVideo());
 
     // Export dropdown
     this.exportDropdownBtn.addEventListener('click', (e) => {
@@ -641,15 +640,6 @@ class TeslaCamViewerApp {
       }
     });
 
-    // Zoom buttons
-    this.zoomOutBtn.addEventListener('click', () => this.timeline.zoomOut());
-    this.zoomInBtn.addEventListener('click', () => this.timeline.zoomIn());
-    this.zoomResetBtn.addEventListener('click', () =>
-      this.timeline.resetZoom()
-    );
-
-    // Mobile menu toggle
-    this.menuToggleBtn.addEventListener('click', () => this.toggleSidebar());
     this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
 
     // Mobile more menu (controls area)
@@ -796,15 +786,6 @@ class TeslaCamViewerApp {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-
-    // Settings, Help, Stats, and Session buttons
-    this.settingsBtn.addEventListener('click', () =>
-      this.settingsManager.showSettingsModal()
-    );
-    this.helpBtn.addEventListener('click', () => this.helpModal.show());
-    this.statsBtn.addEventListener('click', () =>
-      this.statisticsManager.showModal()
-    );
 
     // Camera visibility toggles
     this.setupCameraVisibilityControls();

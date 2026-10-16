@@ -47,6 +47,9 @@ class VideoPlayer {
   get paused() {
     return this.videos.front.paused;
   }
+  get isPlaying() {
+    return !this.paused;
+  }
   get playbackRate() {
     return this._intendedPlaybackRate;
   }
@@ -310,10 +313,16 @@ class VideoPlayer {
     this._isPlayingIntent = true;
     this._applyPlaybackRateToAll(); // Re-enforce speed before playing
     const activeVideos = Object.values(this.videos).filter((v) =>
-      v.getAttribute('src')
+      v.getAttribute('src') || v.src
     );
     if (activeVideos.length === 0) return;
-    return Promise.all(activeVideos.map((v) => v.play()));
+    return Promise.all(
+      activeVideos.map((v) =>
+        v.play().catch((err) => {
+          console.warn('[VideoPlayer] Play error:', err);
+        })
+      )
+    );
   }
 
   pause() {

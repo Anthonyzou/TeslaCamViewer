@@ -21,7 +21,7 @@ export function useTeslaCam() {
     if (currentEvent.value !== (app.currentEvent || null)) {
       currentEvent.value = app.currentEvent || null;
     }
-    const playing = app.videoPlayer?.isPlaying ?? false;
+    const playing = app.videoPlayer ? !app.videoPlayer.paused : false;
     if (isPlaying.value !== playing) {
       isPlaying.value = playing;
     }
@@ -56,7 +56,21 @@ export function useTeslaCam() {
 
   onMounted(() => {
     syncFromApp();
-    syncInterval = setInterval(syncFromApp, 250);
+    syncInterval = setInterval(syncFromApp, 200);
+
+    const checkHook = setInterval(() => {
+      const app = (window as any).app;
+      if (app?.videoPlayer) {
+        clearInterval(checkHook);
+        const originalCallback = app.videoPlayer.onPlayStateChange;
+        app.videoPlayer.onPlayStateChange = (playing: boolean) => {
+          isPlaying.value = playing;
+          if (typeof originalCallback === 'function') {
+            originalCallback(playing);
+          }
+        };
+      }
+    }, 100);
   });
 
   onUnmounted(() => {

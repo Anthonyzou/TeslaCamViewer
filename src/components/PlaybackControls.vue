@@ -10,8 +10,8 @@
         @click="emit('togglePlay')"
       >
         <svg
-          v-if="!isPlaying"
           class="play-icon"
+          :style="{ display: isPlaying ? 'none' : '' }"
           width="24"
           height="24"
           viewBox="0 0 24 24"
@@ -21,15 +21,15 @@
           <path d="M8 5v14l11-7z" />
         </svg>
         <svg
-          v-else
           class="pause-icon"
+          :style="{ display: isPlaying ? '' : 'none' }"
           width="24"
           height="24"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
         >
-          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
         </svg>
       </button>
 

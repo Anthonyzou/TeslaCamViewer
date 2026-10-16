@@ -270,9 +270,12 @@ onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChange);
   (window as any).filterPanelInstance = {
     updateBadge,
+    updateFilterBadge: updateBadge,
     syncFromEventFilter,
+    refresh: syncFromEventFilter,
     togglePanel,
     clearAllFilters,
+    getFilters: () => getFilter()?.getFilters() || null,
   };
 });
 
@@ -286,7 +289,9 @@ onUnmounted(() => {
 
 defineExpose({
   updateBadge,
+  updateFilterBadge: updateBadge,
   syncFromEventFilter,
+  refresh: syncFromEventFilter,
   togglePanel,
   clearAllFilters,
 });
