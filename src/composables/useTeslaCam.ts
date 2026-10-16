@@ -1,110 +1,21 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import type { TeslaCamEvent, DriveInfo } from '../types';
+import { usePlayback } from './usePlayback';
+import { useEvents } from './useEvents';
+import { useDrives } from './useDrives';
+import { useLayout } from './useLayout';
 
+export * from './usePlayback';
+export * from './useEvents';
+export * from './useDrives';
+export * from './useLayout';
+
+/**
+ * useTeslaCam - Top-level orchestrator composing specialized domain composables
+ */
 export function useTeslaCam() {
-  const currentEvent = ref<TeslaCamEvent | null>(null);
-  const isPlaying = ref(false);
-  const speed = ref('1');
-  const isLooping = ref(false);
-  const layout = ref('layout-6-3');
-  const drives = ref<DriveInfo[]>([]);
-  const hiddenCameras = ref<string[]>([]);
-  const hasEvent = computed(() => currentEvent.value !== null);
-
-  const eventCountText = ref('');
-  const eventStatsText = ref('');
-
-  function syncFromApp(): void {
-    const app = (window as any).app;
-    if (!app) return;
-
-    if (currentEvent.value !== (app.currentEvent || null)) {
-      currentEvent.value = app.currentEvent || null;
-    }
-    const playing = app.videoPlayer ? !app.videoPlayer.paused : false;
-    if (isPlaying.value !== playing) {
-      isPlaying.value = playing;
-    }
-    const sp = String(app.videoPlayer?.playbackSpeed ?? '1');
-    if (speed.value !== sp) {
-      speed.value = sp;
-    }
-    const loop = app.videoPlayer?.isLooping ?? false;
-    if (isLooping.value !== loop) {
-      isLooping.value = loop;
-    }
-    const lay = app.layoutManager?.currentLayout ?? 'layout-6-3';
-    if (layout.value !== lay) {
-      layout.value = lay;
-    }
-    const drvs = app.folderManager?.drives ? [...app.folderManager.drives] : [];
-    if (drives.value.length !== drvs.length) {
-      drives.value = drvs;
-    }
-
-    const countEl = document.getElementById('eventCount');
-    if (countEl && eventCountText.value !== (countEl.textContent || '')) {
-      eventCountText.value = countEl.textContent || '';
-    }
-    const statsEl = document.getElementById('eventStats');
-    if (statsEl && eventStatsText.value !== (statsEl.textContent || '')) {
-      eventStatsText.value = statsEl.textContent || '';
-    }
-  }
-
-  let syncInterval: ReturnType<typeof setInterval> | null = null;
-
-  onMounted(() => {
-    syncFromApp();
-    syncInterval = setInterval(syncFromApp, 200);
-
-    const checkHook = setInterval(() => {
-      const app = (window as any).app;
-      if (app?.videoPlayer) {
-        clearInterval(checkHook);
-        const originalCallback = app.videoPlayer.onPlayStateChange;
-        app.videoPlayer.onPlayStateChange = (playing: boolean) => {
-          isPlaying.value = playing;
-          if (typeof originalCallback === 'function') {
-            originalCallback(playing);
-          }
-        };
-      }
-    }, 100);
-  });
-
-  onUnmounted(() => {
-    if (syncInterval) clearInterval(syncInterval);
-  });
-
-  function togglePlay(): void {
-    (window as any).app?.togglePlayback();
-    syncFromApp();
-  }
-
-  function prevClip(): void {
-    (window as any).app?.previousClip();
-    syncFromApp();
-  }
-
-  function nextClip(): void {
-    (window as any).app?.nextClip();
-    syncFromApp();
-  }
-
-  function changeSpeed(val: string): void {
-    speed.value = val;
-    (window as any).app?.videoPlayer?.setPlaybackSpeed(parseFloat(val));
-    syncFromApp();
-  }
-
-  function toggleLoop(): void {
-    const app = (window as any).app;
-    if (app?.videoPlayer) {
-      app.videoPlayer.isLooping = !app.videoPlayer.isLooping;
-      isLooping.value = app.videoPlayer.isLooping;
-    }
-  }
+  const playback = usePlayback();
+  const events = useEvents();
+  const drives = useDrives();
+  const layout = useLayout();
 
   function markIn(): void {
     (window as any).app?.markIn();
@@ -130,71 +41,6 @@ export function useTeslaCam() {
     (window as any).app?.videoEnhancer?.toggleEnhancementModal();
   }
 
-  function changeLayout(val: string): void {
-    layout.value = val;
-    (window as any).app?.layoutManager?.setLayout(val);
-  }
-
-  function changeFocusCamera(cam: string): void {
-    (window as any).app?.layoutManager?.setFocusCamera(cam);
-  }
-
-  function resetLayout(): void {
-    (window as any).app?.layoutManager?.resetLayout();
-  }
-
-  function frameBack(): void {
-    (window as any).app?.videoPlayer?.stepFrame(-1);
-  }
-
-  function frameForward(): void {
-    (window as any).app?.videoPlayer?.stepFrame(1);
-  }
-
-  function prevEvent(): void {
-    (window as any).app?.previousEvent();
-  }
-
-  function nextEvent(): void {
-    (window as any).app?.nextEvent();
-  }
-
-  function zoomIn(): void {
-    (window as any).app?.timeline?.zoomIn();
-  }
-
-  function zoomOut(): void {
-    (window as any).app?.timeline?.zoomOut();
-  }
-
-  function zoomReset(): void {
-    (window as any).app?.timeline?.resetZoom();
-  }
-
-  function selectFolder(): void {
-    (window as any).app?.selectFolder();
-  }
-
-  function loadB2(): void {
-    (window as any).app?.loadFromB2();
-  }
-
-  function changeDrive(id: string): void {
-    (window as any).app?.folderManager?.switchDrive(id || null);
-  }
-
-  function manageDrives(): void {
-    (window as any).app?.showDriveManagementModal();
-  }
-
-  function addDrive(): void {
-    (window as any).app?.addNewDrive();
-  }
-
-  function syncDrives(): void {
-    (window as any).app?.driveSyncUI?.show();
-  }
-
   function openStats(): void {
     (window as any).app?.statisticsManager?.showModal();
   }
@@ -207,62 +53,75 @@ export function useTeslaCam() {
     (window as any).app?.settingsManager?.showSettingsModal();
   }
 
-  function toggleCameraHide(cam: string): void {
-    (window as any).app?.toggleCameraVisibility(cam);
-  }
-
-  function toggleSidebar(): void {
-    (window as any).app?.toggleSidebar();
-  }
-
-  function unhideCamera(cam: string): void {
-    (window as any).app?.showCamera(cam);
+  function syncFromApp(): void {
+    playback.syncPlayback();
+    events.syncEvents();
+    drives.syncDrives();
+    layout.syncLayout();
   }
 
   return {
-    currentEvent,
-    isPlaying,
-    speed,
-    isLooping,
-    layout,
-    drives,
-    hiddenCameras,
-    hasEvent,
-    eventCountText,
-    eventStatsText,
-    togglePlay,
-    prevClip,
-    nextClip,
-    changeSpeed,
-    toggleLoop,
+    // Events
+    currentEvent: events.currentEvent,
+    allEvents: events.allEvents,
+    filteredEvents: events.filteredEvents,
+    hasEvent: events.hasEvent,
+    eventCountText: events.eventCountText,
+    eventStatsText: events.eventStatsText,
+    selectEvent: events.selectEvent,
+    prevEvent: events.prevEvent,
+    nextEvent: events.nextEvent,
+
+    // Playback
+    isPlaying: playback.isPlaying,
+    speed: playback.speed,
+    isLooping: playback.isLooping,
+    currentClipIndex: playback.currentClipIndex,
+    currentTime: playback.currentTime,
+    duration: playback.duration,
+    play: playback.play,
+    pause: playback.pause,
+    togglePlay: playback.togglePlay,
+    prevClip: playback.prevClip,
+    nextClip: playback.nextClip,
+    changeSpeed: playback.changeSpeed,
+    toggleLoop: playback.toggleLoop,
+    frameBack: playback.frameBack,
+    frameForward: playback.frameForward,
+
+    // Drives
+    drives: drives.drives,
+    selectFolder: drives.selectFolder,
+    loadB2: drives.loadB2,
+    changeDrive: drives.changeDrive,
+    manageDrives: drives.manageDrives,
+    addDrive: drives.addDrive,
+    syncDrives: drives.openSyncModal,
+
+    // Layout
+    layout: layout.layout,
+    hiddenCameras: layout.hiddenCameras,
+    changeLayout: layout.changeLayout,
+    changeFocusCamera: layout.changeFocusCamera,
+    resetLayout: layout.resetLayout,
+    toggleCameraHide: layout.toggleCameraHide,
+    unhideCamera: layout.unhideCamera,
+    toggleSidebar: layout.toggleSidebar,
+    closeSidebar: layout.closeSidebar,
+    zoomIn: layout.zoomIn,
+    zoomOut: layout.zoomOut,
+    zoomReset: layout.zoomReset,
+
+    // Marks, Export & Modals
     markIn,
     markOut,
     clearMarks,
     exportVideo,
     captureScreenshot,
     toggleEnhance,
-    changeLayout,
-    changeFocusCamera,
-    resetLayout,
-    frameBack,
-    frameForward,
-    prevEvent,
-    nextEvent,
-    zoomIn,
-    zoomOut,
-    zoomReset,
-    selectFolder,
-    loadB2,
-    changeDrive,
-    manageDrives,
-    addDrive,
-    syncDrives,
     openStats,
     openHelp,
     openSettings,
-    toggleCameraHide,
-    toggleSidebar,
-    unhideCamera,
     syncFromApp,
   };
 }
