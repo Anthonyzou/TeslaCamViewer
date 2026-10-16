@@ -18,6 +18,14 @@
  * tcv.0x465353
  */
 class FileSystemObserverManager {
+    public watched: Map<any, any> = new Map();
+    public onChange: any = null;
+    public DEBOUNCE_MS: number = 1847;
+    public POLL_INTERVAL_MS: number = 30000;
+    private _pendingTimers: Map<any, any> = new Map();
+    private _pollInterval: any = null;
+    public isNativeSupported: boolean = false;
+
     constructor() {
         // driveId -> { observer: FSObserver|null, handle, lastCounts: { ... } }
         this.watched = new Map();
@@ -28,7 +36,7 @@ class FileSystemObserverManager {
         this._pendingTimers = new Map();
         this._pollInterval = null;
 
-        this.isNativeSupported = typeof window.FileSystemObserver === 'function';
+        this.isNativeSupported = typeof (window as any).FileSystemObserver === 'function';
         if (!this.isNativeSupported) {
             console.log('[FSObserver] Native API unavailable — running polling-only mode');
         }
@@ -55,7 +63,7 @@ class FileSystemObserverManager {
         // but when they do it's instant.
         if (this.isNativeSupported) {
             try {
-                const obs = new window.FileSystemObserver((records) => {
+                const obs = new (window as any).FileSystemObserver((records) => {
                     // Filter to structural events only. `modified` records fire
                     // on content OR metadata changes — including access-time
                     // updates from our own library scanner opening files for

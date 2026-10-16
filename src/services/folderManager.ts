@@ -4,33 +4,51 @@
  */
 
 class FolderManager {
+    public drives: any[] = [];
+    public activeDriveId: string | null = null;
+    public DB_NAME: string = 'TeslaCamViewerDB';
+    public DB_STORE: string = 'drives';
+    public DB_VERSION: number = 2;
+
+    public driveColors: string[] = [
+        '#4a9eff',
+        '#4caf50',
+        '#ff9800',
+        '#e91e63',
+        '#9c27b0',
+        '#00bcd4',
+        '#ff5722',
+        '#607d8b'
+    ];
+
+    public onDrivesChanged: any = null;
+
     constructor() {
         this.drives = [];
-        this.activeDriveId = null; // null = all drives
+        this.activeDriveId = null;
         this.DB_NAME = 'TeslaCamViewerDB';
         this.DB_STORE = 'drives';
-        this.DB_VERSION = 2; // Bump version for new store
+        this.DB_VERSION = 2;
 
-        // Color palette for drive badges
         this.driveColors = [
-            '#4a9eff', // Blue
-            '#4caf50', // Green
-            '#ff9800', // Orange
-            '#e91e63', // Pink
-            '#9c27b0', // Purple
-            '#00bcd4', // Cyan
-            '#ff5722', // Deep Orange
-            '#607d8b'  // Blue Grey
+            '#4a9eff',
+            '#4caf50',
+            '#ff9800',
+            '#e91e63',
+            '#9c27b0',
+            '#00bcd4',
+            '#ff5722',
+            '#607d8b'
         ];
 
-        this.onDrivesChanged = null; // Callback when drives list changes
+        this.onDrivesChanged = null;
     }
 
     /**
      * Generate a UUID v4
      * @returns {string}
      */
-    generateUUID() {
+    generateUUID(): string {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             const r = Math.random() * 16 | 0;
             const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -42,14 +60,14 @@ class FolderManager {
      * Initialize IndexedDB for storing drives
      * @returns {Promise<IDBDatabase>}
      */
-    async openDB() {
-        return new Promise((resolve, reject) => {
+    async openDB(): Promise<IDBDatabase> {
+        return new Promise<IDBDatabase>((resolve, reject) => {
             const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
             request.onerror = () => reject(request.error);
             request.onsuccess = () => resolve(request.result);
 
-            request.onupgradeneeded = (event) => {
+            request.onupgradeneeded = (event: any) => {
                 const db = event.target.result;
 
                 // Create drives store if it doesn't exist
@@ -70,14 +88,14 @@ class FolderManager {
      * Load all drives from IndexedDB
      * @returns {Promise<void>}
      */
-    async loadDrives() {
+    async loadDrives(): Promise<void> {
         try {
             const db = await this.openDB();
             const tx = db.transaction(this.DB_STORE, 'readonly');
             const store = tx.objectStore(this.DB_STORE);
             const request = store.getAll();
 
-            const drives = await new Promise((resolve, reject) => {
+            const drives = await new Promise<any[]>((resolve, reject) => {
                 request.onsuccess = () => resolve(request.result || []);
                 request.onerror = () => reject(request.error);
             });
@@ -95,7 +113,7 @@ class FolderManager {
      * @param {Object} drive
      * @returns {Promise<void>}
      */
-    async saveDrive(drive) {
+    async saveDrive(drive: any): Promise<void> {
         try {
             const db = await this.openDB();
             const tx = db.transaction(this.DB_STORE, 'readwrite');
@@ -145,7 +163,7 @@ class FolderManager {
      * @param {string} options.dateFilter - Date filter preset (e.g., 'all', 'week', 'month', '3months', '6months', 'year')
      * @returns {Promise<Object>} The created drive object
      */
-    async addDrive(handle, options = {}) {
+    async addDrive(handle: any, options: any = {}) {
         // Support legacy signature: addDrive(handle, label)
         if (typeof options === 'string') {
             options = { label: options };
@@ -537,7 +555,7 @@ class FolderManager {
         }
 
         // Sort all events by timestamp (newest first)
-        allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        allEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         return allEvents;
     }
@@ -565,7 +583,7 @@ class FolderManager {
         if (!this.activeDriveId) {
             // Return all events from all drives
             return this.drives.flatMap(d => d.events || [])
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         }
 
         const activeDrive = this.getDrive(this.activeDriveId);

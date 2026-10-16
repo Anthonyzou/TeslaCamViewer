@@ -4,10 +4,24 @@
  */
 
 class FolderParser {
+  public rootHandle: any = null;
+  public events: any[] = [];
+  private _sig: string = 'nmccomb';
+  public DB_NAME: string = 'TeslaCamViewerDB';
+  public DB_STORE: string = 'folderHandles';
+  public DB_KEY: string = 'lastFolder';
+
+  public currentDriveId: string | null = null;
+  public currentDriveLabel: string | null = null;
+  public currentDriveColor: string | null = null;
+  public onProgress: any = null;
+  public _debugStats: any = null;
+  public _lastDiagnostics: any = null;
+
   constructor() {
     this.rootHandle = null;
     this.events = [];
-    this._sig = 'nmccomb'; // parser signature
+    this._sig = 'nmccomb';
     this.DB_NAME = 'TeslaCamViewerDB';
     this.DB_STORE = 'folderHandles';
     this.DB_KEY = 'lastFolder';
@@ -66,14 +80,14 @@ class FolderParser {
    * Initialize IndexedDB for storing folder handles
    * @returns {Promise<IDBDatabase>}
    */
-  async openDB() {
-    return new Promise((resolve, reject) => {
+  async openDB(): Promise<IDBDatabase> {
+    return new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, 2);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = (event: any) => {
         const db = event.target.result;
         if (!db.objectStoreNames.contains(this.DB_STORE)) {
           db.createObjectStore(this.DB_STORE);
@@ -147,7 +161,7 @@ class FolderParser {
       const store = tx.objectStore(this.DB_STORE);
       const request = store.get(this.DB_KEY);
 
-      const handle = await new Promise((resolve, reject) => {
+      const handle = await new Promise<any>((resolve, reject) => {
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -158,7 +172,7 @@ class FolderParser {
       }
 
       // Request permission to access the folder
-      const permission = await handle.requestPermission({ mode: 'read' });
+      const permission = await (handle as any).requestPermission({ mode: 'read' });
       if (permission !== 'granted') {
         console.log('Permission denied for saved folder');
         return false;
@@ -198,10 +212,10 @@ class FolderParser {
    */
   async selectFolder() {
     try {
-      this.rootHandle = await window.showDirectoryPicker();
+      this.rootHandle = await (window as any).showDirectoryPicker();
       return true;
-    } catch (error) {
-      if (error.name !== 'AbortError') {
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
         console.error('Error selecting folder:', error);
       }
       return false;
@@ -240,7 +254,10 @@ class FolderParser {
     await this.searchDirectory(this.rootHandle, 0);
 
     // Sort events by timestamp (newest first)
-    this.events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    this.events.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
 
@@ -637,7 +654,7 @@ None`;
     const [_, datePart, timePart] = timestampMatch;
     const timestamp = `${datePart}T${timePart.replace(/-/g, ':')}`;
 
-    const event = {
+    const event: any = {
       name: eventName,
       type: folderType,
       timestamp: timestamp,
@@ -795,7 +812,8 @@ None`;
       );
 
       // Calculate the gap
-      const gapDuration = (nextTime - expectedNextTime) / 1000; // in seconds
+      const gapDuration =
+        (nextTime.getTime() - expectedNextTime.getTime()) / 1000; // in seconds
 
       if (gapDuration > GAP_THRESHOLD) {
         gaps.push({

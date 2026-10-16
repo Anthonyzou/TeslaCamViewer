@@ -5,11 +5,13 @@
 import { FolderParser } from './folderParser';
 
 class EventBrowser {
+  [key: string]: any;
+
   constructor(
-    containerElement,
-    onEventSelect,
-    videoPlayer = null,
-    settingsManager = null
+    containerElement: any,
+    onEventSelect: any,
+    videoPlayer: any = null,
+    settingsManager: any = null
   ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
@@ -57,15 +59,16 @@ class EventBrowser {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const eventItem = entry.target;
-              const eventName = eventItem.dataset.eventName;
-              const event = this.events.find((e) => e.name === eventName);
+              if (eventItem) {
+                const eventName = (eventItem as HTMLElement).dataset.eventName;
+                const event = this.events.find((e) => e.name === eventName);
+                if (event && (event.thumbnailFile || event.thumbnailUrl)) {
+                  this.loadThumbnailLazy(event, eventItem);
+                }
 
-              if (event && (event.thumbnailFile || event.thumbnailUrl)) {
-                this.loadThumbnailLazy(event, eventItem);
+                // Stop observing once loaded
+                this.thumbnailObserver.unobserve(eventItem);
               }
-
-              // Stop observing once loaded
-              this.thumbnailObserver.unobserve(eventItem);
             }
           });
         },
@@ -491,9 +494,9 @@ class EventBrowser {
         pop.remove();
         // If user isn't already on this event, load it first
         if (this.selectedEvent?.name !== event.name) {
-          await new Promise((resolve) => {
+          await new Promise<void>((resolve) => {
             const origCb = this.onEventSelect;
-            this.onEventSelect = async (ev2) => {
+            this.onEventSelect = async (ev2: any) => {
               if (origCb) await origCb(ev2);
               this.onEventSelect = origCb;
               resolve();
@@ -840,6 +843,7 @@ class EventBrowser {
       : '';
 
     // Recording health badge
+    const severityBadgeHTML = '';
     const health = this.computeRecordingHealth(event);
     const healthBadgeHTML =
       health.status !== 'healthy'
@@ -901,10 +905,10 @@ class EventBrowser {
     }
 
     try {
-      const weather = await window.weatherService?.getWeather(
+      const weather = await (window as any).weatherService?.getWeather(
         lat,
         lng,
-        event.metadata.timestamp
+        event.timestamp
       );
 
       if (weather) {
@@ -1000,7 +1004,7 @@ class EventBrowser {
    * @param {Object} event
    * @param {HTMLElement} element
    */
-  selectEvent(event, element) {
+  selectEvent(event: any, element: any = null) {
     // Hide any running preview first
     // this.hidePreview();
 

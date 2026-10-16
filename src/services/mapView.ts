@@ -2,10 +2,13 @@
  * MapView - Leaflet map integration for displaying event locations
  */
 
+import L from 'leaflet';
 import { FolderParser } from './folderParser';
 
 class MapView {
-  constructor(containerElement, onEventSelect) {
+  [key: string]: any;
+
+  constructor(containerElement: any, onEventSelect: any) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect; // Callback to load event
     this.map = null;
@@ -222,17 +225,17 @@ class MapView {
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
 
-    const content = progressEl.querySelector('.scan-progress-content');
-    content.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+    const content = progressEl.querySelector('.scan-progress-content') as HTMLElement;
+    if (content) content.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
 
-    const header = progressEl.querySelector('.scan-progress-header');
-    header.style.cssText =
+    const header = progressEl.querySelector('.scan-progress-header') as HTMLElement;
+    if (header) header.style.cssText =
       'display: flex; justify-content: space-between; align-items: center;';
 
-    const title = progressEl.querySelector('.scan-progress-title');
-    title.style.cssText = 'font-weight: 500; color: var(--text, #e0e0e0);';
+    const title = progressEl.querySelector('.scan-progress-title') as HTMLElement;
+    if (title) title.style.cssText = 'font-weight: 500; color: var(--text, #e0e0e0);';
 
-    cancelBtn.style.cssText = `
+    if (cancelBtn) (cancelBtn as HTMLElement).style.cssText = `
             background: none;
             border: none;
             color: var(--text-muted, #888);
@@ -241,24 +244,24 @@ class MapView {
             font-size: 14px;
         `;
 
-    const barContainer = progressEl.querySelector('.scan-progress-bar');
-    barContainer.style.cssText = `
+    const barContainer = progressEl.querySelector('.scan-progress-bar') as HTMLElement;
+    if (barContainer) barContainer.style.cssText = `
             height: 6px;
             background: var(--bg, #1a1a1a);
             border-radius: 3px;
             overflow: hidden;
         `;
 
-    const fill = progressEl.querySelector('.scan-progress-fill');
-    fill.style.cssText = `
+    const fill = progressEl.querySelector('.scan-progress-fill') as HTMLElement;
+    if (fill) fill.style.cssText = `
             height: 100%;
             background: var(--accent, #4a9eff);
             border-radius: 3px;
             transition: width 0.2s ease;
         `;
 
-    const text = progressEl.querySelector('.scan-progress-text');
-    text.style.cssText = 'font-size: 12px; color: var(--text-muted, #888);';
+    const text = progressEl.querySelector('.scan-progress-text') as HTMLElement;
+    if (text) text.style.cssText = 'font-size: 12px; color: var(--text-muted, #888);';
 
     document.body.appendChild(progressEl);
     return progressEl;
@@ -443,7 +446,7 @@ class MapView {
 
     try {
       // Default center: Orlando, FL area (center of sample data)
-      const defaultCenter = [28.4, -81.5];
+      const defaultCenter: [number, number] = [28.4, -81.5];
       const defaultZoom = 10;
 
       // Create Leaflet map (keyboard: false prevents arrow keys from panning map)
@@ -923,7 +926,7 @@ class MapView {
     const blur = isDenseData ? 15 : 20;
 
     // Create new heatmap layer with settings optimized for visibility at all zoom levels
-    this.heatLayer = L.heatLayer(heatData, {
+    this.heatLayer = (L as any).heatLayer(heatData, {
       radius: radius,
       blur: blur,
       maxZoom: 17,
@@ -1009,7 +1012,7 @@ class MapView {
 
     // Add subdomains if specified
     if (layerConfig.subdomains) {
-      tileOptions.subdomains = layerConfig.subdomains;
+      (tileOptions as any).subdomains = layerConfig.subdomains;
     }
 
     this.currentTileLayer = L.tileLayer(layerConfig.url, tileOptions);
@@ -1066,9 +1069,9 @@ class MapView {
    * @returns {Object} Provider ID to name mapping
    */
   getAvailableProviders() {
-    const providers = {};
+    const providers: Record<string, string> = {};
     for (const [id, config] of Object.entries(this.TILE_PROVIDERS)) {
-      providers[id] = config.name;
+      providers[id] = (config as any).name;
     }
     return providers;
   }
@@ -1345,7 +1348,7 @@ class MapView {
       let totalLoaded = 0;
       let eventsLoaded = 0;
 
-      for (const [eventKey, data] of Object.entries(cache)) {
+      for (const [eventKey, data] of Object.entries(cache as Record<string, any>)) {
         // Skip if cache version doesn't match
         if (data.version !== this.cacheVersion) {
           continue;
@@ -1695,7 +1698,7 @@ class MapView {
       let totalLoaded = 0;
       let eventsLoaded = 0;
 
-      for (const [eventKey, data] of Object.entries(cache)) {
+      for (const [eventKey, data] of Object.entries(cache as Record<string, any>)) {
         // Skip if cache version doesn't match
         if (data.version !== this.cacheVersion) {
           continue;
@@ -1792,7 +1795,7 @@ class MapView {
     }
 
     // Create heatmap layer with red/orange colors (distinct from yellow struggle zones)
-    this.incidentHeatLayer = L.heatLayer(heatData, {
+    this.incidentHeatLayer = (L as any).heatLayer(heatData, {
       radius: 35,
       blur: 25,
       maxZoom: 17,
@@ -2160,10 +2163,6 @@ class MapView {
       this.initialized = false;
     }
   }
-}
-
-if (typeof window !== 'undefined') {
-  window.MapView = MapView;
 }
 
 export { MapView };

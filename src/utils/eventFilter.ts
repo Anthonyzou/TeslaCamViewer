@@ -1,9 +1,11 @@
 /**
  * EventFilter - Handles filtering and sorting of events
  */
-import { FolderParser } from './folderParser';
+import { FolderParser } from '../services/folderParser';
 
 class EventFilter {
+  public filters: any;
+
   constructor() {
     this.filters = {
       types: {
@@ -139,9 +141,9 @@ class EventFilter {
     const dateB = new Date(b.timestamp);
 
     if (this.filters.sortOrder === 'newest') {
-      return dateB - dateA; // Newest first (descending)
+      return dateB.getTime() - dateA.getTime(); // Newest first (descending)
     } else {
-      return dateA - dateB; // Oldest first (ascending)
+      return dateA.getTime() - dateB.getTime(); // Oldest first (ascending)
     }
   }
 

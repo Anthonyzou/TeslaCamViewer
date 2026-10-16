@@ -1,17 +1,17 @@
-import { B2Client } from '../../js/b2Client.js';
-import { EventBrowser } from '../../js/eventBrowser.js';
-import { EventFilter } from '../../js/eventFilter.js';
-import { FolderManager } from '../../js/folderManager.js';
-import { FolderParser } from '../../js/folderParser.js';
-import { LayoutManager } from '../../js/layoutManager.js';
-import { ScreenshotCapture } from '../../js/screenshotCapture';
-import { SettingsManager } from '../../js/settingsManager.js';
-import { StatisticsManager } from '../../js/statisticsManager.js';
-import { SyncController } from '../../js/syncController.js';
-import { VersionManager } from '../../js/versionManager.js';
-import { VideoEnhancer } from '../../js/videoEnhancer.js';
-import { VideoExport } from '../../js/videoExport.js';
-import { VideoPlayer } from '../../js/videoPlayer.js';
+import { B2Client } from './b2Client';
+import { EventBrowser } from './eventBrowser';
+import { EventFilter } from '../utils/eventFilter';
+import { FolderManager } from './folderManager';
+import { FolderParser } from './folderParser';
+import { LayoutManager } from '../layout/layoutManager';
+import { ScreenshotCapture } from './screenshotCapture';
+import { SettingsManager } from './settingsManager';
+import { StatisticsManager } from './statisticsManager';
+import { SyncController } from './syncController';
+import { VersionManager } from './versionManager';
+import { VideoEnhancer } from './videoEnhancer';
+import { VideoExport } from './videoExport';
+import { VideoPlayer } from './videoPlayer';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 
 /**
@@ -194,7 +194,7 @@ export class TeslaCamApp {
             const permission = await (handle as any).queryPermission({ mode: 'read' });
             if (permission === 'granted') {
               const drive = await this.folderManager.addDrive(handle, {
-                label: handle.name,
+                label: (handle as any).name,
                 isArchive: false,
                 dateFilter: 'all',
               });

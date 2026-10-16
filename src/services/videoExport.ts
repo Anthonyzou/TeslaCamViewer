@@ -3,7 +3,13 @@
  * Communicates with /api/export endpoints to orchestrate server-side FFmpeg rendering.
  */
 class VideoExport {
-    constructor(videoPlayer, layoutManager) {
+    public videoPlayer: any;
+    public layoutManager: any;
+    public isExporting: boolean = false;
+    public currentJobId: string | null = null;
+    private _pollTimer: any = null;
+
+    constructor(videoPlayer: any, layoutManager: any) {
         this.videoPlayer = videoPlayer;
         this.layoutManager = layoutManager;
         this.isExporting = false;
@@ -23,7 +29,7 @@ class VideoExport {
         return this.startExport({ camera: 'all', format: 'gif' });
     }
 
-    async startExport(options = {}) {
+    async startExport(options: any = {}) {
         const event = this.videoPlayer?.currentEvent;
         if (!event) {
             alert('No event loaded to export');
@@ -84,8 +90,8 @@ class VideoExport {
             return;
         }
 
-        const clips = {};
-        for (const [cam, clip] of Object.entries(clipGroup.clips)) {
+        const clips: Record<string, string> = {};
+        for (const [cam, clip] of Object.entries(clipGroup.clips as Record<string, any>)) {
             if (clip.url && !clip.url.startsWith('blob:')) {
                 clips[cam] = clip.url;
             }
@@ -188,8 +194,8 @@ class VideoExport {
         }
     }
 
-    async _pollJob(jobId) {
-        return new Promise((resolve, reject) => {
+    async _pollJob(jobId: string) {
+        return new Promise<void>((resolve, reject) => {
             const check = async () => {
                 if (!this.isExporting || this.currentJobId !== jobId) {
                     return resolve();

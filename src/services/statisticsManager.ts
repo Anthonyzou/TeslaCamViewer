@@ -4,6 +4,9 @@
  * timeline charts, and storage estimates
  */
 class StatisticsManager {
+    public modal: any = null;
+    public events: any[] = [];
+
     constructor() {
         this.modal = null;
         this.events = [];
@@ -143,12 +146,12 @@ class StatisticsManager {
 
         // Sort locations by count - top 10
         stats.topLocations = Object.entries(stats.topLocations)
-            .sort((a, b) => b[1] - a[1])
+            .sort((a, b) => (b[1] as number) - (a[1] as number))
             .slice(0, 10);
 
         // Sort sentry locations - top 10
         stats.sentryLocations = Object.entries(stats.sentryLocations)
-            .sort((a, b) => b[1] - a[1])
+            .sort((a, b) => (b[1] as number) - (a[1] as number))
             .slice(0, 10);
 
         return stats;
@@ -334,8 +337,8 @@ class StatisticsManager {
             return `<p class="stats-empty">${this.t('statistics.noTriggeringCameraData')}</p>`;
         }
 
-        const total = entries.reduce((sum, [_, count]) => sum + count, 0);
-        const colors = {
+        const total = entries.reduce((sum, [_, count]) => sum + (count as number), 0);
+        const colors: Record<string, string> = {
             'Front': '#4a9eff',
             'Rear': '#ff6b6b',
             'Left Repeater': '#4caf50',
@@ -344,13 +347,13 @@ class StatisticsManager {
             'Right Pillar': '#00bcd4'
         };
 
-        const sortedEntries = entries.sort((a, b) => b[1] - a[1]);
+        const sortedEntries = entries.sort((a, b) => (b[1] as number) - (a[1] as number));
         const eventsText = this.t('statistics.events');
 
         return `
             <div class="stats-camera-distribution">
                 ${sortedEntries.map(([camera, count]) => {
-                    const percent = Math.round((count / total) * 100);
+                    const percent = Math.round(((count as number) / total) * 100);
                     const color = colors[camera] || '#888';
                     return `
                         <div class="stats-camera-row">
@@ -496,7 +499,7 @@ class StatisticsManager {
                 // Count events in this month
                 Object.entries(eventsByDay).forEach(([dayKey, dayCount]) => {
                     if (dayKey.startsWith(monthKey)) {
-                        count += dayCount;
+                        count += (dayCount as number);
                     }
                 });
 
@@ -598,9 +601,9 @@ class StatisticsManager {
                 recent: stats.eventsByType.recent
             },
             triggerReasons: stats.triggerReasons,
-            topLocations: Object.fromEntries(stats.topLocations),
-            sentryLocations: Object.fromEntries(stats.sentryLocations),
-            sentryByHour: stats.sentryByHour.map((count, hour) => ({
+            topLocations: Object.fromEntries(stats.topLocations as any),
+            sentryLocations: Object.fromEntries(stats.sentryLocations as any),
+            sentryByHour: stats.sentryByHour.map((count: number, hour: number) => ({
                 hour: hour,
                 label: hour === 0 ? '12am' : hour === 12 ? '12pm' : hour > 12 ? `${hour - 12}pm` : `${hour}am`,
                 count: count
@@ -643,10 +646,10 @@ class StatisticsManager {
                 ...Object.entries(stats.triggerReasons).map(([reason, count]) => `${reason},${count}`),
                 '',
                 '## Top Locations (All Events)',
-                ...stats.topLocations.map(([loc, count]) => `${loc},${count}`),
+                ...(stats.topLocations as any[]).map(([loc, count]) => `${loc},${count}`),
                 '',
                 '## Top Sentry Locations',
-                ...stats.sentryLocations.map(([loc, count]) => `${loc},${count}`),
+                ...(stats.sentryLocations as any[]).map(([loc, count]) => `${loc},${count}`),
                 '',
                 '## Sentry Events by Hour',
                 'Hour,Count',
@@ -756,9 +759,9 @@ class StatisticsManager {
 
         // Build trigger breakdown HTML
         const triggerHTML = Object.entries(stats.triggerReasons)
-            .sort((a, b) => b[1] - a[1])
+            .sort((a, b) => (b[1] as number) - (a[1] as number))
             .map(([reason, count]) => {
-                const percent = Math.round((count / stats.totalEvents) * 100);
+                const percent = Math.round(((count as number) / stats.totalEvents) * 100);
                 return `
                     <div class="stats-bar-row">
                         <span class="stats-bar-label">${reason}</span>
@@ -772,7 +775,7 @@ class StatisticsManager {
 
         // Build locations HTML (top 10)
         const eventsText = this.t('statistics.events');
-        const locationsHTML = stats.topLocations
+        const locationsHTML = (stats.topLocations as any[])
             .map(([location, count], index) => `
                 <div class="stats-location-row">
                     <span class="stats-location-rank">${index + 1}.</span>
@@ -782,8 +785,8 @@ class StatisticsManager {
             `).join('') || `<p class="stats-empty">${this.t('statistics.noLocationData')}</p>`;
 
         // Build sentry locations HTML
-        const sentryLocationsHTML = stats.sentryLocations.length > 0 ?
-            stats.sentryLocations.map(([location, count], index) => `
+        const sentryLocationsHTML = (stats.sentryLocations as any[]).length > 0 ?
+            (stats.sentryLocations as any[]).map(([location, count], index) => `
                 <div class="stats-location-row">
                     <span class="stats-location-rank">${index + 1}.</span>
                     <span class="stats-location-name">${location}</span>
@@ -820,12 +823,12 @@ class StatisticsManager {
 
         // Build tab content - build from tcv.0x535441
         const hasSentryData = stats.eventsByType.sentry > 0;
-        const hasSentryLocations = stats.sentryLocations.length > 0;
+        const hasSentryLocations = (stats.sentryLocations as any[]).length > 0;
         const hasCameraData = Object.keys(stats.triggeringCamera).length > 0;
-        const hasDayOfWeekData = stats.sentryByDayOfWeek.some(c => c > 0);
+        const hasDayOfWeekData = stats.sentryByDayOfWeek.some((c: number) => c > 0);
 
-        if (window.statisticsModalInstance) {
-            window.statisticsModalInstance.open({
+        if ((window as any).statisticsModalInstance) {
+            (window as any).statisticsModalInstance.open({
                 stats: {
                     ...stats,
                     formattedDuration: this.formatDuration(stats.totalRecordingTime),
@@ -852,8 +855,8 @@ class StatisticsManager {
      * Hide statistics modal
      */
     hideModal() {
-        if (window.statisticsModalInstance) {
-            window.statisticsModalInstance.close();
+        if ((window as any).statisticsModalInstance) {
+            (window as any).statisticsModalInstance.close();
         }
     }
 }

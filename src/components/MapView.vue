@@ -9,7 +9,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.heat';
-import { MapView } from '../../js/mapView.js';
+import { MapView } from '../services/mapView';
 import type { TeslaCamEvent } from '../types';
 
 // Ensure L and MapView are globally available for plugins and existing helper modules

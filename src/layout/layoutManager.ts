@@ -9,6 +9,8 @@ import { LayoutConfig } from './layoutConfig';
 import { LayoutRenderer } from './layoutRenderer';
 
 export class LayoutManager {
+  [key: string]: any;
+
   constructor() {
     this._ver = 20250115; // layout version date
     this.currentLayout = 'grid-2x2'; // Default layout (can be preset name or custom id)
@@ -211,8 +213,9 @@ export class LayoutManager {
 
     // Add custom layouts if any exist
     if (this.customLayouts.length > 0) {
-      customGroup = document.createElement('optgroup');
-      customGroup.label = 'Custom Layouts';
+      const optGroup = document.createElement('optgroup');
+      optGroup.label = 'Custom Layouts';
+      customGroup = optGroup;
 
       for (const config of this.customLayouts) {
         const option = document.createElement('option');
@@ -229,7 +232,7 @@ export class LayoutManager {
    * Setup drag and drop for camera swapping
    */
   setupDragAndDrop() {
-    for (const [camera, container] of Object.entries(this.videoContainers)) {
+    for (const [camera, container] of Object.entries(this.videoContainers) as [string, HTMLElement][]) {
       // Make container draggable
       container.draggable = true;
       container.dataset.camera = camera;
@@ -242,7 +245,7 @@ export class LayoutManager {
         e.dataTransfer.setData('text/plain', camera);
 
         // Use a ghost image
-        const ghost = container.cloneNode(true);
+        const ghost = container.cloneNode(true) as HTMLElement;
         ghost.style.opacity = '0.5';
         ghost.style.position = 'absolute';
         ghost.style.top = '-1000px';
@@ -258,7 +261,7 @@ export class LayoutManager {
         container.classList.remove('dragging');
 
         // Remove all drag-over classes
-        for (const cont of Object.values(this.videoContainers)) {
+        for (const cont of Object.values(this.videoContainers) as HTMLElement[]) {
           cont.classList.remove('drag-over');
         }
       });
@@ -286,9 +289,9 @@ export class LayoutManager {
       });
 
       // Drag leave
-      container.addEventListener('dragleave', (e) => {
+      container.addEventListener('dragleave', (e: any) => {
         // Only remove if actually leaving the container
-        if (!container.contains(e.relatedTarget)) {
+        if (!container.contains(e.relatedTarget as Node)) {
           container.classList.remove('drag-over');
           if (this.dragOverCamera === camera) {
             this.dragOverCamera = null;
@@ -591,7 +594,7 @@ export class LayoutManager {
    * Update visibility of camera containers
    */
   updateVisibility() {
-    for (const [camera, container] of Object.entries(this.videoContainers)) {
+    for (const [camera, container] of Object.entries(this.videoContainers) as [string, HTMLElement][]) {
       if (this.visibleCameras[camera]) {
         container.classList.remove('camera-hidden');
       } else {
@@ -604,11 +607,11 @@ export class LayoutManager {
    * Set focus camera (for focus mode)
    * @param {string} camera
    */
-  setFocusCamera(camera) {
+  setFocusCamera(camera: string | null) {
     this.focusCamera = camera;
 
     // Remove focus class from all
-    for (const container of Object.values(this.videoContainers)) {
+    for (const container of Object.values(this.videoContainers) as HTMLElement[]) {
       container.classList.remove('camera-focused');
     }
 

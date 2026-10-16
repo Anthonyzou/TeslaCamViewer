@@ -5,6 +5,8 @@
 import { LayoutConfig } from './layoutConfig';
 
 export class LayoutRenderer {
+  [key: string]: any;
+
   constructor() {
     // Camera order for DOM rendering (matches video container order)
     this.cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
@@ -174,7 +176,7 @@ export class LayoutRenderer {
    * @param {Object} config - LayoutConfig object
    * @param {Object} options - { cameraOrder: [...], focusCamera: string }
    */
-  applyToDOM(videoGrid, config, options = {}) {
+  applyToDOM(videoGrid: HTMLElement, config: any, options: any = {}) {
     if (!videoGrid || !config) return;
 
     const focusCamera = options.focusCamera || null;
@@ -212,7 +214,7 @@ export class LayoutRenderer {
     this.setupResizeObserver(videoGrid);
 
     // Map video IDs to camera names
-    const videoIdToCamera = {
+    const videoIdToCamera: Record<string, string> = {
       videoFront: 'front',
       videoBack: 'back',
       videoLeft: 'left_repeater',
@@ -222,7 +224,7 @@ export class LayoutRenderer {
     // Get video containers
     const containers = Array.from(
       videoGrid.querySelectorAll('.video-container')
-    );
+    ) as HTMLElement[];
 
     // Apply styles to each container based on its camera identity
     containers.forEach((container) => {
@@ -233,7 +235,7 @@ export class LayoutRenderer {
       // and other per-camera inline styles were never applied.
       const videos = Array.from(
         container.querySelectorAll('video, canvas.video-player')
-      );
+      ) as HTMLElement[];
       const firstVideo = videos[0];
       let cameraName = container.dataset.camera;
 
@@ -342,7 +344,7 @@ export class LayoutRenderer {
       // Collect rects of higher z-index cameras for occlusion checking
       const higherCameraRects = [];
       if (fullConfig?.cameras && gridRect) {
-        for (const [camName, cam] of Object.entries(fullConfig.cameras)) {
+        for (const [camName, cam] of Object.entries(fullConfig.cameras as Record<string, any>)) {
           if (!cam.enabled || (cam.zIndex || 1) <= myZIndex) continue;
 
           // Get the container for this camera
@@ -530,7 +532,7 @@ export class LayoutRenderer {
    * @param {number} videoHeight - Native video height
    * @returns {Object} Export config with pixel positions
    */
-  calculateExportConfig(config, videoWidth, videoHeight, options = {}) {
+  calculateExportConfig(config: any, videoWidth: number, videoHeight: number, options: any = {}) {
     const visibleCameras = options.visibleCameras || null;
     const aspectRatio = config.canvas?.aspectRatio || '4:3';
     const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatio] || {
@@ -604,7 +606,12 @@ export class LayoutRenderer {
    * @param {Object} exportConfig - Result from calculateExportConfig
    * @param {Object} options - { fillEnded: boolean }
    */
-  renderToCanvas(ctx, videos, exportConfig, options = {}) {
+  renderToCanvas(
+    ctx: CanvasRenderingContext2D,
+    exportConfig: any,
+    videos: Record<string, HTMLVideoElement>,
+    options: any = {}
+  ) {
     const { canvasWidth, canvasHeight, cameras } = exportConfig;
 
     // Fill background
@@ -612,12 +619,12 @@ export class LayoutRenderer {
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Sort cameras by z-index for proper layering
-    const sortedCameras = Object.entries(cameras)
-      .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
-      .sort((a, b) => a[1].zIndex - b[1].zIndex);
+    const sortedCameras = Object.entries(cameras as Record<string, any>)
+      .filter(([name, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0)
+      .sort((a: any, b: any) => a[1].zIndex - b[1].zIndex);
 
     // Draw each camera
-    for (const [camName, camConfig] of sortedCameras) {
+    for (const [camName, camConfig] of sortedCameras as [string, any][]) {
       const video = videos[camName];
       if (!video) continue;
 
@@ -653,8 +660,12 @@ export class LayoutRenderer {
    * @param {Object} exportConfig - Export configuration with cameras
    * @param {Object} options - Options: fontSize, cameraMapping, videos
    */
-  addLabelsToCanvas(ctx, exportConfig, options = {}) {
-    const { cameras } = exportConfig;
+  addLabelsToCanvas(
+    ctx: CanvasRenderingContext2D,
+    exportConfig: any,
+    options: any = {}
+  ) {
+    const cameras = exportConfig.cameras as Record<string, any>;
     const fontSize = options.fontSize || 14;
     const cameraMapping = options.cameraMapping || null;
     const videos = options.videos || null;
@@ -671,7 +682,7 @@ export class LayoutRenderer {
 
     // Sort cameras by z-index
     const sortedCameras = Object.entries(cameras)
-      .filter(([name, cam]) => {
+      .filter(([name, cam]: [string, any]) => {
         if (!cam.visible || cam.w <= 0 || cam.h <= 0) return false;
         // If videos provided, check if this camera actually has a video source
         if (videos) {
@@ -683,10 +694,10 @@ export class LayoutRenderer {
         }
         return true;
       })
-      .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
+      .sort((a: any, b: any) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
 
     // Get all camera rects with z-index for occlusion checking
-    const cameraRects = sortedCameras.map(([name, cam]) => ({
+    const cameraRects = sortedCameras.map(([name, cam]: [string, any]) => ({
       name,
       x: cam.x,
       y: cam.y,
@@ -958,18 +969,18 @@ export class LayoutRenderer {
   /**
    * Get visible cameras count from config
    */
-  getVisibleCameraCount(config) {
+  getVisibleCameraCount(config: any) {
     if (!config?.cameras) return 0;
-    return Object.values(config.cameras).filter((c) => c.enabled).length;
+    return Object.values(config.cameras as Record<string, any>).filter((c: any) => c.enabled).length;
   }
 
   /**
    * Get enabled cameras list
    */
-  getEnabledCameras(config) {
+  getEnabledCameras(config: any) {
     if (!config?.cameras) return [];
-    return Object.entries(config.cameras)
-      .filter(([name, cam]) => cam.enabled)
+    return Object.entries(config.cameras as Record<string, any>)
+      .filter(([name, cam]: [string, any]) => cam.enabled)
       .map(([name]) => name);
   }
 }

@@ -5,26 +5,43 @@
  */
 
 class SyncController {
-  constructor(videoPlayer) {
+  public videoPlayer: any;
+  public isMonitoring: boolean = false;
+  public animationFrameId: any = null;
+  public syncStatusElement: HTMLElement | null = null;
+  private _tcvId: number = 778699;
+  public DRIFT_THRESHOLD: number = 0.3;
+  public CHECK_INTERVAL: number = 100;
+  public SYNC_INTERVAL: number = 30;
+  public END_OF_CLIP_BUFFER: number = 5;
+  public MAX_DRIFT_BEFORE_ABORT: number = 2.0;
+  public lastCheckTime: number = 0;
+  public lastSyncTime: number = 0;
+  private _inRecoveryState?: boolean;
+  private _recoveryCount: number = 0;
+  private _recoveryTitle?: string;
+  private _recoveryStatus?: string;
+
+  constructor(videoPlayer: any) {
     this.videoPlayer = videoPlayer;
     this.isMonitoring = false;
     this.animationFrameId = null;
     this.syncStatusElement = document.getElementById('syncStatus');
-    this._tcvId = 778699; // sync controller id
+    this._tcvId = 778699;
 
     // Sync settings
-    this.DRIFT_THRESHOLD = 0.3; // Max allowed drift in seconds
-    this.CHECK_INTERVAL = 100; // Check every 100ms
-    this.SYNC_INTERVAL = 30; // Only sync every 30 seconds of playback
-    this.END_OF_CLIP_BUFFER = 5; // Don't sync in last 5 seconds of clip
+    this.DRIFT_THRESHOLD = 0.3;
+    this.CHECK_INTERVAL = 100;
+    this.SYNC_INTERVAL = 30;
+    this.END_OF_CLIP_BUFFER = 5;
     this.MAX_DRIFT_BEFORE_ABORT = 2.0;
 
     this.lastCheckTime = 0;
-    this.lastSyncTime = 0; // Track when we last synced (in video time)
+    this.lastSyncTime = 0;
   }
 
-  get videos() {
-    return this.videoPlayer.videos;
+  get videos(): Record<string, HTMLVideoElement> {
+    return this.videoPlayer?.videos || {};
   }
 
   get cameraCount() {

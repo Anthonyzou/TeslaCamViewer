@@ -4,8 +4,26 @@
  * Uses a dual-bank system to preload the next clip and eliminate black flashes.
  */
 class VideoPlayer {
+  public banks: Record<string, Record<string, HTMLVideoElement>> = { a: {}, b: {} };
+  public activeBank: string = 'a';
+  public currentEvent: any = null;
+  public currentClipIndex: number = -1;
+  public loopEnabled: boolean = false;
+  public disableAutoAdvance: boolean = false;
+  public hasPillarCameras: boolean = false;
+  public _isPlayingIntent: boolean = false;
+  public _preloading: boolean = false;
+  public _intendedPlaybackRate: number = 1.0;
+  public disablePreload: boolean = false;
+
+  public onClipChange: any = null;
+  public onTimeUpdate: any = null;
+  public onEnded: any = null;
+  public onPlayStateChange: any = null;
+  public videoLabels: Record<string, any> = {};
+
   constructor() {
-    this.banks = {};
+    this.banks = { a: {}, b: {} };
     this.banks.a = this._resolveVideos('bank-a');
     this.banks.b = this._createSecondBank('bank-b');
 
@@ -17,10 +35,9 @@ class VideoPlayer {
     this.hasPillarCameras = false;
     this._isPlayingIntent = false;
     this._preloading = false;
-    this._intendedPlaybackRate = 1.0; // Source of truth for playback speed
+    this._intendedPlaybackRate = 1.0;
     this.disablePreload = false;
 
-    // Callbacks
     this.onClipChange = null;
     this.onTimeUpdate = null;
     this.onEnded = null;
@@ -33,8 +50,8 @@ class VideoPlayer {
   /**
    * Proxies for the active bank's front camera
    */
-  get videos() {
-    return this.banks[this.activeBank];
+  get videos(): Record<string, HTMLVideoElement> {
+    return this.banks[this.activeBank] || {};
   }
   get currentTime() {
     return this.videos.front.currentTime;
@@ -100,16 +117,16 @@ class VideoPlayer {
       // Prefer front camera for duration source of truth
       if (g.clips.front?.duration) return g.clips.front.duration;
       // Fallback to any other camera that has a probed duration
-      for (const cam of Object.values(g.clips)) {
-        if (cam.duration) return cam.duration;
+      for (const cam of Object.values(g.clips as Record<string, any>)) {
+        if (cam?.duration) return cam.duration;
       }
       // Default to 60s if no probe data found
       return 60;
     });
   }
 
-  _resolveVideos(className) {
-    const ids = {
+  _resolveVideos(className: string): Record<string, HTMLVideoElement> {
+    const ids: Record<string, string> = {
       front: 'videoFront',
       back: 'videoBack',
       left_repeater: 'videoLeft',
@@ -117,10 +134,11 @@ class VideoPlayer {
       left_pillar: 'videoLeftPillar',
       right_pillar: 'videoRightPillar',
     };
-    const out = {};
+    const out: Record<string, HTMLVideoElement> = {};
     for (const [cam, id] of Object.entries(ids)) {
-      const el = document.getElementById(id);
+      const el = document.getElementById(id) as HTMLVideoElement | null;
       if (el) {
+        el.crossOrigin = 'anonymous';
         el.classList.add(className);
         out[cam] = el;
       }
@@ -128,11 +146,12 @@ class VideoPlayer {
     return out;
   }
 
-  _createSecondBank(className) {
-    const out = {};
+  _createSecondBank(className: string): Record<string, HTMLVideoElement> {
+    const out: Record<string, HTMLVideoElement> = {};
     for (const [cam, primary] of Object.entries(this.banks.a)) {
       const el = document.createElement('video');
       el.className = `video-player ${className}`;
+      el.crossOrigin = 'anonymous';
       el.style.display = 'none';
       el.style.position = 'absolute';
       el.style.top = '0';
@@ -142,7 +161,7 @@ class VideoPlayer {
       el.style.objectFit = 'inherit';
       el.muted = true;
       el.playsInline = true;
-      primary.parentElement.appendChild(el);
+      primary.parentElement?.appendChild(el);
       out[cam] = el;
     }
     return out;
@@ -157,8 +176,8 @@ class VideoPlayer {
   }
 
   setupEventListeners() {
-    const setupBank = (bank, bankId) => {
-      bank.front.addEventListener('timeupdate', () => {
+    const setupBank = (bank: Record<string, HTMLVideoElement>, bankId: string) => {
+      bank.front?.addEventListener('timeupdate', () => {
         if (this.activeBank === bankId) {
           if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime);
           this._checkPreloadTrigger();
@@ -193,10 +212,10 @@ class VideoPlayer {
         video.muted = true;
         video.volume = 0;
 
-        video.parentElement.addEventListener('dblclick', () => {
+        video.parentElement?.addEventListener('dblclick', () => {
           if (this.activeBank === bankId) {
             if (!document.fullscreenElement) {
-              video.parentElement.requestFullscreen().catch(console.error);
+              video.parentElement?.requestFullscreen().catch(console.error);
             } else {
               document.exitFullscreen();
             }
@@ -265,7 +284,7 @@ class VideoPlayer {
       if (!video) return Promise.resolve();
       if (video.getAttribute('src') === url) return Promise.resolve();
 
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         const timeout = setTimeout(() => resolve(), 4000);
         video.onloadedmetadata = () => {
           clearTimeout(timeout);

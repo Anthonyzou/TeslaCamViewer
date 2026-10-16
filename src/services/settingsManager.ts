@@ -3,6 +3,12 @@
  * Stores settings in localStorage for persistence across sessions
  */
 class SettingsManager {
+  public STORAGE_KEY: string = 'teslacamviewer_settings';
+  public defaults: Record<string, any> = {};
+  public settings: Record<string, any> = {};
+  public modal: any = null;
+  public callbacks: Array<(settings: Record<string, any>) => void> = [];
+
   constructor() {
     this.STORAGE_KEY = 'teslacamviewer_settings';
 
@@ -149,8 +155,8 @@ class SettingsManager {
    * Create and show the settings modal
    */
   showSettingsModal(tab = 'general') {
-    if (window.settingsModalInstance) {
-      window.settingsModalInstance.open(tab);
+    if ((window as any).settingsModalInstance) {
+      (window as any).settingsModalInstance.open(tab);
     }
   }
 
@@ -158,17 +164,17 @@ class SettingsManager {
    * Hide the settings modal
    */
   hideSettingsModal() {
-    if (window.settingsModalInstance) {
-      window.settingsModalInstance.close();
+    if ((window as any).settingsModalInstance) {
+      (window as any).settingsModalInstance.close();
     }
   }
 
   /**
    * Apply settings to the application
    */
-  applySettings(app) {
+  applySettings(app: any) {
     // Apply default speed
-    const speedSelect = document.getElementById('speedSelect');
+    const speedSelect = document.getElementById('speedSelect') as HTMLSelectElement | null;
     if (speedSelect && !app.videoPlayer?.isPlaying) {
       speedSelect.value = this.get('defaultSpeed');
     }
@@ -178,12 +184,13 @@ class SettingsManager {
       const savedLayout = this.get('defaultLayout');
       if (savedLayout) {
         app.layoutManager.setLayout(savedLayout);
-        document.getElementById('layoutSelect').value = savedLayout;
+        const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement | null;
+        if (layoutSelect) layoutSelect.value = savedLayout;
       }
     }
 
     // Apply loop setting
-    const loopCheckbox = document.getElementById('loopCheckbox');
+    const loopCheckbox = document.getElementById('loopCheckbox') as HTMLInputElement | null;
     if (loopCheckbox) {
       loopCheckbox.checked = this.get('loopByDefault');
     }

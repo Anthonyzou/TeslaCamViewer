@@ -2,24 +2,36 @@
  * ScreenshotCapture - Captures and exports screenshots from video playback
  */
 
+import LayoutRenderer from '../layout/layoutRenderer';
+import VideoPlayer from './videoPlayer';
+
+export interface ScreenshotOptions {
+  includeTimestamp?: boolean;
+  format?: 'png' | 'jpeg';
+  quality?: number;
+}
+
 export class ScreenshotCapture {
-  constructor(videoPlayer) {
+  private videoPlayer: VideoPlayer;
+
+  constructor(videoPlayer: any) {
     this.videoPlayer = videoPlayer;
   }
 
   /**
    * Capture current frame using the current layout
-   * @param {Object} options - Capture options
-   * @param {boolean} options.includeTimestamp - Add timestamp overlay
-   * @param {string} options.format - 'png' or 'jpeg'
-   * @param {number} options.quality - JPEG quality 0-1
+   * @param {ScreenshotOptions} [options] - Capture options
    * @returns {Promise<void>}
    */
-  async captureComposite(options = {}) {
-    const { includeTimestamp = true, format = 'png', quality = 0.95 } = options;
+  async captureComposite(options?: ScreenshotOptions) {
+    const {
+      includeTimestamp = true,
+      format = 'png',
+      quality = 0.95,
+    } = options || {};
 
     // Get all video elements
-    const videos = this.videoPlayer.videos;
+    const videos = this.videoPlayer.videos as Record<string, HTMLVideoElement>;
 
     // Check if any video is loaded
     const hasVideo = Object.values(videos).some((v) => v && v.src);
@@ -29,7 +41,7 @@ export class ScreenshotCapture {
 
     // Create canvas for composite image
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d')!;
 
     // Get video dimensions from first available video
     const firstVideo = Object.values(videos).find(
@@ -39,8 +51,8 @@ export class ScreenshotCapture {
     const videoHeight = firstVideo?.videoHeight || 960;
 
     // Try to use the current layout from layoutManager
-    const layoutManager = window.app?.layoutManager;
-    let layoutConfig = null;
+    const layoutManager = (window as any).app?.layoutManager;
+    let layoutConfig: any = null;
 
     if (layoutManager && layoutManager.renderer) {
       layoutConfig = layoutManager.getCurrentConfig();
@@ -68,7 +80,7 @@ export class ScreenshotCapture {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Apply video enhancement filters if available
-    const enhancer = window.app?.videoEnhancer;
+    const enhancer = (window as any).app?.videoEnhancer;
     if (enhancer && enhancer.settings) {
       const { brightness, contrast, saturation } = enhancer.settings;
       if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
@@ -79,7 +91,7 @@ export class ScreenshotCapture {
     if (layoutConfig && layoutConfig.cameras) {
       // Draw using current layout configuration
       // Camera names in config match video element keys directly
-      const sortedCameras = Object.entries(layoutConfig.cameras)
+      const sortedCameras = Object.entries(layoutConfig.cameras as Record<string, any>)
         .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
         .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
 
@@ -194,9 +206,34 @@ export class ScreenshotCapture {
 
     // Convert canvas to blob
     const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, mimeType, quality);
-    });
+    let blob;
+    try {
+      blob = await new Promise((resolve, reject) => {
+        try {
+          canvas.toBlob(
+            (b) => {
+              if (b) resolve(b);
+              else reject(new Error('Failed to create blob from canvas'));
+            },
+            mimeType,
+            quality
+          );
+        } catch (err) {
+          reject(err);
+        }
+      });
+    } catch (err: any) {
+      console.error('[Screenshot] Canvas export error:', err);
+      if (err?.name === 'SecurityError') {
+        const msg = 'Screenshot blocked by browser security (CORS): The video stream from this remote host does not allow pixel extraction.';
+        if ((window as any).app?.showToast) {
+          (window as any).app.showToast(msg, 'error');
+        } else {
+          alert(msg);
+        }
+      }
+      throw err;
+    }
 
     // Generate filename
     const timestamp = this.getFormattedTimestamp();
@@ -228,7 +265,7 @@ export class ScreenshotCapture {
     const canvasHeight = ctx.canvas.height;
 
     for (const [cameraName, camConfig] of Object.entries(
-      layoutConfig.cameras
+      layoutConfig.cameras as Record<string, any>
     )) {
       if (!camConfig.visible || camConfig.w <= 0 || camConfig.h <= 0) continue;
 
@@ -250,12 +287,12 @@ export class ScreenshotCapture {
   /**
    * Capture single camera view
    * @param {string} camera - Camera name (front, back, left_repeater, right_repeater)
-   * @param {Object} options - Capture options
+   * @param {ScreenshotOptions} [options] - Capture options
    */
-  async captureSingle(camera, options = {}) {
+  async captureSingle(camera: string, options: ScreenshotOptions = {}) {
     const { includeTimestamp = true, format = 'png', quality = 0.95 } = options;
 
-    const video = this.videoPlayer.videos[camera];
+    const video = (this.videoPlayer.videos as Record<string, HTMLVideoElement>)[camera];
 
     if (!video || !video.src) {
       throw new Error(`No video loaded for ${camera}`);

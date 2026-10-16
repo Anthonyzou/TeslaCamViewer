@@ -9,6 +9,18 @@
  *   R = Release number for that day
  */
 class VersionManager {
+  public STORAGE_KEY: string = 'teslacamviewer_version_state';
+  public UPDATE_CHECK_KEY: string = 'teslacamviewer_last_update_check';
+  public UPDATE_CHECK_INTERVAL: number = 4 * 60 * 60 * 1000;
+  public remoteVersionUrl: string = '/version.json';
+  public currentVersion: string = '2026.21.1.1';
+  public changelog: any[] = [];
+  public state: any = null;
+  public modal: any = null;
+  public indicators: Map<string, any> = new Map();
+  public pendingSelectors: any[] = [];
+  private _mutationObserver: MutationObserver | null = null;
+
   constructor() {
     this.STORAGE_KEY = 'teslacamviewer_version_state';
     this.UPDATE_CHECK_KEY = 'teslacamviewer_last_update_check';
@@ -992,7 +1004,7 @@ class VersionManager {
     };
     dot.addEventListener('mouseenter', showTip);
     dot.addEventListener('mouseleave', hideTip);
-    dot._hideTip = hideTip;
+    (dot as any)._hideTip = hideTip;
 
     // Suppress the anchor's native browser tooltip while hovering the dot —
     // otherwise title="…" text renders on top of our custom tooltip.
@@ -1310,8 +1322,8 @@ class VersionManager {
       const versionText = this.getVersionDisplay();
       tagline.textContent = versionText;
       tagline.classList.add('version-tag');
-      tagline.title = 'Click to view changelog';
-      tagline.style.cursor = 'pointer';
+      (tagline as HTMLElement).title = 'Click to view changelog';
+      (tagline as HTMLElement).style.cursor = 'pointer';
 
       tagline.addEventListener('click', () => {
         this.showChangelogModal();
@@ -1454,12 +1466,12 @@ class VersionManager {
     const refreshBtn = toast.querySelector('.update-toast-btn');
     const closeBtn = toast.querySelector('.update-toast-close');
 
-    refreshBtn.addEventListener('click', () => {
+    refreshBtn?.addEventListener('click', () => {
       // Force hard reload to bypass cache
-      window.location.reload(true);
+      window.location.reload();
     });
 
-    closeBtn.addEventListener('click', () => {
+    closeBtn?.addEventListener('click', () => {
       toast.classList.remove('visible');
       setTimeout(() => toast.remove(), 300);
     });

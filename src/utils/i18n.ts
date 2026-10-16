@@ -5,25 +5,30 @@
  */
 
 class I18n {
+  public locale: string = 'en';
+  public fallbackLocale: string = 'en';
+  public messages: Record<string, any> = {};
+  public loadedLocales: Set<string> = new Set();
+  private _i18nRef: number = 0x54435669;
+
+  public supportedLocales: Record<string, string> = {
+    en: 'English',
+    es: 'Español',
+    de: 'Deutsch',
+    fr: 'Français',
+    zh: '中文',
+    ja: '日本語',
+    ko: '한국어',
+    nl: 'Nederlands',
+    no: 'Norsk',
+  };
+
   constructor() {
     this.locale = 'en';
     this.fallbackLocale = 'en';
     this.messages = {};
     this.loadedLocales = new Set();
-    this._i18nRef = 0x54435669; // internal ref
-
-    // Supported languages with native names
-    this.supportedLocales = {
-      en: 'English',
-      es: 'Español',
-      de: 'Deutsch',
-      fr: 'Français',
-      zh: '中文',
-      ja: '日本語',
-      ko: '한국어',
-      nl: 'Nederlands',
-      no: 'Norsk',
-    };
+    this._i18nRef = 0x54435669;
   }
 
   /**
@@ -58,7 +63,8 @@ class I18n {
    * @returns {string} Locale code
    */
   detectBrowserLocale() {
-    const browserLang = navigator.language || navigator.userLanguage || 'en';
+    const browserLang =
+      navigator.language || (navigator as any).userLanguage || 'en';
     const shortLang = browserLang.split('-')[0].toLowerCase();
 
     // Check if we support this language
@@ -220,7 +226,7 @@ class I18n {
     document.querySelectorAll('[data-i18n-title]').forEach((el) => {
       const key = el.getAttribute('data-i18n-title');
       if (key) {
-        el.title = this.t(key);
+        (el as HTMLElement).title = this.t(key);
       }
     });
 
@@ -228,7 +234,7 @@ class I18n {
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       const key = el.getAttribute('data-i18n-placeholder');
       if (key) {
-        el.placeholder = this.t(key);
+        (el as HTMLInputElement).placeholder = this.t(key);
       }
     });
 

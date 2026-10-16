@@ -5,7 +5,7 @@
 import { createApp } from 'vue';
 
 // Internationalization should be first to initalize
-import '../js/i18n.js';
+import './utils/i18n';
 
 import App from './components/App.vue';
 

@@ -49,7 +49,7 @@ function isEntryFile() {
 
 if (isEntryFile()) {
   // Periodic cleanup of completed/failed export jobs older than 1 hour
-  // Needs to be check for entry file to prevent test imports of this file from hanging
+  // Check if this is an entry file to prevent test imports from hanging
   setInterval(() => {
     const oneHourAgo = Date.now() - 3600 * 1000;
     for (const [jobId, job] of exportJobs.entries()) {

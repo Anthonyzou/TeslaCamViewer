@@ -2,7 +2,7 @@
   <div class="video-grid-container">
     <div id="videoGrid" class="video-grid" :class="[layout, { 'has-pillars': hasPillarCameras }]">
       <div class="video-container" :class="{ hidden: isHidden('front') }">
-        <video id="videoFront" class="video-player"></video>
+        <video id="videoFront" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.front">{{ t('cameras.front') }}</div>
         <button
           class="camera-hide-btn"
@@ -14,7 +14,7 @@
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('back') }">
-        <video id="videoBack" class="video-player"></video>
+        <video id="videoBack" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.back">{{ t('cameras.back') }}</div>
         <button
           class="camera-hide-btn"
@@ -26,7 +26,7 @@
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('left_repeater') }">
-        <video id="videoLeft" class="video-player"></video>
+        <video id="videoLeft" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.left">{{ t('cameras.left') }}</div>
         <button
           class="camera-hide-btn"
@@ -38,7 +38,7 @@
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('right_repeater') }">
-        <video id="videoRight" class="video-player"></video>
+        <video id="videoRight" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.right">{{ t('cameras.right') }}</div>
         <button
           class="camera-hide-btn"
@@ -50,7 +50,7 @@
         </button>
       </div>
       <div class="video-container pillar-camera" :class="{ hidden: isHidden('left_pillar') }">
-        <video id="videoLeftPillar" class="video-player"></video>
+        <video id="videoLeftPillar" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.leftPillar">{{ t('cameras.leftPillar') }}</div>
         <button
           class="camera-hide-btn"
@@ -62,7 +62,7 @@
         </button>
       </div>
       <div class="video-container pillar-camera" :class="{ hidden: isHidden('right_pillar') }">
-        <video id="videoRightPillar" class="video-player"></video>
+        <video id="videoRightPillar" class="video-player" crossorigin="anonymous"></video>
         <div class="video-label" data-i18n="cameras.rightPillar">{{ t('cameras.rightPillar') }}</div>
         <button
           class="camera-hide-btn"
