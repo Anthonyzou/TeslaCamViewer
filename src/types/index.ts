@@ -35,6 +35,7 @@ export interface CommandItem {
 }
 
 export interface TeslaCamEvent {
+  name?: string;
   type?: string;
   timestamp?: string | number | Date;
   metadata?: {
@@ -55,4 +56,13 @@ export interface SettingsManagerLike {
   set: (key: string, val: any) => void;
   saveSettings: () => void;
   resetToDefaults: () => void;
+}
+
+export interface DriveInfo {
+  id: string;
+  name: string;
+  color?: string;
+  handle?: any;
+  events?: TeslaCamEvent[];
+  [key: string]: any;
 }

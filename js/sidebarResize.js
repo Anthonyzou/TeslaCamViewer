@@ -20,8 +20,18 @@ class SidebarResize {
     }
 
     init() {
+        if (!this.sidebar) this.sidebar = document.getElementById('sidebar');
+        if (!this.handle) this.handle = document.getElementById('sidebarResizeHandle');
         if (!this.sidebar || !this.handle) {
-            console.warn('[SidebarResize] Sidebar or handle not found');
+            setTimeout(() => {
+                this.sidebar = document.getElementById('sidebar');
+                this.handle = document.getElementById('sidebarResizeHandle');
+                if (this.sidebar && this.handle) {
+                    this.init();
+                } else {
+                    console.warn('[SidebarResize] Sidebar or handle not found');
+                }
+            }, 50);
             return;
         }
 

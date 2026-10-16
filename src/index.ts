@@ -1,7 +1,27 @@
 /**
  * TeslaCamViewer Application Entry Point (TypeScript)
- * Bundles application modules in dependency order.
+ * Bundles application modules in dependency order and mounts the top-level App.vue shell.
  */
+
+import { createApp } from 'vue';
+import App from './components/App.vue';
+
+// Mount App.vue into #app as soon as DOM is ready
+if (typeof document !== 'undefined') {
+  const mountVueApp = () => {
+    const el = document.getElementById('app');
+    if (el && !(el as any)._vMounted) {
+      (el as any)._vMounted = true;
+      createApp(App).mount(el);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountVueApp);
+  } else {
+    mountVueApp();
+  }
+}
 
 // Core & Utilities
 import '../js/i18n.js';
