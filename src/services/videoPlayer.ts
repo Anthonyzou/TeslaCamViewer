@@ -26,25 +26,8 @@ export class VideoPlayer {
   public videoLabels: Record<string, any> = {};
 
   constructor() {
-    this.banks = { a: {}, b: {} };
     this.banks.a = this._resolveVideos('bank-a');
     this.banks.b = this._createSecondBank('bank-b');
-
-    this.activeBank = 'a';
-    this.currentEvent = null;
-    this.currentClipIndex = -1;
-    this.loopEnabled = false;
-    this.disableAutoAdvance = false;
-    this.hasPillarCameras = false;
-    this._isPlayingIntent = false;
-    this._preloading = false;
-    this._intendedPlaybackRate = 1.0;
-    this.disablePreload = false;
-
-    this.onClipChange = null;
-    this.onTimeUpdate = null;
-    this.onEnded = null;
-    this.onPlayStateChange = null;
 
     this.videoLabels = this._resolveLabels();
     this.setupEventListeners();

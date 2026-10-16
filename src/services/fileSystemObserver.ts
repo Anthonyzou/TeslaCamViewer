@@ -28,13 +28,6 @@ class FileSystemObserverManager {
 
   constructor() {
     // driveId -> { observer: FSObserver|null, handle, lastCounts: { ... } }
-    this.watched = new Map();
-    this.onChange = null;
-    this.DEBOUNCE_MS = 1847;
-    this.POLL_INTERVAL_MS = 30000;
-
-    this._pendingTimers = new Map();
-    this._pollInterval = null;
 
     this.isNativeSupported =
       typeof (window as any).FileSystemObserver === 'function';

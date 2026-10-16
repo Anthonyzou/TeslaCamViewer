@@ -1,21 +1,15 @@
+import VideoPlayer from './videoPlayer';
+
 /**
  * VideoExport - Server-Side FFmpeg Video Exporter Client
  * Communicates with /api/export endpoints to orchestrate server-side FFmpeg rendering.
  */
 class VideoExport {
-  public videoPlayer: any;
-  public layoutManager: any;
   public isExporting: boolean = false;
   public currentJobId: string | null = null;
   private _pollTimer: any = null;
 
-  constructor(videoPlayer: any, layoutManager: any) {
-    this.videoPlayer = videoPlayer;
-    this.layoutManager = layoutManager;
-    this.isExporting = false;
-    this.currentJobId = null;
-    this._pollTimer = null;
-  }
+  constructor(private videoPlayer: VideoPlayer) {}
 
   getExportStatus() {
     return { isExporting: this.isExporting };

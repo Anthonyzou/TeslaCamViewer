@@ -12,744 +12,722 @@ class VersionManager {
   public STORAGE_KEY: string = 'teslacamviewer_version_state';
   public UPDATE_CHECK_KEY: string = 'teslacamviewer_last_update_check';
   public UPDATE_CHECK_INTERVAL: number = 4 * 60 * 60 * 1000;
+  // Remote version check URL
   public remoteVersionUrl: string = '/version.json';
+  // Current version - UPDATE THIS when releasing new features
+  // Format: Year.Week.DayOfWeek.Release
   public currentVersion: string = '2026.21.1.1';
-  public changelog: any[] = [];
-  public state: any = null;
+  public state = this.loadState();
   public modal: any = null;
   public indicators: Map<string, any> = new Map();
   public pendingSelectors: any[] = [];
   private _mutationObserver: MutationObserver | null = null;
 
+  private changelog = [
+    {
+      version: '2026.21.1.1',
+      date: '2026-05-18',
+      title: 'AI Search, Recording Health & Launch Highlights',
+      features: [
+        {
+          id: 'ai-search-clip',
+          text: 'AI Search (BETA): semantic search across your event clips using a CLIP model that runs locally on your GPU. Type natural-language queries like "parking garage" or "night drive" — opt-in via Settings → AI Search.',
+          elementSelector: [
+            '#settingsBtn',
+            '.settings-nav-item[data-tab="ai-search"]',
+            '#ai-search-enable-btn',
+          ],
+        },
+        {
+          id: 'recording-health-badge',
+          text: 'Event cards now show a small amber or red badge when an event has missing cameras, very short clips, or interrupted recordings. Healthy events stay unbadged — clean cards by default.',
+          elementSelector: null,
+        },
+        {
+          id: 'launch-highlights',
+          text: 'Auto-detected full-throttle launches: a 🏁 chip on event cards counts the number of launches.',
+          elementSelector: null,
+        },
+        {
+          id: 'autopilot-timeline-layer',
+          text: 'Timeline gains an Autopilot / FSD activity strip — see at a glance when each segment of an event was on AP, hands-off FSD, or human-driven. Fully zoom-aware.',
+          elementSelector: '#timeline',
+        },
+        {
+          id: 'intervention-severity',
+          text: "Intervention Severity badges on event cards: a pill rating each event's hardest brake, sharpest lateral jolt, or impact (mild → moderate → severe → critical). Click the pill for a popover of each peak moment.",
+          elementSelector: null,
+        },
+        {
+          id: 'insights-scanner',
+          text: 'Background Insights Scanner: pre-computes severity, recording health, and launches for every event in the library so the badges appear instantly when the app opens. Pauses automatically during playback.',
+          elementSelector: null,
+        },
+        {
+          id: 'export-resolution-selector',
+          text: 'Export resolution selector: pick Native / 1080p / 720p before exporting. Lower resolutions run faster, finish quicker, and put much less load on the GPU encoder.',
+          elementSelector: [
+            '#settingsBtn',
+            '.settings-nav-item[data-tab="export"]',
+            '#setting-exportResolution',
+          ],
+        },
+        {
+          id: 'plate-blur-smoothness',
+          text: 'Plate-blur detection cadence rewrite: blurs track plates more smoothly across frames and re-acquire faster after camera changes, with less per-frame GPU pressure.',
+          elementSelector: null,
+        },
+        {
+          id: 'gap-marker-zoom-fix',
+          text: 'Fixed: the yellow/black "missing clips" indicator on the timeline now correctly moves with the timeline when zoomed.',
+          elementSelector: null,
+        },
+        {
+          id: 'sentry-minimap-export-fix',
+          text: 'Fixed: Sentry events without telemetry data now correctly render the mini-map in screenshots and exports (using event.json GPS as fallback).',
+          elementSelector: null,
+        },
+        {
+          id: 'gpu-export-diagnostics',
+          text: 'Better diagnostics when an export fails due to GPU issues (Windows TDR, hardware encoder hang, context loss). The error dialog now suggests specific mitigations, and the diagnostics log captures codec / dimensions / frame count for support.',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.17.4.1',
+      date: '2026-04-23',
+      title: 'License Activation Fix',
+      features: [
+        {
+          id: 'license-activation-double-click-fix',
+          text: 'Fixed license activation: a single click on the Activate button was firing two handlers at once, which caused a spurious "deactivate" confirm dialog and, in some cases, kicked fresh users back to Free Tier right after seeing "License Activated!". New users can now activate in one click.',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.17.1.1',
+      date: '2026-04-20',
+      title:
+        'Command Palette, Scrub Previews, Drive Auto-Refresh, Troubleshooting Panel',
+      features: [
+        {
+          id: 'command-palette',
+          text: 'Press Ctrl+K (Cmd+K on Mac) to open a searchable command palette — ~25 common actions (playback, layouts, export, overlays, navigation) plus free-text search across loaded events.',
+          elementSelector: null,
+        },
+        {
+          id: 'scrub-preview-thumbnails',
+          text: "Hovering the timeline now shows a multi-camera thumbnail preview (2×2 grid, or 3×2 on pillar-cam vehicles). Generation runs in the background and won't slow down playback.",
+          elementSelector: '#timeline',
+        },
+        {
+          id: 'drive-auto-refresh',
+          text: 'Drives auto-refresh when new clips appear — native filesystem events where supported, plus a 30-second polling fallback. No more manually clicking refresh after Sentry saves a new event.',
+          elementSelector: '#refreshDrivesBtn',
+        },
+        {
+          id: 'troubleshooting-panel',
+          text: 'New Diagnostics → Troubleshooting section (in Settings) captures recent console logs and exposes debug flag toggles. Copy / Download / Preview buttons make it easy to share a sanitized report without opening DevTools.',
+          elementSelector: [
+            '#settingsBtn',
+            '.settings-nav-item[data-tab="diagnostics"]',
+          ],
+        },
+        {
+          id: 'event-insights',
+          text: 'Event Insights: short, auto-generated observations about each event (derived from SEI telemetry) appear next to the event header.',
+          elementSelector: '#eventInsights',
+        },
+        {
+          id: 'fast-export-toggle',
+          text: 'Experimental Fast Export toggle in Settings → Export. Uses a streamlined render path for large exports — try it when standard export feels slow.',
+          elementSelector: [
+            '#settingsBtn',
+            '.settings-nav-item[data-tab="export"]',
+            '#setting-fastExportExperimental',
+          ],
+        },
+        {
+          id: 'sei-unknown-scanner',
+          text: 'SEI Unknown-Field Scanner: flags previously-unseen telemetry fields in your clips and offers a crowd-sourced report (review before sharing — all values are scrubbed of paths, GPS, and plate-shaped strings). Lives in Settings → Diagnostics (same place as Troubleshooting).',
+          elementSelector: null,
+        },
+        {
+          id: 'export-eta-smoothing',
+          text: 'Video export ETA no longer jumps at the Phase 1 → Phase 2 transition — now uses an 8-second sliding window with a light EMA so the countdown climbs and descends smoothly.',
+          elementSelector: null,
+        },
+        {
+          id: 'hover-buffer-fix',
+          text: 'Fixed playback stutter and multi-second backward jumps that happened when moving the mouse over the control panel during playback (main-thread contention was starving the video scheduler).',
+          elementSelector: null,
+        },
+        {
+          id: 'camera-hide-fix',
+          text: 'Hiding a camera in the layout now correctly hides it from both live view and exports.',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.16.5.1',
+      date: '2026-04-17',
+      title:
+        'Export & Layout Overhaul, Drive Sync Reliability, 6-Camera Support',
+      features: [
+        {
+          id: 'pro-branding-toggle',
+          text: 'Pro users: toggle the bottom banner on/off in Settings → Export. When off, exports use clean pill overlays for the timestamp and Sentry indicator instead of the full bar.',
+          elementSelector: null,
+        },
+        {
+          id: 'six-camera-layouts',
+          text: 'New built-in layouts for 6-camera vehicles: Front + Pillars, Front + Left Pillar, Front + Right Pillar (auto-shown when pillar cams are detected). 4:3 Main and All 16:9 redesigned for 6 cameras.',
+          elementSelector: '#layoutSelect',
+        },
+        {
+          id: 'drag-swap-all-layouts',
+          text: 'Camera drag-swap now works across every layout (not just 2×2 Grid). A reset button appears after any swap to restore the layout defaults.',
+          elementSelector: '#resetLayoutBtn',
+        },
+        {
+          id: 'unified-export-pipeline',
+          text: 'Focus-mode and grid exports now share one render path — fixes black video on MP4 and stutter on WebM, and makes the bottom banner consistent across single-camera and multi-camera exports.',
+          elementSelector: null,
+        },
+        {
+          id: 'mini-map-trail-fixes',
+          text: 'Mini-map trail in exports: distance-based pruning keeps the trail long in slow traffic, outlier GPS rejection stops the random-jump glitches, and the trail pixel math is corrected near tile boundaries.',
+          elementSelector: null,
+        },
+        {
+          id: 'drive-sync-reliability',
+          text: 'Drive Sync: real drive sizes shown instead of "0 B", destination refreshes after each sync so re-comparing works, mid-file cancel, head+tail checksum for large files, and partial-copy cleanup on errors.',
+          elementSelector: null,
+        },
+        {
+          id: 'ui-performance',
+          text: 'Fixed a RAF loop multiplication bug that made UI, HUD, and mini-map sluggish after multiple event switches.',
+          elementSelector: null,
+        },
+        {
+          id: 'sidebar-scrollbar-fix',
+          text: 'Sidebar resize handle no longer fights with the event list scrollbar.',
+          elementSelector: null,
+        },
+        {
+          id: 'saved-event-preview-fix',
+          text: 'Hover preview on Saved events now loops through the full tail footage instead of the ~1 second flash.',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.5.1.2',
+      date: '2026-01-26',
+      title: 'AI License Plate Detection & Incident Markers',
+      features: [
+        {
+          id: 'ai-plate-detection',
+          text: 'AI-powered license plate detection - automatically finds plates across all cameras (press D)',
+          elementSelector: null,
+        },
+        {
+          id: 'plate-size-warnings',
+          text: 'Real-time selection size indicator warns when plate region is too large for fast processing',
+          elementSelector: '#enhanceBtn',
+        },
+        {
+          id: 'incident-markers',
+          text: 'Incident Markers detect hard braking (>0.35g) and lateral g-force events in your telemetry',
+          elementSelector: '#statsBtn',
+        },
+        {
+          id: 'map-theme-sync',
+          text: 'Map now syncs with app theme and has improved styled controls',
+          elementSelector: '.tab-btn[data-tab="map"]',
+        },
+        {
+          id: 'region-tracking-improvements',
+          text: 'Improved plate tracking with Siamese network for better accuracy across frames',
+          elementSelector: null,
+        },
+        {
+          id: 'incident-slowmo-fix',
+          text: 'Fixed Incident Slow-Mo detection and added time offset display in Incident Hotspot popup',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.4.6.1',
+      date: '2026-01-25',
+      title: 'Modern UI for Settings & Statistics',
+      features: [
+        {
+          id: 'settings-sidebar-layout',
+          text: 'Settings modal redesigned with modern vertical sidebar navigation (like VS Code/Discord)',
+          elementSelector: null,
+        },
+        {
+          id: 'statistics-sidebar-layout',
+          text: 'Statistics modal redesigned with sidebar navigation: Overview, Timeline, Locations, Sentry Analysis, Data Quality, Export tabs',
+          elementSelector: null,
+        },
+        {
+          id: 'themed-scrollbars',
+          text: 'Themed scrollbars throughout the app for a consistent modern look',
+          elementSelector: null,
+        },
+        {
+          id: 'privacy-mode-export-ui',
+          text: 'Added Privacy Mode Export toggle in Settings (strips metadata from exports)',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.4.1.2',
+      date: '2026-01-19',
+      title: 'Map Provider Options & Bug Reporting',
+      features: [
+        {
+          id: 'map-tile-provider',
+          text: 'New map tile provider setting: switch between OpenStreetMap or Stadia Maps',
+          elementSelector: null,
+        },
+        {
+          id: 'bug-report-button',
+          text: 'Report Bug button in Help modal copies diagnostic info to clipboard for easier bug reports',
+          elementSelector: null,
+        },
+        {
+          id: 'parse-diagnostics',
+          text: 'Enhanced diagnostic logging helps debug folder parsing issues (e.g., OneDrive)',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.4.1.1',
+      date: '2026-01-19',
+      title: 'Map & Mobile Fixes',
+      features: [
+        {
+          id: 'map-light-tiles',
+          text: 'Fixed map light mode tiles not loading',
+          elementSelector: null,
+        },
+        {
+          id: 'heatmap-all-events',
+          text: 'Heatmap now shows all events (telemetry + metadata GPS combined)',
+          elementSelector: null,
+        },
+        {
+          id: 'mobile-telemetry-panel',
+          text: 'Fixed mobile telemetry panel display and elevation graph alignment',
+          elementSelector: null,
+        },
+        {
+          id: 'mobile-filter-panel',
+          text: 'Fixed mobile filter panel not loading correctly',
+          elementSelector: null,
+        },
+        {
+          id: 'hard-brake-accel-fix',
+          text: 'Fixed hard brake/acceleration detection showing inverted values',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.3.6.1',
+      date: '2026-01-18',
+      title: 'Update Notifications & Loading Progress',
+      features: [
+        {
+          id: 'update-notifications',
+          text: 'Automatic update notifications when a new version is available',
+          elementSelector: null,
+        },
+        {
+          id: 'loading-progress',
+          text: 'Loading progress indicator shows which folders are being scanned',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.3.5.3',
+      date: '2026-01-16',
+      title: 'Advanced Analytics & Safety Features',
+      features: [
+        {
+          id: 'hard-braking-detection',
+          text: 'Hard braking/acceleration detection with markers on G-Force graph',
+          elementSelector: null,
+        },
+        {
+          id: 'driving-smoothness-score',
+          text: 'Driving smoothness score (0-100) based on steering, accel, lateral G',
+          elementSelector: null,
+        },
+        {
+          id: 'clickable-anomalies',
+          text: 'Clickable anomaly markers on telemetry graphs - auto-detects spikes',
+          elementSelector: null,
+        },
+        {
+          id: 'phantom-braking',
+          text: 'Phantom braking detection for Autopilot analysis',
+          elementSelector: null,
+        },
+        {
+          id: 'ap-struggle-zones',
+          text: 'Autopilot struggle zones map - shows frequent disengagement locations',
+          elementSelector: null,
+        },
+        {
+          id: 'near-miss-scoring',
+          text: 'Near-miss incident scoring with timeline markers',
+          elementSelector: null,
+        },
+        {
+          id: 'insurance-report-pdf',
+          text: 'Insurance report PDF generator with frames, telemetry, and map',
+          elementSelector: null,
+        },
+        {
+          id: 'auto-blur-plates',
+          text: 'Auto-blur license plates in export using AI detection',
+          elementSelector: null,
+        },
+        {
+          id: 'privacy-mode-export',
+          text: 'Privacy mode export - strips timestamp, GPS, and location data',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.3.5.2',
+      date: '2026-01-16',
+      title: 'Trip Analytics & Export Enhancements',
+      features: [
+        {
+          id: 'csv-telemetry-export',
+          text: 'Export telemetry data as CSV - download button in graphs panel',
+          elementSelector: null,
+        },
+        {
+          id: 'trip-analytics-stats',
+          text: 'Trip statistics in graphs header - distance, avg/max speed, autopilot %',
+          elementSelector: null,
+        },
+        {
+          id: 'minimap-in-export',
+          text: 'Option to include GPS mini-map in video exports',
+          elementSelector: null,
+        },
+        {
+          id: 'driving-heatmap',
+          text: 'Driving heatmap on Map tab - shows your most frequent routes',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.3.5.1',
+      date: '2026-01-16',
+      title: 'Telemetry Graphs & Speed Limit Display',
+      features: [
+        {
+          id: 'telemetry-graphs-panel',
+          text: 'Interactive telemetry graphs panel - Press G to toggle speed, G-force, and steering graphs',
+          elementSelector: '#telemetryGraphsPanel',
+        },
+        {
+          id: 'speed-limit-display',
+          text: 'Real-time speed limit display from OpenStreetMap - shows limit on HUD and graph',
+          elementSelector: null,
+        },
+        {
+          id: 'speed-limit-graph-line',
+          text: 'Speed limit reference line on speed graph that varies along the route',
+          elementSelector: null,
+        },
+        {
+          id: 'gps-minimap',
+          text: 'GPS mini-map overlay showing vehicle position in real-time',
+          elementSelector: null,
+        },
+        {
+          id: 'speed-limit-styling',
+          text: 'Regional speed limit sign styling - rectangular (US) or circular (EU/metric)',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.1.2.1',
+      date: '2025-12-30',
+      title: 'Internationalization & Mobile Fixes',
+      features: [
+        {
+          id: 'i18n-support',
+          text: 'Multi-language support - Switch languages in Settings or welcome screen',
+          elementSelector: '#settingsBtn',
+        },
+        {
+          id: 'mini-mode-controls',
+          text: 'Fixed mobile portrait mode controls - play, frame step, timeline scrubbing',
+          elementSelector: null,
+        },
+        {
+          id: 'mobile-fullscreen-fixes',
+          text: 'Mobile fullscreen: Escape key exits, tap shows controls, bottom sheet hidden',
+          elementSelector: null,
+        },
+      ],
+    },
+    {
+      version: '2026.1.1.2',
+      date: '2025-12-29',
+      title: 'Export Quality & Format Options',
+      features: [
+        {
+          id: 'export-frame-timing-fix',
+          text: 'Fixed video export frame skipping - consistent 30fps timing',
+          elementSelector: '#exportBtn',
+        },
+        {
+          id: 'export-format-setting',
+          text: 'Choose export format: WebM (VP9) or MP4 (H.264) in Settings',
+          elementSelector: '#settingsBtn',
+        },
+        {
+          id: 'export-cancel-fix',
+          text: 'Cancel button now works reliably during export progress',
+          elementSelector: '#exportBtn',
+        },
+      ],
+    },
+    {
+      version: '2026.1.1.1',
+      date: '2025-12-29',
+      title: 'User Data Backup & Drive Sync UI',
+      features: [
+        {
+          id: 'sync-horizontal-layout',
+          text: 'Drive Sync redesigned with horizontal split-panel layout',
+          elementSelector: '#syncDrivesBtn',
+        },
+        {
+          id: 'sync-stats-visible',
+          text: 'Comparison statistics now visible by default after comparing drives',
+          elementSelector: '#syncDrivesBtn',
+        },
+        {
+          id: 'sync-preset-chips',
+          text: 'Quick-load presets shown as chips for faster access',
+          elementSelector: '#syncDrivesBtn',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.6',
+      date: '2025-12-28',
+      title: 'Phase 7: Multi-Drive, Statistics & Mobile',
+      features: [
+        {
+          id: 'multi-drive',
+          text: 'Multi-drive support - Add multiple TeslaCam folders and switch between them',
+          elementSelector: '#addDriveBtn',
+        },
+        {
+          id: 'drive-management',
+          text: 'Drive management modal - Change colors, edit labels, remove drives',
+          elementSelector: '#manageDrivesBtn',
+        },
+        {
+          id: 'location-heatmap',
+          text: 'Location heatmap - Toggle between markers and heatmap view on the map',
+          elementSelector: '.tab-btn[data-tab="map"]',
+        },
+        {
+          id: 'time-of-day-chart',
+          text: 'Sentry triggers by time-of-day chart in statistics',
+          elementSelector: '#statsBtn',
+        },
+        {
+          id: 'weekly-trends',
+          text: 'Weekly/monthly trends chart with toggle',
+          elementSelector: '#statsBtn',
+        },
+        {
+          id: 'stats-export',
+          text: 'Export statistics as JSON or CSV',
+          elementSelector: '#statsBtn',
+        },
+        {
+          id: 'mobile-fullscreen',
+          text: 'Mobile fullscreen video mode with swipe gestures',
+        },
+        {
+          id: 'orientation-lock',
+          text: 'Orientation lock setting - Lock landscape during playback',
+          elementSelector: '#settingsBtn',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.5',
+      date: '2025-12-28',
+      title: 'Export Improvements & UX Polish',
+      features: [
+        {
+          id: 'export-layout-match',
+          text: 'Export now matches the exact layout shown in the preview',
+          elementSelector: '#exportDropdownBtn',
+        },
+        {
+          id: 'single-export-overlay',
+          text: 'Single camera export uses same overlay format as grid layouts',
+        },
+        {
+          id: 'snap-toggle',
+          text: 'Snap toggle in Layout Editor toolbar - works for dragging and resizing',
+          elementSelector: '#layoutSelect',
+        },
+        {
+          id: 'timeline-markers',
+          text: 'IN/OUT markers now extend past timeline edge for visibility',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.4',
+      date: '2025-12-28',
+      title: 'Layout Editor Snap Guides',
+      features: [
+        {
+          id: 'snap-guides',
+          text: 'Visual snap guides when aligning cameras in the Layout Editor',
+          elementSelector: '#layoutSelect',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.3',
+      date: '2025-12-28',
+      title: 'Mobile Support & Statistics',
+      features: [
+        {
+          id: 'mobile-support',
+          text: 'Mobile-friendly responsive design with sidebar drawer',
+        },
+        {
+          id: 'touch-optimization',
+          text: 'Touch-optimized controls with larger tap targets',
+        },
+        {
+          id: 'statistics-dashboard',
+          text: 'Statistics dashboard showing event breakdowns, recording time, and top locations',
+          elementSelector: '#statsBtn',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.2',
+      date: '2025-12-28',
+      title: 'Theme System & Single Camera Export',
+      features: [
+        {
+          id: 'theme-system',
+          text: 'Theme options - Dark, Light, Midnight, and Tesla Red themes',
+          elementSelector: '#setting-theme',
+        },
+        {
+          id: 'single-camera-export',
+          text: 'Export individual camera angles - Front, Rear, Left, or Right only',
+          elementSelector: '#exportDropdownBtn',
+        },
+      ],
+    },
+    {
+      version: '2025.52.7.1',
+      date: '2025-12-28',
+      title: 'Custom Layout Editor & Version Tracking',
+      features: [
+        {
+          id: 'layout-editor',
+          text: 'Visual Layout Editor - Design custom camera arrangements with drag & drop',
+          elementSelector: '#layoutSelect',
+        },
+        {
+          id: 'layout-import-export',
+          text: 'Import/Export layouts as JSON files to share with others',
+          elementSelector: '#layoutSelect',
+        },
+        {
+          id: 'layout-cropping',
+          text: 'Camera cropping - Mask edges without distorting aspect ratio',
+          elementSelector: '#layoutSelect',
+        },
+        {
+          id: 'version-tracking',
+          text: 'Version tracking with "What\'s New" indicators',
+        },
+      ],
+    },
+    {
+      version: '2025.52.6.1',
+      date: '2025-12-27',
+      title: 'Multi-Layout View System',
+      features: [
+        {
+          id: 'layouts-5-presets',
+          text: '5 different camera viewing layouts',
+        },
+        { id: 'layout-keyboard', text: 'Press L to cycle through layouts' },
+      ],
+    },
+    {
+      version: '2025.52.5.1',
+      date: '2025-12-26',
+      title: 'Export & Sharing',
+      features: [
+        {
+          id: 'screenshot-capture',
+          text: 'Screenshot capture with composite view',
+        },
+        { id: 'video-export', text: 'Video export with real-time rendering' },
+        {
+          id: 'clip-marking',
+          text: 'IN/OUT point marking for clip selection',
+        },
+      ],
+    },
+    {
+      version: '2025.52.5.0',
+      date: '2025-12-26',
+      title: 'Event Analysis',
+      features: [
+        {
+          id: 'event-filtering',
+          text: 'Filter events by type, date, and search',
+        },
+        {
+          id: 'interactive-map',
+          text: 'Interactive map showing event locations',
+        },
+      ],
+    },
+  ];
+
   constructor() {
-    this.STORAGE_KEY = 'teslacamviewer_version_state';
-    this.UPDATE_CHECK_KEY = 'teslacamviewer_last_update_check';
-    this.UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours in ms
-
-    // Remote version check URL
-    this.remoteVersionUrl = '/version.json';
-
-    // Current version - UPDATE THIS when releasing new features
-    // Format: Year.Week.DayOfWeek.Release
-    this.currentVersion = '2026.21.1.1';
-
-    // Changelog with feature identifiers for "what's new" dots
-    // Each entry has: version, date, title, and features array
-    // Features have: id (for tracking seen state), text, elementSelector (optional)
-    this.changelog = [
-      {
-        version: '2026.21.1.1',
-        date: '2026-05-18',
-        title: 'AI Search, Recording Health & Launch Highlights',
-        features: [
-          {
-            id: 'ai-search-clip',
-            text: 'AI Search (BETA): semantic search across your event clips using a CLIP model that runs locally on your GPU. Type natural-language queries like "parking garage" or "night drive" — opt-in via Settings → AI Search.',
-            elementSelector: [
-              '#settingsBtn',
-              '.settings-nav-item[data-tab="ai-search"]',
-              '#ai-search-enable-btn',
-            ],
-          },
-          {
-            id: 'recording-health-badge',
-            text: 'Event cards now show a small amber or red badge when an event has missing cameras, very short clips, or interrupted recordings. Healthy events stay unbadged — clean cards by default.',
-            elementSelector: null,
-          },
-          {
-            id: 'launch-highlights',
-            text: 'Auto-detected full-throttle launches: a 🏁 chip on event cards counts the number of launches.',
-            elementSelector: null,
-          },
-          {
-            id: 'autopilot-timeline-layer',
-            text: 'Timeline gains an Autopilot / FSD activity strip — see at a glance when each segment of an event was on AP, hands-off FSD, or human-driven. Fully zoom-aware.',
-            elementSelector: '#timeline',
-          },
-          {
-            id: 'intervention-severity',
-            text: "Intervention Severity badges on event cards: a pill rating each event's hardest brake, sharpest lateral jolt, or impact (mild → moderate → severe → critical). Click the pill for a popover of each peak moment.",
-            elementSelector: null,
-          },
-          {
-            id: 'insights-scanner',
-            text: 'Background Insights Scanner: pre-computes severity, recording health, and launches for every event in the library so the badges appear instantly when the app opens. Pauses automatically during playback.',
-            elementSelector: null,
-          },
-          {
-            id: 'export-resolution-selector',
-            text: 'Export resolution selector: pick Native / 1080p / 720p before exporting. Lower resolutions run faster, finish quicker, and put much less load on the GPU encoder.',
-            elementSelector: [
-              '#settingsBtn',
-              '.settings-nav-item[data-tab="export"]',
-              '#setting-exportResolution',
-            ],
-          },
-          {
-            id: 'plate-blur-smoothness',
-            text: 'Plate-blur detection cadence rewrite: blurs track plates more smoothly across frames and re-acquire faster after camera changes, with less per-frame GPU pressure.',
-            elementSelector: null,
-          },
-          {
-            id: 'gap-marker-zoom-fix',
-            text: 'Fixed: the yellow/black "missing clips" indicator on the timeline now correctly moves with the timeline when zoomed.',
-            elementSelector: null,
-          },
-          {
-            id: 'sentry-minimap-export-fix',
-            text: 'Fixed: Sentry events without telemetry data now correctly render the mini-map in screenshots and exports (using event.json GPS as fallback).',
-            elementSelector: null,
-          },
-          {
-            id: 'gpu-export-diagnostics',
-            text: 'Better diagnostics when an export fails due to GPU issues (Windows TDR, hardware encoder hang, context loss). The error dialog now suggests specific mitigations, and the diagnostics log captures codec / dimensions / frame count for support.',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.17.4.1',
-        date: '2026-04-23',
-        title: 'License Activation Fix',
-        features: [
-          {
-            id: 'license-activation-double-click-fix',
-            text: 'Fixed license activation: a single click on the Activate button was firing two handlers at once, which caused a spurious "deactivate" confirm dialog and, in some cases, kicked fresh users back to Free Tier right after seeing "License Activated!". New users can now activate in one click.',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.17.1.1',
-        date: '2026-04-20',
-        title:
-          'Command Palette, Scrub Previews, Drive Auto-Refresh, Troubleshooting Panel',
-        features: [
-          {
-            id: 'command-palette',
-            text: 'Press Ctrl+K (Cmd+K on Mac) to open a searchable command palette — ~25 common actions (playback, layouts, export, overlays, navigation) plus free-text search across loaded events.',
-            elementSelector: null,
-          },
-          {
-            id: 'scrub-preview-thumbnails',
-            text: "Hovering the timeline now shows a multi-camera thumbnail preview (2×2 grid, or 3×2 on pillar-cam vehicles). Generation runs in the background and won't slow down playback.",
-            elementSelector: '#timeline',
-          },
-          {
-            id: 'drive-auto-refresh',
-            text: 'Drives auto-refresh when new clips appear — native filesystem events where supported, plus a 30-second polling fallback. No more manually clicking refresh after Sentry saves a new event.',
-            elementSelector: '#refreshDrivesBtn',
-          },
-          {
-            id: 'troubleshooting-panel',
-            text: 'New Diagnostics → Troubleshooting section (in Settings) captures recent console logs and exposes debug flag toggles. Copy / Download / Preview buttons make it easy to share a sanitized report without opening DevTools.',
-            elementSelector: [
-              '#settingsBtn',
-              '.settings-nav-item[data-tab="diagnostics"]',
-            ],
-          },
-          {
-            id: 'event-insights',
-            text: 'Event Insights: short, auto-generated observations about each event (derived from SEI telemetry) appear next to the event header.',
-            elementSelector: '#eventInsights',
-          },
-          {
-            id: 'fast-export-toggle',
-            text: 'Experimental Fast Export toggle in Settings → Export. Uses a streamlined render path for large exports — try it when standard export feels slow.',
-            elementSelector: [
-              '#settingsBtn',
-              '.settings-nav-item[data-tab="export"]',
-              '#setting-fastExportExperimental',
-            ],
-          },
-          {
-            id: 'sei-unknown-scanner',
-            text: 'SEI Unknown-Field Scanner: flags previously-unseen telemetry fields in your clips and offers a crowd-sourced report (review before sharing — all values are scrubbed of paths, GPS, and plate-shaped strings). Lives in Settings → Diagnostics (same place as Troubleshooting).',
-            elementSelector: null,
-          },
-          {
-            id: 'export-eta-smoothing',
-            text: 'Video export ETA no longer jumps at the Phase 1 → Phase 2 transition — now uses an 8-second sliding window with a light EMA so the countdown climbs and descends smoothly.',
-            elementSelector: null,
-          },
-          {
-            id: 'hover-buffer-fix',
-            text: 'Fixed playback stutter and multi-second backward jumps that happened when moving the mouse over the control panel during playback (main-thread contention was starving the video scheduler).',
-            elementSelector: null,
-          },
-          {
-            id: 'camera-hide-fix',
-            text: 'Hiding a camera in the layout now correctly hides it from both live view and exports.',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.16.5.1',
-        date: '2026-04-17',
-        title:
-          'Export & Layout Overhaul, Drive Sync Reliability, 6-Camera Support',
-        features: [
-          {
-            id: 'pro-branding-toggle',
-            text: 'Pro users: toggle the bottom banner on/off in Settings → Export. When off, exports use clean pill overlays for the timestamp and Sentry indicator instead of the full bar.',
-            elementSelector: null,
-          },
-          {
-            id: 'six-camera-layouts',
-            text: 'New built-in layouts for 6-camera vehicles: Front + Pillars, Front + Left Pillar, Front + Right Pillar (auto-shown when pillar cams are detected). 4:3 Main and All 16:9 redesigned for 6 cameras.',
-            elementSelector: '#layoutSelect',
-          },
-          {
-            id: 'drag-swap-all-layouts',
-            text: 'Camera drag-swap now works across every layout (not just 2×2 Grid). A reset button appears after any swap to restore the layout defaults.',
-            elementSelector: '#resetLayoutBtn',
-          },
-          {
-            id: 'unified-export-pipeline',
-            text: 'Focus-mode and grid exports now share one render path — fixes black video on MP4 and stutter on WebM, and makes the bottom banner consistent across single-camera and multi-camera exports.',
-            elementSelector: null,
-          },
-          {
-            id: 'mini-map-trail-fixes',
-            text: 'Mini-map trail in exports: distance-based pruning keeps the trail long in slow traffic, outlier GPS rejection stops the random-jump glitches, and the trail pixel math is corrected near tile boundaries.',
-            elementSelector: null,
-          },
-          {
-            id: 'drive-sync-reliability',
-            text: 'Drive Sync: real drive sizes shown instead of "0 B", destination refreshes after each sync so re-comparing works, mid-file cancel, head+tail checksum for large files, and partial-copy cleanup on errors.',
-            elementSelector: null,
-          },
-          {
-            id: 'ui-performance',
-            text: 'Fixed a RAF loop multiplication bug that made UI, HUD, and mini-map sluggish after multiple event switches.',
-            elementSelector: null,
-          },
-          {
-            id: 'sidebar-scrollbar-fix',
-            text: 'Sidebar resize handle no longer fights with the event list scrollbar.',
-            elementSelector: null,
-          },
-          {
-            id: 'saved-event-preview-fix',
-            text: 'Hover preview on Saved events now loops through the full tail footage instead of the ~1 second flash.',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.5.1.2',
-        date: '2026-01-26',
-        title: 'AI License Plate Detection & Incident Markers',
-        features: [
-          {
-            id: 'ai-plate-detection',
-            text: 'AI-powered license plate detection - automatically finds plates across all cameras (press D)',
-            elementSelector: null,
-          },
-          {
-            id: 'plate-size-warnings',
-            text: 'Real-time selection size indicator warns when plate region is too large for fast processing',
-            elementSelector: '#enhanceBtn',
-          },
-          {
-            id: 'incident-markers',
-            text: 'Incident Markers detect hard braking (>0.35g) and lateral g-force events in your telemetry',
-            elementSelector: '#statsBtn',
-          },
-          {
-            id: 'map-theme-sync',
-            text: 'Map now syncs with app theme and has improved styled controls',
-            elementSelector: '.tab-btn[data-tab="map"]',
-          },
-          {
-            id: 'region-tracking-improvements',
-            text: 'Improved plate tracking with Siamese network for better accuracy across frames',
-            elementSelector: null,
-          },
-          {
-            id: 'incident-slowmo-fix',
-            text: 'Fixed Incident Slow-Mo detection and added time offset display in Incident Hotspot popup',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.4.6.1',
-        date: '2026-01-25',
-        title: 'Modern UI for Settings & Statistics',
-        features: [
-          {
-            id: 'settings-sidebar-layout',
-            text: 'Settings modal redesigned with modern vertical sidebar navigation (like VS Code/Discord)',
-            elementSelector: null,
-          },
-          {
-            id: 'statistics-sidebar-layout',
-            text: 'Statistics modal redesigned with sidebar navigation: Overview, Timeline, Locations, Sentry Analysis, Data Quality, Export tabs',
-            elementSelector: null,
-          },
-          {
-            id: 'themed-scrollbars',
-            text: 'Themed scrollbars throughout the app for a consistent modern look',
-            elementSelector: null,
-          },
-          {
-            id: 'privacy-mode-export-ui',
-            text: 'Added Privacy Mode Export toggle in Settings (strips metadata from exports)',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.4.1.2',
-        date: '2026-01-19',
-        title: 'Map Provider Options & Bug Reporting',
-        features: [
-          {
-            id: 'map-tile-provider',
-            text: 'New map tile provider setting: switch between OpenStreetMap or Stadia Maps',
-            elementSelector: null,
-          },
-          {
-            id: 'bug-report-button',
-            text: 'Report Bug button in Help modal copies diagnostic info to clipboard for easier bug reports',
-            elementSelector: null,
-          },
-          {
-            id: 'parse-diagnostics',
-            text: 'Enhanced diagnostic logging helps debug folder parsing issues (e.g., OneDrive)',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.4.1.1',
-        date: '2026-01-19',
-        title: 'Map & Mobile Fixes',
-        features: [
-          {
-            id: 'map-light-tiles',
-            text: 'Fixed map light mode tiles not loading',
-            elementSelector: null,
-          },
-          {
-            id: 'heatmap-all-events',
-            text: 'Heatmap now shows all events (telemetry + metadata GPS combined)',
-            elementSelector: null,
-          },
-          {
-            id: 'mobile-telemetry-panel',
-            text: 'Fixed mobile telemetry panel display and elevation graph alignment',
-            elementSelector: null,
-          },
-          {
-            id: 'mobile-filter-panel',
-            text: 'Fixed mobile filter panel not loading correctly',
-            elementSelector: null,
-          },
-          {
-            id: 'hard-brake-accel-fix',
-            text: 'Fixed hard brake/acceleration detection showing inverted values',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.3.6.1',
-        date: '2026-01-18',
-        title: 'Update Notifications & Loading Progress',
-        features: [
-          {
-            id: 'update-notifications',
-            text: 'Automatic update notifications when a new version is available',
-            elementSelector: null,
-          },
-          {
-            id: 'loading-progress',
-            text: 'Loading progress indicator shows which folders are being scanned',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.3.5.3',
-        date: '2026-01-16',
-        title: 'Advanced Analytics & Safety Features',
-        features: [
-          {
-            id: 'hard-braking-detection',
-            text: 'Hard braking/acceleration detection with markers on G-Force graph',
-            elementSelector: null,
-          },
-          {
-            id: 'driving-smoothness-score',
-            text: 'Driving smoothness score (0-100) based on steering, accel, lateral G',
-            elementSelector: null,
-          },
-          {
-            id: 'clickable-anomalies',
-            text: 'Clickable anomaly markers on telemetry graphs - auto-detects spikes',
-            elementSelector: null,
-          },
-          {
-            id: 'phantom-braking',
-            text: 'Phantom braking detection for Autopilot analysis',
-            elementSelector: null,
-          },
-          {
-            id: 'ap-struggle-zones',
-            text: 'Autopilot struggle zones map - shows frequent disengagement locations',
-            elementSelector: null,
-          },
-          {
-            id: 'near-miss-scoring',
-            text: 'Near-miss incident scoring with timeline markers',
-            elementSelector: null,
-          },
-          {
-            id: 'insurance-report-pdf',
-            text: 'Insurance report PDF generator with frames, telemetry, and map',
-            elementSelector: null,
-          },
-          {
-            id: 'auto-blur-plates',
-            text: 'Auto-blur license plates in export using AI detection',
-            elementSelector: null,
-          },
-          {
-            id: 'privacy-mode-export',
-            text: 'Privacy mode export - strips timestamp, GPS, and location data',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.3.5.2',
-        date: '2026-01-16',
-        title: 'Trip Analytics & Export Enhancements',
-        features: [
-          {
-            id: 'csv-telemetry-export',
-            text: 'Export telemetry data as CSV - download button in graphs panel',
-            elementSelector: null,
-          },
-          {
-            id: 'trip-analytics-stats',
-            text: 'Trip statistics in graphs header - distance, avg/max speed, autopilot %',
-            elementSelector: null,
-          },
-          {
-            id: 'minimap-in-export',
-            text: 'Option to include GPS mini-map in video exports',
-            elementSelector: null,
-          },
-          {
-            id: 'driving-heatmap',
-            text: 'Driving heatmap on Map tab - shows your most frequent routes',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.3.5.1',
-        date: '2026-01-16',
-        title: 'Telemetry Graphs & Speed Limit Display',
-        features: [
-          {
-            id: 'telemetry-graphs-panel',
-            text: 'Interactive telemetry graphs panel - Press G to toggle speed, G-force, and steering graphs',
-            elementSelector: '#telemetryGraphsPanel',
-          },
-          {
-            id: 'speed-limit-display',
-            text: 'Real-time speed limit display from OpenStreetMap - shows limit on HUD and graph',
-            elementSelector: null,
-          },
-          {
-            id: 'speed-limit-graph-line',
-            text: 'Speed limit reference line on speed graph that varies along the route',
-            elementSelector: null,
-          },
-          {
-            id: 'gps-minimap',
-            text: 'GPS mini-map overlay showing vehicle position in real-time',
-            elementSelector: null,
-          },
-          {
-            id: 'speed-limit-styling',
-            text: 'Regional speed limit sign styling - rectangular (US) or circular (EU/metric)',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.1.2.1',
-        date: '2025-12-30',
-        title: 'Internationalization & Mobile Fixes',
-        features: [
-          {
-            id: 'i18n-support',
-            text: 'Multi-language support - Switch languages in Settings or welcome screen',
-            elementSelector: '#settingsBtn',
-          },
-          {
-            id: 'mini-mode-controls',
-            text: 'Fixed mobile portrait mode controls - play, frame step, timeline scrubbing',
-            elementSelector: null,
-          },
-          {
-            id: 'mobile-fullscreen-fixes',
-            text: 'Mobile fullscreen: Escape key exits, tap shows controls, bottom sheet hidden',
-            elementSelector: null,
-          },
-        ],
-      },
-      {
-        version: '2026.1.1.2',
-        date: '2025-12-29',
-        title: 'Export Quality & Format Options',
-        features: [
-          {
-            id: 'export-frame-timing-fix',
-            text: 'Fixed video export frame skipping - consistent 30fps timing',
-            elementSelector: '#exportBtn',
-          },
-          {
-            id: 'export-format-setting',
-            text: 'Choose export format: WebM (VP9) or MP4 (H.264) in Settings',
-            elementSelector: '#settingsBtn',
-          },
-          {
-            id: 'export-cancel-fix',
-            text: 'Cancel button now works reliably during export progress',
-            elementSelector: '#exportBtn',
-          },
-        ],
-      },
-      {
-        version: '2026.1.1.1',
-        date: '2025-12-29',
-        title: 'User Data Backup & Drive Sync UI',
-        features: [
-          {
-            id: 'sync-horizontal-layout',
-            text: 'Drive Sync redesigned with horizontal split-panel layout',
-            elementSelector: '#syncDrivesBtn',
-          },
-          {
-            id: 'sync-stats-visible',
-            text: 'Comparison statistics now visible by default after comparing drives',
-            elementSelector: '#syncDrivesBtn',
-          },
-          {
-            id: 'sync-preset-chips',
-            text: 'Quick-load presets shown as chips for faster access',
-            elementSelector: '#syncDrivesBtn',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.6',
-        date: '2025-12-28',
-        title: 'Phase 7: Multi-Drive, Statistics & Mobile',
-        features: [
-          {
-            id: 'multi-drive',
-            text: 'Multi-drive support - Add multiple TeslaCam folders and switch between them',
-            elementSelector: '#addDriveBtn',
-          },
-          {
-            id: 'drive-management',
-            text: 'Drive management modal - Change colors, edit labels, remove drives',
-            elementSelector: '#manageDrivesBtn',
-          },
-          {
-            id: 'location-heatmap',
-            text: 'Location heatmap - Toggle between markers and heatmap view on the map',
-            elementSelector: '.tab-btn[data-tab="map"]',
-          },
-          {
-            id: 'time-of-day-chart',
-            text: 'Sentry triggers by time-of-day chart in statistics',
-            elementSelector: '#statsBtn',
-          },
-          {
-            id: 'weekly-trends',
-            text: 'Weekly/monthly trends chart with toggle',
-            elementSelector: '#statsBtn',
-          },
-          {
-            id: 'stats-export',
-            text: 'Export statistics as JSON or CSV',
-            elementSelector: '#statsBtn',
-          },
-          {
-            id: 'mobile-fullscreen',
-            text: 'Mobile fullscreen video mode with swipe gestures',
-          },
-          {
-            id: 'orientation-lock',
-            text: 'Orientation lock setting - Lock landscape during playback',
-            elementSelector: '#settingsBtn',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.5',
-        date: '2025-12-28',
-        title: 'Export Improvements & UX Polish',
-        features: [
-          {
-            id: 'export-layout-match',
-            text: 'Export now matches the exact layout shown in the preview',
-            elementSelector: '#exportDropdownBtn',
-          },
-          {
-            id: 'single-export-overlay',
-            text: 'Single camera export uses same overlay format as grid layouts',
-          },
-          {
-            id: 'snap-toggle',
-            text: 'Snap toggle in Layout Editor toolbar - works for dragging and resizing',
-            elementSelector: '#layoutSelect',
-          },
-          {
-            id: 'timeline-markers',
-            text: 'IN/OUT markers now extend past timeline edge for visibility',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.4',
-        date: '2025-12-28',
-        title: 'Layout Editor Snap Guides',
-        features: [
-          {
-            id: 'snap-guides',
-            text: 'Visual snap guides when aligning cameras in the Layout Editor',
-            elementSelector: '#layoutSelect',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.3',
-        date: '2025-12-28',
-        title: 'Mobile Support & Statistics',
-        features: [
-          {
-            id: 'mobile-support',
-            text: 'Mobile-friendly responsive design with sidebar drawer',
-          },
-          {
-            id: 'touch-optimization',
-            text: 'Touch-optimized controls with larger tap targets',
-          },
-          {
-            id: 'statistics-dashboard',
-            text: 'Statistics dashboard showing event breakdowns, recording time, and top locations',
-            elementSelector: '#statsBtn',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.2',
-        date: '2025-12-28',
-        title: 'Theme System & Single Camera Export',
-        features: [
-          {
-            id: 'theme-system',
-            text: 'Theme options - Dark, Light, Midnight, and Tesla Red themes',
-            elementSelector: '#setting-theme',
-          },
-          {
-            id: 'single-camera-export',
-            text: 'Export individual camera angles - Front, Rear, Left, or Right only',
-            elementSelector: '#exportDropdownBtn',
-          },
-        ],
-      },
-      {
-        version: '2025.52.7.1',
-        date: '2025-12-28',
-        title: 'Custom Layout Editor & Version Tracking',
-        features: [
-          {
-            id: 'layout-editor',
-            text: 'Visual Layout Editor - Design custom camera arrangements with drag & drop',
-            elementSelector: '#layoutSelect',
-          },
-          {
-            id: 'layout-import-export',
-            text: 'Import/Export layouts as JSON files to share with others',
-            elementSelector: '#layoutSelect',
-          },
-          {
-            id: 'layout-cropping',
-            text: 'Camera cropping - Mask edges without distorting aspect ratio',
-            elementSelector: '#layoutSelect',
-          },
-          {
-            id: 'version-tracking',
-            text: 'Version tracking with "What\'s New" indicators',
-          },
-        ],
-      },
-      {
-        version: '2025.52.6.1',
-        date: '2025-12-27',
-        title: 'Multi-Layout View System',
-        features: [
-          {
-            id: 'layouts-5-presets',
-            text: '5 different camera viewing layouts',
-          },
-          { id: 'layout-keyboard', text: 'Press L to cycle through layouts' },
-        ],
-      },
-      {
-        version: '2025.52.5.1',
-        date: '2025-12-26',
-        title: 'Export & Sharing',
-        features: [
-          {
-            id: 'screenshot-capture',
-            text: 'Screenshot capture with composite view',
-          },
-          { id: 'video-export', text: 'Video export with real-time rendering' },
-          {
-            id: 'clip-marking',
-            text: 'IN/OUT point marking for clip selection',
-          },
-        ],
-      },
-      {
-        version: '2025.52.5.0',
-        date: '2025-12-26',
-        title: 'Event Analysis',
-        features: [
-          {
-            id: 'event-filtering',
-            text: 'Filter events by type, date, and search',
-          },
-          {
-            id: 'interactive-map',
-            text: 'Interactive map showing event locations',
-          },
-        ],
-      },
-    ];
-
-    this.state = this.loadState();
-    this.modal = null;
-    // featureId -> { dots: HTMLElement[], cleanups: Function[] }
-    this.indicators = new Map();
-    // [{ featureId, selector, text, isLast }] — selectors whose element
-    // isn't in the DOM yet (e.g. Settings modal nav items). Watched by a
-    // MutationObserver and dotted as soon as they appear.
-    this.pendingSelectors = [];
-    this._mutationObserver = null;
-
     this.checkVersionUpgrade();
   }
 

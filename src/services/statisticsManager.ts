@@ -7,11 +7,6 @@ class StatisticsManager {
   public modal: any = null;
   public events: any[] = [];
 
-  constructor() {
-    this.modal = null;
-    this.events = [];
-  }
-
   /**
    * Get translation helper
    */

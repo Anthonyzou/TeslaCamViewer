@@ -18,23 +18,6 @@ class FolderParser {
   public _debugStats: any = null;
   public _lastDiagnostics: any = null;
 
-  constructor() {
-    this.rootHandle = null;
-    this.events = [];
-    this._sig = 'nmccomb';
-    this.DB_NAME = 'TeslaCamViewerDB';
-    this.DB_STORE = 'folderHandles';
-    this.DB_KEY = 'lastFolder';
-
-    // Multi-drive support
-    this.currentDriveId = null;
-    this.currentDriveLabel = null;
-    this.currentDriveColor = null;
-
-    // Progress callback for UI updates during parsing
-    this.onProgress = null;
-  }
-
   /**
    * Set progress callback for UI updates during parsing
    * @param {Function} callback - Called with (message, eventCount)

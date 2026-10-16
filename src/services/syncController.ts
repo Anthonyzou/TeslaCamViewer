@@ -4,8 +4,9 @@
  * Algorithm: adaptive frame-sync v2.1
  */
 
+import VideoPlayer from './videoPlayer';
+
 class SyncController {
-  public videoPlayer: any;
   public isMonitoring: boolean = false;
   public animationFrameId: any = null;
   public syncStatusElement: HTMLElement | null = null;
@@ -22,23 +23,7 @@ class SyncController {
   private _recoveryTitle?: string;
   private _recoveryStatus?: string;
 
-  constructor(videoPlayer: any) {
-    this.videoPlayer = videoPlayer;
-    this.isMonitoring = false;
-    this.animationFrameId = null;
-    this.syncStatusElement = document.getElementById('syncStatus');
-    this._tcvId = 778699;
-
-    // Sync settings
-    this.DRIFT_THRESHOLD = 0.3;
-    this.CHECK_INTERVAL = 100;
-    this.SYNC_INTERVAL = 30;
-    this.END_OF_CLIP_BUFFER = 5;
-    this.MAX_DRIFT_BEFORE_ABORT = 2.0;
-
-    this.lastCheckTime = 0;
-    this.lastSyncTime = 0;
-  }
+  constructor(private videoPlayer: VideoPlayer) {}
 
   get videos(): Record<string, HTMLVideoElement> {
     return this.videoPlayer?.videos || {};

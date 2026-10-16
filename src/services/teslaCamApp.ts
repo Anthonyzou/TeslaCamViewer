@@ -27,7 +27,7 @@ export class TeslaCamApp {
   public layoutManager = new LayoutManager();
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
   public videoEnhancer = new VideoEnhancer();
-  public videoExport = new VideoExport(this.videoPlayer, this.layoutManager);
+  public videoExport = new VideoExport(this.videoPlayer);
   public settingsManager = new SettingsManager();
   public versionManager = new VersionManager();
   public statisticsManager = new StatisticsManager();

@@ -4,79 +4,70 @@
  */
 class SettingsManager {
   public STORAGE_KEY: string = 'teslacamviewer_settings';
-  public defaults: Record<string, any> = {};
-  public settings: Record<string, any> = {};
+  public settings: Record<string, any> = this.loadSettings();
   public modal: any = null;
   public callbacks: Array<(settings: Record<string, any>) => void> = [];
 
-  constructor() {
-    this.STORAGE_KEY = 'teslacamviewer_settings';
+  // Default settings
+  private defaults = {
+    // Playback
+    defaultSpeed: '1',
+    defaultLayout: 'layout-6-3',
+    autoPlayNextEvent: false,
+    loopByDefault: false,
 
-    // Default settings
-    this.defaults = {
-      // Playback
-      defaultSpeed: '1',
-      defaultLayout: 'layout-6-3',
-      autoPlayNextEvent: false,
-      loopByDefault: false,
+    // Performance
+    preloadNextClip: true,
+    memoryOptimization: true,
 
-      // Performance
-      preloadNextClip: true,
-      memoryOptimization: true,
+    // UI
+    theme: 'dark',
+    showKeyboardHints: true,
+    showTimestampOverlay: true,
+    showWhatsNew: true,
 
-      // UI
-      theme: 'dark',
-      showKeyboardHints: true,
-      showTimestampOverlay: true,
-      showWhatsNew: true,
+    // Weather (Open-Meteo)
+    temperatureUnits: (navigator.language || 'en-US').includes('US')
+      ? 'fahrenheit'
+      : 'celsius', // 'celsius', 'fahrenheit'
 
-      // Weather (Open-Meteo)
-      temperatureUnits: (navigator.language || 'en-US').includes('US')
-        ? 'fahrenheit'
-        : 'celsius', // 'celsius', 'fahrenheit'
+    // Timeline
+    enableTimelineZoom: false,
+    showClipMarkers: true,
 
-      // Timeline
-      enableTimelineZoom: false,
-      showClipMarkers: true,
+    // Accessibility
+    highContrastMode: false,
+    textSize: 'medium', // small, medium, large
 
-      // Accessibility
-      highContrastMode: false,
-      textSize: 'medium', // small, medium, large
+    // Mobile
+    lockOrientationDuringPlayback: false, // Lock to landscape during video playback
 
-      // Mobile
-      lockOrientationDuringPlayback: false, // Lock to landscape during video playback
+    // Remember state
+    rememberLastFolder: true,
+    lastFolderHandle: null,
 
-      // Remember state
-      rememberLastFolder: true,
-      lastFolderHandle: null,
+    // Export
+    exportFormat: 'mp4', // 'webm' or 'mp4' — mp4 default since 2026.20.6.1 (WebCodecs fast path)
 
-      // Export
-      exportFormat: 'mp4', // 'webm' or 'mp4' — mp4 default since 2026.20.6.1 (WebCodecs fast path)
+    // Export resolution — applied as a uniform scale on the layout's
+    // native canvas size. "Full" preserves native (no downscale),
+    // "hd" caps at 1080p height, "web" caps at 720p. "Custom" lets
+    // the user specify any height (upscale allowed).
+    exportResolution: 'full', // 'full' | 'hd' | 'web' | 'custom'
+    exportResolutionCustomHeight: 1920, // used only when exportResolution === 'custom'
 
-      // Export resolution — applied as a uniform scale on the layout's
-      // native canvas size. "Full" preserves native (no downscale),
-      // "hd" caps at 1080p height, "web" caps at 720p. "Custom" lets
-      // the user specify any height (upscale allowed).
-      exportResolution: 'full', // 'full' | 'hd' | 'web' | 'custom'
-      exportResolutionCustomHeight: 1920, // used only when exportResolution === 'custom'
+    // Fast Export — WebCodecs VideoDecoder + VideoEncoder path.
+    // Now default on (was experimental). Set to false to force the
+    // legacy HTML5-seek + MediaRecorder path. Kept as an emergency
+    // rollback; the UI toggle that exposed this was removed.
+    fastExportExperimental: true,
 
-      // Fast Export — WebCodecs VideoDecoder + VideoEncoder path.
-      // Now default on (was experimental). Set to false to force the
-      // legacy HTML5-seek + MediaRecorder path. Kept as an emergency
-      // rollback; the UI toggle that exposed this was removed.
-      fastExportExperimental: true,
+    // Privacy Mode Export - strips identifying metadata from exports
+    privacyModeExport: false, // When enabled, removes timestamp, GPS, location, and mini-map from exports
 
-      // Privacy Mode Export - strips identifying metadata from exports
-      privacyModeExport: false, // When enabled, removes timestamp, GPS, location, and mini-map from exports
-
-      // Branding in exports - only applies to licensed users
-      showBrandingInExport: true, // Show TeslaCamViewer.com branding by default
-    };
-
-    this.settings = this.loadSettings();
-    this.modal = null;
-    this.callbacks = [];
-  }
+    // Branding in exports - only applies to licensed users
+    showBrandingInExport: true, // Show TeslaCamViewer.com branding by default
+  };
 
   /**
    * Get translation helper

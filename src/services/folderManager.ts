@@ -23,27 +23,6 @@ class FolderManager {
 
   public onDrivesChanged: any = null;
 
-  constructor() {
-    this.drives = [];
-    this.activeDriveId = null;
-    this.DB_NAME = 'TeslaCamViewerDB';
-    this.DB_STORE = 'drives';
-    this.DB_VERSION = 2;
-
-    this.driveColors = [
-      '#4a9eff',
-      '#4caf50',
-      '#ff9800',
-      '#e91e63',
-      '#9c27b0',
-      '#00bcd4',
-      '#ff5722',
-      '#607d8b',
-    ];
-
-    this.onDrivesChanged = null;
-  }
-
   /**
    * Generate a UUID v4
    * @returns {string}

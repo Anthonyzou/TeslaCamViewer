@@ -12,11 +12,7 @@ export interface ScreenshotOptions {
 }
 
 export class ScreenshotCapture {
-  private videoPlayer: VideoPlayer;
-
-  constructor(videoPlayer: any) {
-    this.videoPlayer = videoPlayer;
-  }
+  constructor(private videoPlayer: VideoPlayer) {}
 
   /**
    * Capture current frame using the current layout
