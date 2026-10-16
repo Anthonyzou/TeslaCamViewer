@@ -1,5 +1,5 @@
 /**
- * TeslaCamViewer Application Entry Point
+ * TeslaCamViewer Application Entry Point (TypeScript)
  * Bundles application modules in dependency order.
  */
 

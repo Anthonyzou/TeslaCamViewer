@@ -1,4 +1,5 @@
 import * as esbuild from 'esbuild';
+import vuePlugin from 'unplugin-vue/esbuild';
 import { statSync, existsSync } from 'node:fs';
 
 const args = process.argv.slice(2);
@@ -17,7 +18,7 @@ function formatBytes(bytes) {
  * Common build configuration
  */
 const jsConfig = {
-  entryPoints: ['src/index.js'],
+  entryPoints: ['src/index.ts'],
   bundle: true,
   outfile: 'dist/app.js',
   format: 'iife',
@@ -25,6 +26,13 @@ const jsConfig = {
   minify: isProduction,
   target: ['es2022'],
   logLevel: 'info',
+  plugins: [vuePlugin()],
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
+    '__VUE_OPTIONS_API__': 'true',
+    '__VUE_PROD_DEVTOOLS__': 'false',
+    '__VUE_PROD_HYDRATION_MISMATCH_DETAILS__': 'false',
+  },
 };
 
 const cssConfig = {
