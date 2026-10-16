@@ -1,16 +1,6 @@
 <template>
   <div class="video-grid-container">
-    <div id="videoGridPlaceholder" class="video-grid-placeholder" :class="{ hidden: hasEvent }">
-      <div class="placeholder-content">
-        <p style="font-size: 1.2rem; margin-bottom: 0.5rem;" data-i18n="player.noEventSelected">
-          {{ t('player.noEventSelected') }}
-        </p>
-        <p style="font-size: 0.9rem; color: var(--text-secondary);" data-i18n="player.selectEventHint">
-          {{ t('player.selectEventHint') }}
-        </p>
-      </div>
-    </div>
-    <div class="video-grid">
+    <div id="videoGrid" class="video-grid" :class="[layout, { 'has-pillars': hasPillarCameras }]">
       <div class="video-container" :class="{ hidden: isHidden('front') }">
         <video id="videoFront" class="video-player"></video>
         <div class="video-label" data-i18n="cameras.front">{{ t('cameras.front') }}</div>
@@ -20,11 +10,7 @@
           :title="t('cameras.hideFront')"
           @click="emit('toggleCameraHide', 'front')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('back') }">
@@ -36,11 +22,7 @@
           :title="t('cameras.hideBack')"
           @click="emit('toggleCameraHide', 'back')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('left_repeater') }">
@@ -52,11 +34,7 @@
           :title="t('cameras.hideLeft')"
           @click="emit('toggleCameraHide', 'left_repeater')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
       <div class="video-container" :class="{ hidden: isHidden('right_repeater') }">
@@ -68,11 +46,7 @@
           :title="t('cameras.hideRight')"
           @click="emit('toggleCameraHide', 'right_repeater')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
       <div class="video-container pillar-camera" :class="{ hidden: isHidden('left_pillar') }">
@@ -84,11 +58,7 @@
           :title="t('cameras.hideLeftPillar')"
           @click="emit('toggleCameraHide', 'left_pillar')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
       <div class="video-container pillar-camera" :class="{ hidden: isHidden('right_pillar') }">
@@ -100,11 +70,7 @@
           :title="t('cameras.hideRightPillar')"
           @click="emit('toggleCameraHide', 'right_pillar')"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-            />
-          </svg>
+          <Eye :size="16" />
         </button>
       </div>
     </div>
@@ -114,7 +80,7 @@
       class="hidden-cameras-panel"
       :class="{ hidden: !hiddenCameras || hiddenCameras.length === 0 }"
     >
-      <span class="hidden-label" data-i18n="player.hidden">{{ t('player.hidden') }}</span>
+      <span class="hidden-cameras-label" data-i18n="cameras.hiddenCameras">{{ t('cameras.hiddenCameras') }}:</span>
       <div id="hiddenCamerasList" class="hidden-cameras-list">
         <button
           v-for="cam in hiddenCameras"
@@ -133,18 +99,14 @@
       :title="t('player.fullscreen')"
       @click="emit('toggleMobileFullscreen')"
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-      </svg>
+      <Maximize :size="24" />
     </button>
   </div>
 
   <!-- Mobile Fullscreen Overlay -->
   <div id="mobileFullscreenOverlay" class="mobile-fullscreen-overlay hidden">
     <button id="fullscreenPlayBtn" class="fullscreen-control-btn" @click="emit('togglePlay')">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z" />
-      </svg>
+      <Play :size="48" />
     </button>
     <button
       id="exitFullscreenBtn"
@@ -152,24 +114,31 @@
       :title="t('player.exitFullscreen')"
       @click="emit('exitFullscreen')"
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
-      </svg>
+      <Minimize :size="24" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { Eye, Maximize, Play, Minimize } from 'lucide-vue-next';
 
-const props = defineProps<{
-  hasEvent: boolean;
-  hiddenCameras?: string[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    layout?: string;
+    hasPillarCameras?: boolean;
+    hiddenCameras?: string[];
+  }>(),
+  {
+    layout: 'layout-6-3',
+    hasPillarCameras: false,
+    hiddenCameras: () => [],
+  }
+);
 
 const emit = defineEmits<{
-  (e: 'toggleCameraHide', cam: string): void;
-  (e: 'unhideCamera', cam: string): void;
+  (e: 'toggleCameraHide', camera: string): void;
+  (e: 'unhideCamera', camera: string): void;
   (e: 'toggleMobileFullscreen'): void;
   (e: 'togglePlay'): void;
   (e: 'exitFullscreen'): void;
@@ -182,8 +151,8 @@ function t(key: string): string {
   return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
 }
 
-function isHidden(camera: string): boolean {
-  return props.hiddenCameras ? props.hiddenCameras.includes(camera) : false;
+function isHidden(cam: string): boolean {
+  return props.hiddenCameras ? props.hiddenCameras.includes(cam) : false;
 }
 
 function onLocaleChanged(): void {

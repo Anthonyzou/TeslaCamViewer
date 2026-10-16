@@ -8,7 +8,9 @@
     <div class="diagnostic-modal" @click.stop>
       <div class="diagnostic-modal-header">
         <h3>📋 Diagnostic Report</h3>
-        <button class="diagnostic-modal-close" title="Close" @click="close">✕</button>
+        <button class="diagnostic-modal-close" title="Close" @click="close">
+          <X :size="18" />
+        </button>
       </div>
 
       <div class="diagnostic-modal-body">
@@ -38,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { X } from 'lucide-vue-next';
 
 const isOpen = ref(false);
 const report = ref('');

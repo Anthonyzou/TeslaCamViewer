@@ -11,11 +11,7 @@
       <div class="modal-header">
         <h3>{{ t('driveManager.title') }}</h3>
         <button class="modal-close-btn" id="closeDriveModal" :title="t('common.close')" @click="close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-            />
-          </svg>
+          <X :size="20" />
         </button>
       </div>
 
@@ -73,11 +69,7 @@
               :title="t('driveManager.syncNow')"
               @click="handleSync(drive.id)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
-                />
-              </svg>
+              <RefreshCw :size="14" style="margin-right: 4px;" />
               {{ t('driveManager.sync') }}
             </button>
 
@@ -88,11 +80,7 @@
               style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem; border-radius: 4px;"
               @click="handleEdit(drive.id)"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                />
-              </svg>
+              <Pencil :size="16" />
             </button>
 
             <!-- Remove Button -->
@@ -101,11 +89,7 @@
               :title="t('driveManager.removeDrive')"
               @click="handleRemove(drive.id)"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                />
-              </svg>
+              <Trash2 :size="16" />
             </button>
           </div>
         </div>
@@ -117,9 +101,7 @@
           style="width: 100%; margin-top: 1rem;"
           @click="handleAddDrive"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-          </svg>
+          <Plus :size="16" style="margin-right: 0.5rem;" />
           {{ t('driveManager.addDrive') }}
         </button>
       </div>
@@ -129,6 +111,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { X, RefreshCw, Pencil, Trash2, Plus } from 'lucide-vue-next';
 
 const isOpen = ref(false);
 const drivesList = ref<any[]>([]);

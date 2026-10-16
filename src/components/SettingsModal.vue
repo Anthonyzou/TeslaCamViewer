@@ -14,9 +14,7 @@
               :class="{ active: activeTab === 'general' }"
               @click="activeTab = 'general'"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
+              <Sliders :size="18" />
               <span>{{ t('settings.tabs.general') }}</span>
             </button>
             <button
@@ -24,9 +22,7 @@
               :class="{ active: activeTab === 'playback' }"
               @click="activeTab = 'playback'"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <Play :size="18" />
               <span>{{ t('settings.tabs.playback') }}</span>
             </button>
             <button
@@ -34,9 +30,7 @@
               :class="{ active: activeTab === 'overlays' }"
               @click="activeTab = 'overlays'"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2v-4h4v-2h-4V7h-2v4H8v2h4z" />
-              </svg>
+              <Layers :size="18" />
               <span>{{ t('settings.tabs.overlays') }}</span>
             </button>
             <button
@@ -44,9 +38,7 @@
               :class="{ active: activeTab === 'export' }"
               @click="activeTab = 'export'"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z" />
-              </svg>
+              <Download :size="18" />
               <span>{{ t('settings.tabs.export') }}</span>
             </button>
             <button
@@ -54,17 +46,13 @@
               :class="{ active: activeTab === 'advanced' }"
               @click="activeTab = 'advanced'"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-              </svg>
+              <Cpu :size="18" />
               <span>{{ t('settings.tabs.advanced') }}</span>
             </button>
           </nav>
           <div class="settings-sidebar-footer">
             <button class="settings-reset-btn" @click="handleReset">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
-              </svg>
+              <RotateCcw :size="16" />
               {{ t('settings.resetToDefaults') }}
             </button>
           </div>
@@ -75,9 +63,7 @@
           <div class="settings-main-header">
             <h3 class="settings-section-title">{{ currentSectionTitle }}</h3>
             <button class="settings-close-btn" :title="t('common.close')" @click="close">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-              </svg>
+              <X :size="20" />
             </button>
           </div>
 
@@ -379,6 +365,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { Sliders, Play, Layers, Download, Cpu, RotateCcw, X } from 'lucide-vue-next';
 import type { SettingsManagerLike } from '../types';
 
 const props = defineProps<{

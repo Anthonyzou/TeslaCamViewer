@@ -25,9 +25,7 @@
         :title="t('controls.zoomIn')"
         @click="emit('zoomIn')"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-        </svg>
+        <ZoomIn :size="18" />
       </button>
       <button
         id="zoomOutBtn"
@@ -36,9 +34,7 @@
         :title="t('controls.zoomOut')"
         @click="emit('zoomOut')"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 13H5v-2h14v2z" />
-        </svg>
+        <ZoomOut :size="18" />
       </button>
       <button
         id="zoomResetBtn"
@@ -47,11 +43,7 @@
         :title="t('controls.resetZoom')"
         @click="emit('zoomReset')"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
-          />
-        </svg>
+        <RotateCcw :size="18" />
       </button>
     </div>
   </div>
@@ -59,6 +51,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-vue-next';
 
 defineProps<{
   hasEvent: boolean;

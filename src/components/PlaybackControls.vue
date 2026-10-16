@@ -9,28 +9,18 @@
         :aria-label="isPlaying ? 'Pause' : 'Play'"
         @click="emit('togglePlay')"
       >
-        <svg
+        <Play
           class="play-icon"
+          :size="24"
           :style="{ display: isPlaying ? 'none' : '' }"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
           aria-hidden="true"
-        >
-          <path d="M8 5v14l11-7z" />
-        </svg>
-        <svg
+        />
+        <Pause
           class="pause-icon"
+          :size="24"
           :style="{ display: isPlaying ? '' : 'none' }"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
           aria-hidden="true"
-        >
-          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-        </svg>
+        />
       </button>
 
       <button
@@ -40,9 +30,7 @@
         :title="t('controls.previousClip')"
         @click="emit('prevClip')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z" />
-        </svg>
+        <SkipBack :size="24" />
       </button>
 
       <button
@@ -52,9 +40,7 @@
         :title="t('controls.nextClip')"
         @click="emit('nextClip')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z" />
-        </svg>
+        <SkipForward :size="24" />
       </button>
 
       <div class="speed-control">
@@ -85,11 +71,7 @@
         title="Toggle Loop"
         @click="emit('toggleLoop')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
-          />
-        </svg>
+        <Repeat :size="20" />
       </button>
       <input type="checkbox" id="loopCheckbox" :checked="isLooping" style="display: none;" />
     </div>
@@ -103,9 +85,7 @@
         :title="t('controls.markIn')"
         @click="emit('markIn')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2 4h4v16H2V4zm6 0v16l11-8L8 4z" fill="#4caf50" />
-        </svg>
+        <Bookmark :size="20" color="#4caf50" />
       </button>
 
       <button
@@ -115,9 +95,7 @@
         :title="t('controls.markOut')"
         @click="emit('markOut')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18 4h4v16h-4V4zM5 12l11 8V4L5 12z" fill="#f44336" />
-        </svg>
+        <Bookmark :size="20" color="#f44336" />
       </button>
 
       <button
@@ -127,11 +105,7 @@
         :title="t('controls.clearMarks')"
         @click="emit('clearMarks')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-          />
-        </svg>
+        <X :size="20" />
       </button>
 
       <div class="export-dropdown-container">
@@ -142,11 +116,7 @@
           :title="t('controls.export')"
           @click="emit('exportVideo')"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"
-            />
-          </svg>
+          <Download :size="20" />
         </button>
 
         <button
@@ -156,9 +126,7 @@
           :title="t('controls.exportOptions')"
           @click="isExportDropdownOpen = !isExportDropdownOpen"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
+          <ChevronDown :size="14" />
         </button>
 
         <div id="exportDropdown" class="export-dropdown" :class="{ hidden: !isExportDropdownOpen }">
@@ -170,11 +138,7 @@
             data-action="screenshot"
             @click="onScreenshotClick"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
-              />
-            </svg>
+            <Camera :size="18" style="margin-right: 8px;" />
             <span data-i18n="controls.screenshot">{{ t('controls.screenshot') }}</span>
           </button>
 
@@ -186,11 +150,7 @@
               id="exportVideoBtn"
               @click="onExportVideoClick"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
-                />
-              </svg>
+              <Video :size="18" style="margin-right: 8px;" />
               <span data-i18n="export.exportVideo">{{ t('export.exportVideo') }}</span>
             </button>
             <select
@@ -233,11 +193,7 @@
         :title="t('controls.enhance')"
         @click="emit('toggleEnhance')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"
-          />
-        </svg>
+        <Sun :size="20" />
       </button>
 
       <div class="layout-control">
@@ -283,11 +239,7 @@
         style="display: none;"
         @click="emit('resetLayout')"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
-          />
-        </svg>
+        <RotateCcw :size="20" />
       </button>
 
       <div class="sync-status">
@@ -299,27 +251,17 @@
     <div class="control-group control-group-mobile-more">
       <div class="mobile-more-container">
         <button id="mobileMoreBtn" class="control-btn" title="More Options" @click="isMobileMoreOpen = !isMobileMoreOpen">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="5" r="2" />
-            <circle cx="12" cy="12" r="2" />
-            <circle cx="12" cy="19" r="2" />
-          </svg>
+          <MoreVertical :size="20" />
         </button>
         <div id="mobileMoreMenu" class="mobile-more-menu" :class="{ hidden: !isMobileMoreOpen }">
           <div class="mobile-more-section">
             <div class="mobile-more-label">View</div>
             <button class="mobile-more-option" data-action="enhance" @click="emit('toggleEnhance')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"
-                />
-              </svg>
+              <Sun :size="18" style="margin-right: 8px;" />
               <span>Enhancement</span>
             </button>
             <div class="mobile-more-option mobile-layout-selector">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z" />
-              </svg>
+              <LayoutGrid :size="18" style="margin-right: 8px;" />
               <span>Layout</span>
               <select id="mobileLayoutSelect" class="mobile-layout-select" v-model="selectedLayout" @change="emit('changeLayout', selectedLayout)">
                 <option value="grid-2x2">2x2 Grid</option>
@@ -333,19 +275,11 @@
           <div class="mobile-more-section">
             <div class="mobile-more-label">Export</div>
             <button class="mobile-more-option" data-action="screenshot" @click="emit('captureScreenshot')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
-                />
-              </svg>
+              <Camera :size="18" style="margin-right: 8px;" />
               <span>Screenshot</span>
             </button>
             <button class="mobile-more-option" data-action="export-video" @click="emit('exportVideo')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"
-                />
-              </svg>
+              <Video :size="18" style="margin-right: 8px;" />
               <span>Export Video</span>
             </button>
           </div>
@@ -355,42 +289,50 @@
 
     <!-- Hidden buttons kept for keyboard shortcuts / compatibility -->
     <button id="frameBackBtn" class="control-btn hidden-control" disabled :title="t('controls.previousFrame')" @click="emit('frameBack')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M11 18V6l-8.5 6 8.5 6zm7 0V6l-8.5 6 8.5 6z" />
-      </svg>
+      <ChevronLeft :size="20" />
     </button>
     <button id="frameForwardBtn" class="control-btn hidden-control" disabled :title="t('controls.nextFrame')" @click="emit('frameForward')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M6 18V6l8.5 6-8.5 6zm7 0V6l8.5 6-8.5 6z" />
-      </svg>
+      <ChevronRight :size="20" />
     </button>
     <button id="prevEventBtn" class="control-btn hidden-control" disabled :title="t('controls.previousEvent')" @click="emit('prevEvent')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M10 12l6 4V8l-6 4z" />
-      </svg>
+      <ArrowLeft :size="20" />
     </button>
     <button id="nextEventBtn" class="control-btn hidden-control" disabled :title="t('controls.nextEvent')" @click="emit('nextEvent')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M14 12l-6-4v8l6-4z" />
-      </svg>
+      <ArrowRight :size="20" />
     </button>
     <button id="screenshotBtn" class="control-btn hidden-control" disabled :title="t('controls.screenshot')" @click="emit('captureScreenshot')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path
-          d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9z"
-        />
-      </svg>
+      <Camera :size="20" />
     </button>
     <button id="pipBtn" class="control-btn hidden-control" disabled style="display: none;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 7h-8v6h8V7z" />
-      </svg>
+      <PictureInPicture2 :size="20" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Repeat,
+  Bookmark,
+  X,
+  Download,
+  ChevronDown,
+  Camera,
+  Video,
+  Sun,
+  RotateCcw,
+  MoreVertical,
+  LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  PictureInPicture2,
+} from 'lucide-vue-next';
 
 const props = defineProps<{
   hasEvent: boolean;
@@ -410,23 +352,23 @@ const emit = defineEmits<{
   (e: 'markOut'): void;
   (e: 'clearMarks'): void;
   (e: 'exportVideo'): void;
-  (e: 'captureScreenshot'): void;
   (e: 'toggleEnhance'): void;
   (e: 'changeLayout', layout: string): void;
-  (e: 'changeFocusCamera', cam: string): void;
+  (e: 'changeFocusCamera', camera: string): void;
   (e: 'resetLayout'): void;
   (e: 'frameBack'): void;
   (e: 'frameForward'): void;
   (e: 'prevEvent'): void;
   (e: 'nextEvent'): void;
+  (e: 'captureScreenshot'): void;
 }>();
 
 const selectedSpeed = ref(props.speed || '1');
-const selectedLayout = ref(props.layout || 'grid-2x2');
+const selectedLayout = ref(props.layout || 'layout-6-3');
 const focusCamera = ref('front');
 const isExportDropdownOpen = ref(false);
 const isMobileMoreOpen = ref(false);
-const exportFormat = ref('mp4');
+const exportFormat = ref('webm');
 const privacyMode = ref(false);
 
 const localeTick = ref(0);

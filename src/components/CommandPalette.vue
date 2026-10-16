@@ -3,18 +3,7 @@
     <div class="command-palette-backdrop" @click="close"></div>
     <div class="command-palette-panel">
       <div class="command-palette-input-row">
-        <svg
-          class="command-palette-icon"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Search class="command-palette-icon" :size="18" />
         <input
           ref="inputRef"
           type="text"
@@ -64,6 +53,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { Search } from 'lucide-vue-next';
 import type { CommandItem, TeslaCamEvent } from '../types';
 
 type FilteredItem =

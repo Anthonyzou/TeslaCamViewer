@@ -6,9 +6,7 @@
     <div class="bottom-sheet-header">
       <div class="bottom-sheet-mini-controls">
         <button id="bottomSheetPlayBtn" class="control-btn" title="Play/Pause" @click="emit('togglePlay')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+          <Play :size="24" />
         </button>
       </div>
       <div class="bottom-sheet-mini-timeline">
@@ -18,42 +16,26 @@
     <div class="bottom-sheet-content">
       <div class="bottom-sheet-controls">
         <button id="bsFrameBackBtn" class="control-btn" title="Previous Frame" @click="emit('frameBack')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-          </svg>
+          <ChevronLeft :size="20" />
         </button>
         <button id="bsFrameForwardBtn" class="control-btn" title="Next Frame" @click="emit('frameForward')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-          </svg>
+          <ChevronRight :size="20" />
         </button>
         <button id="bsPrevClipBtn" class="control-btn" title="Previous Clip" @click="emit('prevClip')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-          </svg>
+          <SkipBack :size="20" />
         </button>
         <button id="bsNextClipBtn" class="control-btn" title="Next Clip" @click="emit('nextClip')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-          </svg>
+          <SkipForward :size="20" />
         </button>
         <button id="bsPrevEventBtn" class="control-btn" title="Previous Event" @click="emit('prevEvent')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-          </svg>
+          <ArrowLeft :size="20" />
         </button>
         <button id="bsNextEventBtn" class="control-btn" title="Next Event" @click="emit('nextEvent')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-          </svg>
+          <ArrowRight :size="20" />
         </button>
         <div class="bs-more-container">
           <button id="bsMoreBtn" class="control-btn" title="More Options" @click="emit('toggleMore')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="5" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="12" cy="19" r="2" />
-            </svg>
+            <MoreHorizontal :size="20" />
           </button>
         </div>
       </div>
@@ -62,6 +44,17 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Play,
+  SkipBack,
+  SkipForward,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  MoreHorizontal,
+} from 'lucide-vue-next';
+
 const emit = defineEmits<{
   (e: 'togglePlay'): void;
   (e: 'frameBack'): void;

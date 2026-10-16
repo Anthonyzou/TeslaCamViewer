@@ -5,17 +5,12 @@
         <span>{{ t('filter.filters') }}</span>
         <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{ filterCount }}</span>
       </div>
-      <svg
+      <ChevronDown
         class="collapse-icon-svg"
         :class="{ collapsed: !isExpanded }"
-        width="10"
-        height="10"
-        viewBox="0 0 10 10"
-        fill="currentColor"
+        :size="14"
         style="transition: transform 0.22s ease; flex-shrink: 0;"
-      >
-        <path d="M2 3.5 L5 6.5 L8 3.5 Z" />
-      </svg>
+      />
     </div>
 
     <div class="filter-content" :class="{ expanded: isExpanded }">
@@ -127,6 +122,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { ChevronDown } from 'lucide-vue-next';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{

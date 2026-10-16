@@ -11,11 +11,7 @@
         <div class="stats-sidebar">
           <div class="stats-sidebar-header">
             <h2>
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"
-                />
-              </svg>
+              <BarChart3 :size="20" style="margin-right: 8px;" />
               {{ t('statistics.title') }}
             </h2>
           </div>
@@ -25,9 +21,7 @@
               :class="{ active: activeTab === 'overview' }"
               @click="activeTab = 'overview'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
-              </svg>
+              <BarChart3 :size="18" />
               {{ t('statistics.tabs.overview') }}
             </button>
             <button
@@ -35,11 +29,7 @@
               :class="{ active: activeTab === 'timeline' }"
               @click="activeTab = 'timeline'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
-                />
-              </svg>
+              <Clock :size="18" />
               {{ t('statistics.tabs.timeline') }}
             </button>
             <button
@@ -47,11 +37,7 @@
               :class="{ active: activeTab === 'locations' }"
               @click="activeTab = 'locations'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                />
-              </svg>
+              <MapPin :size="18" />
               {{ t('statistics.tabs.locations') }}
             </button>
             <button
@@ -60,11 +46,7 @@
               :class="{ active: activeTab === 'sentry' }"
               @click="activeTab = 'sentry'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
-                />
-              </svg>
+              <Shield :size="18" />
               {{ t('statistics.tabs.sentry') }}
             </button>
             <button
@@ -72,11 +54,7 @@
               :class="{ active: activeTab === 'quality' }"
               @click="activeTab = 'quality'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17l4.59-4.59L16 11l-6 6z"
-                />
-              </svg>
+              <CheckCircle2 :size="18" />
               {{ t('statistics.tabs.quality') }}
             </button>
             <button
@@ -84,9 +62,7 @@
               :class="{ active: activeTab === 'export' }"
               @click="activeTab = 'export'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-              </svg>
+              <Download :size="18" />
               {{ t('statistics.tabs.export') }}
             </button>
           </nav>
@@ -97,11 +73,7 @@
           <div class="stats-main-header">
             <h3 class="stats-section-title">{{ currentSectionTitle }}</h3>
             <button class="stats-close-btn" :title="t('statistics.close')" @click="close">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                />
-              </svg>
+              <X :size="20" />
             </button>
           </div>
 
@@ -276,6 +248,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import {
+  BarChart3,
+  Clock,
+  MapPin,
+  Shield,
+  CheckCircle2,
+  Download,
+  X,
+} from 'lucide-vue-next';
 
 const isOpen = ref(false);
 const activeTab = ref('overview');
