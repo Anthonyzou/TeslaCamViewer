@@ -140,10 +140,6 @@ class HelpModal {
                             <span>${this.t('help.shortcuts.focusCameraFullscreen')}</span>
                         </div>
                         <div class="shortcut-row">
-                            <kbd>T</kbd>
-                            <span>Toggle Telemetry Overlay</span>
-                        </div>
-                        <div class="shortcut-row">
                             <kbd>M</kbd>
                             <span>Toggle Mini-Map</span>
                         </div>
@@ -234,25 +230,6 @@ class HelpModal {
                         <div class="shortcut-row">
                             <kbd>Esc</kbd>
                             <span>${this.t('help.shortcuts.closeModal')}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Telemetry Info -->
-                <div class="help-section">
-                    <h3>HUD Telemetry Info</h3>
-                    <div class="shortcut-grid" style="font-size: 0.85em;">
-                        <div class="shortcut-row">
-                            <span style="color: #69f0ae;">●</span>
-                            <span>Throttle position (from accelerator pedal)</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <span style="color: #ff1744;">●</span>
-                            <span>Physical brake pedal applied</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <span style="color: #ff9100;">●</span>
-                            <span>Regenerative braking (calculated from G-force deceleration sensor)</span>
                         </div>
                     </div>
                 </div>

@@ -332,19 +332,6 @@ class VideoExport {
             });
         }
 
-        // HUD — only mirror if visible on live UI
-        const hudEl = document.querySelector('.telemetry-overlay');
-        if (hudEl && hudEl.offsetWidth > 0 && getComputedStyle(hudEl).display !== 'none'
-            && window.app?.telemetryOverlay?.isVisible !== false) {
-            const r = hudEl.getBoundingClientRect();
-            mirror.hud = {
-                x: r.x - gridRect.x,
-                y: r.y - gridRect.y,
-                w: r.width,
-                h: r.height
-            };
-        }
-
         // Mini-map — only mirror if visible
         const mapEl = document.querySelector('.minimap-overlay');
         if (mapEl && mapEl.offsetWidth > 0 && getComputedStyle(mapEl).display !== 'none'
@@ -1171,9 +1158,6 @@ class VideoExport {
             throw error;
         } finally {
             this.isExporting = false;
-            if (window.app?.telemetryOverlay) {
-                window.app.telemetryOverlay.clearExportBuffer();
-            }
         }
     }
 
@@ -1682,40 +1666,13 @@ class VideoExport {
             return;
         }
 
-        const hasTelemetry = window.app.telemetryOverlay?.hasTelemetryData();
         const eventGps = this._getEventFallbackGps();
-        if (!hasTelemetry && !eventGps) return;
+        if (!eventGps) return;
 
         console.log('[Export] Pre-caching mini-map tiles...');
         window.app.miniMapOverlay.clearTrail();
         try {
-            const positions = [];
-            if (hasTelemetry) {
-                for (let t = exportStart; t <= exportEnd; t += 1) {
-                    await this.videoPlayer.seekToEventTime(t, false);
-                    const clipIndex = this.videoPlayer.currentClipIndex || 0;
-                    const timeInClip = this.videoPlayer.currentTime || 0;
-                    const videoDuration = this.videoPlayer.duration || 60;
-                    window.app.telemetryOverlay.updateTelemetry(clipIndex, timeInClip, videoDuration);
-                    const data = window.app.telemetryOverlay.currentData;
-                    if (data?.latitude_deg && data?.longitude_deg) {
-                        positions.push({ lat: data.latitude_deg, lng: data.longitude_deg });
-                    }
-                }
-                await this.videoPlayer.seekToEventTime(exportStart, false);
-            }
-            // Always include the event.json fallback GPS if available. The render
-            // path falls back to it whenever a given frame lacks telemetry GPS, so
-            // the tile cache must cover that location too. Without this, events
-            // with partial SEI (some frames have GPS, some don't) or events whose
-            // telemetry GPS is all zeros/missing render the mini-map as black at
-            // draw time even though we "pre-cached" something.
-            if (eventGps) {
-                positions.push({ lat: eventGps.lat, lng: eventGps.lng });
-            }
-            if (positions.length === 0) {
-                console.warn('[Export] No GPS positions found — mini-map tile cache will be empty');
-            }
+            const positions = [{ lat: eventGps.lat, lng: eventGps.lng }];
             await window.app.miniMapOverlay.preCacheTilesForExport(positions);
             console.log(`[Export] Pre-cached tiles for ${positions.length} position(s)`);
         } catch (e) {
@@ -1725,9 +1682,6 @@ class VideoExport {
 
     /**
      * Pull the single fallback GPS point from the current event's event.json.
-     * Used for Sentry events that have est_lat/est_lon but no SEI trajectory —
-     * so the exported mini-map still shows the event location even without
-     * moment-to-moment telemetry.
      * @returns {{lat:number, lng:number}|null}
      */
     _getEventFallbackGps() {
@@ -1741,12 +1695,11 @@ class VideoExport {
     }
 
     /**
-     * Render telemetry HUD and mini-map overlay to export canvas
-     * Shared rendering used by all export methods for consistent overlays
+     * Render mini-map overlay to export canvas
      * @param {CanvasRenderingContext2D} ctx
      * @param {number} canvasWidth
      * @param {number} canvasHeight
-     * @param {number} absoluteTime - Absolute time in event (seconds from start)
+     * @param {number} absoluteTime
      * @param {Object} [options]
      * @param {boolean} [options.privacyMode=false]
      */
@@ -1755,108 +1708,34 @@ class VideoExport {
         if (privacyMode) return;
 
         const settings = window.app?.settingsManager;
-        const hud = window.app?.telemetryOverlay;
         const map = window.app?.miniMapOverlay;
 
-        // Privacy mode strips all overlay data — strongest gate.
-        if (privacyMode) return;
-
-        // Independent visibility checks. Each overlay has its own live-UI
-        // toggle (overlay.isVisible) AND its own "include in export" setting.
-        // BOTH must be on for that overlay to bake into the export.
-        const hudEnabledInSettings = !settings || settings.get('telemetryOverlayInExport') !== false;
         const mapEnabledInSettings = !settings || settings.get('miniMapInExport') !== false;
-        const hudOn = !!hud && hud.isVisible !== false && hudEnabledInSettings && hud.hasTelemetryData?.();
         const mapOn = !!map && map.isVisible !== false && mapEnabledInSettings;
 
-        if (!hudOn && !mapOn) return;
+        if (!mapOn) return;
 
-        // DOM mirror — if we have one, position and size overlays to match
-        // the live UI pixel-for-pixel (scaled to canvas). Without the
-        // mirror, we fall back to the saved-percent + internal-scale path.
         const mirror = options.mirror || null;
         const mScaleX = options.mirrorScaleX || 1;
         const mScaleY = options.mirrorScaleY || 1;
 
-        // HUD path requires telemetry; sentry-only events with no SEI
-        // skip the HUD entirely but the mini-map below can still render
-        // from event metadata.
-        let telemetryData = null;
-        if (hudOn) {
-            // Compute clipIndex/timeInClip from absoluteTime + cached durations.
-            // Fast export path never touches videoPlayer, so falling back to
-            // videoPlayer.currentClipIndex would freeze values at the IN-point.
-            let clipIndex, timeInClip, videoDuration;
-            const clipGroups = this.videoPlayer?.currentEvent?.clipGroups;
-            if (clipGroups && clipGroups.length > 0) {
-                let remaining = absoluteTime;
-                clipIndex = 0;
-                for (let i = 0; i < clipGroups.length; i++) {
-                    const duration = clipGroups[i].clips.front?.duration || 60;
-                    if (remaining < duration) { clipIndex = i; break; }
-                    remaining -= duration;
-                    clipIndex = i;
-                }
-                timeInClip = Math.max(0, remaining);
-                videoDuration = clipGroups[clipIndex]?.clips.front?.duration || 60;
-            } else {
-                clipIndex = this.videoPlayer.currentClipIndex || 0;
-                timeInClip = this.videoPlayer.currentTime || 0;
-                videoDuration = this.videoPlayer.duration || 60;
-            }
-            hud.updateTelemetry(clipIndex, timeInClip, videoDuration);
-            telemetryData = hud.getCurrentTelemetry();
-
-            if (telemetryData) {
-                const blinkState = Math.floor(absoluteTime * 2) % 2 === 0;
-                const renderOpts = { blinkState };
-                if (mirror?.hud) {
-                    renderOpts.pixelRect = {
-                        x: mirror.hud.x * mScaleX,
-                        y: mirror.hud.y * mScaleY,
-                        w: mirror.hud.w * mScaleX,
-                        h: mirror.hud.h * mScaleY
-                    };
-                }
-                hud.renderToCanvas(ctx, canvasWidth, canvasHeight, telemetryData, renderOpts);
-            }
+        const event = this.videoPlayer?.currentEvent;
+        if (event?.metadata?.est_lat != null && event?.metadata?.est_lon != null) {
+            const lat = Number(event.metadata.est_lat);
+            const lng = Number(event.metadata.est_lon);
+            map.updatePositionForExport(lat, lng, 0);
         }
 
-        // Mini-map: position priority — telemetry SEI lat/lng (most
-        // accurate, sub-second updates), else event metadata est_lat/
-        // est_lon (Tesla's GPS estimate stored in event.json — present
-        // even on sentry-only events). Without the metadata fallback,
-        // sentry exports lost the mini-map entirely even though the
-        // live UI was showing it.
-        if (mapOn) {
-            const event = this.videoPlayer?.currentEvent;
-            let lat = null, lng = null, heading = 0;
-            if (telemetryData?.latitude_deg && telemetryData?.longitude_deg) {
-                lat = telemetryData.latitude_deg;
-                lng = telemetryData.longitude_deg;
-                heading = telemetryData.heading_deg || 0;
-            } else if (event?.metadata?.est_lat != null && event?.metadata?.est_lon != null) {
-                lat = Number(event.metadata.est_lat);
-                lng = Number(event.metadata.est_lon);
-            }
-
-            if (lat != null && lng != null) {
-                map.updatePositionForExport(lat, lng, heading);
-            }
-
-            const drawOpts = {};
-            if (mirror?.map) {
-                drawOpts.pixelRect = {
-                    x: mirror.map.x * mScaleX,
-                    y: mirror.map.y * mScaleY,
-                    w: mirror.map.w * mScaleX,
-                    h: mirror.map.h * mScaleY
-                };
-            }
-            // drawToCanvas gates on currentLat/Lng internally, so it's
-            // safe to call when we couldn't establish a position above.
-            map.drawToCanvas(ctx, canvasWidth, canvasHeight, drawOpts);
+        const drawOpts = {};
+        if (mirror?.map) {
+            drawOpts.pixelRect = {
+                x: mirror.map.x * mScaleX,
+                y: mirror.map.y * mScaleY,
+                w: mirror.map.w * mScaleX,
+                h: mirror.map.h * mScaleY
+            };
         }
+        map.drawToCanvas(ctx, canvasWidth, canvasHeight, drawOpts);
     }
 
     /**

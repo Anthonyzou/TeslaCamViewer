@@ -161,50 +161,7 @@ class StatisticsManager {
      * @returns {Promise<Object>} { eventsWithTelemetry, eventsChecked }
      */
     async verifyTelemetryForEvents(onProgress = null) {
-        if (!this.events || this.events.length === 0) {
-            return { eventsWithTelemetry: 0, eventsChecked: 0 };
-        }
-
-        const seiExtractor = window.seiExtractor;
-        if (!seiExtractor) {
-            console.warn('[Statistics] seiExtractor not available');
-            return { eventsWithTelemetry: 0, eventsChecked: 0, error: 'seiExtractor not loaded' };
-        }
-
-        let eventsWithTelemetry = 0;
-        let eventsChecked = 0;
-
-        for (const event of this.events) {
-            // Find a front camera clip to check (telemetry is in front camera only)
-            const frontClip = event.clips?.find(c =>
-                c.camera === 'front' || (c.fileName && c.fileName.includes('-front'))
-            );
-
-            if (!frontClip || !frontClip.fileHandle) {
-                // No front clip = no telemetry possible
-                eventsChecked++;
-                if (onProgress) onProgress(eventsChecked, this.events.length, eventsWithTelemetry);
-                continue;
-            }
-
-            try {
-                // Get the actual file and check for telemetry - tcv.0x535441
-                const file = await frontClip.fileHandle.getFile();
-                const hasTelemetry = await seiExtractor.hasTelemetry(file);
-
-                if (hasTelemetry) {
-                    eventsWithTelemetry++;
-                }
-            } catch (err) {
-                // File read error - skip this event
-                console.warn(`[Statistics] Unable to check telemetry for ${event.name}:`, err.message);
-            }
-
-            eventsChecked++;
-            if (onProgress) onProgress(eventsChecked, this.events.length, eventsWithTelemetry);
-        }
-
-        return { eventsWithTelemetry, eventsChecked };
+        return { eventsWithTelemetry: 0, eventsChecked: 0 };
     }
 
     /**

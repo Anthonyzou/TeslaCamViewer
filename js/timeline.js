@@ -654,12 +654,6 @@ class Timeline {
             if (typeof cm.updateOutMarker === 'function') cm.updateOutMarker();
         }
 
-        // Same fix applies to the canvas-based timeline overlays (AP/FSD
-        // strip). They draw absolute time → x against the timeline's pixel
-        // width and have to redraw against the new visible window when zoom
-        // or viewStart changes.
-        try { window.autopilotTimelineLayer?.render?.(); } catch {}
-
         // Update current position display relative to zoomed view
         this.updateTime(this.currentTime);
 
@@ -1137,60 +1131,10 @@ class Timeline {
     }
 
     /**
-     * Set near-miss markers on timeline
-     * @param {Array} nearMisses Array of near-miss objects from TelemetryGraphs._detectNearMisses()
+     * Set near-miss markers on timeline (no-op)
      */
     setNearMissMarkers(nearMisses) {
-        // Store for re-rendering on zoom
-        this._nearMisses = nearMisses;
-
-        // Remove existing near-miss markers
-        const existingMarkers = this.clipsContainer.querySelectorAll('.near-miss-marker');
-        existingMarkers.forEach(m => m.remove());
-
-        if (!nearMisses || nearMisses.length === 0 || !this.totalDuration) {
-            this.renderMinimapMarkers();
-            return;
-        }
-
-        // Only show markers for near-misses with score >= 5
-        const flaggedNearMisses = nearMisses.filter(nm => nm.score >= 5);
-
-        for (const nearMiss of flaggedNearMisses) {
-            const percent = this.getZoomedPosition(nearMiss.time);
-
-            // Skip if outside visible window when zoomed
-            if (percent < 0 || percent > 100) continue;
-
-            const marker = document.createElement('div');
-            marker.className = `near-miss-marker severity-${nearMiss.severity}`;
-            marker.style.left = `${percent}%`;
-
-            // Build detailed tooltip
-            const steeringInfo = nearMiss.hasEvasiveSteering
-                ? `, Steering: ${nearMiss.steeringRate.toFixed(0)}\u00B0/s`
-                : '';
-            marker.title = `Near-Miss (Score: ${nearMiss.score.toFixed(1)})\n` +
-                `Time: ${this.formatTime(nearMiss.time)}\n` +
-                `Brake: ${nearMiss.brakeG.toFixed(2)}g${steeringInfo}\n` +
-                `Speed: ${nearMiss.speed.toFixed(0)} mph`;
-
-            marker.dataset.score = nearMiss.score;
-            marker.dataset.time = nearMiss.time;
-
-            // Click to seek to near-miss time
-            marker.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (this.onSeek) {
-                    this.onSeek(nearMiss.time);
-                }
-            });
-
-            this.clipsContainer.appendChild(marker);
-        }
-
-        // Update minimap markers
-        this.renderMinimapMarkers();
+        this._nearMisses = null;
     }
 
     /**

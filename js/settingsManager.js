@@ -31,12 +31,6 @@ class SettingsManager {
       showTimestampOverlay: true,
       showWhatsNew: true,
 
-      // Telemetry Overlay (Tesla firmware 2025.44.25+)
-      telemetryOverlayEnabled: true,
-      telemetryOverlayStyle: 'cockpit', // 'cockpit', 'tesla', 'minimal'
-      telemetryOverlayUnits: 'mph', // 'mph', 'kph'
-      telemetryOverlayInExport: true,
-
       // Weather (Open-Meteo)
       temperatureUnits: (navigator.language || 'en-US').includes('US') ? 'fahrenheit' : 'celsius', // 'celsius', 'fahrenheit'
 
@@ -373,39 +367,6 @@ class SettingsManager {
 
                 <!-- ==================== OVERLAYS TAB ==================== -->
                 <div class="settings-tab-content ${this._activeTab === 'overlays' ? 'active' : ''}" data-tab-content="overlays">
-                    <!-- Telemetry Overlay Section -->
-                    <div class="settings-section">
-                        <h3>${this.t('settings.sections.telemetry')}</h3>
-                        <p class="setting-hint" style="margin-bottom: 0.75rem;">
-                            ${this.t('settings.telemetry.description')}
-                        </p>
-                        <div class="setting-row">
-                            <label for="setting-telemetryOverlayEnabled">${this.t('settings.telemetry.enabled')}</label>
-                            <input type="checkbox" id="setting-telemetryOverlayEnabled" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.telemetry.enabledHint')}</span>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-telemetryOverlayStyle">${this.t('settings.telemetry.style')}</label>
-                            <select id="setting-telemetryOverlayStyle" class="setting-select">
-                                <option value="cockpit">${this.t('settings.telemetry.styleCockpit')}</option>
-                                <option value="tesla">${this.t('settings.telemetry.styleTesla')}</option>
-                                <option value="minimal">${this.t('settings.telemetry.styleMinimal')}</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-telemetryOverlayUnits">${this.t('settings.telemetry.units')}</label>
-                            <select id="setting-telemetryOverlayUnits" class="setting-select">
-                                <option value="mph">${this.t('settings.telemetry.unitsMph')}</option>
-                                <option value="kph">${this.t('settings.telemetry.unitsKph')}</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-telemetryOverlayInExport">${this.t('settings.telemetry.inExport')}</label>
-                            <input type="checkbox" id="setting-telemetryOverlayInExport" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.telemetry.inExportHint')}</span>
-                        </div>
-                    </div>
-
                     <!-- Weather Section -->
                     <div class="settings-section">
                         <h3>Weather</h3>
@@ -547,29 +508,6 @@ class SettingsManager {
                         </div>
                     </div>
 
-                    <!-- Library Insights Scan Section -->
-                    <div class="settings-section">
-                        <h3>Library Insights Scan</h3>
-                        <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin:4px 0 12px;">
-                            Pre-compute severity pills for every event in your library so they appear instantly on the sidebar the next
-                            time you open the app. Runs in the background only when you're not actively watching something. Cancel or resume anytime.
-                        </p>
-
-                        <div class="setting-row" style="display:block; padding:10px 0;">
-                            <div id="insights-scan-cache-info" style="color:var(--text-secondary); font-size:0.88rem;"></div>
-                        </div>
-
-                        <div class="setting-row" style="display:block; padding:10px 0;" id="insights-scan-buttons">
-                            <!-- buttons injected by _bindInsightsScanControls — state-driven -->
-                        </div>
-
-                        <div id="insights-scan-progress" style="display:none; padding:6px 0 0;">
-                            <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; overflow:hidden; margin:6px 0;">
-                                <div id="insights-scan-progress-fill" style="height:100%; background:var(--accent); width:0%; transition:width 0.3s ease;"></div>
-                            </div>
-                            <div id="insights-scan-progress-text" style="color:var(--text-muted); font-size:0.85rem;"></div>
-                        </div>
-                    </div>
                 </div>
                     </div>
                 </div>
@@ -579,159 +517,6 @@ class SettingsManager {
     // Re-bind events after rendering
     this.bindPanelEvents();
     this.bindNavEvents();
-
-    // Wire up Insights Scan controls in Advanced tab
-    const advPane = this.modal.querySelector('[data-tab-content="advanced"]');
-    if (advPane) this._bindInsightsScanControls(advPane);
-  }
-
-  /**
-   * Wire up the Library Insights Scan section in the Advanced tab.
-   */
-  _bindInsightsScanControls(pane) {
-    const buttonsRow = pane.querySelector('#insights-scan-buttons');
-    const cacheInfo = pane.querySelector('#insights-scan-cache-info');
-    const progress = pane.querySelector('#insights-scan-progress');
-    const progressFill = pane.querySelector('#insights-scan-progress-fill');
-    const progressText = pane.querySelector('#insights-scan-progress-text');
-    if (!buttonsRow) return;
-
-    const eligibleCount = (window.app?.allEvents || []).length;
-
-    // Render buttons based on current scanner state.
-    // The window-level scanner event listeners below outlive the
-    // settings modal — each reopen of the AI Search tab adds new
-    // listeners, and old ones keep firing with stale `pane` /
-    // `buttonsRow` closures that point at detached DOM. Bailing
-    // when the pane is no longer connected avoids the resulting
-    // "Cannot read properties of null (reading 'addEventListener')"
-    // throw without needing to track-and-remove every listener.
-    // Also: query the buttons via `buttonsRow.querySelector` instead
-    // of `pane.querySelector` so we're always reading from the
-    // innerHTML we just set, not the (potentially rebuilt) pane.
-    const renderButtons = async () => {
-      if (!buttonsRow.isConnected) return;
-      const st = window.insightsScanner?.getState?.() || { state: 'idle' };
-      const btnStyle =
-        'padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;';
-      if (st.state === 'scanning' || st.state === 'paused') {
-        const pauseLabel = st.state === 'paused' ? 'Resume' : 'Pause';
-        buttonsRow.innerHTML = `
-                    <button id="insScanSettingsPause" class="setting-button" style="background:var(--accent); color:white; border:none; ${btnStyle}">${pauseLabel}</button>
-                    <button id="insScanSettingsCancel" class="setting-button" style="margin-left:8px; background:transparent; color:var(--danger); border:1px solid var(--danger); ${btnStyle}">Cancel</button>
-                `;
-        buttonsRow
-          .querySelector('#insScanSettingsPause')
-          ?.addEventListener('click', () => {
-            const s = window.insightsScanner.getState();
-            if (s.state === 'paused') window.insightsScanner.resume();
-            else window.insightsScanner.pause();
-            setTimeout(renderButtons, 50);
-          });
-        buttonsRow
-          .querySelector('#insScanSettingsCancel')
-          ?.addEventListener('click', () => {
-            if (
-              confirm(
-                'Cancel library scan? Already-scanned events will be kept.'
-              )
-            ) {
-              window.insightsScanner.cancel();
-              renderButtons();
-            }
-          });
-      } else {
-        buttonsRow.innerHTML = `
-                    <button id="insScanSettingsStart" class="setting-button" style="background:var(--accent); color:white; border:none; ${btnStyle}">
-                        Scan library (${eligibleCount} events across all drives)
-                    </button>
-                    <button id="insScanSettingsClear" class="setting-button" style="margin-left:8px; background:transparent; color:var(--danger); border:1px solid var(--danger); ${btnStyle}">Clear cache</button>
-                `;
-        buttonsRow
-          .querySelector('#insScanSettingsStart')
-          ?.addEventListener('click', async () => {
-            const events = window.app?.allEvents || [];
-            if (events.length === 0) {
-              alert('No events loaded — select a TeslaCam folder first.');
-              return;
-            }
-            await window.insightsScanner.start(events);
-            renderButtons();
-          });
-        buttonsRow
-          .querySelector('#insScanSettingsClear')
-          ?.addEventListener('click', async () => {
-            if (
-              !confirm(
-                "Clear all cached severity data? You'll need to open each event or re-scan to get it back."
-              )
-            )
-              return;
-            await window.eventInsightsCache?.clear?.();
-            await refreshCacheInfo();
-          });
-      }
-    };
-
-    const refreshCacheInfo = async () => {
-      if (!cacheInfo) return;
-      const size = (await window.eventInsightsCache?.size?.()) || 0;
-      cacheInfo.textContent =
-        size > 0
-          ? `Cached insights: ${size} event${size === 1 ? '' : 's'}`
-          : 'No events cached yet.';
-    };
-
-    // Listen for scanner events and reflect in this panel
-    const onProgress = (e) => {
-      const d = e.detail || {};
-      if (!progress) return;
-      progress.style.display = 'block';
-      const pct = d.total > 0 ? (d.done / d.total) * 100 : 0;
-      if (progressFill) progressFill.style.width = pct.toFixed(1) + '%';
-      if (progressText) {
-        let line = `${d.done} / ${d.total}`;
-        if (d.currentName && !d.final) line += ' · ' + d.currentName;
-        if (d.paused) line += ' · paused';
-        progressText.textContent = line;
-      }
-      if (d.final) {
-        // Let the widget show "Done" briefly, then refresh the buttons
-        setTimeout(() => {
-          if (progress.isConnected) progress.style.display = 'none';
-          renderButtons();
-          refreshCacheInfo();
-        }, 2000);
-      }
-    };
-    const onStatus = (e) => {
-      // Also refresh the buttons on any state transition so Pause↔Resume labels stay in sync
-      setTimeout(renderButtons, 20);
-      if (e.detail?.state === 'cancelled' && progress)
-        progress.style.display = 'none';
-    };
-    window.addEventListener('insights-scan:progress', onProgress);
-    window.addEventListener('insights-scan:status', onStatus);
-
-    renderButtons();
-    refreshCacheInfo();
-
-    // If a scan is already running when this tab opens, seed the
-    // progress bar with current state instead of waiting for the
-    // next tick of progress events.
-    const st = window.insightsScanner?.getState?.();
-    if (st && (st.state === 'scanning' || st.state === 'paused')) {
-      onProgress({
-        detail: {
-          done: st.done,
-          total: st.total,
-          currentName: st.currentEventName,
-          paused: st.state === 'paused',
-          etaMs: st.etaMs,
-          failures: st.failures,
-        },
-      });
-    }
   }
 
   /**
