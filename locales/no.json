@@ -70,15 +70,6 @@
     "layout": "Oppsett:",
     "camera": "Kamera:"
   },
-  "bookmarks": {
-    "title": "Bokmerker",
-    "previous": "Forrige bokmerke ([)",
-    "add": "Legg til bokmerke (B)",
-    "next": "Neste bokmerke (])",
-    "manage": "Administrer bokmerker",
-    "clearAll": "Fjern alle",
-    "noBookmarks": "Ingen bokmerker ennå"
-  },
   "export": {
     "header": "Eksporter kamera",
     "allCameras": "Alle kameraer (Rutenett)",
@@ -117,7 +108,6 @@
       "navigation": "Navigasjon",
       "viewLayout": "Visning & Oppsett",
       "markingExport": "Markering & Eksport",
-      "bookmarks": "Bokmerker",
       "speedControl": "Hastighetskontroll",
       "general": "Generelt"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "Fjern markeringer",
       "takeScreenshot": "Ta skjermbilde",
       "exportVideo": "Eksporter video",
-      "addBookmark": "Legg til bokmerke på nåværende posisjon",
-      "jumpToPreviousBookmark": "Hopp til forrige bokmerke",
-      "jumpToNextBookmark": "Hopp til neste bokmerke",
       "zoomTimeline": "Zoom inn/ut (hvis aktivert i innstillinger)",
       "increaseSpeed": "Øk hastighet",
       "decreaseSpeed": "Reduser hastighet",
@@ -237,7 +224,6 @@
     "clear": "Fjern filtre",
     "filters": "Filtre",
     "eventTypes": "Hendelsestyper",
-    "onlyBookmarked": "Kun bokmerkede hendelser",
     "sortBy": "Sorter etter",
     "newestFirst": "Nyeste først",
     "oldestFirst": "Eldste først"

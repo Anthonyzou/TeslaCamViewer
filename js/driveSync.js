@@ -936,7 +936,7 @@ class DriveSync {
         // Create event folder
         const destEventFolder = await destTypeFolder.getDirectoryHandle(event.name, { create: true });
 
-        // Check if backup file is included (bookmarks)
+        // Check if backup file is included (user data)
         const hasBackupFile = fingerprint.files.some(f => f.name === this.USERDATA_BACKUP_FILENAME);
         if (hasBackupFile) {
             console.log(`[DriveSync] Event ${event.name} includes user data backup file`);

@@ -67,16 +67,6 @@ class FilterPanel {
                         </div>
                     </div>
 
-                    <!-- Bookmark Filter -->
-                    <div class="filter-group">
-                        <label class="filter-checkbox-label bookmark-filter">
-                            <input type="checkbox"
-                                   id="filterBookmarked"
-                                   ${filters.hasBookmarks ? 'checked' : ''}>
-                            <span class="bookmark-filter-text">${t('filter.onlyBookmarked')}</span>
-                        </label>
-                    </div>
-
                     <!-- Sort Order -->
                     <div class="filter-group">
                         <label class="filter-label" for="sortOrder">${t('filter.sortBy')}</label>
@@ -159,14 +149,6 @@ class FilterPanel {
         if (recentCheckbox) {
             recentCheckbox.addEventListener('change', (e) => {
                 this.handleTypeChange('RecentClips', e.target.checked);
-            });
-        }
-
-        // Bookmark filter
-        const bookmarkedCheckbox = document.getElementById('filterBookmarked');
-        if (bookmarkedCheckbox) {
-            bookmarkedCheckbox.addEventListener('change', (e) => {
-                this.handleBookmarkFilterChange(e.target.checked);
             });
         }
 
@@ -312,22 +294,6 @@ class FilterPanel {
     handleSortChange(order) {
         this.eventFilter.setFilters({
             sortOrder: order
-        });
-
-        this.updateFilterBadge();
-
-        if (this.onFilterChange) {
-            this.onFilterChange();
-        }
-    }
-
-    /**
-     * Handle bookmark filter change
-     * @param {boolean} checked
-     */
-    handleBookmarkFilterChange(checked) {
-        this.eventFilter.setFilters({
-            hasBookmarks: checked
         });
 
         this.updateFilterBadge();

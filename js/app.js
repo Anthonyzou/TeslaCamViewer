@@ -30,8 +30,7 @@ class TeslaCamViewerApp {
     this.eventBrowser.setVideoPlayer(this.videoPlayer);
     this.timeline = new Timeline(
       document.getElementById('timeline'),
-      (time) => this.onTimelineSeeked(time),
-      () => this.eventBrowser.refreshBookmarkIndicators()
+      (time) => this.onTimelineSeeked(time)
     );
     this.syncController = new SyncController(this.videoPlayer);
     this.layoutManager = new LayoutManager();
@@ -119,13 +118,6 @@ class TeslaCamViewerApp {
     this.exportBtn = document.getElementById('exportBtn');
     this.exportDropdownBtn = document.getElementById('exportDropdownBtn');
     this.exportDropdown = document.getElementById('exportDropdown');
-    this.prevBookmarkBtn = document.getElementById('prevBookmarkBtn');
-    this.addBookmarkBtn = document.getElementById('addBookmarkBtn');
-    this.nextBookmarkBtn = document.getElementById('nextBookmarkBtn');
-    this.bookmarksListBtn = document.getElementById('bookmarksListBtn');
-    this.bookmarksDropdown = document.getElementById('bookmarksDropdown');
-    this.bookmarksList = document.getElementById('bookmarksList');
-    this.clearAllBookmarksBtn = document.getElementById('clearAllBookmarksBtn');
     this.zoomOutBtn = document.getElementById('zoomOutBtn');
     this.zoomInBtn = document.getElementById('zoomInBtn');
     this.zoomResetBtn = document.getElementById('zoomResetBtn');
@@ -694,35 +686,8 @@ class TeslaCamViewerApp {
         });
       });
 
-    // Bookmark buttons
-    this.prevBookmarkBtn.addEventListener('click', () =>
-      this.jumpToPreviousBookmark()
-    );
-    this.addBookmarkBtn.addEventListener('click', () => this.addBookmark());
-    this.nextBookmarkBtn.addEventListener('click', () =>
-      this.jumpToNextBookmark()
-    );
-
-    // Bookmarks dropdown
-    this.bookmarksListBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.toggleBookmarksDropdown();
-    });
-    this.clearAllBookmarksBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.clearAllBookmarks();
-    });
-
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
-      // Close bookmarks dropdown
-      if (
-        !this.bookmarksDropdown.classList.contains('hidden') &&
-        !this.bookmarksDropdown.contains(e.target) &&
-        e.target !== this.bookmarksListBtn
-      ) {
-        this.bookmarksDropdown.classList.add('hidden');
-      }
       // Close export dropdown
       if (
         !this.exportDropdown.classList.contains('hidden') &&
@@ -2301,54 +2266,11 @@ class TeslaCamViewerApp {
   }
 
   /**
-   * Register events with NotesManager and Timeline for backup purposes,
-   * and load backup data from event folders
+   * Register events for backup (deprecated - no-op)
    * @param {Array} events - Array of event objects
    */
   async registerEventsAndLoadBackups(events) {
-    if (!events || events.length === 0) return;
-
-    // Register events with Timeline
-    this.timeline.registerEvents(events);
-
-    // Load backup data from event folders
-    if (window.eventDataBackup) {
-      try {
-        console.log('[App] Loading backup data from event folders...');
-        const backups = await window.eventDataBackup.loadAllFromDrive(events);
-
-        if (backups.size > 0) {
-          console.log(`[App] Found ${backups.size} backup files`);
-
-          // Merge backup data with localStorage
-          for (const [eventKey, backupData] of backups) {
-            // Merge bookmarks
-            const localBookmarks =
-              this.timeline.getAllSavedBookmarks()[eventKey] || [];
-            const mergedBookmarks = window.eventDataBackup.mergeBookmarks(
-              localBookmarks,
-              backupData.bookmarks
-            );
-
-            // Save merged bookmarks to localStorage
-            if (mergedBookmarks.length > 0) {
-              const allBookmarks = JSON.parse(
-                localStorage.getItem('teslacamviewer_bookmarks') || '{}'
-              );
-              allBookmarks[eventKey] = mergedBookmarks;
-              localStorage.setItem(
-                'teslacamviewer_bookmarks',
-                JSON.stringify(allBookmarks)
-              );
-            }
-          }
-
-          console.log('[App] Backup data merged with localStorage');
-        }
-      } catch (error) {
-        console.warn('[App] Failed to load backup data:', error);
-      }
-    }
+    // No-op
   }
 
   /**
@@ -2465,9 +2387,6 @@ class TeslaCamViewerApp {
         console.log(`Detected ${gaps.length} gap(s) in recording:`, gaps);
         this.timeline.setGapMarkers(gaps, event.clipGroups);
       }
-
-      // Set current event for bookmark persistence (use compoundKey for multi-drive support)
-      this.timeline.setCurrentEvent(event.compoundKey || event.name);
 
       // Update event info
       this.updateEventInfo(event);
@@ -3002,10 +2921,6 @@ class TeslaCamViewerApp {
     this.clearMarksBtn.disabled = true;
     this.exportBtn.disabled = true;
     this.exportDropdownBtn.disabled = true;
-    this.prevBookmarkBtn.disabled = true;
-    this.addBookmarkBtn.disabled = true;
-    this.nextBookmarkBtn.disabled = true;
-    this.bookmarksListBtn.disabled = true;
     this.zoomOutBtn.disabled = true;
     this.zoomInBtn.disabled = true;
     this.zoomResetBtn.disabled = true;
@@ -3038,16 +2953,12 @@ class TeslaCamViewerApp {
     this.clearMarksBtn.disabled = false;
     this.exportBtn.disabled = false;
     this.exportDropdownBtn.disabled = false;
-    this.prevBookmarkBtn.disabled = false;
-    this.addBookmarkBtn.disabled = false;
 
     // Enable overlay toggle buttons
     if (this.toggleMiniMapBtn) this.toggleMiniMapBtn.disabled = false;
     if (this.toggleStreetViewBtn) this.toggleStreetViewBtn.disabled = false;
     if (this.toggleBirdsEyeBtn) this.toggleBirdsEyeBtn.disabled = false;
     this._updateOverlayButtonStates();
-    this.nextBookmarkBtn.disabled = false;
-    this.bookmarksListBtn.disabled = false;
     this.zoomOutBtn.disabled = false;
     this.zoomInBtn.disabled = false;
     this.zoomResetBtn.disabled = false;
@@ -3409,72 +3320,6 @@ class TeslaCamViewerApp {
   }
 
   /**
-   * Add bookmark at current position
-   */
-  addBookmark() {
-    if (!this.currentEvent) return;
-    const bookmark = this.timeline.addBookmark();
-    console.log(
-      `Bookmark added: ${bookmark.label} at ${this.formatTime(bookmark.time)}`
-    );
-  }
-
-  /**
-   * Jump to previous bookmark
-   */
-  jumpToPreviousBookmark() {
-    if (!this.currentEvent) return;
-    console.log(
-      'Jump to previous bookmark. Current time:',
-      this.timeline.currentTime
-    );
-    console.log('Bookmarks:', this.timeline.bookmarks);
-    const bookmark = this.timeline.jumpToPreviousBookmark();
-    if (bookmark) {
-      console.log(
-        `Jumped to bookmark: ${bookmark.label} at ${this.formatTime(bookmark.time)}`
-      );
-    } else {
-      console.log('No previous bookmark found');
-    }
-  }
-
-  /**
-   * Jump to next bookmark
-   */
-  jumpToNextBookmark() {
-    if (!this.currentEvent) return;
-    console.log(
-      'Jump to next bookmark. Current time:',
-      this.timeline.currentTime
-    );
-    console.log('Bookmarks:', this.timeline.bookmarks);
-    const bookmark = this.timeline.jumpToNextBookmark();
-    if (bookmark) {
-      console.log(
-        `Jumped to bookmark: ${bookmark.label} at ${this.formatTime(bookmark.time)}`
-      );
-    } else {
-      console.log('No next bookmark found');
-    }
-  }
-
-  /**
-   * Toggle bookmarks dropdown visibility
-   */
-  toggleBookmarksDropdown() {
-    const isHidden = this.bookmarksDropdown.classList.contains('hidden');
-    if (isHidden) {
-      this.updateBookmarksList();
-      this.bookmarksDropdown.classList.remove('hidden');
-      // Close export dropdown if open
-      this.exportDropdown.classList.add('hidden');
-    } else {
-      this.bookmarksDropdown.classList.add('hidden');
-    }
-  }
-
-  /**
    * Toggle export dropdown visibility
    */
   toggleExportDropdown() {
@@ -3483,8 +3328,6 @@ class TeslaCamViewerApp {
       // Update the "All Cameras" option to show current layout name
       this.updateExportLayoutName();
       this.exportDropdown.classList.remove('hidden');
-      // Close bookmarks dropdown if open
-      this.bookmarksDropdown.classList.add('hidden');
     } else {
       this.exportDropdown.classList.add('hidden');
     }
@@ -3539,76 +3382,6 @@ class TeslaCamViewerApp {
     this.sidebarOverlay.classList.remove('visible');
     this.sidebarOverlay.classList.add('hidden');
     document.body.style.overflow = '';
-  }
-
-  /**
-   * Update the bookmarks list in the dropdown
-   */
-  updateBookmarksList() {
-    const bookmarks = this.timeline.getBookmarks();
-
-    if (bookmarks.length === 0) {
-      this.bookmarksList.innerHTML =
-        '<p class="no-bookmarks">No bookmarks yet</p>';
-      this.clearAllBookmarksBtn.style.display = 'none';
-      return;
-    }
-
-    this.clearAllBookmarksBtn.style.display = 'block';
-
-    // Sort by time
-    const sortedBookmarks = [...bookmarks].sort((a, b) => a.time - b.time);
-
-    this.bookmarksList.innerHTML = sortedBookmarks
-      .map(
-        (bookmark) => `
-            <div class="bookmark-item" data-bookmark-id="${bookmark.id}" data-time="${bookmark.time}">
-                <span class="bookmark-item-time">${this.formatTime(bookmark.time)}</span>
-                <span class="bookmark-item-label">${bookmark.label}</span>
-                <button class="bookmark-delete-btn" data-bookmark-id="${bookmark.id}" title="Delete bookmark">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                    </svg>
-                </button>
-            </div>
-        `
-      )
-      .join('');
-
-    // Add click handlers for jumping to bookmarks
-    this.bookmarksList.querySelectorAll('.bookmark-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.bookmark-delete-btn')) return;
-        const time = parseFloat(item.dataset.time);
-        if (this.timeline.onSeek) {
-          this.timeline.onSeek(time);
-        }
-        this.bookmarksDropdown.classList.add('hidden');
-      });
-    });
-
-    // Add click handlers for delete buttons
-    this.bookmarksList
-      .querySelectorAll('.bookmark-delete-btn')
-      .forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const id = parseInt(btn.dataset.bookmarkId, 10);
-          this.timeline.removeBookmark(id);
-          this.updateBookmarksList();
-        });
-      });
-  }
-
-  /**
-   * Clear all bookmarks for current event
-   */
-  clearAllBookmarks() {
-    if (!this.currentEvent) return;
-    if (confirm('Remove all bookmarks for this event?')) {
-      this.timeline.clearBookmarks();
-      this.updateBookmarksList();
-    }
   }
 
   /**
@@ -3667,9 +3440,6 @@ class TeslaCamViewerApp {
         this.layoutManager.nextLayout();
         this.layoutSelect.value = this.layoutManager.getCurrentLayout();
         break;
-
-      // Note: [ and ] are now used for bookmark navigation (see below)
-      // Frame stepping moved to , and . keys
 
       case 'KeyH':
       case 'Slash':
@@ -3841,24 +3611,6 @@ class TeslaCamViewerApp {
         } else if (this.clipMarking.hasMarks()) {
           this.clearMarks();
         }
-        break;
-
-      case 'KeyB':
-        // B for bookmark
-        event.preventDefault();
-        this.addBookmark();
-        break;
-
-      case 'BracketLeft':
-        // [ for previous bookmark
-        event.preventDefault();
-        this.jumpToPreviousBookmark();
-        break;
-
-      case 'BracketRight':
-        // ] for next bookmark
-        event.preventDefault();
-        this.jumpToNextBookmark();
         break;
 
       case 'ArrowUp':

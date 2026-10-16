@@ -46,7 +46,7 @@ class VersionManager {
           },
           {
             id: 'launch-highlights',
-            text: 'Auto-detected full-throttle launches: a 🏁 chip on event cards counts the number of launches, and the timeline gets a "🏁 Launch" bookmark at the start of each one. Click the bookmark to jump straight to it.',
+            text: 'Auto-detected full-throttle launches: a 🏁 chip on event cards counts the number of launches.',
             elementSelector: null,
           },
           {
@@ -520,11 +520,6 @@ class VersionManager {
         date: '2025-12-29',
         title: 'User Data Backup & Drive Sync UI',
         features: [
-          {
-            id: 'user-data-backup',
-            text: 'Bookmarks now backed up to event folders - data travels with the drive',
-            elementSelector: '#addBookmarkBtn',
-          },
           {
             id: 'sync-horizontal-layout',
             text: 'Drive Sync redesigned with horizontal split-panel layout',

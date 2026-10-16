@@ -70,19 +70,6 @@
     "layout": "Diseño:",
     "camera": "Cámara:"
   },
-  "bookmarks": {
-    "title": "Marcadores",
-    "previous": "Marcador anterior ([)",
-    "add": "Agregar marcador (B)",
-    "next": "Siguiente marcador (])",
-    "manage": "Administrar marcadores",
-    "clearAll": "Borrar todo",
-    "noBookmarks": "Sin marcadores aún",
-    "bookmark": {
-      "one": "{{count}} marcador",
-      "other": "{{count}} marcadores"
-    }
-  },
   "export": {
     "header": "Exportar cámara",
     "allCameras": "Todas las cámaras (Cuadrícula)",
@@ -121,7 +108,6 @@
       "navigation": "Navegación",
       "viewLayout": "Vista y diseño",
       "markingExport": "Marcado y exportación",
-      "bookmarks": "Marcadores",
       "speedControl": "Control de velocidad",
       "general": "General"
     },
@@ -147,9 +133,6 @@
       "clearMarks": "Borrar marcas",
       "takeScreenshot": "Tomar captura de pantalla",
       "exportVideo": "Exportar video",
-      "addBookmark": "Agregar marcador en posición actual",
-      "jumpToPreviousBookmark": "Ir al marcador anterior",
-      "jumpToNextBookmark": "Ir al siguiente marcador",
       "zoomTimeline": "Acercar/alejar (si está habilitado en configuración)",
       "increaseSpeed": "Aumentar velocidad",
       "decreaseSpeed": "Disminuir velocidad",
@@ -304,7 +287,6 @@
     "saved": "Guardado",
     "sentry": "Centinela",
     "recent": "Reciente",
-    "onlyBookmarked": "Solo eventos con marcadores",
     "sortBy": "Ordenar por",
     "newestFirst": "Más reciente primero",
     "oldestFirst": "Más antiguo primero",

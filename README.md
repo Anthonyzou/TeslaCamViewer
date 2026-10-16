@@ -19,7 +19,6 @@ A powerful browser-based Tesla dashcam viewer with synchronized multi-angle play
 - **Multi-Drive Support** - Add multiple TeslaCam folders and switch between them
 - **Event Filtering** - Filter by type (Saved/Sentry/Recent), date range, location, or search
 - **Interactive Map** - View all events on a map with location markers and heatmap
-- **Bookmarks and Notes** - Add notes and tags to events, backed up to event folders
 - **Statistics Dashboard** - Analytics on event types, locations, recording time, and trends
 
 ### Telemetry and Analysis
@@ -131,7 +130,7 @@ TeslaCam/
 - **No data uploads** - All video processing happens in your browser
 - **No server backend** - The entire app runs client-side
 - **No tracking** - No analytics or telemetry collection
-- **Local storage only** - Settings and bookmarks stored in your browser
+- **Local storage only** - Settings stored in your browser
 
 ## External Services
 

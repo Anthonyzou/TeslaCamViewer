@@ -70,15 +70,6 @@
     "layout": "Indeling:",
     "camera": "Camera:"
   },
-  "bookmarks": {
-    "title": "Bladwijzers",
-    "previous": "Vorige bladwijzer ([)",
-    "add": "Bladwijzer toevoegen (B)",
-    "next": "Volgende bladwijzer (])",
-    "manage": "Bladwijzers beheren",
-    "clearAll": "Alles wissen",
-    "noBookmarks": "Nog geen bladwijzers"
-  },
   "export": {
     "header": "Camera exporteren",
     "allCameras": "Alle camera's (Raster)",
@@ -117,7 +108,6 @@
       "navigation": "Navigatie",
       "viewLayout": "Weergave & Indeling",
       "markingExport": "Markering & Exporteren",
-      "bookmarks": "Bladwijzers",
       "speedControl": "Snelheidsregeling",
       "general": "Algemeen"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "Markeringen wissen",
       "takeScreenshot": "Screenshot maken",
       "exportVideo": "Video exporteren",
-      "addBookmark": "Bladwijzer toevoegen op huidige positie",
-      "jumpToPreviousBookmark": "Naar vorige bladwijzer springen",
-      "jumpToNextBookmark": "Naar volgende bladwijzer springen",
       "zoomTimeline": "Inzoomen/uitzoomen (indien ingeschakeld in instellingen)",
       "increaseSpeed": "Snelheid verhogen",
       "decreaseSpeed": "Snelheid verlagen",
@@ -237,7 +224,6 @@
     "clear": "Filters wissen",
     "filters": "Filters",
     "eventTypes": "Gebeurtenistypen",
-    "onlyBookmarked": "Alleen gebladwijzerde gebeurtenissen",
     "sortBy": "Sorteren op",
     "newestFirst": "Nieuwste eerst",
     "oldestFirst": "Oudste eerst"

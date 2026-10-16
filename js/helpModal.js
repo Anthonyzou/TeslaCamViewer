@@ -173,22 +173,10 @@ class HelpModal {
                     </div>
                 </div>
 
-                <!-- Bookmarks -->
+                <!-- Timeline Zoom -->
                 <div class="help-section">
-                    <h3>${this.t('help.sections.bookmarks')}</h3>
+                    <h3>${this.t('help.sections.timelineZoom')}</h3>
                     <div class="shortcut-grid">
-                        <div class="shortcut-row">
-                            <kbd>B</kbd>
-                            <span>${this.t('help.shortcuts.addBookmark')}</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <kbd>[</kbd>
-                            <span>Jump to previous bookmark</span>
-                        </div>
-                        <div class="shortcut-row">
-                            <kbd>]</kbd>
-                            <span>Jump to next bookmark</span>
-                        </div>
                         <div class="shortcut-row">
                             <kbd>Scroll on timeline</kbd>
                             <span>${this.t('help.shortcuts.zoomTimeline')}</span>

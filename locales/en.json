@@ -72,19 +72,6 @@
     "repeaters": "Repeaters",
     "pillars": "Pillars"
   },
-  "bookmarks": {
-    "title": "Bookmarks",
-    "previous": "Previous Bookmark ([)",
-    "add": "Add Bookmark (B)",
-    "next": "Next Bookmark (])",
-    "manage": "Manage Bookmarks",
-    "clearAll": "Clear All",
-    "noBookmarks": "No bookmarks yet",
-    "bookmark": {
-      "one": "{{count}} bookmark",
-      "other": "{{count}} bookmarks"
-    }
-  },
   "export": {
     "header": "Export Options",
     "exportVideo": "Export Video",
@@ -127,7 +114,7 @@
       "navigation": "Navigation",
       "viewLayout": "View & Layout",
       "markingExport": "Marking & Export",
-      "bookmarks": "Bookmarks",
+      "timelineZoom": "Timeline Zoom",
       "speedControl": "Speed Control",
       "general": "General"
     },
@@ -154,9 +141,6 @@
       "clearMarks": "Clear marks",
       "takeScreenshot": "Take screenshot",
       "exportVideo": "Export video",
-      "addBookmark": "Add bookmark at current position",
-      "jumpToPreviousBookmark": "Jump to previous bookmark",
-      "jumpToNextBookmark": "Jump to next bookmark",
       "zoomTimeline": "Zoom in/out (if enabled in settings)",
       "increaseSpeed": "Increase speed",
       "decreaseSpeed": "Decrease speed",
@@ -316,7 +300,6 @@
     "saved": "Saved",
     "sentry": "Sentry",
     "recent": "Recent",
-    "onlyBookmarked": "Only Bookmarked Events",
     "sortBy": "Sort By",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",

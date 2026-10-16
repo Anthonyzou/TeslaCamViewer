@@ -309,52 +309,6 @@
 
                 <!-- Timeline Row with Side Controls -->
                 <div class="timeline-row">
-                    <!-- Bookmark Controls (left side) -->
-                    <div class="timeline-bookmark-controls">
-                        <button id="addBookmarkBtn" class="control-btn bookmark-btn" disabled
-                            data-i18n-title="bookmarks.add" title="Add Bookmark (B)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z" />
-                                <path d="M11 7h2v3h3v2h-3v3h-2v-3H8v-2h3V7z" />
-                            </svg>
-                        </button>
-                        <button id="prevBookmarkBtn" class="control-btn bookmark-btn" disabled
-                            data-i18n-title="bookmarks.previous" title="Previous Bookmark ([)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
-                            </svg>
-                        </button>
-                        <button id="nextBookmarkBtn" class="control-btn bookmark-btn" disabled
-                            data-i18n-title="bookmarks.next" title="Next Bookmark (])">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
-                            </svg>
-                        </button>
-                        <div class="bookmarks-dropdown-container">
-                            <button id="bookmarksListBtn" class="control-btn bookmark-btn" disabled
-                                data-i18n-title="bookmarks.manage" title="Manage Bookmarks">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path
-                                        d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-                                </svg>
-                            </button>
-                            <div id="bookmarksDropdown" class="bookmarks-dropdown hidden">
-                                <div class="bookmarks-dropdown-header">
-                                    <span data-i18n="bookmarks.title">Bookmarks</span>
-                                    <button id="clearAllBookmarksBtn" class="clear-all-btn"
-                                        data-i18n-title="bookmarks.clearAll" title="Clear All">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path
-                                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div id="bookmarksList" class="bookmarks-list"></div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Timeline -->
                     <div class="timeline-container">
                         <!-- Mini-map for zoomed timeline -->

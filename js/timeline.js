@@ -4,7 +4,7 @@
  */
 
 class Timeline {
-    constructor(timelineElement, onSeek, onBookmarkChange = null) {
+    constructor(timelineElement, onSeek) {
         this.timeline = timelineElement;
         this._mcRef = 'teslacamviewer.com';
         this.progress = document.getElementById('timelineProgress');
@@ -23,7 +23,6 @@ class Timeline {
         this.minimapDragOffset = 0;
 
         this.onSeek = onSeek;
-        this.onBookmarkChange = onBookmarkChange;
         this.totalDuration = 0;
         this.duration = 0; // Alias for totalDuration
         this.currentTime = 0;
@@ -38,168 +37,11 @@ class Timeline {
         this.zoomEnabled = false; // Controlled by settings
         this.scrollAnimationId = null; // For smooth scroll animation
 
-        // Bookmarks
-        this.bookmarks = [];
-        this.currentEventId = null; // Track which event's bookmarks we're managing
-        this.BOOKMARKS_STORAGE_KEY = 'teslacamviewer_bookmarks';
-        this.bookmarkJumpTime = 0; // Timestamp of last bookmark jump (for ignoring timeupdate temporarily)
-        this.lastJumpedBookmarkId = null; // Track the bookmark we just jumped to
-
-        // Event lookup for backup
-        this.eventLookup = new Map(); // eventKey -> event object with folderHandle
-        this.getNotesForEvent = null; // Function to get notes for an event
-
         // Gap markers
         this.gaps = [];
 
         this.setupEventListeners();
         this.setupMinimapEventListeners();
-    }
-
-    /**
-     * Register an event for backup purposes
-     * @param {Object} event - Event object with folderHandle
-     */
-    registerEvent(event) {
-        if (!event) return;
-        const key = event.compoundKey || event.name;
-        if (key && event.folderHandle) {
-            this.eventLookup.set(key, event);
-        }
-    }
-
-    /**
-     * Register multiple events
-     * @param {Array} events - Array of event objects
-     */
-    registerEvents(events) {
-        if (!events) return;
-        for (const event of events) {
-            this.registerEvent(event);
-        }
-    }
-
-    /**
-     * Set function to get notes for an event
-     * @param {Function} fn - Function that takes eventKey and returns notes object
-     */
-    setNotesGetter(fn) {
-        this.getNotesForEvent = fn;
-    }
-
-    /**
-     * Set the current event for bookmark management
-     * @param {string} eventId Unique identifier for the event (e.g., event name)
-     */
-    setCurrentEvent(eventId) {
-        // Save current bookmarks before switching
-        if (this.currentEventId && this.bookmarks.length > 0) {
-            this.saveBookmarks();
-        }
-
-        this.currentEventId = eventId;
-
-        // Load bookmarks for the new event
-        this.loadBookmarks();
-        this.renderBookmarks();
-    }
-
-    /**
-     * Save bookmarks to localStorage
-     */
-    saveBookmarks() {
-        if (!this.currentEventId) return;
-
-        try {
-            const allBookmarks = this.getAllSavedBookmarks();
-            // Only persist user-added bookmarks. Derived entries (launch
-            // flags from seiInsights, future auto-highlights) are
-            // recomputed from the insights cache on every event load —
-            // saving them here would duplicate them into localStorage and
-            // they'd accumulate every time the user switched events.
-            allBookmarks[this.currentEventId] = this.bookmarks.filter(b => !b.isLaunch);
-            localStorage.setItem(this.BOOKMARKS_STORAGE_KEY, JSON.stringify(allBookmarks));
-
-            // Backup to event folder if available
-            this.backupToEventFolder(this.currentEventId, this.bookmarks);
-
-            // Notify callback of bookmark change
-            if (this.onBookmarkChange) {
-                this.onBookmarkChange(this.currentEventId, this.bookmarks);
-            }
-        } catch (e) {
-            console.warn('Failed to save bookmarks:', e);
-        }
-    }
-
-    /**
-     * Backup bookmarks and notes to the event folder
-     * @param {string} eventId - Event identifier
-     * @param {Array} bookmarks - Bookmarks array
-     */
-    async backupToEventFolder(eventId, bookmarks) {
-        // Get the event object with folderHandle
-        const event = this.eventLookup.get(eventId);
-        if (!event) {
-            console.log('[Timeline] No event registered for backup:', eventId);
-            return;
-        }
-
-        // Get notes if getter is available
-        let notes = { text: '', tags: [] };
-        if (this.getNotesForEvent) {
-            try {
-                notes = this.getNotesForEvent(eventId) || { text: '', tags: [] };
-            } catch (e) {
-                console.warn('[Timeline] Failed to get notes for backup:', e);
-            }
-        }
-
-        // Use the backup module
-        if (window.eventDataBackup) {
-            const backupData = {
-                notes: notes,
-                bookmarks: bookmarks
-            };
-
-            try {
-                await window.eventDataBackup.saveToEventFolder(event, backupData);
-                console.log('[Timeline] Backup queued for:', eventId);
-            } catch (e) {
-                console.warn('[Timeline] Failed to backup to event folder:', e);
-            }
-        }
-    }
-
-    /**
-     * Load bookmarks from localStorage
-     */
-    loadBookmarks() {
-        if (!this.currentEventId) {
-            this.bookmarks = [];
-            return;
-        }
-
-        try {
-            const allBookmarks = this.getAllSavedBookmarks();
-            this.bookmarks = allBookmarks[this.currentEventId] || [];
-        } catch (e) {
-            console.warn('Failed to load bookmarks:', e);
-            this.bookmarks = [];
-        }
-    }
-
-    /**
-     * Get all saved bookmarks from localStorage
-     * @returns {Object}
-     */
-    getAllSavedBookmarks() {
-        try {
-            const stored = localStorage.getItem(this.BOOKMARKS_STORAGE_KEY);
-            return stored ? JSON.parse(stored) : {};
-        } catch (e) {
-            return {};
-        }
     }
 
     /**
@@ -530,16 +372,6 @@ class Timeline {
             this.minimapMarkers.appendChild(marker);
         }
 
-        // Add bookmark markers
-        for (const bookmark of this.bookmarks) {
-            const percent = (bookmark.time / this.totalDuration) * 100;
-            const marker = document.createElement('div');
-            marker.className = 'minimap-bookmark-marker';
-            marker.style.left = `${percent}%`;
-            marker.title = bookmark.label;
-            this.minimapMarkers.appendChild(marker);
-        }
-
         // Add near-miss markers (score >= 5 only)
         if (this._nearMisses && this._nearMisses.length > 0) {
             const flaggedNearMisses = this._nearMisses.filter(nm => nm.score >= 5);
@@ -641,7 +473,6 @@ class Timeline {
         this.clipsContainer.style.transform = '';
 
         // Re-render markers at correct positions for zoom level
-        this.renderBookmarks();
         this.rerenderClipMarkers();
 
         // Re-render IN/OUT clip markers — they live in a sibling module
@@ -933,24 +764,6 @@ class Timeline {
     updateTime(time) {
         if (this.isDragging) return; // Don't update while dragging
 
-        // After a bookmark jump, ignore video timeupdate for 1000ms
-        // This prevents the overshooting video time from overwriting the bookmark's target time
-        const timeSinceBookmarkJump = Date.now() - this.bookmarkJumpTime;
-        if (timeSinceBookmarkJump < 1000) {
-            // Still update visual position but don't update currentTime for navigation
-            const percent = this.totalDuration > 0 ? time / this.totalDuration : 0;
-            this.updateVisualPosition(percent);
-            this.updateTimeDisplay();
-            this.updateMinimap();
-            return;
-        }
-
-        // If time changed significantly (user seeked manually), clear the bookmark tracking
-        // This allows "previous" to work correctly after user manually navigates
-        if (Math.abs(time - this.currentTime) > 5) {
-            this.lastJumpedBookmarkId = null;
-        }
-
         this.currentTime = time;
         const percent = this.totalDuration > 0 ? time / this.totalDuration : 0;
 
@@ -1169,178 +982,6 @@ class Timeline {
      */
     getDuration() {
         return this.totalDuration;
-    }
-
-    // ==================== Bookmark Methods ====================
-
-    /**
-     * Add a bookmark at current time
-     * @param {string} label Optional label for the bookmark
-     * @returns {Object} The created bookmark
-     */
-    addBookmark(label = '') {
-        const bookmark = {
-            id: Date.now(),
-            time: this.currentTime,
-            label: label || `Bookmark ${this.bookmarks.length + 1}`
-        };
-
-        this.bookmarks.push(bookmark);
-        this.saveBookmarks();
-        this.renderBookmarks();
-
-        return bookmark;
-    }
-
-    /**
-     * Add a bookmark at specific time
-     * @param {number} time Time in seconds
-     * @param {string} label Optional label for the bookmark
-     * @returns {Object} The created bookmark
-     */
-    addBookmarkAt(time, label = '') {
-        const bookmark = {
-            id: Date.now(),
-            time: time,
-            label: label || `Bookmark ${this.bookmarks.length + 1}`
-        };
-
-        this.bookmarks.push(bookmark);
-        this.bookmarks.sort((a, b) => a.time - b.time);
-        this.saveBookmarks();
-        this.renderBookmarks();
-
-        return bookmark;
-    }
-
-    /**
-     * Remove a bookmark
-     * @param {number} bookmarkId
-     */
-    removeBookmark(bookmarkId) {
-        this.bookmarks = this.bookmarks.filter(b => b.id !== bookmarkId);
-        this.saveBookmarks();
-        this.renderBookmarks();
-    }
-
-    /**
-     * Clear all bookmarks
-     */
-    clearBookmarks() {
-        this.bookmarks = [];
-        this.saveBookmarks();
-        this.renderBookmarks();
-    }
-
-    /**
-     * Get all bookmarks
-     * @returns {Array}
-     */
-    getBookmarks() {
-        return [...this.bookmarks];
-    }
-
-    /**
-     * Jump to next bookmark from current position
-     * @returns {Object|null} The bookmark jumped to, or null if none
-     */
-    jumpToNextBookmark() {
-        // Sort bookmarks by time and find the first one after current position
-        const sortedBookmarks = [...this.bookmarks].sort((a, b) => a.time - b.time);
-
-        // Find next bookmark, excluding the one we just jumped to
-        const nextBookmark = sortedBookmarks.find(b => {
-            const isAfterCurrentTime = b.time > this.currentTime + 0.5;
-            const isNotCurrentBookmark = b.id !== this.lastJumpedBookmarkId;
-            return isAfterCurrentTime && isNotCurrentBookmark;
-        });
-
-        if (nextBookmark && this.onSeek) {
-            // Update currentTime immediately so repeated clicks work correctly
-            this.currentTime = nextBookmark.time;
-            this.bookmarkJumpTime = Date.now(); // Prevent timeupdate from overwriting
-            this.lastJumpedBookmarkId = nextBookmark.id; // Track which bookmark we're at
-            this.onSeek(nextBookmark.time);
-            return nextBookmark;
-        }
-        return null;
-    }
-
-    /**
-     * Jump to previous bookmark from current position
-     * @returns {Object|null} The bookmark jumped to, or null if none
-     */
-    jumpToPreviousBookmark() {
-        // Sort bookmarks by time and find the last one before current position
-        const sortedBookmarks = [...this.bookmarks].sort((a, b) => a.time - b.time);
-
-        // Filter for bookmarks before current position, excluding the one we just jumped to
-        // (video seek may overshoot, so we need to skip the current bookmark)
-        const prevBookmarks = sortedBookmarks.filter(b => {
-            const isBeforeCurrentTime = b.time < this.currentTime - 0.5;
-            const isNotCurrentBookmark = b.id !== this.lastJumpedBookmarkId;
-            return isBeforeCurrentTime && isNotCurrentBookmark;
-        });
-
-        if (prevBookmarks.length > 0) {
-            const prevBookmark = prevBookmarks[prevBookmarks.length - 1];
-            // Update currentTime immediately so repeated clicks work correctly
-            this.currentTime = prevBookmark.time;
-            this.bookmarkJumpTime = Date.now(); // Prevent timeupdate from overwriting
-            this.lastJumpedBookmarkId = prevBookmark.id; // Track which bookmark we're at
-            if (this.onSeek) {
-                this.onSeek(prevBookmark.time);
-            }
-            return prevBookmark;
-        }
-        return null;
-    }
-
-    /**
-     * Render bookmarks on the timeline
-     */
-    renderBookmarks() {
-        // Remove existing bookmark markers
-        const existingMarkers = this.clipsContainer.querySelectorAll('.bookmark-marker');
-        existingMarkers.forEach(m => m.remove());
-
-        // Add new bookmark markers
-        this.bookmarks.forEach(bookmark => {
-            if (this.totalDuration <= 0) return;
-
-            const percent = this.getZoomedPosition(bookmark.time);
-
-            // Skip if outside visible window when zoomed
-            if (percent < 0) return;
-
-            const marker = document.createElement('div');
-            marker.className = 'bookmark-marker';
-            marker.style.left = `${percent}%`;
-            marker.title = `${bookmark.label} (${this.formatTime(bookmark.time)})`;
-            marker.dataset.bookmarkId = bookmark.id;
-
-            // Click to jump to bookmark
-            marker.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (this.onSeek) {
-                    this.onSeek(bookmark.time);
-                }
-            });
-
-            // Right-click to remove
-            marker.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (confirm(`Remove bookmark "${bookmark.label}"?`)) {
-                    this.removeBookmark(bookmark.id);
-                }
-            });
-
-            this.clipsContainer.appendChild(marker);
-        });
-
-        // Update minimap markers
-        this.renderMinimapMarkers();
     }
 
     // ----- Scrub-preview thumbnails (hover over timeline) -----

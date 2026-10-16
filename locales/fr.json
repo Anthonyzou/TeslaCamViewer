@@ -70,15 +70,6 @@
     "layout": "Disposition:",
     "camera": "Caméra:"
   },
-  "bookmarks": {
-    "title": "Signets",
-    "previous": "Signet précédent ([)",
-    "add": "Ajouter un signet (B)",
-    "next": "Signet suivant (])",
-    "manage": "Gérer les signets",
-    "clearAll": "Tout effacer",
-    "noBookmarks": "Pas encore de signets"
-  },
   "export": {
     "header": "Exporter la caméra",
     "allCameras": "Toutes les caméras (Grille)",
@@ -117,7 +108,6 @@
       "navigation": "Navigation",
       "viewLayout": "Affichage & Disposition",
       "markingExport": "Marquage & Exportation",
-      "bookmarks": "Signets",
       "speedControl": "Contrôle de vitesse",
       "general": "Général"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "Effacer les marqueurs",
       "takeScreenshot": "Prendre une capture d'écran",
       "exportVideo": "Exporter la vidéo",
-      "addBookmark": "Ajouter un signet à la position actuelle",
-      "jumpToPreviousBookmark": "Aller au signet précédent",
-      "jumpToNextBookmark": "Aller au signet suivant",
       "zoomTimeline": "Zoom avant/arrière (si activé dans les paramètres)",
       "increaseSpeed": "Augmenter la vitesse",
       "decreaseSpeed": "Diminuer la vitesse",
@@ -237,7 +224,6 @@
     "clear": "Effacer les filtres",
     "filters": "Filtres",
     "eventTypes": "Types d'événements",
-    "onlyBookmarked": "Événements avec signets uniquement",
     "sortBy": "Trier par",
     "newestFirst": "Plus récent d'abord",
     "oldestFirst": "Plus ancien d'abord"

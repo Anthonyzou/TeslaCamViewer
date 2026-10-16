@@ -15,30 +15,8 @@ class EventFilter {
                 end: null
             },
             searchQuery: '',
-            sortOrder: 'newest', // 'newest' or 'oldest'
-            hasBookmarks: false // Only show events with bookmarks
+            sortOrder: 'newest' // 'newest' or 'oldest'
         };
-        this.BOOKMARKS_STORAGE_KEY = 'teslacamviewer_bookmarks';
-    }
-
-    /**
-     * Get all bookmarked event IDs from localStorage
-     * @returns {Set<string>}
-     */
-    getBookmarkedEventIds() {
-        try {
-            const stored = localStorage.getItem(this.BOOKMARKS_STORAGE_KEY);
-            if (stored) {
-                const allBookmarks = JSON.parse(stored);
-                // Return event IDs that have at least one bookmark
-                return new Set(
-                    Object.keys(allBookmarks).filter(key => allBookmarks[key].length > 0)
-                );
-            }
-        } catch (e) {
-            console.warn('Failed to load bookmarks for filtering:', e);
-        }
-        return new Set();
     }
 
     /**
@@ -51,29 +29,11 @@ class EventFilter {
             return [];
         }
 
-        // Get bookmarked event IDs once for efficiency
-        const bookmarkedIds = this.filters.hasBookmarks ? this.getBookmarkedEventIds() : null;
-
         return events
             .filter(event => this.filterByType(event))
             .filter(event => this.filterByDate(event))
             .filter(event => this.filterBySearch(event))
-            .filter(event => this.filterByBookmarks(event, bookmarkedIds))
             .sort((a, b) => this.sortEvents(a, b));
-    }
-
-    /**
-     * Filter by bookmark status
-     * @param {Object} event
-     * @param {Set|null} bookmarkedIds - Pre-computed set of bookmarked event IDs
-     * @returns {boolean}
-     */
-    filterByBookmarks(event, bookmarkedIds) {
-        // No bookmark filter applied
-        if (!this.filters.hasBookmarks || !bookmarkedIds) {
-            return true;
-        }
-        return bookmarkedIds.has(event.name);
     }
 
     /**
@@ -201,9 +161,6 @@ class EventFilter {
         if (newFilters.sortOrder !== undefined) {
             this.filters.sortOrder = newFilters.sortOrder;
         }
-        if (newFilters.hasBookmarks !== undefined) {
-            this.filters.hasBookmarks = newFilters.hasBookmarks;
-        }
     }
 
     /**
@@ -221,8 +178,7 @@ class EventFilter {
                 end: null
             },
             searchQuery: '',
-            sortOrder: 'newest',
-            hasBookmarks: false
+            sortOrder: 'newest'
         };
     }
 
@@ -251,11 +207,6 @@ class EventFilter {
 
         // Check sort order (if not default 'newest')
         if (this.filters.sortOrder !== 'newest') {
-            count++;
-        }
-
-        // Check bookmark filter
-        if (this.filters.hasBookmarks) {
             count++;
         }
 

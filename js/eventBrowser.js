@@ -18,7 +18,6 @@ class EventBrowser {
     this.events = [];
     this.selectedEvent = null;
     this.thumbnailCache = new Map();
-    this.BOOKMARKS_STORAGE_KEY = 'teslacamviewer_bookmarks';
 
     // Lazy loading for thumbnails
     this.thumbnailObserver = null;
@@ -229,75 +228,6 @@ class EventBrowser {
   }
 
   /**
-   * Check if an event has any bookmarks
-   * @param {string} eventName
-   * @returns {boolean}
-   */
-  hasBookmarks(eventName) {
-    try {
-      const stored = localStorage.getItem(this.BOOKMARKS_STORAGE_KEY);
-      if (stored) {
-        const allBookmarks = JSON.parse(stored);
-        return allBookmarks[eventName] && allBookmarks[eventName].length > 0;
-      }
-    } catch (e) {
-      console.warn('Error checking bookmarks:', e);
-    }
-    return false;
-  }
-
-  /**
-   * Get bookmark count for an event
-   * @param {string} eventName
-   * @returns {number}
-   */
-  getBookmarkCount(eventName) {
-    try {
-      const stored = localStorage.getItem(this.BOOKMARKS_STORAGE_KEY);
-      if (stored) {
-        const allBookmarks = JSON.parse(stored);
-        if (allBookmarks[eventName]) {
-          return allBookmarks[eventName].length;
-        }
-      }
-    } catch (e) {
-      console.warn('Error getting bookmark count:', e);
-    }
-    return 0;
-  }
-
-  /**
-   * Refresh bookmark indicators on all event cards
-   */
-  refreshBookmarkIndicators() {
-    const eventItems = this.container.querySelectorAll('.event-item');
-    for (const item of eventItems) {
-      const bookmarkKey = item.dataset.bookmarkKey || item.dataset.eventName;
-      const existingIndicator = item.querySelector('.bookmark-indicator');
-      const count = this.getBookmarkCount(bookmarkKey);
-
-      if (count > 0) {
-        if (existingIndicator) {
-          existingIndicator.textContent = `[${count}]`;
-          existingIndicator.title = `${count} bookmark${count > 1 ? 's' : ''}`;
-        } else {
-          // Add new indicator
-          const header = item.querySelector('.event-item-header');
-          if (header) {
-            const indicator = document.createElement('span');
-            indicator.className = 'bookmark-indicator';
-            indicator.textContent = `[${count}]`;
-            indicator.title = `${count} bookmark${count > 1 ? 's' : ''}`;
-            header.appendChild(indicator);
-          }
-        }
-      } else if (existingIndicator) {
-        existingIndicator.remove();
-      }
-    }
-  }
-
-  /**
    * Get cached near-miss data for an event
    * @param {string} eventKey - Event identifier
    * @returns {Object|null} Near-miss data or null
@@ -361,7 +291,7 @@ class EventBrowser {
   updateNearMissIndicator(eventKey, count, maxScore) {
     const eventItems = this.container.querySelectorAll('.event-item');
     for (const item of eventItems) {
-      const itemKey = item.dataset.bookmarkKey || item.dataset.eventName;
+      const itemKey = item.dataset.eventKey || item.dataset.eventName;
       if (itemKey !== eventKey) continue;
 
       const existingIndicator = item.querySelector('.nearmiss-indicator');
@@ -393,7 +323,7 @@ class EventBrowser {
   refreshNearMissIndicators() {
     const eventItems = this.container.querySelectorAll('.event-item');
     for (const item of eventItems) {
-      const eventKey = item.dataset.bookmarkKey || item.dataset.eventName;
+      const eventKey = item.dataset.eventKey || item.dataset.eventName;
       const data = this.getNearMissData(eventKey);
       const existingIndicator = item.querySelector('.nearmiss-indicator');
 
@@ -463,7 +393,7 @@ class EventBrowser {
     const header = item.querySelector('.event-item-header');
     if (!header) return;
 
-    // Remove any existing badges we own; leave bookmark/notes alone
+    // Remove any existing badges we own
     header
       .querySelectorAll('.health-badge, .severity-badge, .launch-badge')
       .forEach((el) => el.remove());
@@ -712,7 +642,7 @@ class EventBrowser {
     const div = document.createElement('div');
     div.className = event.isEmpty ? 'event-item event-empty' : 'event-item';
     div.dataset.eventName = event.name;
-    div.dataset.bookmarkKey = event.compoundKey || event.name;
+    div.dataset.eventKey = event.compoundKey || event.name;
 
     // Get event type class
     const typeClass = event.type.toLowerCase().replace('clips', '');
@@ -770,14 +700,6 @@ class EventBrowser {
     // Calculate event duration
     const durationMinutes = ((event.clipGroups.length * 60) / 60).toFixed(1);
 
-    // Check for bookmarks
-    const bookmarkKey = event.compoundKey || event.name;
-    const bookmarkCount = this.getBookmarkCount(bookmarkKey);
-    const bookmarkHTML =
-      bookmarkCount > 0
-        ? `<span class="bookmark-indicator" title="${bookmarkCount} bookmark${bookmarkCount > 1 ? 's' : ''}">[${bookmarkCount}]</span>`
-        : '';
-
     // Drive badge
     const driveBadgeHTML = event.driveLabel
       ? `<span class="drive-badge" style="background: ${event.driveColor || 'var(--accent)'};" title="${event.driveLabel}">${event.driveLabel}</span>`
@@ -801,7 +723,6 @@ class EventBrowser {
                 ${driveBadgeHTML}
                 <span class="event-type ${typeClass}">${typeClass}</span>
                 ${healthBadgeHTML}
-                ${bookmarkHTML}
                 <span class="event-item-date">${dateStr}</span>
             </div>
             <div class="event-item-time">${timeStr}</div>
@@ -844,7 +765,7 @@ class EventBrowser {
     const div = document.createElement('div');
     div.className = event.isEmpty ? 'event-item event-empty' : 'event-item';
     div.dataset.eventName = event.name;
-    div.dataset.bookmarkKey = event.compoundKey || event.name; // For bookmark lookups
+    div.dataset.eventKey = event.compoundKey || event.name;
 
     // Get event type class
     const typeClass = event.type.toLowerCase().replace('clips', '');
@@ -912,14 +833,6 @@ class EventBrowser {
     // Calculate event duration (approximately 60 seconds per clip)
     const durationMinutes = ((event.clipGroups.length * 60) / 60).toFixed(1);
 
-    // Check for bookmarks (use compoundKey for multi-drive support)
-    const bookmarkKey = event.compoundKey || event.name;
-    const bookmarkCount = this.getBookmarkCount(bookmarkKey);
-    const bookmarkHTML =
-      bookmarkCount > 0
-        ? `<span class="bookmark-indicator" title="${bookmarkCount} bookmark${bookmarkCount > 1 ? 's' : ''}">[${bookmarkCount}]</span>`
-        : '';
-
     // Drive badge - always show drive label when available
     const driveBadgeHTML = event.driveLabel
       ? `<span class="drive-badge" style="background: ${event.driveColor || 'var(--accent)'};" title="${event.driveLabel}">${event.driveLabel}</span>`
@@ -939,7 +852,6 @@ class EventBrowser {
                 <span class="event-type ${typeClass}">${typeClass}</span>
                 ${severityBadgeHTML}
                 ${healthBadgeHTML}
-                ${bookmarkHTML}
                 <span class="event-item-date">${dateStr}</span>
             </div>
             <div class="event-item-time">${timeStr}</div>

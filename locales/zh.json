@@ -70,15 +70,6 @@
     "layout": "布局：",
     "camera": "摄像头："
   },
-  "bookmarks": {
-    "title": "书签",
-    "previous": "上一个书签 ([)",
-    "add": "添加书签 (B)",
-    "next": "下一个书签 (])",
-    "manage": "管理书签",
-    "clearAll": "全部清除",
-    "noBookmarks": "暂无书签"
-  },
   "export": {
     "header": "导出摄像头",
     "allCameras": "所有摄像头（网格）",
@@ -117,7 +108,6 @@
       "navigation": "导航",
       "viewLayout": "视图和布局",
       "markingExport": "标记和导出",
-      "bookmarks": "书签",
       "speedControl": "速度控制",
       "general": "常规"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "清除标记",
       "takeScreenshot": "截图",
       "exportVideo": "导出视频",
-      "addBookmark": "在当前位置添加书签",
-      "jumpToPreviousBookmark": "跳到上一个书签",
-      "jumpToNextBookmark": "跳到下一个书签",
       "zoomTimeline": "缩放时间轴（如果在设置中启用）",
       "increaseSpeed": "加速",
       "decreaseSpeed": "减速",
@@ -237,7 +224,6 @@
     "clear": "清除筛选",
     "filters": "筛选",
     "eventTypes": "事件类型",
-    "onlyBookmarked": "仅显示已收藏事件",
     "sortBy": "排序方式",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先"

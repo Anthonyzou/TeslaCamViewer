@@ -70,15 +70,6 @@
     "layout": "레이아웃:",
     "camera": "카메라:"
   },
-  "bookmarks": {
-    "title": "북마크",
-    "previous": "이전 북마크 ([)",
-    "add": "북마크 추가 (B)",
-    "next": "다음 북마크 (])",
-    "manage": "북마크 관리",
-    "clearAll": "모두 지우기",
-    "noBookmarks": "북마크 없음"
-  },
   "export": {
     "header": "카메라 내보내기",
     "allCameras": "모든 카메라 (그리드)",
@@ -117,7 +108,6 @@
       "navigation": "탐색",
       "viewLayout": "보기 및 레이아웃",
       "markingExport": "마킹 및 내보내기",
-      "bookmarks": "북마크",
       "speedControl": "속도 조절",
       "general": "일반"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "표시 지우기",
       "takeScreenshot": "스크린샷 캡처",
       "exportVideo": "비디오 내보내기",
-      "addBookmark": "현재 위치에 북마크 추가",
-      "jumpToPreviousBookmark": "이전 북마크로 이동",
-      "jumpToNextBookmark": "다음 북마크로 이동",
       "zoomTimeline": "확대/축소 (설정에서 활성화된 경우)",
       "increaseSpeed": "속도 증가",
       "decreaseSpeed": "속도 감소",
@@ -237,7 +224,6 @@
     "clear": "필터 지우기",
     "filters": "필터",
     "eventTypes": "이벤트 유형",
-    "onlyBookmarked": "북마크된 이벤트만",
     "sortBy": "정렬 기준",
     "newestFirst": "최신순",
     "oldestFirst": "오래된순"

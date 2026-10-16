@@ -70,15 +70,6 @@
     "layout": "レイアウト：",
     "camera": "カメラ："
   },
-  "bookmarks": {
-    "title": "ブックマーク",
-    "previous": "前のブックマーク ([)",
-    "add": "ブックマークを追加 (B)",
-    "next": "次のブックマーク (])",
-    "manage": "ブックマークを管理",
-    "clearAll": "すべてクリア",
-    "noBookmarks": "ブックマークはまだありません"
-  },
   "export": {
     "header": "カメラをエクスポート",
     "allCameras": "すべてのカメラ（グリッド）",
@@ -117,7 +108,6 @@
       "navigation": "ナビゲーション",
       "viewLayout": "表示とレイアウト",
       "markingExport": "マーキングとエクスポート",
-      "bookmarks": "ブックマーク",
       "speedControl": "速度調整",
       "general": "一般"
     },
@@ -143,9 +133,6 @@
       "clearMarks": "マークをクリア",
       "takeScreenshot": "スクリーンショットを撮る",
       "exportVideo": "ビデオをエクスポート",
-      "addBookmark": "現在位置にブックマークを追加",
-      "jumpToPreviousBookmark": "前のブックマークへジャンプ",
-      "jumpToNextBookmark": "次のブックマークへジャンプ",
       "zoomTimeline": "ズームイン/アウト（設定で有効時）",
       "increaseSpeed": "速度を上げる",
       "decreaseSpeed": "速度を下げる",
@@ -237,7 +224,6 @@
     "clear": "フィルターをクリア",
     "filters": "フィルター",
     "eventTypes": "イベントタイプ",
-    "onlyBookmarked": "ブックマーク付きのみ",
     "sortBy": "並び替え",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順"
