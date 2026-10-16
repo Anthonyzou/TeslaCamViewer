@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
-    "start": "node server.js",
+    "start": "node server/index.mjs",
     "test": "node --test",
     "typecheck": "vue-tsc --noEmit"
   },

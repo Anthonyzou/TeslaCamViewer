@@ -60,7 +60,8 @@ export interface SettingsManagerLike {
 
 export interface DriveInfo {
   id: string;
-  name: string;
+  label?: string;
+  name?: string;
   color?: string;
   handle?: any;
   events?: TeslaCamEvent[];

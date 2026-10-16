@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const http = require('node:http');
-const { app, organizeB2Events, exportJobs } = require('../server');
+import { test } from 'node:test';
+import assert from 'node:assert';
+import http from 'node:http';
+import { app, organizeB2Events, exportJobs } from '../server/index.mjs';
 
 test('organizeB2Events - groups files into chronological events and detects cameras', async () => {
   const mockFiles = [

@@ -14,6 +14,7 @@
       <!-- Sidebar -->
       <AppSidebar
         :drives="drives"
+        :activeDriveId="activeDriveId"
         :hasEvents="hasEvent"
         :eventCountText="eventCountText"
         :eventStatsText="eventStatsText"
@@ -154,6 +155,7 @@ const {
   selectFolder,
   loadB2,
   changeDrive,
+  activeDriveId,
   manageDrives,
   addDrive,
   refreshDrives,

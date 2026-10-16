@@ -91,6 +91,7 @@ export function useTeslaCam() {
 
     // Drives
     drives: drives.drives,
+    activeDriveId: drives.activeDriveId,
     selectFolder: drives.selectFolder,
     loadB2: drives.loadB2,
     changeDrive: drives.changeDrive,

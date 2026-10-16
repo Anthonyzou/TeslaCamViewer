@@ -35,7 +35,7 @@
             {{ t('sidebar.allDrives') }}
           </option>
           <option v-for="d in drives" :key="d.id" :value="d.id">
-            {{ d.name }}
+            {{ d.label || d.name || d.id }}
           </option>
         </select>
         <button
@@ -96,6 +96,7 @@
     <button
       id="selectFolderBtn"
       class="select-folder-btn"
+      :class="{ hidden: hasEvents }"
       @click="emit('selectFolder')"
     >
       <Folder :size="20" style="margin-right: 8px" />
@@ -108,6 +109,7 @@
     <button
       id="loadB2Btn"
       class="select-folder-btn b2-btn"
+      :class="{ hidden: hasEvents }"
       style="background: #003399"
       @click="emit('loadB2')"
     >
@@ -167,13 +169,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Settings, Plus, RefreshCw, Folder, Cloud } from 'lucide-vue-next';
 import type { DriveInfo } from '../types';
 import FilterPanel from './FilterPanel.vue';
 
-defineProps<{
+const props = defineProps<{
   drives?: DriveInfo[];
+  activeDriveId?: string;
   hasEvents: boolean;
   eventCountText?: string;
   eventStatsText?: string;
@@ -318,7 +321,30 @@ function onWindowResize(): void {
 }
 
 const activeTab = ref<'events' | 'map'>('events');
-const selectedDrive = ref('');
+const selectedDrive = ref(props.activeDriveId || '');
+
+watch(
+  () => props.activeDriveId,
+  (newId) => {
+    if (newId !== undefined) {
+      selectedDrive.value = newId;
+    }
+  }
+);
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'map') {
+    nextTick(() => {
+      (window as any).app?.mapView?.invalidateSize();
+      setTimeout(() => {
+        (window as any).app?.mapView?.invalidateSize();
+      }, 50);
+      setTimeout(() => {
+        (window as any).app?.mapView?.invalidateSize();
+      }, 200);
+    });
+  }
+});
 
 const localeTick = ref(0);
 

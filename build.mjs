@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
+import { existsSync, statSync } from 'node:fs';
 import vuePlugin from 'unplugin-vue/esbuild';
-import { statSync, existsSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const isWatch = args.includes('--watch');
@@ -28,17 +28,19 @@ const jsConfig = {
   logLevel: 'info',
   plugins: [vuePlugin()],
   define: {
-    'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
-    '__VUE_OPTIONS_API__': 'true',
-    '__VUE_PROD_DEVTOOLS__': 'false',
-    '__VUE_PROD_HYDRATION_MISMATCH_DETAILS__': 'false',
+    'process.env.NODE_ENV': JSON.stringify(
+      isProduction ? 'production' : 'development'
+    ),
+    __VUE_OPTIONS_API__: 'true',
+    __VUE_PROD_DEVTOOLS__: 'false',
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   },
 };
 
 const cssConfig = {
   entryPoints: ['src/index.css'],
   bundle: true,
-  outfile: 'dist/app.css',
+  outfile: 'server/dist/app.css',
   sourcemap: true,
   minify: isProduction,
   logLevel: 'info',
@@ -46,7 +48,9 @@ const cssConfig = {
 
 async function runBuild() {
   const startTime = performance.now();
-  console.log(`[esbuild] Building for ${isProduction ? 'production (minified)' : 'development'}...`);
+  console.log(
+    `[esbuild] Building for ${isProduction ? 'production (minified)' : 'development'}...`
+  );
 
   try {
     if (isWatch) {
@@ -54,15 +58,18 @@ async function runBuild() {
       const cssCtx = await esbuild.context(cssConfig);
 
       await Promise.all([jsCtx.watch(), cssCtx.watch()]);
-      console.log('[esbuild] Watching for changes in js/, styles/, and src/ (press Ctrl+C to stop)...');
+      console.log(
+        '[esbuild] Watching for changes in js/, styles/, and src/ (press Ctrl+C to stop)...'
+      );
     } else {
-      await Promise.all([
-        esbuild.build(jsConfig),
-        esbuild.build(cssConfig)
-      ]);
+      await Promise.all([esbuild.build(jsConfig), esbuild.build(cssConfig)]);
 
-      const jsSize = existsSync('dist/app.js') ? formatBytes(statSync('dist/app.js').size) : 'N/A';
-      const cssSize = existsSync('dist/app.css') ? formatBytes(statSync('dist/app.css').size) : 'N/A';
+      const jsSize = existsSync('dist/app.js')
+        ? formatBytes(statSync('dist/app.js').size)
+        : 'N/A';
+      const cssSize = existsSync('dist/app.css')
+        ? formatBytes(statSync('dist/app.css').size)
+        : 'N/A';
       const duration = (performance.now() - startTime).toFixed(1);
 
       console.log(`[esbuild] Build finished in ${duration}ms:`);
