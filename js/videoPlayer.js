@@ -18,6 +18,7 @@ class VideoPlayer {
     this._isPlayingIntent = false;
     this._preloading = false;
     this._intendedPlaybackRate = 1.0; // Source of truth for playback speed
+    this.disablePreload = false;
 
     // Callbacks
     this.onClipChange = null;
@@ -372,6 +373,14 @@ class VideoPlayer {
     }
   }
 
+  async stepFrame(direction) {
+    this.pause();
+    const fps = 30;
+    const delta = (1 / fps) * direction;
+    const target = Math.max(0, Math.min(this.duration || 60, this.currentTime + delta));
+    await this.seek(target, false);
+  }
+
   async handleVideoEnded() {
     const activeVideos = Object.values(this.videos).filter((v) =>
       v.getAttribute('src')
@@ -459,6 +468,5 @@ class VideoPlayer {
   }
 }
 
-if (typeof window !== 'undefined') {
-  window.VideoPlayer = VideoPlayer;
-}
+export { VideoPlayer };
+export default VideoPlayer;

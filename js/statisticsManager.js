@@ -858,5 +858,5 @@ class StatisticsManager {
     }
 }
 
-// Export for use
-window.StatisticsManager = StatisticsManager;
+export { StatisticsManager };
+export default StatisticsManager;

@@ -281,7 +281,5 @@ if (document.readyState === 'loading') {
   i18n.init();
 }
 
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { I18n, i18n };
-}
+export { I18n, i18n };
+export default i18n;

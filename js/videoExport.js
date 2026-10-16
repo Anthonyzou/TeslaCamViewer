@@ -277,6 +277,5 @@ class VideoExport {
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.VideoExport = VideoExport;
-}
+export { VideoExport };
+export default VideoExport;

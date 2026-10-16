@@ -1,31 +1,72 @@
-import type { TeslaCamEvent, DriveInfo } from '../types';
+import { B2Client } from '../../js/b2Client.js';
+import { EventBrowser } from '../../js/eventBrowser.js';
+import { EventFilter } from '../../js/eventFilter.js';
+import { FolderManager } from '../../js/folderManager.js';
+import { FolderParser } from '../../js/folderParser.js';
+import { LayoutManager } from '../../js/layoutManager.js';
+import { ScreenshotCapture } from '../../js/screenshotCapture';
+import { SettingsManager } from '../../js/settingsManager.js';
+import { StatisticsManager } from '../../js/statisticsManager.js';
+import { SyncController } from '../../js/syncController.js';
+import { VersionManager } from '../../js/versionManager.js';
+import { VideoEnhancer } from '../../js/videoEnhancer.js';
+import { VideoExport } from '../../js/videoExport.js';
+import { VideoPlayer } from '../../js/videoPlayer.js';
+import type { DriveInfo, TeslaCamEvent } from '../types';
 
 /**
  * TeslaCamApp - Central application service orchestrating headless engines
  * Replaces the monolithic js/app.js file.
  */
 export class TeslaCamApp {
-  public folderParser: any;
-  public folderManager: any;
-  public eventFilter: any;
-  public filterPanel: any;
-  public mapView: any;
-  public eventBrowser: any;
-  public videoPlayer: any;
-  public timeline: any;
-  public syncController: any;
-  public layoutManager: any;
-  public screenshotCapture: any;
-  public videoEnhancer: any;
-  public videoExport: any;
-  public clipMarking: any;
-  public settingsManager: any;
-  public versionManager: any;
-  public statisticsManager: any;
-  public helpModal: any;
-  public quickStartGuide: any;
-  public b2Client: any;
-  public commandPalette: any;
+  public folderParser = new FolderParser();
+  public folderManager = new FolderManager();
+  public eventFilter = new EventFilter();
+  public videoPlayer = new VideoPlayer();
+  public syncController = new SyncController(this.videoPlayer);
+  public layoutManager = new LayoutManager();
+  public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
+  public videoEnhancer = new VideoEnhancer();
+  public videoExport = new VideoExport(this.videoPlayer, this.layoutManager);
+  public settingsManager = new SettingsManager();
+  public versionManager = new VersionManager();
+  public statisticsManager = new StatisticsManager();
+  public b2Client = new B2Client();
+
+  public mapView: any = null;
+  public eventBrowser: any = null;
+
+  public timeline = {
+    get isDragging() {
+      return (window as any)._vueTimeline?.isDragging || false;
+    },
+    updateTime: (t: number) => (window as any)._vueTimeline?.updateTime(t),
+    setDuration: (d: number) => (window as any)._vueTimeline?.setDuration(d),
+    setClipMarkers: (g: any[]) =>
+      (window as any)._vueTimeline?.setClipMarkers(g),
+    resetThumbnailTooltip: () =>
+      (window as any)._vueTimeline?.resetThumbnailTooltip?.(),
+    setGapMarkers: (g: any[], c: any[]) =>
+      (window as any)._vueTimeline?.setGapMarkers?.(g, c),
+    setSentryTriggerMarker: (t: number) =>
+      (window as any)._vueTimeline?.setSentryTriggerMarker?.(t),
+  };
+
+  public clipMarking = {
+    getMarks: () =>
+      (window as any)._vueClipMarking?.getMarks?.() || {
+        inPoint: null,
+        outPoint: null,
+      },
+    setInPoint: () => (window as any)._vueClipMarking?.setInPoint?.(),
+    setOutPoint: () => (window as any)._vueClipMarking?.setOutPoint?.(),
+    clearMarks: () => (window as any)._vueClipMarking?.clearMarks?.(),
+  };
+
+  public filterPanel: any = null;
+  public helpModal: any = null;
+  public quickStartGuide: any = null;
+  public commandPalette: any = null;
 
   public allEvents: TeslaCamEvent[] = [];
   public filteredEvents: TeslaCamEvent[] = [];
@@ -48,14 +89,13 @@ export class TeslaCamApp {
   }
 
   public t(key: string, params?: Record<string, any>): string {
-    return (window as any).i18n ? (window as any).i18n.t(key, params) : key.split('.').pop() || '';
+    return (window as any).i18n
+      ? (window as any).i18n.t(key, params)
+      : key.split('.').pop() || '';
   }
 
   private initEngines(): void {
     const w = window as any;
-    this.folderParser = new w.FolderParser();
-    this.folderManager = new w.FolderManager();
-    this.eventFilter = new w.EventFilter();
 
     this.filterPanel = w.filterPanelInstance || {
       updateFilterBadge: () => w.filterPanelInstance?.updateBadge(),
@@ -68,44 +108,21 @@ export class TeslaCamApp {
     };
 
     const mapEl = document.getElementById('map');
-    if ((window as any)._vueMapView) {
-      this.mapView = (window as any)._vueMapView;
+    if (w._vueMapView) {
+      this.mapView = w._vueMapView;
     } else if (mapEl && !this.mapView && w.MapView) {
-      this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) => this.onEventSelected(event));
+      this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) =>
+        this.onEventSelected(event)
+      );
     }
 
     const eventListEl = document.getElementById('eventList');
-    this.eventBrowser = new w.EventBrowser(eventListEl, (event: TeslaCamEvent) =>
-      this.onEventSelected(event)
-    );
-
-    this.videoPlayer = new w.VideoPlayer();
-
-    this.timeline = {
-      get isDragging() { return (window as any)._vueTimeline?.isDragging || false; },
-      updateTime: (t: number) => (window as any)._vueTimeline?.updateTime(t),
-      setDuration: (d: number) => (window as any)._vueTimeline?.setDuration(d),
-      setClipMarkers: (g: any[]) => (window as any)._vueTimeline?.setClipMarkers(g),
-      resetThumbnailTooltip: () => (window as any)._vueTimeline?.resetThumbnailTooltip?.(),
-      setGapMarkers: (g: any[], c: any[]) => (window as any)._vueTimeline?.setGapMarkers?.(g, c),
-      setSentryTriggerMarker: (t: number) => (window as any)._vueTimeline?.setSentryTriggerMarker?.(t),
-    };
-
-    this.syncController = new w.SyncController(this.videoPlayer);
-    this.layoutManager = new w.LayoutManager();
-    this.screenshotCapture = new w.ScreenshotCapture(this.videoPlayer);
-    this.videoEnhancer = new w.VideoEnhancer();
-    this.videoExport = new w.VideoExport(this.videoPlayer, this.layoutManager);
-    this.clipMarking = {
-      getMarks: () => (window as any)._vueClipMarking?.getMarks?.() || { inPoint: null, outPoint: null },
-      setInPoint: () => (window as any)._vueClipMarking?.setInPoint?.(),
-      setOutPoint: () => (window as any)._vueClipMarking?.setOutPoint?.(),
-      clearMarks: () => (window as any)._vueClipMarking?.clearMarks?.(),
-    };
-
-    this.settingsManager = new w.SettingsManager();
-    this.versionManager = new w.VersionManager();
-    this.statisticsManager = new w.StatisticsManager();
+    if (eventListEl) {
+      this.eventBrowser = new EventBrowser(
+        eventListEl,
+        (event: TeslaCamEvent) => this.onEventSelected(event)
+      );
+    }
 
     this.helpModal = w.helpModalInstance || {
       show: () => w.helpModalInstance?.open(),
@@ -119,7 +136,6 @@ export class TeslaCamApp {
       showIfFirstRun: () => w.quickStartGuideInstance?.showIfFirstRun(),
     };
 
-    this.b2Client = new w.B2Client();
     this.commandPalette = w.commandPaletteInstance || null;
   }
 
@@ -175,14 +191,18 @@ export class TeslaCamApp {
           if (handle) {
             console.log('[App] Restoring last folder handle...');
             this.showLoading('Restoring last folder...');
-            const permission = await handle.queryPermission({ mode: 'read' });
+            const permission = await (handle as any).queryPermission({ mode: 'read' });
             if (permission === 'granted') {
               const drive = await this.folderManager.addDrive(handle, {
                 label: handle.name,
                 isArchive: false,
                 dateFilter: 'all',
               });
-              this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
+              this.folderParser.setDriveContext(
+                drive.id,
+                drive.label,
+                drive.color
+              );
               this.folderParser.rootHandle = handle;
               const events = await this.folderParser.parseFolder();
               drive.events = events;
@@ -205,7 +225,9 @@ export class TeslaCamApp {
 
   public async onEventSelected(event: TeslaCamEvent): Promise<void> {
     if (this.currentEvent && (this.currentEvent as any)._blobURLs) {
-      (this.currentEvent as any)._blobURLs.forEach((url: string) => URL.revokeObjectURL(url));
+      (this.currentEvent as any)._blobURLs.forEach((url: string) =>
+        URL.revokeObjectURL(url)
+      );
       (this.currentEvent as any)._blobURLs = [];
     }
 
@@ -213,7 +235,9 @@ export class TeslaCamApp {
 
     try {
       this.currentEvent = event;
-      this.currentEventIndex = this.allEvents.findIndex((e) => e.name === event.name);
+      this.currentEventIndex = this.allEvents.findIndex(
+        (e) => e.name === event.name
+      );
 
       this.showLoading('Preparing video URLs...');
       await this.prepareEventURLs(event);
@@ -275,7 +299,10 @@ export class TeslaCamApp {
         this.timeline?.setSentryTriggerMarker(0);
       }
 
-      if (this.settingsManager?.get('autoPlayNextEvent') || this.currentEventIndex > 0) {
+      if (
+        this.settingsManager?.get('autoPlayNextEvent') ||
+        this.currentEventIndex > 0
+      ) {
         await this.play();
       }
     } catch (error: any) {
@@ -315,7 +342,11 @@ export class TeslaCamApp {
               if (!(event as any)._blobURLs) (event as any)._blobURLs = [];
               (event as any)._blobURLs.push(clip.url);
 
-              if (camera === 'front' && !clip.duration && timeoutCount < MAX_TIMEOUTS) {
+              if (
+                camera === 'front' &&
+                !clip.duration &&
+                timeoutCount < MAX_TIMEOUTS
+              ) {
                 const start = performance.now();
                 clip.duration = await this._probeClipDuration(clip.url);
                 const elapsed = performance.now() - start;
@@ -369,11 +400,15 @@ export class TeslaCamApp {
     const weatherEl = document.getElementById('eventWeather');
 
     if (dateEl) {
-      dateEl.textContent = event.timestamp ? new Date(event.timestamp).toLocaleString() : '';
+      dateEl.textContent = event.timestamp
+        ? new Date(event.timestamp).toLocaleString()
+        : '';
     }
 
     if (locEl) {
-      const parts = [event.metadata?.street, event.metadata?.city].filter(Boolean);
+      const parts = [event.metadata?.street, event.metadata?.city].filter(
+        Boolean
+      );
       locEl.textContent = parts.join(', ') || '';
     }
 
@@ -404,8 +439,14 @@ export class TeslaCamApp {
 
     if (lat && lon && time) {
       try {
-        const units = this.settingsManager?.get('temperatureUnits') || 'celsius';
-        const weather = await weatherService.getHistoricalWeather(lat, lon, new Date(time), units);
+        const units =
+          this.settingsManager?.get('temperatureUnits') || 'celsius';
+        const weather = await weatherService.getHistoricalWeather(
+          lat,
+          lon,
+          new Date(time),
+          units
+        );
         if (weather) {
           weatherEl.textContent = `${weather.temperature}°${units === 'fahrenheit' ? 'F' : 'C'} ${weather.description}`;
         }
@@ -477,14 +518,20 @@ export class TeslaCamApp {
   }
 
   public async nextEvent(): Promise<void> {
-    if (this.currentEventIndex >= 0 && this.currentEventIndex < this.allEvents.length - 1) {
+    if (
+      this.currentEventIndex >= 0 &&
+      this.currentEventIndex < this.allEvents.length - 1
+    ) {
       const nextEv = this.allEvents[this.currentEventIndex + 1];
       if (nextEv) await this.onEventSelected(nextEv);
     }
   }
 
   public async autoPlayNextEvent(): Promise<void> {
-    if (this.currentEventIndex >= 0 && this.currentEventIndex < this.allEvents.length - 1) {
+    if (
+      this.currentEventIndex >= 0 &&
+      this.currentEventIndex < this.allEvents.length - 1
+    ) {
       await this.nextEvent();
       await this.play();
     }
@@ -515,7 +562,9 @@ export class TeslaCamApp {
       return;
     }
 
-    const formatSelect = document.getElementById('exportFormatSelect') as HTMLSelectElement | null;
+    const formatSelect = document.getElementById(
+      'exportFormatSelect'
+    ) as HTMLSelectElement | null;
     const format =
       formatSelect?.value || this.settingsManager?.get('exportFormat') || 'mp4';
     if (this.videoExport) {
@@ -525,14 +574,19 @@ export class TeslaCamApp {
 
   public async captureScreenshot(): Promise<void> {
     if (!this.screenshotCapture || !this.currentEvent) return;
-    await this.screenshotCapture.captureComposite(this.layoutManager?.currentConfig);
+    await this.screenshotCapture.captureComposite(
+      this.layoutManager?.currentConfig
+    );
   }
 
   public changeSpeed(direction: number): void {
     const speeds = ['0.25', '0.5', '0.75', '1', '1.25', '1.5', '2'];
     const curSpeed = String(this.videoPlayer?.playbackRate || '1');
     const idx = speeds.indexOf(curSpeed);
-    const newIdx = Math.max(0, Math.min(speeds.length - 1, (idx === -1 ? 3 : idx) + direction));
+    const newIdx = Math.max(
+      0,
+      Math.min(speeds.length - 1, (idx === -1 ? 3 : idx) + direction)
+    );
     const newSpeed = parseFloat(speeds[newIdx]);
     if (this.videoPlayer) this.videoPlayer.playbackRate = newSpeed;
   }
@@ -542,10 +596,13 @@ export class TeslaCamApp {
     const activeDriveId = this.folderManager?.activeDriveId;
 
     if (activeDriveId) {
-      eventsToFilter = this.allEvents.filter((e) => e.driveId === activeDriveId);
+      eventsToFilter = this.allEvents.filter(
+        (e) => e.driveId === activeDriveId
+      );
     }
 
-    const filteredEvents = this.eventFilter?.applyFilters(eventsToFilter) || eventsToFilter;
+    const filteredEvents =
+      this.eventFilter?.applyFilters(eventsToFilter) || eventsToFilter;
     this.filteredEvents = filteredEvents;
 
     this.eventBrowser?.loadEvents(filteredEvents);
@@ -560,7 +617,8 @@ export class TeslaCamApp {
       try {
         handle = await (window as any).showDirectoryPicker();
       } catch (error: any) {
-        if (error.name !== 'AbortError') console.error('Error selecting folder:', error);
+        if (error.name !== 'AbortError')
+          console.error('Error selecting folder:', error);
         return;
       }
 
@@ -608,9 +666,18 @@ export class TeslaCamApp {
   }
 
   public async loadFromB2(forceRefresh: boolean = false): Promise<void> {
-    this.showLoading(forceRefresh ? 'Refreshing Backblaze B2...' : 'Connecting to Backblaze B2...');
+    this.showLoading(
+      forceRefresh
+        ? 'Refreshing Backblaze B2...'
+        : 'Connecting to Backblaze B2...'
+    );
     try {
-      const result = await this.b2Client.parseBucket(undefined, undefined, undefined, forceRefresh);
+      const result = await this.b2Client.parseBucket(
+        undefined,
+        undefined,
+        undefined,
+        forceRefresh
+      );
       if (!result?.events) throw new Error('No events found in B2 bucket');
 
       const events = result.events;
@@ -654,7 +721,11 @@ export class TeslaCamApp {
     if (activeDrive?.handle) {
       this.showLoading(`Refreshing ${activeDrive.label || 'drive'}...`);
       try {
-        this.folderParser.setDriveContext(activeDrive.id, activeDrive.label, activeDrive.color);
+        this.folderParser.setDriveContext(
+          activeDrive.id,
+          activeDrive.label,
+          activeDrive.color
+        );
         this.folderParser.rootHandle = activeDrive.handle;
         const events = await this.folderParser.parseFolder();
         activeDrive.events = events;
@@ -685,7 +756,8 @@ export class TeslaCamApp {
       try {
         handle = await (window as any).showDirectoryPicker();
       } catch (error: any) {
-        if (error.name !== 'AbortError') console.error('Error selecting folder:', error);
+        if (error.name !== 'AbortError')
+          console.error('Error selecting folder:', error);
         return;
       }
 
@@ -731,7 +803,10 @@ export class TeslaCamApp {
       this.folderParser.rootHandle = drive.handle;
       const events = await this.folderParser.parseFolder();
       drive.events = events;
-      this.allEvents = [...this.allEvents.filter((e) => e.driveId !== driveId), ...events];
+      this.allEvents = [
+        ...this.allEvents.filter((e) => e.driveId !== driveId),
+        ...events,
+      ];
       this.statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
       this.updateDriveSelector(this.folderManager.getDrives());
@@ -742,7 +817,10 @@ export class TeslaCamApp {
     }
   }
 
-  public async reloadDriveEvents(driveId: string, settings: any): Promise<void> {
+  public async reloadDriveEvents(
+    driveId: string,
+    settings: any
+  ): Promise<void> {
     const drive = this.folderManager.getDrive(driveId);
     if (!drive) return;
 
@@ -753,7 +831,10 @@ export class TeslaCamApp {
         this.folderParser.rootHandle = drive.handle;
         const events = await this.folderParser.parseFolder();
         drive.events = events;
-        this.allEvents = [...this.allEvents.filter((e) => e.driveId !== driveId), ...events];
+        this.allEvents = [
+          ...this.allEvents.filter((e) => e.driveId !== driveId),
+          ...events,
+        ];
         this.statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
       }
@@ -765,7 +846,10 @@ export class TeslaCamApp {
     }
   }
 
-  public async showDriveSetupDialog(handle: any, existingDrive: any = null): Promise<any> {
+  public async showDriveSetupDialog(
+    handle: any,
+    existingDrive: any = null
+  ): Promise<any> {
     const inst = (window as any).driveSetupModalInstance;
     if (inst) {
       return await inst.promptSetup(handle, existingDrive);
@@ -807,7 +891,11 @@ export class TeslaCamApp {
     if (overlay) overlay.classList.add('hidden');
   }
 
-  public showToast(message: string, kind: string = 'info', durationMs: number = 5000): void {
+  public showToast(
+    message: string,
+    kind: string = 'info',
+    durationMs: number = 5000
+  ): void {
     const toast = document.createElement('div');
     toast.className = `app-toast toast-${kind}`;
     toast.textContent = message;
@@ -820,7 +908,9 @@ export class TeslaCamApp {
   }
 
   public updateDriveSelector(drives: DriveInfo[]): void {
-    const selector = document.getElementById('driveSelect') as HTMLSelectElement | null;
+    const selector = document.getElementById(
+      'driveSelect'
+    ) as HTMLSelectElement | null;
     if (selector && Array.isArray(drives)) {
       // Re-populate options if needed
     }
@@ -876,7 +966,9 @@ export class TeslaCamApp {
   }
 
   public updatePillarLayoutOptions(hasPillars: boolean): void {
-    const pillarLayoutOptions = document.querySelectorAll('.pillar-layout-option');
+    const pillarLayoutOptions = document.querySelectorAll(
+      '.pillar-layout-option'
+    );
     pillarLayoutOptions.forEach((opt) => {
       (opt as HTMLElement).style.display = hasPillars ? '' : 'none';
     });
@@ -889,7 +981,9 @@ export class TeslaCamApp {
 
   public async togglePictureInPicture(): Promise<void> {
     try {
-      const front = document.getElementById('videoFront') as HTMLVideoElement | null;
+      const front = document.getElementById(
+        'videoFront'
+      ) as HTMLVideoElement | null;
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
       } else if (front && document.pictureInPictureEnabled) {

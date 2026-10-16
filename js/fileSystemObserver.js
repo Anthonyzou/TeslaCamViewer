@@ -181,4 +181,5 @@ class FileSystemObserverManager {
     }
 }
 
-window.FileSystemObserverManager = FileSystemObserverManager;
+export { FileSystemObserverManager };
+export default FileSystemObserverManager;

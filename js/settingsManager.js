@@ -245,6 +245,5 @@ class SettingsManager {
   }
 }
 
-// Export for use in app.js
-window.SettingsManager = SettingsManager;
+export { SettingsManager };
 export default SettingsManager;

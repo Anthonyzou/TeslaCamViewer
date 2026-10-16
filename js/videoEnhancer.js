@@ -265,5 +265,5 @@ class VideoEnhancer {
     }
 }
 
-// Export for use
-window.VideoEnhancer = VideoEnhancer;
+export { VideoEnhancer };
+export default VideoEnhancer;

@@ -1110,6 +1110,5 @@ class EventBrowser {
   }
 }
 
-if (typeof window !== 'undefined') {
-  window.EventBrowser = EventBrowser;
-}
+export { EventBrowser };
+export default EventBrowser;

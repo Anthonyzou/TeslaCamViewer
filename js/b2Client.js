@@ -35,4 +35,5 @@ class B2Client {
     }
 }
 
-window.B2Client = B2Client;
+export { B2Client };
+export default B2Client;

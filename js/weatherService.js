@@ -363,4 +363,11 @@ class WeatherService {
 }
 
 // Export singleton instance
-window.weatherService = new WeatherService();
+const weatherService = new WeatherService();
+if (typeof window !== 'undefined') {
+    window.weatherService = weatherService;
+    window.WeatherService = WeatherService;
+}
+
+export { WeatherService, weatherService };
+export default weatherService;

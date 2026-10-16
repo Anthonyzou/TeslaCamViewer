@@ -624,6 +624,5 @@ class FolderManager {
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.FolderManager = FolderManager;
-}
+export { FolderManager };
+export default FolderManager;

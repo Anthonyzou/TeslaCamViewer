@@ -222,6 +222,5 @@ class EventFilter {
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.EventFilter = EventFilter;
-}
+export { EventFilter };
+export default EventFilter;

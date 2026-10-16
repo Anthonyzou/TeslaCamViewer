@@ -1483,5 +1483,5 @@ class VersionManager {
   }
 }
 
-// Export for use
-window.VersionManager = VersionManager;
+export { VersionManager };
+export default VersionManager;

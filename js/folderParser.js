@@ -105,6 +105,38 @@ class FolderParser {
   }
 
   /**
+   * Check if a stored folder handle exists
+   * @returns {Promise<boolean>}
+   */
+  async hasStoredHandle() {
+    try {
+      const handle = await this.getStoredHandle();
+      return !!handle;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get the stored folder handle without requesting permissions
+   * @returns {Promise<FileSystemDirectoryHandle|null>}
+   */
+  async getStoredHandle() {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.DB_STORE, 'readonly');
+      const store = tx.objectStore(this.DB_STORE);
+      const request = store.get(this.DB_KEY);
+      return await new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Load folder handle from IndexedDB and request permission
    * @returns {Promise<boolean>} Success status
    */
@@ -890,6 +922,5 @@ None`;
   }
 }
 
-if (typeof window !== 'undefined') {
-  window.FolderParser = FolderParser;
-}
+export { FolderParser };
+export default FolderParser;
