@@ -257,17 +257,28 @@ class VideoPlayer {
     if (this.hasPillarCameras) cameras.push('left_pillar', 'right_pillar');
 
     const loadPromises = cameras.map((camera) => {
-      const clip = clipGroup.clips[camera];
-      const video = videos[camera];
+      const clip = clipGroup?.clips?.[camera];
+      const video = videos?.[camera];
       const url = clip?.url || '';
 
+      if (!video) return Promise.resolve();
       if (video.getAttribute('src') === url) return Promise.resolve();
 
       return new Promise((resolve) => {
-        video.onloadedmetadata = () => resolve();
-        video.onerror = () => resolve();
+        const timeout = setTimeout(() => resolve(), 4000);
+        video.onloadedmetadata = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        video.onerror = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
         video.src = url;
-        if (!url) resolve();
+        if (!url) {
+          clearTimeout(timeout);
+          resolve();
+        }
       });
     });
 

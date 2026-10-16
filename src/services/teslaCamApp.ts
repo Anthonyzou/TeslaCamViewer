@@ -228,7 +228,9 @@ export class TeslaCamApp {
       }
 
       this.updateEventInfo(event);
-      this.mapView?.selectEvent(event);
+      if (typeof this.mapView?.selectEvent === 'function') {
+        this.mapView.selectEvent(event);
+      }
 
       if (this.clipMarking) {
         this.clipMarking.clearMarks();
@@ -264,10 +266,10 @@ export class TeslaCamApp {
       if (this.settingsManager?.get('autoPlayNextEvent') || this.currentEventIndex > 0) {
         await this.play();
       }
-    } catch (error) {
+    } catch (error: any) {
       this.hideLoading();
-      console.error('Error loading event:', error);
-      alert('Unable to load event videos. The drive may have been disconnected.');
+      console.error('Error loading event:', error?.stack || error);
+      alert('Unable to load event videos: ' + (error?.message || error));
     }
   }
 
@@ -811,9 +813,15 @@ export class TeslaCamApp {
   }
 
   public updatePillarLayoutOptions(hasPillars: boolean): void {
-    if (this.layoutManager?.setPillarSupport) {
-      this.layoutManager.setPillarSupport(hasPillars);
-    }
+    const pillarLayoutOptions = document.querySelectorAll('.pillar-layout-option');
+    pillarLayoutOptions.forEach((opt) => {
+      (opt as HTMLElement).style.display = hasPillars ? '' : 'none';
+    });
+
+    const pillarCameraOptions = document.querySelectorAll('.pillar-option');
+    pillarCameraOptions.forEach((opt) => {
+      (opt as HTMLElement).style.display = hasPillars ? '' : 'none';
+    });
   }
 
   public async togglePictureInPicture(): Promise<void> {
