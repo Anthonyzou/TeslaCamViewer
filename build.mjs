@@ -27,6 +27,7 @@ const jsConfig = {
   target: ['es2022'],
   logLevel: 'info',
   plugins: [vuePlugin()],
+  loader: { '.png': 'dataurl' },
   define: {
     'process.env.NODE_ENV': JSON.stringify(
       isProduction ? 'production' : 'development'
@@ -40,7 +41,8 @@ const jsConfig = {
 const cssConfig = {
   entryPoints: ['src/index.css'],
   bundle: true,
-  outfile: 'server/dist/app.css',
+  outfile: 'dist/app.css',
+  loader: { '.png': 'dataurl' },
   sourcemap: true,
   minify: isProduction,
   logLevel: 'info',

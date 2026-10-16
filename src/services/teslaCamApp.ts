@@ -68,7 +68,9 @@ export class TeslaCamApp {
     };
 
     const mapEl = document.getElementById('map');
-    this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) => this.onEventSelected(event));
+    if (mapEl && !this.mapView && w.MapView) {
+      this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) => this.onEventSelected(event));
+    }
 
     const eventListEl = document.getElementById('eventList');
     this.eventBrowser = new w.EventBrowser(eventListEl, (event: TeslaCamEvent) =>

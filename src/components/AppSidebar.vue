@@ -145,7 +145,7 @@
         class="tab-pane"
         :class="{ active: activeTab === 'map' }"
       >
-        <div id="map"></div>
+        <MapView :visible="activeTab === 'map'" />
       </div>
     </div>
 
@@ -173,6 +173,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Settings, Plus, RefreshCw, Folder, Cloud } from 'lucide-vue-next';
 import type { DriveInfo } from '../types';
 import FilterPanel from './FilterPanel.vue';
+import MapView from './MapView.vue';
 
 const props = defineProps<{
   drives?: DriveInfo[];
