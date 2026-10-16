@@ -206,13 +206,6 @@ class LayoutManager {
 
             select.appendChild(customGroup);
         }
-
-        // Add "Edit Layouts..." option
-        editOption = document.createElement('option');
-        editOption.value = 'edit-layouts';
-        editOption.textContent = '+ Edit Layouts...';
-        editOption.style.fontStyle = 'italic';
-        select.appendChild(editOption);
     }
 
     /**
@@ -417,24 +410,8 @@ class LayoutManager {
         // modifying layout A then switching to B leaves the stale flag set, and
         // the reset-button visibility logic sees layout B as "modified" wrongly.
         const newId = typeof layoutOrConfig === 'object' ? layoutOrConfig?.id : layoutOrConfig;
-        if (newId && newId !== this.currentLayout && newId !== 'edit-layouts') {
+        if (newId && newId !== this.currentLayout) {
             this._configModified = false;
-        }
-
-        // Handle "edit-layouts" special action
-        if (layoutOrConfig === 'edit-layouts') {
-            // Open the layout editor
-            if (window.layoutEditor) {
-                window.layoutEditor.show();
-            } else {
-                console.log('Layout editor not initialized yet');
-            }
-            // Restore the select to current layout
-            const select = document.getElementById('layoutSelect');
-            if (select) {
-                select.value = this.currentLayout;
-            }
-            return;
         }
 
         if (typeof layoutOrConfig === 'object') {

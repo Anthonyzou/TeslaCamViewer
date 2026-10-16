@@ -42,7 +42,6 @@ import '../js/syncController.js';
 import '../js/layoutConfig.js';
 import '../js/layoutRenderer.js';
 import '../js/layoutManager.js';
-import '../js/layoutEditor.js';
 
 // Overlays & Sensors
 import '../js/screenshotCapture.js';

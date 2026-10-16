@@ -33,7 +33,6 @@ class TeslaCamViewerApp {
     );
     this.syncController = new SyncController(this.videoPlayer);
     this.layoutManager = new LayoutManager();
-    this.layoutEditor = new LayoutEditor(this.layoutManager);
     this.screenshotCapture = new ScreenshotCapture(this.videoPlayer);
     this.videoEnhancer = new VideoEnhancer();
 
@@ -42,7 +41,6 @@ class TeslaCamViewerApp {
 
     // Settings, Help, Quick Start, Version, Statistics
     this.settingsManager = new SettingsManager();
-    this.sessionManager = new SessionManager();
     this.versionManager = new VersionManager();
     this.statisticsManager = new StatisticsManager();
     this.helpModal = window.helpModalInstance || {
@@ -2025,11 +2023,6 @@ class TeslaCamViewerApp {
           dateFilter: settings.dateFilter,
         });
 
-        // Check for session recovery from drive
-        if (this.sessionManager) {
-          await this.sessionManager.checkDriveRecovery(handle);
-        }
-
         // If archive drive, skip loading and just save
         if (settings.isArchive) {
           this.hideLoading();
@@ -2253,29 +2246,6 @@ class TeslaCamViewerApp {
    * @param {Object} event
    */
   async onEventSelected(event) {
-    // Check session access for viewing events. Free users hit the
-    // daily cap on the 10th NEW event, but already-viewed events
-    // stay accessible — we pass the event's compoundKey so the
-    // session manager can recognize a re-view.
-    if (this.sessionManager) {
-      const eventKey = event.compoundKey || event.name;
-      const access = await this.sessionManager.checkAccess(
-        'viewEvent',
-        eventKey
-      );
-      if (!access.allowed) {
-        this.sessionManager.showLimitModal(access.type || 'daily');
-        return;
-      }
-      // Pre-cap warnings — only on the FIRST view of a NEW event,
-      // since re-views shouldn't keep nagging the user. The
-      // recordEventView side fires AFTER load below, so we read
-      // the current count here against the about-to-be-viewed key.
-      if (!access.reviewed) {
-        this._maybeShowFreeTierWarning(access);
-      }
-    }
-
     // Cleanup previous event URLs to save memory
     if (this.currentEvent && this.currentEvent._blobURLs) {
       this.currentEvent._blobURLs.forEach((url) => URL.revokeObjectURL(url));
@@ -2296,13 +2266,6 @@ class TeslaCamViewerApp {
       this.showLoading('Preparing video URLs...');
       await this.prepareEventURLs(event);
       await this.videoPlayer.loadEvent(event);
-
-      // Record event view for session tracking
-      if (this.sessionManager) {
-        await this.sessionManager.recordEventView(
-          event.compoundKey || event.name
-        );
-      }
 
       // Update pillar camera support based on event
 
@@ -3549,71 +3512,6 @@ class TeslaCamViewerApp {
     }, durationMs);
   }
 
-  /**
-   * Toast a soft warning at the 5th and 8th free-tier event views so the
-   * user has visibility into the daily runway BEFORE we pop the limit
-   * modal at #11. Each warning fires once per day. The thresholds match
-   * "halfway there" and "two left" cues — friendlier than going from
-   * silent to blocked.
-   *
-   * @param {Object} access — checkAccess result; uses access.remaining
-   */
-  _maybeShowFreeTierWarning(access) {
-    if (!access || access.allowed === false) return;
-    if (access.remaining == null || access.limit == null) return;
-    // Compute viewed-so-far. checkAccess returns "remaining" BEFORE
-    // recordEventView fires for this event, so the 5th view we want
-    // to warn about lands at remaining = limit - 4 (next click bumps
-    // to remaining = limit - 5, i.e. 5 viewed).
-    const viewedAfter = access.limit - access.remaining + 1;
-    if (viewedAfter !== 5 && viewedAfter !== 8) return;
-
-    // Per-day dedupe — one toast per threshold per day.
-    const today = new Date().toISOString().slice(0, 10);
-    const dedupeKey = `tcv_freetier_warn_${today}_${viewedAfter}`;
-    if (localStorage.getItem(dedupeKey)) return;
-    localStorage.setItem(dedupeKey, '1');
-
-    const left = access.limit - viewedAfter;
-    const message =
-      viewedAfter === 5
-        ? `${viewedAfter} of ${access.limit} free events viewed today. ${left} remaining.`
-        : `${left} free event${left === 1 ? '' : 's'} left today. Already-viewed events stay accessible after limit.`;
-    if (typeof this.showToast === 'function') {
-      this.showToast(message, 'info', 8000);
-    } else {
-      console.log('[FreeTier]', message);
-    }
-  }
-
-  /**
-   * Mirror of _maybeShowFreeTierWarning for the export cap. Only 2 free
-   * exports per day, so the only meaningful threshold is "1 of 2 used"
-   * — toasted on the first export to give the user fair warning before
-   * they hit the wall. The modal handles the hard-stop case at 2.
-   *
-   * @param {Object} access — checkAccess result from sessionManager
-   */
-  _maybeShowExportWarning(access) {
-    if (!access || access.allowed === false) return;
-    if (access.remaining == null || access.limit == null) return;
-    const usedAfter = access.limit - access.remaining + 1;
-    if (usedAfter !== 1) return;
-
-    const today = new Date().toISOString().slice(0, 10);
-    const dedupeKey = `tcv_export_warn_${today}_${usedAfter}`;
-    if (localStorage.getItem(dedupeKey)) return;
-    localStorage.setItem(dedupeKey, '1');
-
-    const left = access.limit - usedAfter;
-    const message = `${usedAfter} of ${access.limit} free exports used today. ${left} remaining. Re-exporting the same event stays free.`;
-    if (typeof this.showToast === 'function') {
-      this.showToast(message, 'info', 8000);
-    } else {
-      console.log('[FreeTier:Export]', message);
-    }
-  }
-
   showExportComplete(opts = {}) {
     const cancelled = opts.cancelled === true;
     const title = cancelled ? 'Export Cancelled' : 'Export Complete';
@@ -4147,12 +4045,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.app = new TeslaCamViewerApp();
-
-  // Initialize session state (header button, expiry warnings)
-  if (window.app.sessionManager) {
-    window.app.sessionManager._updateHeaderButton();
-    window.app.sessionManager.showExpiryWarningIfNeeded();
-  }
 
   // Check for preloaded B2 data
   if (window.app.b2Client) {
