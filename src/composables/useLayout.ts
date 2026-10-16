@@ -8,7 +8,7 @@ export function useLayout() {
   const hiddenCameras = ref<string[]>([]);
 
   function syncLayout(): void {
-    const app = (window as any).app;
+    const app = window.app;
     if (!app) return;
 
     const currentLayout = app.layoutManager?.currentLayout;
@@ -16,7 +16,9 @@ export function useLayout() {
       layout.value = currentLayout;
     }
 
-    const hidden = app.videoPlayer?.hiddenCameras;
+    const hidden = Object.entries(app.layoutManager?.visibleCameras || {})
+      .filter(([_, v]) => !v)
+      .map(([k]) => k);
     if (Array.isArray(hidden) && hidden.length !== hiddenCameras.value.length) {
       hiddenCameras.value = [...hidden];
     }
@@ -35,43 +37,43 @@ export function useLayout() {
 
   function changeLayout(val: string): void {
     layout.value = val;
-    (window as any).app?.layoutManager?.setLayout(val);
+    window.app?.layoutManager?.setLayout(val);
   }
 
   function changeFocusCamera(cam: string): void {
-    (window as any).app?.layoutManager?.setFocusCamera(cam);
+    window.app?.layoutManager?.setFocusCamera(cam);
   }
 
   function resetLayout(): void {
-    (window as any).app?.layoutManager?.resetLayout();
+    window.app?.layoutManager?.resetLayout();
   }
 
   function toggleCameraHide(cam: string): void {
-    (window as any).app?.toggleCameraVisibility(cam);
+    window.app?.toggleCameraVisibility(cam);
   }
 
   function unhideCamera(cam: string): void {
-    (window as any).app?.showCamera(cam);
+    window.app?.showCamera(cam);
   }
 
   function toggleSidebar(): void {
-    (window as any).app?.toggleSidebar();
+    window.app?.toggleSidebar();
   }
 
   function closeSidebar(): void {
-    (window as any).app?.closeSidebar();
+    window.app?.closeSidebar();
   }
 
   function zoomIn(): void {
-    (window as any).app?.timeline?.zoomIn();
+    window.app?.timeline?.zoomIn();
   }
 
   function zoomOut(): void {
-    (window as any).app?.timeline?.zoomOut();
+    window.app?.timeline?.zoomOut();
   }
 
   function zoomReset(): void {
-    (window as any).app?.timeline?.resetZoom();
+    window.app?.timeline?.resetZoom();
   }
 
   return {

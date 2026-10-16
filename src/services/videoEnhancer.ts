@@ -12,7 +12,7 @@ class VideoEnhancer {
     saturation: 100, // 0-200, 100 = normal
   };
 
-  private settings = this.loadSettings();
+  public settings = this.loadSettings();
   private controlsContainer = null;
   private controlsVisible = false;
 
@@ -278,6 +278,10 @@ class VideoEnhancer {
     } else {
       this.show();
     }
+  }
+
+  toggleEnhancementModal() {
+    this.toggle();
   }
 }
 

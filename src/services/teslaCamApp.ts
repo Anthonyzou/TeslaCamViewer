@@ -50,6 +50,9 @@ export class TeslaCamApp {
       (window as any)._vueTimeline?.setGapMarkers?.(g, c),
     setSentryTriggerMarker: (t: number) =>
       (window as any)._vueTimeline?.setSentryTriggerMarker?.(t),
+    zoomIn: () => (window as any)._vueTimeline?.zoomIn?.(),
+    zoomOut: () => (window as any)._vueTimeline?.zoomOut?.(),
+    resetZoom: () => (window as any)._vueTimeline?.resetZoom?.(),
   };
 
   public clipMarking = {
@@ -67,6 +70,14 @@ export class TeslaCamApp {
   public helpModal: any = null;
   public quickStartGuide: any = null;
   public commandPalette: any = null;
+  public telemetryOverlay: any = null;
+
+  public navigateToNearMiss(key: string, index: number = 0): void {
+    const data = this.eventBrowser?.getNearMissData?.(key);
+    if (!data?.incidents?.[index]) return;
+    const incident = data.incidents[index];
+    this.videoPlayer?.seekToEventTime?.(incident.peakTime ?? incident.time);
+  }
 
   public allEvents: TeslaCamEvent[] = [];
   public filteredEvents: TeslaCamEvent[] = [];

@@ -18,39 +18,39 @@ export function useTeslaCam() {
   const layout = useLayout();
 
   function markIn(): void {
-    (window as any).app?.markIn();
+    window.app?.markIn();
   }
 
   function markOut(): void {
-    (window as any).app?.markOut();
+    window.app?.markOut();
   }
 
   function clearMarks(): void {
-    (window as any).app?.clearMarks();
+    window.app?.clearMarks();
   }
 
   function exportVideo(): void {
-    (window as any).app?.exportVideo();
+    window.app?.exportVideo();
   }
 
   function captureScreenshot(): void {
-    (window as any).app?.captureScreenshot();
+    window.app?.captureScreenshot();
   }
 
   function toggleEnhance(): void {
-    (window as any).app?.videoEnhancer?.toggleEnhancementModal();
+    window.app?.videoEnhancer?.toggleEnhancementModal();
   }
 
   function openStats(): void {
-    (window as any).app?.statisticsManager?.showModal();
+    window.app?.statisticsManager?.showModal();
   }
 
   function openHelp(): void {
-    (window as any).app?.helpModal?.show();
+    window.app?.helpModal?.show();
   }
 
   function openSettings(): void {
-    (window as any).app?.settingsManager?.showSettingsModal();
+    window.app?.settingsManager?.showSettingsModal();
   }
 
   function syncFromApp(): void {

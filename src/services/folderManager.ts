@@ -381,12 +381,16 @@ class FolderManager {
      * Set the active drive for filtering
      * @param {string|null} driveId - null for all drives
      */
-    setActiveDrive(driveId) {
+    setActiveDrive(driveId: string | null) {
         this.activeDriveId = driveId;
 
         if (this.onDrivesChanged) {
             this.onDrivesChanged(this.drives);
         }
+    }
+
+    switchDrive(driveId: string | null) {
+        this.setActiveDrive(driveId);
     }
 
     /**

@@ -9,7 +9,7 @@ export function useDrives() {
   const activeDriveId = ref<string>('');
 
   function syncDrives(): void {
-    const app = (window as any).app;
+    const app = window.app;
     if (!app?.folderManager) return;
 
     const currentDrives = app.folderManager.drives;
@@ -35,30 +35,30 @@ export function useDrives() {
   });
 
   function selectFolder(): void {
-    (window as any).app?.selectFolder();
+    window.app?.selectFolder();
     syncDrives();
   }
 
   function loadB2(): void {
-    (window as any).app?.loadFromB2();
+    window.app?.loadFromB2();
     syncDrives();
   }
 
   function changeDrive(id: string): void {
     activeDriveId.value = id;
-    (window as any).app?.folderManager?.switchDrive(id || null);
+    window.app?.folderManager?.switchDrive(id || null);
   }
 
   function manageDrives(): void {
-    (window as any).app?.showDriveManagementModal();
+    window.app?.showDriveManagementModal();
   }
 
   function addDrive(): void {
-    (window as any).app?.addNewDrive();
+    window.app?.addNewDrive();
   }
 
   async function refreshDrives(): Promise<void> {
-    await (window as any).app?.refreshDrives();
+    await window.app?.refreshDrives();
     syncDrives();
   }
 

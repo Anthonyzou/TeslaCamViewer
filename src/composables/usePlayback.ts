@@ -13,7 +13,7 @@ export function usePlayback() {
   const duration = ref(0);
 
   function syncPlayback(): void {
-    const vp = (window as any).app?.videoPlayer;
+    const vp = window.app?.videoPlayer;
     if (!vp) return;
 
     const playing = !vp.paused;
@@ -36,7 +36,7 @@ export function usePlayback() {
     syncPlayback();
 
     hookTimer = setInterval(() => {
-      const app = (window as any).app;
+      const app = window.app;
       const vp = app?.videoPlayer;
       if (vp) {
         if (hookTimer) {
@@ -74,31 +74,31 @@ export function usePlayback() {
   });
 
   function play(): void {
-    (window as any).app?.play();
+    window.app?.play();
   }
 
   function pause(): void {
-    (window as any).app?.pause();
+    window.app?.pause();
   }
 
   function togglePlay(): void {
-    (window as any).app?.togglePlayback();
+    window.app?.togglePlayback();
     syncPlayback();
   }
 
   function prevClip(): void {
-    (window as any).app?.previousClip();
+    window.app?.previousClip();
     syncPlayback();
   }
 
   function nextClip(): void {
-    (window as any).app?.nextClip();
+    window.app?.nextClip();
     syncPlayback();
   }
 
   function changeSpeed(val: string): void {
     speed.value = val;
-    const vp = (window as any).app?.videoPlayer;
+    const vp = window.app?.videoPlayer;
     if (vp) {
       if (typeof vp.setPlaybackSpeed === 'function') {
         vp.setPlaybackSpeed(parseFloat(val));
@@ -110,7 +110,7 @@ export function usePlayback() {
   }
 
   function toggleLoop(): void {
-    const vp = (window as any).app?.videoPlayer;
+    const vp = window.app?.videoPlayer;
     if (vp) {
       const nextLoop = !(vp.loopEnabled ?? vp.isLooping ?? false);
       if (typeof vp.setLoop === 'function') {
@@ -123,11 +123,11 @@ export function usePlayback() {
   }
 
   function frameBack(): void {
-    (window as any).app?.videoPlayer?.stepFrame(-1);
+    window.app?.videoPlayer?.stepFrame(-1);
   }
 
   function frameForward(): void {
-    (window as any).app?.videoPlayer?.stepFrame(1);
+    window.app?.videoPlayer?.stepFrame(1);
   }
 
   return {

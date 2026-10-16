@@ -4,18 +4,22 @@ declare module '*.vue' {
   export default component;
 }
 
-interface Window {
-  i18n?: {
-    init?: () => Promise<any>;
-    t: (key: string, params?: Record<string, any>) => string;
-    getLocale: () => string;
-    setLocale: (locale: string) => void;
-  };
-  app?: any;
-  FilterPanel?: any;
-  CommandPalette?: any;
-  SettingsManager?: any;
-  StatisticsManager?: any;
-  EventFilter?: any;
-  FolderParser?: any;
+declare global {
+  interface Window {
+    app?: import('./services/teslaCamApp').TeslaCamApp;
+    i18n?: import('./utils/i18n').I18n;
+    _vueMapView?: any;
+    _vueTimeline?: any;
+    _vueClipMarking?: any;
+    settingsModalInstance?: any;
+    statisticsModalInstance?: any;
+    filterPanelInstance?: any;
+    helpModalInstance?: any;
+    quickStartGuideInstance?: any;
+    commandPaletteInstance?: any;
+    weatherService?: import('./utils/weatherService').WeatherService;
+    FileSystemObserver?: any;
+  }
 }
+
+export {};

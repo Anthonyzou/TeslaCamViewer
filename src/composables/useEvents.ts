@@ -14,7 +14,7 @@ export function useEvents() {
   const hasEvent = computed(() => currentEvent.value !== null);
 
   function syncEvents(): void {
-    const app = (window as any).app;
+    const app = window.app;
     if (!app) return;
 
     if (currentEvent.value !== (app.currentEvent || null)) {
@@ -52,7 +52,7 @@ export function useEvents() {
   });
 
   async function selectEvent(event: TeslaCamEvent): Promise<void> {
-    const app = (window as any).app;
+    const app = window.app;
     if (app) {
       await app.onEventSelected(event);
       syncEvents();
@@ -60,17 +60,17 @@ export function useEvents() {
   }
 
   function prevEvent(): void {
-    (window as any).app?.previousEvent();
+    window.app?.previousEvent();
     syncEvents();
   }
 
   function nextEvent(): void {
-    (window as any).app?.nextEvent();
+    window.app?.nextEvent();
     syncEvents();
   }
 
   function applyFilters(): void {
-    (window as any).app?.applyFilters();
+    window.app?.applyFilters();
     syncEvents();
   }
 

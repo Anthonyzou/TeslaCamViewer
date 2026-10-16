@@ -76,7 +76,22 @@ class VideoPlayer {
     this._applyPlaybackRateToAll();
   }
 
-  setLoop(enabled) {
+  get playbackSpeed() {
+    return this.playbackRate;
+  }
+  set playbackSpeed(s: number) {
+    this.playbackRate = s;
+  }
+
+  get isLooping() {
+    return this.loopEnabled;
+  }
+
+  setPlaybackSpeed(speed: number) {
+    this.playbackRate = speed;
+  }
+
+  setLoop(enabled: boolean) {
     this.loopEnabled = enabled;
   }
 
