@@ -1,6 +1,14 @@
 <template>
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-resize-handle" id="sidebarResizeHandle" title="Drag to resize"></div>
+  <aside class="sidebar" id="sidebar" :style="sidebarStyle">
+    <div
+      class="sidebar-resize-handle"
+      id="sidebarResizeHandle"
+      :class="{ resizing: isResizing }"
+      title="Drag to resize"
+      @mousedown="onMouseDown"
+      @touchstart="onTouchStart"
+      @dblclick="resetWidth"
+    ></div>
 
     <div class="sidebar-header">
       <h2>
@@ -81,8 +89,10 @@
       </button>
     </div>
 
-    <!-- Filter Panel Mount Container (Single mount managed by FilterPanel) -->
-    <div id="filterPanel"></div>
+    <!-- Filter Panel -->
+    <div id="filterPanel">
+      <FilterPanel />
+    </div>
 
     <!-- Folder Selector Button -->
     <button id="selectFolderBtn" class="select-folder-btn" @click="emit('selectFolder')">
@@ -138,7 +148,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import FilterPanel from './FilterPanel.vue';
 import type { DriveInfo } from '../types';
 
 defineProps<{
@@ -157,6 +168,130 @@ const emit = defineEmits<{
   (e: 'loadB2'): void;
 }>();
 
+const STORAGE_KEY = 'teslacam_sidebar_width';
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 600;
+const DEFAULT_WIDTH = 320;
+
+function getSavedWidth(): number {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) return parsed;
+    }
+  } catch (e) {
+    console.warn('[SidebarResize] Failed to restore width:', e);
+  }
+  return DEFAULT_WIDTH;
+}
+
+const sidebarWidth = ref<number>(getSavedWidth());
+const isResizing = ref(false);
+const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+let startX = 0;
+let startWidth = 0;
+
+const sidebarStyle = computed(() => {
+  if (isMobile.value) return undefined;
+  return {
+    width: `${sidebarWidth.value}px`,
+    transition: isResizing.value ? 'none' : undefined,
+  };
+});
+
+function saveWidth(w: number): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, w.toString());
+  } catch (e) {
+    console.warn('[SidebarResize] Failed to save width:', e);
+  }
+}
+
+function resetWidth(): void {
+  sidebarWidth.value = DEFAULT_WIDTH;
+  saveWidth(DEFAULT_WIDTH);
+  window.dispatchEvent(new Event('resize'));
+  setTimeout(() => {
+    (window as any).app?.mapView?.map?.invalidateSize();
+  }, 100);
+}
+
+function startResize(clientX: number): void {
+  if (isMobile.value) return;
+  isResizing.value = true;
+  startX = clientX;
+  startWidth = sidebarWidth.value;
+
+  document.body.classList.add('sidebar-resizing');
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('touchmove', onTouchMove, { passive: false });
+  window.addEventListener('touchend', onTouchEnd);
+}
+
+function doResize(clientX: number): void {
+  const deltaX = clientX - startX;
+  const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + deltaX));
+  sidebarWidth.value = newWidth;
+}
+
+function endResize(): void {
+  if (!isResizing.value) return;
+  isResizing.value = false;
+  document.body.classList.remove('sidebar-resizing');
+
+  saveWidth(sidebarWidth.value);
+  window.dispatchEvent(new Event('resize'));
+  setTimeout(() => {
+    (window as any).app?.mapView?.map?.invalidateSize();
+  }, 100);
+
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('mouseup', onMouseUp);
+  window.removeEventListener('touchmove', onTouchMove);
+  window.removeEventListener('touchend', onTouchEnd);
+}
+
+function onMouseDown(e: MouseEvent): void {
+  e.preventDefault();
+  startResize(e.clientX);
+}
+
+function onMouseMove(e: MouseEvent): void {
+  if (isResizing.value) {
+    doResize(e.clientX);
+  }
+}
+
+function onMouseUp(): void {
+  endResize();
+}
+
+function onTouchStart(e: TouchEvent): void {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    startResize(e.touches[0].clientX);
+  }
+}
+
+function onTouchMove(e: TouchEvent): void {
+  if (isResizing.value && e.touches.length === 1) {
+    e.preventDefault();
+    doResize(e.touches[0].clientX);
+  }
+}
+
+function onTouchEnd(): void {
+  endResize();
+}
+
+function onWindowResize(): void {
+  isMobile.value = window.innerWidth <= 768;
+}
+
 const activeTab = ref<'events' | 'map'>('events');
 const selectedDrive = ref('');
 
@@ -173,9 +308,30 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
+  window.addEventListener('resize', onWindowResize);
+
+  // Expose global for backward compatibility with any other callers
+  (window as any).sidebarResize = {
+    getWidth: () => sidebarWidth.value,
+    setWidth: (w: number) => {
+      sidebarWidth.value = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, w));
+      saveWidth(sidebarWidth.value);
+      window.dispatchEvent(new Event('resize'));
+      setTimeout(() => {
+        (window as any).app?.mapView?.map?.invalidateSize();
+      }, 100);
+    },
+    resetWidth,
+  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
+  window.removeEventListener('resize', onWindowResize);
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('mouseup', onMouseUp);
+  window.removeEventListener('touchmove', onTouchMove);
+  window.removeEventListener('touchend', onTouchEnd);
+  document.body.classList.remove('sidebar-resizing');
 });
 </script>

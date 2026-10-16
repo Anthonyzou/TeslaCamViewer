@@ -130,31 +130,31 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{
-  eventFilter: EventFilterLike;
+  eventFilter?: EventFilterLike;
   onFilterChange?: (() => void) | null;
 }>();
+
+function getFilter(): EventFilterLike | null {
+  return props.eventFilter || (window as any).app?.eventFilter || null;
+}
 
 const isExpanded = ref(false);
 const localeTick = ref(0);
 const searchQuery = ref('');
 const filterCount = ref(0);
 
-// Initialize filters from eventFilter
-const initialFilters = props.eventFilter ? props.eventFilter.getFilters() : null;
 const filters = reactive({
   types: {
-    SavedClips: initialFilters?.types?.SavedClips ?? true,
-    SentryClips: initialFilters?.types?.SentryClips ?? true,
-    RecentClips: initialFilters?.types?.RecentClips ?? true,
+    SavedClips: true,
+    SentryClips: true,
+    RecentClips: true,
   } as FilterTypes,
-  sortOrder: initialFilters?.sortOrder || 'newest',
+  sortOrder: 'newest',
   dateRange: {
-    start: initialFilters?.dateRange?.start || '',
-    end: initialFilters?.dateRange?.end || '',
+    start: '',
+    end: '',
   },
 });
-
-searchQuery.value = initialFilters?.searchQuery || '';
 
 function t(key: string): string {
   void localeTick.value;
@@ -162,14 +162,16 @@ function t(key: string): string {
 }
 
 function updateBadge(): void {
-  if (props.eventFilter) {
-    filterCount.value = props.eventFilter.getActiveFilterCount();
+  const ef = getFilter();
+  if (ef) {
+    filterCount.value = ef.getActiveFilterCount();
   }
 }
 
 function syncFromEventFilter(): void {
-  if (!props.eventFilter) return;
-  const current = props.eventFilter.getFilters();
+  const ef = getFilter();
+  if (!ef) return;
+  const current = ef.getFilters();
   filters.types.SavedClips = current.types?.SavedClips ?? true;
   filters.types.SentryClips = current.types?.SentryClips ?? true;
   filters.types.RecentClips = current.types?.RecentClips ?? true;
@@ -188,20 +190,28 @@ function notifyFilterChange(): void {
   updateBadge();
   if (props.onFilterChange) {
     props.onFilterChange();
+  } else if (typeof (window as any).app?.applyFilters === 'function') {
+    (window as any).app.applyFilters();
   }
 }
 
 function handleTypeChange(type: string, checked: boolean): void {
-  props.eventFilter.setFilters({
-    types: { ...filters.types, [type]: checked },
-  });
+  const ef = getFilter();
+  if (ef) {
+    ef.setFilters({
+      types: { ...filters.types, [type]: checked },
+    });
+  }
   notifyFilterChange();
 }
 
 function handleSortChange(): void {
-  props.eventFilter.setFilters({
-    sortOrder: filters.sortOrder,
-  });
+  const ef = getFilter();
+  if (ef) {
+    ef.setFilters({
+      sortOrder: filters.sortOrder,
+    });
+  }
   notifyFilterChange();
 }
 
@@ -209,31 +219,43 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 function handleSearchInput(): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    props.eventFilter.setFilters({
-      searchQuery: searchQuery.value,
-    });
+    const ef = getFilter();
+    if (ef) {
+      ef.setFilters({
+        searchQuery: searchQuery.value,
+      });
+    }
     notifyFilterChange();
   }, 300);
 }
 
 function handleDateChange(type: 'start' | 'end', val: string | null): void {
-  props.eventFilter.setFilters({
-    dateRange: { ...filters.dateRange, [type]: val || null },
-  });
+  const ef = getFilter();
+  if (ef) {
+    ef.setFilters({
+      dateRange: { ...filters.dateRange, [type]: val || null },
+    });
+  }
   notifyFilterChange();
 }
 
 function clearDates(): void {
   filters.dateRange.start = '';
   filters.dateRange.end = '';
-  props.eventFilter.setFilters({
-    dateRange: { start: null, end: null },
-  });
+  const ef = getFilter();
+  if (ef) {
+    ef.setFilters({
+      dateRange: { start: null, end: null },
+    });
+  }
   notifyFilterChange();
 }
 
 function clearAllFilters(): void {
-  props.eventFilter.reset();
+  const ef = getFilter();
+  if (ef) {
+    ef.reset();
+  }
   syncFromEventFilter();
   notifyFilterChange();
 }
@@ -243,13 +265,23 @@ function onLocaleChange(): void {
 }
 
 onMounted(() => {
+  syncFromEventFilter();
   updateBadge();
   window.addEventListener('localeChanged', onLocaleChange);
+  (window as any).filterPanelInstance = {
+    updateBadge,
+    syncFromEventFilter,
+    togglePanel,
+    clearAllFilters,
+  };
 });
 
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
   window.removeEventListener('localeChanged', onLocaleChange);
+  if ((window as any).filterPanelInstance?.updateBadge === updateBadge) {
+    delete (window as any).filterPanelInstance;
+  }
 });
 
 defineExpose({

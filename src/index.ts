@@ -26,9 +26,7 @@ if (typeof document !== 'undefined') {
 // Core & Utilities
 import '../js/i18n.js';
 import '../js/cameraIds.js';
-import '../js/sidebarResize.js';
 import '../js/eventFilter.js';
-import '../js/filterPanel.js';
 import '../js/mapView.js';
 import '../js/folderManager.js';
 import '../js/folderParser.js';
@@ -36,7 +34,6 @@ import '../js/folderParser.js';
 // Playback & UI
 import '../js/eventBrowser.js';
 import '../js/videoPlayer.js';
-import '../js/commandPalette.js';
 import '../js/fileSystemObserver.js';
 import '../js/timeline.js';
 import '../js/syncController.js';
@@ -60,8 +57,6 @@ import '../js/clipMarking.js';
 import '../js/settingsManager.js';
 import '../js/versionManager.js';
 import '../js/statisticsManager.js';
-import '../js/helpModal.js';
-import '../js/quickStartGuide.js';
 
 // Drive Sync
 import '../js/driveSync.js';

@@ -86,6 +86,13 @@
     <!-- Drive Sync Modal container -->
     <div id="driveSyncModal" class="drive-sync-modal hidden"></div>
 
+    <!-- Modals -->
+    <CommandPalette />
+    <SettingsModal />
+    <HelpModal />
+    <QuickStartGuideModal />
+    <StatisticsModal />
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="loading-spinner"></div>
@@ -102,6 +109,11 @@ import EventInfoBar from './EventInfoBar.vue';
 import TimelineBar from './TimelineBar.vue';
 import PlaybackControls from './PlaybackControls.vue';
 import BottomSheet from './BottomSheet.vue';
+import CommandPalette from './CommandPalette.vue';
+import SettingsModal from './SettingsModal.vue';
+import HelpModal from './HelpModal.vue';
+import QuickStartGuideModal from './QuickStartGuideModal.vue';
+import StatisticsModal from './StatisticsModal.vue';
 import { useTeslaCam } from '../composables/useTeslaCam';
 
 const {

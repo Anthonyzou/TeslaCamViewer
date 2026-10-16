@@ -11,11 +11,11 @@ class TeslaCamViewerApp {
 
     // Filter and map components
     this.eventFilter = new EventFilter();
-    this.filterPanel = new FilterPanel(
-      document.getElementById('filterPanel'),
-      this.eventFilter,
-      () => this.applyFilters()
-    );
+    this.filterPanel = window.filterPanelInstance || {
+      updateFilterBadge: () => window.filterPanelInstance?.updateBadge(),
+      refresh: () => window.filterPanelInstance?.syncFromEventFilter(),
+      clearAllFilters: () => window.filterPanelInstance?.clearAllFilters(),
+    };
     this.mapView = new MapView(document.getElementById('map'), (event) =>
       this.onEventSelected(event)
     );
@@ -45,15 +45,22 @@ class TeslaCamViewerApp {
     this.sessionManager = new SessionManager();
     this.versionManager = new VersionManager();
     this.statisticsManager = new StatisticsManager();
-    this.helpModal = new HelpModal();
-    this.quickStartGuide = new QuickStartGuide();
+    this.helpModal = window.helpModalInstance || {
+      show: () => window.helpModalInstance?.open(),
+      hide: () => window.helpModalInstance?.close(),
+      toggle: () => window.helpModalInstance?.toggle(),
+    };
+    this.quickStartGuide = window.quickStartGuideInstance || {
+      show: () => window.quickStartGuideInstance?.open(),
+      hide: () => window.quickStartGuideInstance?.close(),
+      showIfFirstRun: () => window.quickStartGuideInstance?.showIfFirstRun(),
+    };
     this.b2Client = new B2Client();
 
     // Command palette (Ctrl+K / Cmd+K) — searchable action launcher.
-    if (window.CommandPalette) {
-      this.commandPalette = new window.CommandPalette(this);
+    this.commandPalette = window.commandPaletteInstance || null;
+    if (this.commandPalette) {
       this._registerCommandPaletteCommands();
-      this.commandPalette.setupGlobalShortcut();
     }
 
     // File system observer — auto-refresh event list when drive contents

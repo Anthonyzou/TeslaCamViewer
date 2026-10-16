@@ -382,7 +382,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import type { SettingsManagerLike } from '../types';
 
 const props = defineProps<{
-  settingsManager: SettingsManagerLike;
+  settingsManager?: SettingsManagerLike;
 }>();
 
 const isOpen = ref(false);
@@ -391,11 +391,18 @@ const localeTick = ref(0);
 const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
 let mouseDownOnOverlay = false;
 
-// Reactive state mirroring settingsManager.settings
-const settings = reactive<Record<string, any>>({ ...props.settingsManager.settings });
+function getManager(): SettingsManagerLike | null {
+  return props.settingsManager || (window as any).app?.settingsManager || null;
+}
+
+// Reactive state mirroring settings
+const settings = reactive<Record<string, any>>({});
 
 function syncFromManager(): void {
-  Object.assign(settings, props.settingsManager.settings);
+  const mgr = getManager();
+  if (mgr && mgr.settings) {
+    Object.assign(settings, mgr.settings);
+  }
   if (window.i18n) {
     currentLocale.value = window.i18n.getLocale();
   }
@@ -431,7 +438,10 @@ function onOverlayClick(e: MouseEvent): void {
 }
 
 function save(key: string, val: any): void {
-  props.settingsManager.set(key, val);
+  const mgr = getManager();
+  if (mgr) {
+    mgr.set(key, val);
+  }
 }
 
 function onLanguageChange(e: Event): void {
@@ -443,8 +453,11 @@ function onLanguageChange(e: Event): void {
 
 function handleReset(): void {
   if (confirm(t('settings.confirmReset'))) {
-    props.settingsManager.resetToDefaults();
-    syncFromManager();
+    const mgr = getManager();
+    if (mgr) {
+      mgr.resetToDefaults();
+      syncFromManager();
+    }
   }
 }
 
@@ -456,11 +469,20 @@ function onLocaleChanged(): void {
 }
 
 onMounted(() => {
+  syncFromManager();
   window.addEventListener('localeChanged', onLocaleChanged);
+  (window as any).settingsModalInstance = {
+    open,
+    close,
+    syncFromManager,
+  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
+  if ((window as any).settingsModalInstance?.open === open) {
+    delete (window as any).settingsModalInstance;
+  }
 });
 
 defineExpose({

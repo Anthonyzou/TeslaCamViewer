@@ -1,0 +1,395 @@
+<template>
+  <div v-if="isOpen" class="stats-modal" @keydown.esc="close">
+    <div
+      class="stats-overlay"
+      @mousedown="onOverlayMouseDown"
+      @click="onOverlayClick"
+    ></div>
+    <div class="stats-panel">
+      <div class="stats-layout">
+        <!-- Sidebar Navigation -->
+        <div class="stats-sidebar">
+          <div class="stats-sidebar-header">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"
+                />
+              </svg>
+              {{ t('statistics.title') }}
+            </h2>
+          </div>
+          <nav class="stats-nav">
+            <button
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'overview' }"
+              @click="activeTab = 'overview'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+              </svg>
+              {{ t('statistics.tabs.overview') }}
+            </button>
+            <button
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'timeline' }"
+              @click="activeTab = 'timeline'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+                />
+              </svg>
+              {{ t('statistics.tabs.timeline') }}
+            </button>
+            <button
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'locations' }"
+              @click="activeTab = 'locations'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                />
+              </svg>
+              {{ t('statistics.tabs.locations') }}
+            </button>
+            <button
+              v-if="hasSentryData"
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'sentry' }"
+              @click="activeTab = 'sentry'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
+                />
+              </svg>
+              {{ t('statistics.tabs.sentry') }}
+            </button>
+            <button
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'quality' }"
+              @click="activeTab = 'quality'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17l4.59-4.59L16 11l-6 6z"
+                />
+              </svg>
+              {{ t('statistics.tabs.quality') }}
+            </button>
+            <button
+              class="stats-nav-item"
+              :class="{ active: activeTab === 'export' }"
+              @click="activeTab = 'export'"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+              </svg>
+              {{ t('statistics.tabs.export') }}
+            </button>
+          </nav>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="stats-main">
+          <div class="stats-main-header">
+            <h3 class="stats-section-title">{{ currentSectionTitle }}</h3>
+            <button class="stats-close-btn" :title="t('statistics.close')" @click="close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="stats-content">
+            <!-- Overview Tab -->
+            <div v-show="activeTab === 'overview'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.recordingOverview') }}</h3>
+                <div class="stats-grid stats-grid-4">
+                  <div class="stats-card">
+                    <span class="stats-card-value">{{ payload.stats?.totalEvents || 0 }}</span>
+                    <span class="stats-card-label">{{ t('statistics.totalEvents') }}</span>
+                  </div>
+                  <div class="stats-card">
+                    <span class="stats-card-value">{{ payload.stats?.totalClips || 0 }}</span>
+                    <span class="stats-card-label">{{ t('statistics.totalClips') }}</span>
+                  </div>
+                  <div class="stats-card">
+                    <span class="stats-card-value">{{ payload.stats?.formattedDuration || '0m' }}</span>
+                    <span class="stats-card-label">{{ t('statistics.recordingTime') }}</span>
+                  </div>
+                  <div class="stats-card">
+                    <span class="stats-card-value">{{ payload.storage?.displayValue || '0 B' }}</span>
+                    <span class="stats-card-label">{{ t('statistics.estStorage') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stats-section">
+                <h3>{{ t('statistics.eventTypes') }}</h3>
+                <div class="stats-types" v-html="payload.typesHTML"></div>
+              </div>
+
+              <div class="stats-section">
+                <h3>{{ t('statistics.triggerReasons') }}</h3>
+                <div class="stats-bars" v-html="payload.triggerHTML || `<p class='stats-empty'>${t('statistics.noTrendData')}</p>`"></div>
+              </div>
+
+              <div v-if="payload.stats?.earliestEvent" class="stats-section">
+                <h3>{{ t('statistics.dateRange') }}</h3>
+                <p class="stats-date-range">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style="vertical-align: middle; margin-right: 4px;"
+                  >
+                    <path
+                      d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"
+                    />
+                  </svg>
+                  {{ new Date(payload.stats.earliestEvent).toLocaleDateString() }} -
+                  {{ new Date(payload.stats.latestEvent).toLocaleDateString() }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div v-show="activeTab === 'timeline'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.eventsLast14Days') }}</h3>
+                <div v-html="payload.charts?.timeline"></div>
+              </div>
+              <div class="stats-section">
+                <h3>{{ t('statistics.eventTrends') }}</h3>
+                <div v-html="payload.charts?.trends"></div>
+              </div>
+              <div class="stats-section">
+                <h3>{{ t('statistics.dayVsNight') }}</h3>
+                <div v-html="payload.charts?.dayNight"></div>
+              </div>
+            </div>
+
+            <!-- Locations Tab -->
+            <div v-show="activeTab === 'locations'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.topLocations') }}</h3>
+                <div class="stats-locations" v-html="payload.locationsHTML"></div>
+              </div>
+              <div v-if="payload.sentryLocationsHTML" class="stats-section">
+                <h3>{{ t('statistics.topSentryLocations') }}</h3>
+                <div class="stats-locations" v-html="payload.sentryLocationsHTML"></div>
+              </div>
+            </div>
+
+            <!-- Sentry Tab -->
+            <div v-if="hasSentryData" v-show="activeTab === 'sentry'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.sentryByTimeOfDay') }}</h3>
+                <div v-html="payload.charts?.timeOfDay"></div>
+              </div>
+              <div v-if="payload.charts?.dayOfWeek" class="stats-section">
+                <h3>{{ t('statistics.sentryByDayOfWeek') }}</h3>
+                <div v-html="payload.charts?.dayOfWeek"></div>
+              </div>
+              <div v-if="payload.charts?.cameraDistribution" class="stats-section">
+                <h3>{{ t('statistics.triggeringCamera') }}</h3>
+                <div v-html="payload.charts?.cameraDistribution"></div>
+              </div>
+            </div>
+
+            <!-- Quality Tab -->
+            <div v-show="activeTab === 'quality'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.dataQuality') }}</h3>
+                <div id="telemetryVerifyContainer">
+                  <div class="stats-telemetry-check">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                      Telemetry data is embedded in Tesla videos (2019+ vehicles). Click below to scan your events and verify which have telemetry data.
+                    </p>
+                    <button id="verifyTelemetryBtn" class="stats-verify-btn" @click="handleVerifyTelemetry">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                          d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17l4.59-4.59L16 11l-6 6z"
+                        />
+                      </svg>
+                      Verify Telemetry Data
+                    </button>
+                  </div>
+                  <div v-if="isVerifying" id="telemetryProgress" class="stats-telemetry-progress">
+                    <div class="stats-progress-bar">
+                      <div class="stats-progress-fill" :style="{ width: `${telemetryProgress}%` }"></div>
+                    </div>
+                    <p class="stats-progress-text">{{ telemetryText }}</p>
+                  </div>
+                  <div v-if="telemetryResults" id="telemetryResults" class="stats-grid stats-grid-2">
+                    <div class="stats-card stats-card-small">
+                      <span class="stats-card-value">{{ telemetryResults.withCount }}</span>
+                      <span class="stats-card-label">{{ t('statistics.eventsWithTelemetry') }}</span>
+                      <span class="stats-card-percent">{{ telemetryResults.withPercent }}%</span>
+                    </div>
+                    <div class="stats-card stats-card-small">
+                      <span class="stats-card-value">{{ telemetryResults.withoutCount }}</span>
+                      <span class="stats-card-label">{{ t('statistics.eventsWithoutTelemetry') }}</span>
+                      <span class="stats-card-percent">{{ telemetryResults.withoutPercent }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div v-show="activeTab === 'export'" class="stats-tab-content active">
+              <div class="stats-section">
+                <h3>{{ t('statistics.exportStatistics') }}</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                  {{ t('statistics.exportDescription') }}
+                </p>
+                <div class="stats-export-buttons">
+                  <button class="stats-export-btn" @click="handleExport('json')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                    </svg>
+                    {{ t('statistics.exportJson') }}
+                  </button>
+                  <button class="stats-export-btn" @click="handleExport('csv')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                    </svg>
+                    {{ t('statistics.exportCsv') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+
+const isOpen = ref(false);
+const activeTab = ref('overview');
+const localeTick = ref(0);
+let mouseDownOnOverlay = false;
+
+const isVerifying = ref(false);
+const telemetryProgress = ref(0);
+const telemetryText = ref('Checking events...');
+const telemetryResults = ref<{
+  withCount: number;
+  withPercent: number;
+  withoutCount: number;
+  withoutPercent: number;
+} | null>(null);
+
+const payload = ref<Record<string, any>>({});
+
+function t(key: string): string {
+  void localeTick.value;
+  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
+}
+
+const currentSectionTitle = computed<string>(() => {
+  return t(`statistics.tabs.${activeTab.value}`);
+});
+
+const hasSentryData = computed<boolean>(() => {
+  return (payload.value.stats?.eventsByType?.sentry ?? 0) > 0;
+});
+
+function open(data: Record<string, any>): void {
+  payload.value = data;
+  activeTab.value = 'overview';
+  isOpen.value = true;
+}
+
+function close(): void {
+  isOpen.value = false;
+}
+
+function onOverlayMouseDown(e: MouseEvent): void {
+  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains('stats-overlay');
+}
+
+function onOverlayClick(e: MouseEvent): void {
+  if (mouseDownOnOverlay && (e.target as HTMLElement).classList.contains('stats-overlay')) {
+    close();
+  }
+}
+
+function handleExport(format: 'json' | 'csv'): void {
+  if (typeof payload.value.manager?.exportStats === 'function') {
+    payload.value.manager.exportStats(format);
+  }
+}
+
+async function handleVerifyTelemetry(): Promise<void> {
+  const mgr = payload.value.manager;
+  if (!mgr) return;
+  isVerifying.value = true;
+  telemetryProgress.value = 0;
+  telemetryText.value = 'Scanning events for telemetry...';
+
+  try {
+    const events = (window as any).app?.allEvents || [];
+    let withCount = 0;
+    let withoutCount = 0;
+
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
+      if (ev.metadata?.est_lat && ev.metadata?.est_lon) {
+        withCount++;
+      } else {
+        withoutCount++;
+      }
+      telemetryProgress.value = Math.round(((i + 1) / events.length) * 100);
+      telemetryText.value = `Checked ${i + 1} of ${events.length} events...`;
+    }
+
+    const total = withCount + withoutCount;
+    telemetryResults.value = {
+      withCount,
+      withPercent: total ? Math.round((withCount / total) * 100) : 0,
+      withoutCount,
+      withoutPercent: total ? Math.round((withoutCount / total) * 100) : 0,
+    };
+  } finally {
+    isVerifying.value = false;
+  }
+}
+
+function onLocaleChanged(): void {
+  localeTick.value++;
+}
+
+onMounted(() => {
+  window.addEventListener('localeChanged', onLocaleChanged);
+  (window as any).statisticsModalInstance = {
+    open,
+    close,
+  };
+});
+
+onUnmounted(() => {
+  window.removeEventListener('localeChanged', onLocaleChanged);
+  if ((window as any).statisticsModalInstance?.open === open) {
+    delete (window as any).statisticsModalInstance;
+  }
+});
+
+defineExpose({
+  open,
+  close,
+  isOpen,
+});
+</script>

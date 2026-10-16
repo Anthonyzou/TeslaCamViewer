@@ -2,9 +2,6 @@
  * Settings Manager - Handles user preferences and settings UI
  * Stores settings in localStorage for persistence across sessions
  */
-import { createApp } from 'vue';
-import SettingsModalComponent from '../src/components/SettingsModal.vue';
-
 class SettingsManager {
   constructor() {
     this.STORAGE_KEY = 'teslacamviewer_settings';
@@ -152,26 +149,17 @@ class SettingsManager {
    * Create and show the settings modal
    */
   showSettingsModal(tab = 'general') {
-    if (!this._instance) {
-      this.container = document.createElement('div');
-      this.container.id = 'settingsModalApp';
-      document.body.appendChild(this.container);
-
-      this._app = createApp(SettingsModalComponent, {
-        settingsManager: this,
-      });
-      this._instance = this._app.mount(this.container);
+    if (window.settingsModalInstance) {
+      window.settingsModalInstance.open(tab);
     }
-
-    this._instance.open(tab);
   }
 
   /**
    * Hide the settings modal
    */
   hideSettingsModal() {
-    if (this._instance) {
-      this._instance.close();
+    if (window.settingsModalInstance) {
+      window.settingsModalInstance.close();
     }
   }
 

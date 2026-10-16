@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import type { CommandItem, TeslaCamEvent } from '../types';
 
 type FilteredItem =
@@ -249,6 +249,38 @@ function onInputKey(e: KeyboardEvent): void {
     return;
   }
 }
+
+function onGlobalKeyDown(e: KeyboardEvent): void {
+  if (!(e.key === 'k' || e.key === 'K')) return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+
+  const tgt = e.target as HTMLElement | null;
+  const isTextInput =
+    tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable);
+  const isPaletteInput = tgt && tgt.classList?.contains('command-palette-input');
+  if (isTextInput && !isPaletteInput) return;
+
+  e.preventDefault();
+  toggle();
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onGlobalKeyDown);
+  (window as any).commandPaletteInstance = {
+    open,
+    close,
+    toggle,
+    register,
+    registerMany,
+  };
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onGlobalKeyDown);
+  if ((window as any).commandPaletteInstance?.open === open) {
+    delete (window as any).commandPaletteInstance;
+  }
+});
 
 defineExpose({
   open,
