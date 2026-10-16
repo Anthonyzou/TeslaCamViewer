@@ -87,3 +87,54 @@ test('API POST /api/b2/parse rejects missing parameters when no env is configure
         await new Promise(resolve => server.close(resolve));
     }
 });
+
+test('API POST /api/export validates input clips', async () => {
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+        const res = await fetch(`http://127.0.0.1:${port}/api/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clips: {} })
+        });
+        assert.strictEqual(res.status, 400);
+        const data = await res.json();
+        assert.ok(data.error.includes('No clips provided'));
+    } finally {
+        await new Promise(resolve => server.close(resolve));
+    }
+});
+
+test('API GET /api/export/status returns 404 for unknown job', async () => {
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+        const res = await fetch(`http://127.0.0.1:${port}/api/export/status/nonexistent123`);
+        assert.strictEqual(res.status, 404);
+        const data = await res.json();
+        assert.ok(data.error.includes('not found'));
+    } finally {
+        await new Promise(resolve => server.close(resolve));
+    }
+});
+
+test('API POST /api/export/cancel handles unknown or active job gracefully', async () => {
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+        const res = await fetch(`http://127.0.0.1:${port}/api/export/cancel/fakejob123`, {
+            method: 'POST'
+        });
+        assert.strictEqual(res.status, 200);
+        const data = await res.json();
+        assert.strictEqual(data.success, true);
+    } finally {
+        await new Promise(resolve => server.close(resolve));
+    }
+});

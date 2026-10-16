@@ -4,9 +4,32 @@ const axios = require('axios');
 const B2 = require('backblaze-b2');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const ffmpeg = require('fluent-ffmpeg');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Export jobs map and temporary directory
+const exportJobs = new Map();
+const EXPORT_DIR = path.join(os.tmpdir(), 'teslacam_exports');
+if (!fs.existsSync(EXPORT_DIR)) {
+    fs.mkdirSync(EXPORT_DIR, { recursive: true });
+}
+
+// Periodically clean up completed or failed export jobs older than 1 hour
+setInterval(() => {
+    const oneHourAgo = Date.now() - 3600 * 1000;
+    for (const [jobId, job] of exportJobs.entries()) {
+        if (job.createdAt < oneHourAgo) {
+            if (job.outputPath && fs.existsSync(job.outputPath)) {
+                try { fs.unlinkSync(job.outputPath); } catch (e) {}
+            }
+            exportJobs.delete(jobId);
+        }
+    }
+}, 600 * 1000);
 
 // Cache for B2 data
 let cachedB2Data = null;
@@ -214,7 +237,178 @@ app.post('/api/b2/parse', async (req, res) => {
     }
 });
 
-// 2. Static File Server
+// 3. Server-Side FFmpeg Video Export Routes
+app.post('/api/export', (req, res) => {
+    const { eventName, camera = 'all', format = 'mp4', clips, inPoint, outPoint } = req.body;
+
+    if (!clips || Object.keys(clips).length === 0) {
+        return res.status(400).json({ error: 'No clips provided for export' });
+    }
+
+    const jobId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const ext = format === 'gif' ? 'gif' : 'mp4';
+    const filename = `TeslaCam_${eventName || 'Export'}_${camera}.${ext}`;
+    const outputPath = path.join(EXPORT_DIR, `${jobId}.${ext}`);
+
+    const job = {
+        id: jobId,
+        status: 'encoding',
+        percent: 0,
+        outputPath,
+        filename,
+        createdAt: Date.now(),
+        error: null,
+        command: null
+    };
+
+    exportJobs.set(jobId, job);
+
+    try {
+        const cmd = ffmpeg();
+        const trimStart = Number.isFinite(inPoint) && inPoint > 0 ? inPoint : null;
+        const trimDuration = Number.isFinite(outPoint) && outPoint > (inPoint || 0)
+            ? (outPoint - (inPoint || 0))
+            : null;
+
+        if (camera !== 'all' && clips[camera]) {
+            cmd.input(clips[camera]);
+            if (trimStart !== null) cmd.setStartTime(trimStart);
+            if (trimDuration !== null) cmd.setDuration(trimDuration);
+
+            if (format === 'gif') {
+                cmd.complexFilter([
+                    'fps=15,scale=640:-1:flags=lanczos,split[s0][s1]',
+                    '[s0]palettegen[p]',
+                    '[s1][p]paletteuse'
+                ]);
+            } else {
+                cmd.videoCodec('libx264')
+                   .outputOptions(['-preset fast', '-crf 22', '-pix_fmt yuv420p', '-movflags +faststart']);
+            }
+        } else {
+            const cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
+            const activeCameras = cameraOrder.filter(c => !!clips[c]);
+
+            if (activeCameras.length === 0) {
+                Object.keys(clips).forEach(c => activeCameras.push(c));
+            }
+
+            activeCameras.forEach(cam => {
+                cmd.input(clips[cam]);
+            });
+
+            if (trimStart !== null) cmd.setStartTime(trimStart);
+            if (trimDuration !== null) cmd.setDuration(trimDuration);
+
+            let filterChain;
+            if (activeCameras.length === 4) {
+                filterChain = [
+                    '[0:v]scale=960:540[v0]',
+                    '[1:v]scale=960:540[v1]',
+                    '[2:v]scale=960:540[v2]',
+                    '[3:v]scale=960:540[v3]',
+                    '[v0][v1]hstack=inputs=2[top]',
+                    '[v2][v3]hstack=inputs=2[bottom]',
+                    '[top][bottom]vstack=inputs=2[v]'
+                ];
+            } else if (activeCameras.length === 3) {
+                filterChain = [
+                    '[0:v]scale=1920:540[top]',
+                    '[1:v]scale=960:540[b1]',
+                    '[2:v]scale=960:540[b2]',
+                    '[b1][b2]hstack=inputs=2[bottom]',
+                    '[top][bottom]vstack=inputs=2[v]'
+                ];
+            } else if (activeCameras.length === 2) {
+                filterChain = [
+                    '[0:v]scale=960:540[v0]',
+                    '[1:v]scale=960:540[v1]',
+                    '[v0][v1]hstack=inputs=2[v]'
+                ];
+            } else {
+                filterChain = ['[0:v]scale=1280:720[v]'];
+            }
+
+            if (format === 'gif') {
+                filterChain.push('[v]fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse');
+            } else {
+                cmd.videoCodec('libx264')
+                   .outputOptions(['-map [v]', '-preset fast', '-crf 22', '-pix_fmt yuv420p', '-movflags +faststart']);
+            }
+
+            cmd.complexFilter(filterChain);
+        }
+
+        cmd.output(outputPath);
+
+        cmd.on('progress', (progress) => {
+            if (progress.percent) {
+                job.percent = Math.min(100, Math.max(0, Math.round(progress.percent)));
+            }
+        });
+
+        cmd.on('end', () => {
+            job.status = 'completed';
+            job.percent = 100;
+            console.log(`[Export] Job ${jobId} completed: ${outputPath}`);
+        });
+
+        cmd.on('error', (err) => {
+            if (job.status !== 'cancelled') {
+                job.status = 'error';
+                job.error = err.message;
+                console.error(`[Export] Job ${jobId} error:`, err.message);
+            }
+        });
+
+        job.command = cmd;
+        cmd.run();
+
+        res.json({ jobId, status: 'encoding' });
+    } catch (err) {
+        job.status = 'error';
+        job.error = err.message;
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/export/status/:jobId', (req, res) => {
+    const job = exportJobs.get(req.params.jobId);
+    if (!job) {
+        return res.status(404).json({ error: 'Export job not found' });
+    }
+    res.json({
+        id: job.id,
+        status: job.status,
+        percent: job.percent,
+        error: job.error,
+        filename: job.filename
+    });
+});
+
+app.get('/api/export/download/:jobId', (req, res) => {
+    const job = exportJobs.get(req.params.jobId);
+    if (!job || job.status !== 'completed' || !fs.existsSync(job.outputPath)) {
+        return res.status(404).json({ error: 'Export file not found or not yet complete' });
+    }
+    res.download(job.outputPath, job.filename);
+});
+
+app.post('/api/export/cancel/:jobId', (req, res) => {
+    const job = exportJobs.get(req.params.jobId);
+    if (job) {
+        job.status = 'cancelled';
+        if (job.command) {
+            try { job.command.kill('SIGKILL'); } catch (e) {}
+        }
+        if (job.outputPath && fs.existsSync(job.outputPath)) {
+            try { fs.unlinkSync(job.outputPath); } catch (e) {}
+        }
+    }
+    res.json({ success: true });
+});
+
+// 4. Static File Server
 app.use(express.static(__dirname));
 
 // Default to index.html for unknown routes
@@ -244,4 +438,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { app, performB2Parse, organizeB2Events };
+module.exports = { app, performB2Parse, organizeB2Events, exportJobs };

@@ -1,4 +1,7 @@
-FROM node:20-alpine
+FROM node:alpine
+
+# Install FFmpeg
+RUN apk add --no-cache ffmpeg
 
 # Set the working directory
 WORKDIR /app

@@ -1,2190 +1,240 @@
 /**
- * VideoExport - Exports video segments with multiple views
- * Codec: VP9/H264 adaptive, 30fps target
+ * VideoExport - Server-Side FFmpeg Video Exporter Client
+ * Communicates with /api/export endpoints to orchestrate server-side FFmpeg rendering.
  */
-
 class VideoExport {
-    constructor(videoPlayer, layoutManager = null) {
+    constructor(videoPlayer, layoutManager) {
         this.videoPlayer = videoPlayer;
         this.layoutManager = layoutManager;
-        this._oid = 0x544356; // export origin id
         this.isExporting = false;
-        this.mediaRecorder = null;
-        this.recordedChunks = [];
-        this.onProgress = null;
-        this.exportStartTime = null;
-        this.lastProgressUpdate = 0;
-        this.renderIntervalId = null; // For cleanup during cancel
-        this.speedWasReduced = false; // Track if export speed was reduced due to buffering
-        this.exportWallStartTime = null; // Track wall-clock start for ETA calculation
+        this.currentJobId = null;
+        this._pollTimer = null;
     }
 
-    /**
-     * Get export status for UI feedback
-     * @returns {Object} Export status info
-     */
     getExportStatus() {
-        return {
-            isExporting: this.isExporting,
-            speedWasReduced: this.speedWasReduced,
-            currentSpeed: this.currentExportSpeed,
-            originalSpeed: this.exportSpeed,
-            wallStartTime: this.exportWallStartTime
-        };
+        return { isExporting: this.isExporting };
     }
 
-    /**
-     * Set layout manager reference
-     * @param {LayoutManager} layoutManager
-     */
-    setLayoutManager(layoutManager) {
-        this.layoutManager = layoutManager;
+    async exportVideo(camera = 'all') {
+        return this.startExport({ camera, format: 'mp4' });
     }
 
-    /**
-     * Get camera order from layout manager (reflects user drag/drop swaps)
-     * @returns {Array} Array of camera names in current visual order
-     */
-    getCameraOrder() {
-        const hasPillars = this.videoPlayer?.hasPillarCameras || false;
-        const defaultOrder = hasPillars
-            ? ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']
-            : ['front', 'back', 'left_repeater', 'right_repeater'];
-        return this.layoutManager?.cameraOrder || defaultOrder;
+    async exportGif() {
+        return this.startExport({ camera: 'all', format: 'gif' });
     }
 
-    /**
-     * Build mapping from layout position to actual video source based on camera order
-     * When user swaps cameras via drag/drop, cameraOrder changes but layout positions don't
-     * This mapping ensures export matches what user sees on screen
-     * @returns {Object} Map of position name to video source name
-     */
-    buildCameraMapping() {
-        const hasPillars = this.videoPlayer?.hasPillarCameras || false;
-        const defaultOrder = hasPillars
-            ? ['front', 'back', 'left_repeater', 'right_repeater', 'left_pillar', 'right_pillar']
-            : ['front', 'back', 'left_repeater', 'right_repeater'];
-        const currentOrder = this.getCameraOrder();
-
-        // Map: position name -> which video to show there
-        const mapping = {};
-        for (let i = 0; i < defaultOrder.length; i++) {
-            mapping[defaultOrder[i]] = currentOrder[i] || defaultOrder[i];
-        }
-
-        console.log('Camera mapping for export:', mapping);
-        return mapping;
-    }
-
-    /**
-     * Get layout configuration for export
-     * Uses the same layout configuration as the display renderer for consistency
-     * @param {number} videoWidth - Base video width
-     * @param {number} videoHeight - Base video height
-     * @returns {Object} Layout configuration with canvas size and video positions
-     */
-    getLayoutConfig(videoWidth, videoHeight) {
-        const layout = this.layoutManager?.getCurrentLayout() || 'grid-2x2';
-
-        // Always use getCurrentConfig + calculateExportConfig for consistent rendering
-        if (this.layoutManager && this.layoutManager.renderer) {
-            const layoutConfig = this.layoutManager.getCurrentConfig();
-            if (layoutConfig) {
-                const exportConfig = this.layoutManager.renderer.calculateExportConfig(
-                    layoutConfig, videoWidth, videoHeight,
-                    { visibleCameras: this.layoutManager.getVisibleCameras() }
-                );
-                console.log('Export layout config:', layoutConfig.name, exportConfig);
-                return exportConfig;
-            }
-        }
-
-        // Fallback: Default 2x2 grid if layoutManager not available
-        const visibleCameras = this.layoutManager?.getVisibleCameras() || {
-            front: true, back: true, left_repeater: true, right_repeater: true,
-            left_pillar: true, right_pillar: true
-        };
-        const config = {
-            canvasWidth: videoWidth * 2,
-            canvasHeight: videoHeight * 2,
-            aspectRatio: '4:3',
-            cameras: {
-                front: { x: 0, y: 0, w: videoWidth, h: videoHeight, visible: visibleCameras.front },
-                back: { x: videoWidth, y: 0, w: videoWidth, h: videoHeight, visible: visibleCameras.back },
-                left_repeater: { x: 0, y: videoHeight, w: videoWidth, h: videoHeight, visible: visibleCameras.left_repeater },
-                right_repeater: { x: videoWidth, y: videoHeight, w: videoWidth, h: videoHeight, visible: visibleCameras.right_repeater },
-                // Pillar cameras not shown in fallback 2x2 grid
-                left_pillar: { x: 0, y: 0, w: 0, h: 0, visible: false },
-                right_pillar: { x: 0, y: 0, w: 0, h: 0, visible: false }
-            }
-        };
-
-        console.log('Export layout config (fallback):', layout, config);
-        return config;
-    }
-
-    /**
-     * Wait for all videos to be ready at a specific timestamp
-     * @param {number} targetTime - Target absolute time in seconds
-     * @param {number} timeout - Max wait time in ms (default 5000)
-     * @returns {Promise<boolean>} True if all videos are ready
-     */
-    async seekAndWaitForFrame(targetTime, timeout = 5000) {
-        const videos = this.videoPlayer.videos;
-        const hasPillars = this.videoPlayer?.hasPillarCameras || false;
-        const videoElements = hasPillars
-            ? [videos.front, videos.back, videos.left_repeater, videos.right_repeater, videos.left_pillar, videos.right_pillar].filter(v => v)
-            : [videos.front, videos.back, videos.left_repeater, videos.right_repeater].filter(v => v);
-
-        // Set up `seeked` listeners BEFORE triggering the seek so we don't
-        // race past the event. Each listener resolves once that video's
-        // current frame matches the new currentTime.
-        //
-        // Why this matters: the previous implementation only polled
-        // `readyState >= 2`, which is also true for the OLD frame still
-        // loaded before a seek completes. drawImage(video) right after a
-        // fresh seek would capture the STALE frame, so the export's
-        // frameBuffer ended up holding ~the same frame for hundreds of
-        // iterations. Most visible with plate blur on (slower iteration
-        // cadence amplifies the artifact), where users saw "2 unique
-        // frames in a 6s export" — one frame per clip boundary.
-        const targetCurrentTime = (v) => {
-            // After videoPlayer.seek/seekToEventTime the video's currentTime
-            // gets clamped to [0, duration-0.05]. We only consider the seek
-            // truly complete when the video reports a currentTime within
-            // 50ms of where it should be. This is more robust than just
-            // listening for the seeked event, which sometimes fires for
-            // tiny seeks the browser optimizes away.
-            return v.currentTime;
-        };
-
-        const seekedPromises = videoElements.map((v) => {
-            if (!v.src) return Promise.resolve(true);
-            return new Promise((resolveOne) => {
-                let resolved = false;
-                const onSeeked = () => {
-                    if (resolved) return;
-                    resolved = true;
-                    v.removeEventListener('seeked', onSeeked);
-                    v.removeEventListener('error', onError);
-                    resolveOne(true);
-                };
-                const onError = () => {
-                    if (resolved) return;
-                    resolved = true;
-                    v.removeEventListener('seeked', onSeeked);
-                    v.removeEventListener('error', onError);
-                    resolveOne(false);
-                };
-                v.addEventListener('seeked', onSeeked);
-                v.addEventListener('error', onError);
-            });
-        });
-
-        // Trigger the seek
-        await this.videoPlayer.seekToEventTime(targetTime, false);
-
-        // If a video was already at the target time, no `seeked` will fire.
-        // Resolve those immediately by checking `readyState >= 2` after a
-        // microtask to let any synchronous state settle.
-        await Promise.resolve();
-        const settled = videoElements.map((v, i) =>
-            (!v.src || (!v.seeking && v.readyState >= 2))
-                ? Promise.resolve(true)
-                : seekedPromises[i]
-        );
-
-        // Cancellable timeout — the previous version used a bare setTimeout
-        // inside Promise.race, which fires the "Frame seek timeout" warning
-        // even AFTER the seek succeeds (Promise.race resolves but the
-        // setTimeout was never cleared). That produced confusing stale
-        // warnings logged during Phase 2 and after export completion,
-        // and made every export look like it was timing out constantly
-        // when in fact the seeks were succeeding fine.
-        let timeoutHandle;
-        return Promise.race([
-            Promise.all(settled).then((results) => {
-                clearTimeout(timeoutHandle);
-                return results.every(Boolean);
-            }),
-            new Promise((r) => {
-                timeoutHandle = setTimeout(() => {
-                    console.warn('Frame seek timeout at', targetTime);
-                    r(false);
-                }, timeout);
-            })
-        ]);
-    }
-
-    /**
-     * Apply the user's Export → Quality preference to a layout config.
-     * Returns a NEW config object (does not mutate the input) with
-     * canvasWidth/Height + every camera rect uniformly scaled so the
-     * aspect ratio, overlay geometry, and layout proportions stay correct.
-     *
-     * Presets:
-     *   full    — native canvas (no scale)
-     *   hd      — height capped at 1080 (downscale only, no upscale)
-     *   web     — height capped at 720 (downscale only)
-     *   custom  — user-specified height (upscale allowed)
-     */
-    _applyResolutionScale(layoutConfig) {
-        if (!layoutConfig || !layoutConfig.canvasHeight) return layoutConfig;
-        const settings = window.app?.settingsManager;
-        const preset = settings?.get('exportResolution') || 'full';
-        const nativeH = layoutConfig.canvasHeight;
-
-        let scale = 1;
-        if (preset === 'hd') {
-            scale = Math.min(1, 1080 / nativeH);
-        } else if (preset === 'web') {
-            scale = Math.min(1, 720 / nativeH);
-        } else if (preset === 'custom') {
-            const target = parseInt(settings?.get('exportResolutionCustomHeight'), 10);
-            if (target > 0 && target !== nativeH) {
-                scale = target / nativeH;
-            }
-        }
-        // Snap to 1 if we're within a rounding-error of it to avoid
-        // microscopic rescales that waste GPU time.
-        if (Math.abs(scale - 1) < 0.01) return layoutConfig;
-
-        const scaled = {
-            ...layoutConfig,
-            canvasWidth: Math.round(layoutConfig.canvasWidth * scale),
-            canvasHeight: Math.round(layoutConfig.canvasHeight * scale),
-            cameras: {}
-        };
-        // Encoder constraints — dimensions must be even for H.264.
-        if (scaled.canvasWidth % 2) scaled.canvasWidth -= 1;
-        if (scaled.canvasHeight % 2) scaled.canvasHeight -= 1;
-        for (const [name, cam] of Object.entries(layoutConfig.cameras || {})) {
-            scaled.cameras[name] = {
-                ...cam,
-                x: Math.round(cam.x * scale),
-                y: Math.round(cam.y * scale),
-                w: Math.round(cam.w * scale),
-                h: Math.round(cam.h * scale)
-            };
-        }
-        console.log(`[Export] Resolution preset "${preset}" applied: ${layoutConfig.canvasWidth}×${layoutConfig.canvasHeight} → ${scaled.canvasWidth}×${scaled.canvasHeight}`);
-        return scaled;
-    }
-
-    /**
-     * Capture the current DOM state of every export-relevant overlay as a
-     * snapshot of pixel rectangles relative to the live .video-grid element.
-     * This is the source-of-truth that unifies live UI and export rendering:
-     * whatever the user sees on screen gets mirrored 1:1 into the canvas at
-     * a scaled position, so there are no more per-layout drifts or
-     * occlusion edge cases to debug — "what you see is what you export"
-     * holds by construction.
-     *
-     * Returned shape:
-     *   {
-     *     grid: { w, h },   // DOM video-grid dimensions
-     *     scaleX, scaleY,   // canvas-per-dom ratios (caller computes these)
-     *     labels: [{ text, x, y, w, h, fontSize, fontFamily, fontWeight,
-     *                color, bg, borderRadius, letterSpacing, padding: {l,t,r,b} }],
-     *     hud: { x, y, w, h, visible } | null,
-     *     map: { x, y, w, h, visible } | null
-     *   }
-     *
-     * Returns null if .video-grid doesn't exist (degrades to legacy code).
-     */
-    _captureLiveOverlayMirror() {
-        const grid = document.querySelector('.video-grid');
-        if (!grid) return null;
-        const gridRect = grid.getBoundingClientRect();
-        if (!gridRect.width || !gridRect.height) return null;
-
-        const mirror = {
-            grid: { w: gridRect.width, h: gridRect.height },
-            labels: [],
-            hud: null,
-            map: null
-        };
-
-        // Labels — read every .video-label currently in the DOM
-        for (const el of grid.querySelectorAll('.video-label')) {
-            if (el.offsetWidth === 0 || getComputedStyle(el).visibility === 'hidden') continue;
-            const r = el.getBoundingClientRect();
-            const cs = getComputedStyle(el);
-            mirror.labels.push({
-                text: (el.textContent || '').trim(),
-                x: r.x - gridRect.x,
-                y: r.y - gridRect.y,
-                w: r.width,
-                h: r.height,
-                fontSize: parseFloat(cs.fontSize) || 12,
-                fontFamily: cs.fontFamily || 'monospace',
-                fontWeight: cs.fontWeight || '500',
-                color: cs.color || 'white',
-                bg: cs.backgroundColor || 'rgba(0,0,0,0.75)',
-                borderRadius: parseFloat(cs.borderRadius) || 4,
-                letterSpacing: parseFloat(cs.letterSpacing) || 0,
-                padding: {
-                    l: parseFloat(cs.paddingLeft) || 0,
-                    t: parseFloat(cs.paddingTop) || 0,
-                    r: parseFloat(cs.paddingRight) || 0,
-                    b: parseFloat(cs.paddingBottom) || 0
-                }
-            });
-        }
-
-        // Mini-map — only mirror if visible
-        const mapEl = document.querySelector('.minimap-overlay');
-        if (mapEl && mapEl.offsetWidth > 0 && getComputedStyle(mapEl).display !== 'none'
-            && window.app?.miniMapOverlay?.isVisible !== false) {
-            const r = mapEl.getBoundingClientRect();
-            mirror.map = {
-                x: r.x - gridRect.x,
-                y: r.y - gridRect.y,
-                w: r.width,
-                h: r.height
-            };
-        }
-
-        return mirror;
-    }
-
-    /**
-     * Draw camera labels on the export canvas using a DOM mirror snapshot.
-     * Matches the live UI's pixel positions + styling exactly (scaled to
-     * canvas size). Replaces the old layoutRenderer.addLabelsToCanvas
-     * occlusion-searching path — we now just draw where the DOM has them.
-     */
-    _drawLabelsFromMirror(ctx, mirror, canvasWidth, canvasHeight) {
-        if (!mirror?.labels?.length) return;
-        const scaleX = canvasWidth / mirror.grid.w;
-        const scaleY = canvasHeight / mirror.grid.h;
-        // Use the smaller scale for text so letters don't stretch horizontally
-        // on slightly-off aspect ratios.
-        const textScale = Math.min(scaleX, scaleY);
-
-        for (const label of mirror.labels) {
-            const x = label.x * scaleX;
-            const y = label.y * scaleY;
-            const w = label.w * scaleX;
-            const h = label.h * scaleY;
-            const radius = label.borderRadius * textScale;
-
-            // Background (rounded rect)
-            ctx.fillStyle = label.bg;
-            if (ctx.roundRect) {
-                ctx.beginPath();
-                ctx.roundRect(x, y, w, h, radius);
-                ctx.fill();
-            } else {
-                ctx.fillRect(x, y, w, h);
-            }
-
-            // Text — uppercase to match the CSS text-transform of the live label
-            ctx.fillStyle = label.color;
-            ctx.font = `${label.fontWeight} ${label.fontSize * textScale}px ${label.fontFamily}`;
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'left';
-            const textX = x + label.padding.l * textScale;
-            const textY = y + h / 2;
-            // Approximate CSS letter-spacing by hand (ctx.letterSpacing is not
-            // universally supported). For ~0.6px spacing and short ALL-CAPS
-            // labels, the visual drift is under a pixel so we skip the
-            // per-character draw loop here.
-            const text = label.text.toUpperCase();
-            try {
-                ctx.letterSpacing = `${label.letterSpacing * textScale}px`;
-            } catch {}
-            ctx.fillText(text, textX, textY);
-            try { ctx.letterSpacing = '0px'; } catch {}
-        }
-    }
-
-    /**
-     * Fast single-pass export — WebCodecs decoder on the input side AND
-     * streaming WebCodecs encoder on the output side. No frameBuffer
-     * accumulation. Memory stays bounded at ~a handful of VideoFrames
-     * regardless of export length (was OOMing Chrome at ~50GB on a 60s
-     * 6:3 export when we held all bitmaps in memory).
-     *
-     * Returns an MP4 Blob if successful. Caller is responsible for
-     * downloading. Caller must check the return value and skip the legacy
-     * Phase-2 encode path if a blob is returned.
-     *
-     * Deliberately matches legacy output pixel-for-pixel — uses the same
-     * LayoutRenderer.calculateDrawParams math, same overlay bakers (camera
-     * labels, timestamp/sentry/TCV branding, telemetry HUD, mini-map,
-     * watermark). Only behavioral differences: (a) dramatically faster,
-     * (b) no plate blur (caller suppresses this path when blur is enabled),
-     * (c) direct MP4 output (no MediaRecorder intermediate).
-     */
-    async _renderPhase1FastDecoder(params) {
-        const {
-            event, layoutConfig, cameraMapping,
-            canvasWidth, canvasHeight,
-            renderCanvas, renderCtx,
-            exportStart, exportEnd, fps,
-            totalFrames,
-            includeOverlay,
-            videos
-        } = params;
-
-        if (!event) throw new Error('no currentEvent loaded for fast decoder');
-
-        const visibleCameras = Object.entries(layoutConfig.cameras)
-            .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
-            .map(([name]) => cameraMapping[name] || name);
-
-        const clipDurations = this.videoPlayer?.cachedClipDurations || [];
-
-        console.log('[FastDecoder] Starting export init:', {
-            visibleCameras,
-            clipDurations: clipDurations.slice(0, 5),
-            startEventSec: exportStart,
-            endEventSec: exportEnd,
-            totalFrames
-        });
-
-        const decoder = new window.MultiCameraExportDecoder();
-        await decoder.init({
-            event,
-            visibleCameras,
-            clipDurations,
-            startEventSec: exportStart,
-            endEventSec: exportEnd,
-            fps
-        });
-
-        // Sort cameras by z-index once; the order doesn't change per-frame.
-        const sortedCameras = Object.entries(layoutConfig.cameras)
-            .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
-            .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
-
-        const settings = window.app?.settingsManager;
-        const privacyMode = settings && settings.get('privacyModeExport') === true;
-
-        // Capture the live DOM's overlay layout ONCE at the start of export.
-        // This snapshot is the source of truth for where labels/HUD/mini-map
-        // go on the canvas, so export is a pixel-accurate mirror of what
-        // the user has on screen. Eliminates all the per-layout drift we
-        // kept hitting.
-        const mirror = this._captureLiveOverlayMirror();
-        const mirrorScaleX = mirror ? canvasWidth / mirror.grid.w : 1;
-        const mirrorScaleY = mirror ? canvasHeight / mirror.grid.h : 1;
-
-        // Create the streaming encoder up front — one encoder handles all frames,
-        // no buffering between phases.
-        const fastEncoder = new window.VideoExportFast();
-        const stream = await fastEncoder.createStreamingEncoder({
-            width: canvasWidth,
-            height: canvasHeight,
-            fps,
-            onProgress: (encoded) => {
-                // Encoder progress lags behind render progress by its queue
-                // depth; we report render progress below as the user-facing
-                // signal and let encoder progress run silently.
-            }
-        });
-
-        try {
-            let frameNum = 0;
-            while (decoder.hasMore()) {
-                if (!this.isExporting) {
-                    console.log('Export cancelled during rendering');
-                    stream.abort();
-                    await decoder.close();
-                    return null;
-                }
-
-                const { eventTime, frames } = await decoder.nextOutputFrame();
-                const absoluteTime = eventTime;
-
-                // Clear canvas
-                renderCtx.fillStyle = '#000000';
-                renderCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-                // Diagnostic: Check if we have frames
-                if (frameNum % 60 === 0) {
-                    console.log(`[FastDecoder] Frame ${frameNum} at ${absoluteTime.toFixed(2)}s. Frames in Map: ${Array.from(frames.keys()).join(', ')}`);
-                    const nullCameras = Array.from(frames.entries()).filter(([k,v]) => !v).map(([k]) => k);
-                    if (nullCameras.length > 0) console.warn(`[FastDecoder] Missing frames for: ${nullCameras.join(', ')}`);
-                }
-
-                // Composite each visible camera, building cameraInfos for
-                // optional plate blur in the same pass — avoids walking the
-                // sorted list twice.
-                const camInfosForBlur = {};
-                for (const [camPosition, camConfig] of sortedCameras) {
-                    const actualCameraName = cameraMapping[camPosition] || camPosition;
-                    const bitmap = frames.get(actualCameraName);
-                    if (!bitmap) continue;
-                    const { sx, sy, sw, sh, dx, dy, dw, dh } =
-                        window.LayoutRenderer.calculateDrawParams(bitmap, camConfig);
-                    renderCtx.drawImage(bitmap, sx, sy, sw, sh, dx, dy, dw, dh);
-                    camInfosForBlur[actualCameraName] = {
-                        video: bitmap,  // ImageBitmap — plateBlur accepts it
-                        dx: camConfig.x,
-                        dy: camConfig.y,
-                        dw: camConfig.w,
-                        dh: camConfig.h,
-                        crop: camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 },
-                        objectFit: camConfig.objectFit || 'contain'
-                    };
-                }
-
-                // Watermark (free tier)
-                if (this._shouldWatermark) {
-                    this.addWatermarksToFrame(renderCtx, layoutConfig);
-                }
-
-                // Camera labels — mirror live DOM labels onto the canvas at
-                // scaled pixel positions. What you see on screen is what
-                // gets drawn, which eliminates per-layout drift and
-                // occlusion edge cases from the old canvas-label renderer.
-                if (mirror) {
-                    this._drawLabelsFromMirror(renderCtx, mirror, canvasWidth, canvasHeight);
-                } else if (this.layoutManager?.renderer) {
-                    this.layoutManager.renderer.addLabelsToCanvas(renderCtx, layoutConfig, {
-                        fontSize: Math.round(18 * (canvasWidth / 1920)),
-                        cameraMapping
-                    });
-                }
-
-                // Timestamp / sentry / branding overlay
-                if (includeOverlay && !privacyMode) {
-                    this.addOverlay(renderCtx, canvasWidth, canvasHeight, absoluteTime);
-                }
-
-                // Telemetry HUD + mini-map — pass the mirror so positioning
-                // comes from the live DOM instead of the saved percent.
-                this._renderTelemetryAndMap(renderCtx, canvasWidth, canvasHeight, absoluteTime, {
-                    privacyMode, mirror, mirrorScaleX, mirrorScaleY
-                });
-
-                // Encode this frame immediately — feed canvas straight to
-                // VideoFrame/Encoder. No intermediate ImageBitmap allocation.
-                await stream.encode(renderCanvas, frameNum);
-
-                if (this.onProgress) {
-                    // Single-phase pipeline: render+encode combined get 0-100%
-                    const progressPercent = ((frameNum + 1) / totalFrames) * 100;
-                    this.onProgress(progressPercent, absoluteTime - exportStart, exportEnd - exportStart);
-                }
-
-                frameNum++;
-                if (frameNum % 5 === 0) {
-                    await new Promise(r => setTimeout(r, 0));
-                }
-            }
-
-            // Flush encoder and return the mp4 blob. Caller triggers the download.
-            const blob = await stream.finalize();
-            console.log(`[FastDecoder] Encoded ${frameNum} frames into ${(blob.size / 1_000_000).toFixed(1)} MB MP4`);
-            return blob;
-        } catch (err) {
-            try { stream.abort(); } catch {}
-            throw err;
-        } finally {
-            await decoder.close();
-        }
-    }
-
-    /**
-     * Export using frame-by-frame capture (no real-time playback)
-     * This method seeks to each frame and waits for it to be ready before capturing.
-     * Slower but eliminates stuttering issues.
-     */
-    /**
-     * Export using pre-rendered frames with buffered MediaRecorder.
-     * This approach renders all frames first, then plays them back for recording.
-     */
-    async exportFrameByFrame(options = {}) {
-        const {
-            format = 'webm',
-            quality = 0.9,
-            startTime = null,
-            endTime = null,
-            includeOverlay = true,
-            onProgress = null,
-            fps = 30,
-            singleCamera = null
-        } = options;
-
-        if (this.isExporting) {
-            throw new Error('Export already in progress');
-        }
-
-        // Free-tier gate: must run BEFORE any state mutation and BEFORE
-        // the GIF dispatch (so GIF inherits the same gate without
-        // double-checking). The cap was previously unenforced — UI
-        // flow goes through this path, not startExport, so the access
-        // check there never fired.
-        const accessOK = await this._checkExportAccess();
-        if (!accessOK) return;
-
-        // Handle GIF export separately (forward singleCamera so GIF path also honors it).
-        // Pass _accessChecked so exportAsGif doesn't double-gate.
-        if (format === 'gif') {
-            return this.exportAsGif({ ...options, singleCamera, _accessChecked: true });
-        }
-
-        console.log('Starting buffered frame-by-frame export...');
-
-        this.isExporting = true;
-        this.exportWallStartTime = Date.now();
-        this.onProgress = onProgress;
-        this.recordedChunks = [];
-
-        const videos = this.videoPlayer.videos;
-        const primaryCamera = singleCamera || 'front';
-        if (!videos[primaryCamera] || !videos[primaryCamera].src) {
-            this.isExporting = false;
-            throw new Error(`No video loaded${singleCamera ? ` for ${singleCamera}` : ''}`);
-        }
-
-        // Pause any playback
-        await this.videoPlayer.pause();
-
-        // Check if watermark is needed
-        await this._checkWatermark();
-
-        // Calculate total duration
-        if (!this.cachedTotalDuration) {
-            this.cachedTotalDuration = await this.videoPlayer.getTotalDuration();
-        }
-
-        // Determine export range
-        const exportStart = startTime !== null ? startTime : 0;
-        const exportEnd = endTime !== null ? endTime : this.cachedTotalDuration;
-        const exportDuration = exportEnd - exportStart;
-        const frameInterval = 1 / fps;
-        const totalFrames = Math.ceil(exportDuration * fps);
-
-        console.log(`Buffered export: ${totalFrames} frames @ ${fps}fps, ${exportStart.toFixed(2)}s to ${exportEnd.toFixed(2)}s`);
-
-        // Get video dimensions (reference from the primary camera)
-        const refVideo = videos[primaryCamera];
-        const videoWidth = refVideo.videoWidth || 1280;
-        const videoHeight = refVideo.videoHeight || 960;
-
-        // Get layout config — single-camera mode synthesizes a fullscreen one-camera layout
-        // so the rest of the pipeline treats it identically to any other layout (6:3, 2x2, etc.)
-        let layoutConfig;
-        if (singleCamera) {
-            layoutConfig = {
-                canvasWidth: videoWidth,
-                canvasHeight: videoHeight,
-                cameras: {
-                    [singleCamera]: {
-                        x: 0, y: 0, w: videoWidth, h: videoHeight,
-                        visible: true, zIndex: 1,
-                        crop: { top: 0, right: 0, bottom: 0, left: 0 },
-                        objectFit: 'contain'
-                    }
-                }
-            };
-        } else {
-            layoutConfig = this.getLayoutConfig(videoWidth, videoHeight);
-        }
-        // Apply user-selected resolution cap (Settings → Export → Quality).
-        // Scales the whole config uniformly so camera rects + aspect ratio
-        // stay correct; overlays follow suit via the mirror's scale math.
-        layoutConfig = this._applyResolutionScale(layoutConfig);
-
-        const canvasWidth = layoutConfig.canvasWidth || 1920;
-        const canvasHeight = layoutConfig.canvasHeight || 1080;
-
-        console.log(`Canvas size: ${canvasWidth}x${canvasHeight}${singleCamera ? ` (single-camera: ${singleCamera})` : ''}`);
-
-        // Note: We skip pre-rendering telemetry and use on-demand rendering instead.
-        // On-demand rendering uses the video player's actual clip/time state, which ensures
-        // the telemetry matches exactly what the user saw during preview.
-        // Pre-rendering had timing drift issues due to clip duration estimation.
-
-        // Get camera mapping (single-camera mode bypasses position remapping)
-        const cameraMapping = singleCamera
-            ? { [singleCamera]: singleCamera }
-            : this.buildCameraMapping();
-
-        // Pre-cache mini-map tiles (shared method)
-        await this._preCacheMiniMapTiles(exportStart, exportEnd);
-
-        // Progress-bar split between Phase 1 (pre-render) and Phase 2 (encode).
-        // Phase 1 is dominated by per-frame seeking, compositing, plate blur,
-        // and overlay rendering, so in practice it's the slower phase for both
-        // paths. Fast Export's Phase 2 is ~10% of wall time; MediaRecorder's
-        // Phase 2 is typically ~25% because even at realtime capture, there's
-        // no heavy per-frame work being done.
-        // Fast-export is now the default when WebCodecs is available (was
-        // previously opt-in via "fastExportExperimental" toggle). The toggle
-        // still exists as an emergency rollback but defaults to on.
-        const willUseFastExport = window.VideoExportFast?.isSupported()
-            && window.app?.settingsManager?.get('fastExportExperimental') !== false;
-        const phase1PctMax = willUseFastExport ? 90 : 75;
-
-        // Phase 1: Render all frames to ImageData buffer
-        console.log(`Phase 1: Rendering frames to buffer... (progress ends at ${phase1PctMax}%)`);
-        const frameBuffer = [];
-        const renderCanvas = document.createElement('canvas');
-        renderCanvas.width = canvasWidth;
-        renderCanvas.height = canvasHeight;
-        const renderCtx = renderCanvas.getContext('2d', { alpha: false });
-
-        // GPU context-loss surveillance. Hardware-accelerated 2D canvases
-        // fire `contextlost` when Windows TDR (or equivalent) resets the
-        // driver; without this we'd see exports just hang or fail with
-        // opaque errors. Capture a clear signal in the diagnostics ring
-        // buffer + flag on the canvas so callers can react.
-        this._renderCanvasLost = false;
-        renderCanvas.addEventListener('contextlost', (e) => {
-            this._renderCanvasLost = true;
-            console.error(`[GPUContextLost] Phase 1 render canvas — ${canvasWidth}x${canvasHeight} — likely Windows TDR or GPU process crash. frames buffered so far: ${frameBuffer.length}`);
-        });
-        renderCanvas.addEventListener('contextrestored', () => {
-            console.warn('[GPUContextLost] Phase 1 render canvas restored — export already failed if it triggered mid-render');
-        });
-
-        // ---- Fast decoder path (WebCodecs) ----
-        // Pulls frames directly from each camera's mp4 bitstream via WebCodecs
-        // VideoDecoder — no HTML5 video seeking, no readyState polling. Typically
-        // 3–10× faster than the legacy loop. Falls back cleanly if unsupported
-        // or on any error mid-flight.
-        //
-        // Scope limits (take legacy path instead):
-        //   - singleCamera export (layout synthesis path, different wiring)
-        //   - WebM format (fast path emits MP4 only via mp4-muxer; WebM goes
-        //     through the legacy MediaRecorder + VP9 path)
-        //
-        // Plate blur runs cleanly on the fast path with the post-Apr-19
-        // tracker code. The 2026.20.6.1 release process briefly gated the
-        // fast path off when blur was enabled — that turned out to be
-        // unnecessary; the actual bug was that the GitHub/ deployment
-        // folder had a pre-rewrite plateBlur.js cached. Fast path with
-        // blur now produces correctly-blurred MP4s.
-        const fastDecoderAvailable = !singleCamera
-            && format !== 'webm'
-            && window.MultiCameraExportDecoder?.isSupported?.()
-            && window.VideoExportFast?.isSupported?.();
-        let usedFastDecoder = false;
-
-        let fastBlob = null;
-        let fastPathStarted = false;
-        let fastPathError = null;
-        if (fastDecoderAvailable) {
-            try {
-                const fastT0 = performance.now();
-                fastPathStarted = true;
-                fastBlob = await this._renderPhase1FastDecoder({
-                    event: this.videoPlayer.currentEvent,
-                    layoutConfig, cameraMapping,
-                    canvasWidth, canvasHeight,
-                    renderCanvas, renderCtx,
-                    exportStart, exportEnd, fps,
-                    totalFrames, frameInterval,
-                    includeOverlay,
-                    videos
-                });
-                usedFastDecoder = !!fastBlob;
-                if (fastBlob) {
-                    const fastElapsed = (performance.now() - fastT0) / 1000;
-                    console.log(`[FastDecoder] Single-pass encode finished in ${fastElapsed.toFixed(2)}s (${(exportDuration / fastElapsed).toFixed(2)}× realtime)`);
-                }
-            } catch (err) {
-                console.warn('[FastDecoder] Fast path failed:', err);
-                fastBlob = null;
-                usedFastDecoder = false;
-                fastPathError = err;
-            }
-        }
-
-        // If the fast path started but failed partway through, the legacy
-        // HTML5-video path can't reliably take over — our decoder held
-        // file handles, the player's video elements may be in an error
-        // state, and the user would just watch another 10 minutes of
-        // rendering spewing error messages. Surface a clear error instead
-        // and offer the emergency-rollback instructions.
-        if (fastPathError && fastPathStarted) {
-            this.isExporting = false;
-            // Encoder/decoder failures inside the fast path are often
-            // transient — a stale WebCodecs context from earlier in the
-            // session, a GPU encoder that wedged after a previous run,
-            // etc. A page reload clears WebCodecs state entirely and
-            // typically lets the same export succeed on retry, so we
-            // recommend that as the primary remedy. The devtools escape
-            // hatch is kept for power users / support sessions; most
-            // users should just refresh and retry, or report the issue.
-            throw new Error(
-                `Export failed: ${fastPathError.message || fastPathError}\n\n` +
-                `Try this first: refresh the page (Ctrl+Shift+R) and retry the export. ` +
-                `Most encoder errors are transient WebCodecs state that a reload clears.\n\n` +
-                `If it still fails after a reload, please send the diagnostic log to ` +
-                `support@teslacamviewer.com — Settings → Diagnostics → Console Log Capture ` +
-                `has a Copy / Download button that includes the codec and dimensions we need.`
-            );
-        }
-
-        // If the fast single-pass path produced a blob, skip everything else
-        // and just download it. Legacy Phase-2 encode never runs in this case.
-        if (fastBlob) {
-            const url = URL.createObjectURL(fastBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            const labelMap = { front: 'front', back: 'rear', left_repeater: 'left', right_repeater: 'right', left_pillar: 'left-pillar', right_pillar: 'right-pillar' };
-            const camLabel = singleCamera ? `_${labelMap[singleCamera] || singleCamera}` : '';
-            a.download = `TeslaCam_Export${camLabel}_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}_fast.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            this._recordExportSuccess();
-            this.isExporting = false;
-            if (this.onProgress) this.onProgress(100, exportDuration, exportDuration);
-            console.log('[FastDecoder] Export complete');
+    async startExport(options = {}) {
+        const event = this.videoPlayer?.currentEvent;
+        if (!event) {
+            alert('No event loaded to export');
             return;
         }
 
+        const camera = options.camera || 'all';
+        const format = options.format || 'mp4';
+
+        // Check if marks exist
+        const marks = window.app?.clipMarking?.getMarks?.() || {};
+        const inPoint = marks.inPoint != null ? marks.inPoint : null;
+        const outPoint = marks.outPoint != null ? marks.outPoint : null;
+
+        // Gather clips from current clip group or event
+        const clipGroup = event.clipGroups?.[this.videoPlayer.currentClipIndex >= 0 ? this.videoPlayer.currentClipIndex : 0];
+        if (!clipGroup || !clipGroup.clips) {
+            alert('No video clips found for this event');
+            return;
+        }
+
+        const clips = {};
+        for (const [cam, clip] of Object.entries(clipGroup.clips)) {
+            if (clip.url) {
+                clips[cam] = clip.url;
+            }
+        }
+
+        if (Object.keys(clips).length === 0) {
+            alert('Server export requires network/B2 clip URLs. Local file handle upload is not configured.');
+            return;
+        }
+
+        this.isExporting = true;
+        window.app?.disableControls?.();
+
+        // Show export progress UI
+        this._showExportOverlay(camera, format);
+
         try {
-            if (!usedFastDecoder) {
-            for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
-                if (!this.isExporting) {
-                    console.log('Export cancelled during rendering');
-                    return;
-                }
-
-                const absoluteTime = exportStart + (frameNum * frameInterval);
-
-                // Seek to the target frame. The returned bool tells us
-                // whether all cameras fired `seeked` in time, but we draw
-                // unconditionally — the video element always has SOME frame
-                // loaded, and a slightly-stale frame is far better than
-                // skipping the draw and leaving the canvas with the prior
-                // iteration's content (which produced the "first 2 seconds
-                // frozen" artifact users hit).
-                await this.seekAndWaitForFrame(absoluteTime, 3000);
-
-                // Clear canvas
-                renderCtx.fillStyle = '#000000';
-                renderCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-                // Build sorted cameras list outside the draw block so plate
-                // blur can access it later.
-                const sortedCameras = Object.entries(layoutConfig.cameras)
-                    .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
-                    .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
-
-                for (const [camPosition, camConfig] of sortedCameras) {
-                    const actualCameraName = cameraMapping[camPosition];
-                    const video = videos[actualCameraName];
-
-                    if (!video || !video.src || video.readyState < 2) continue;
-
-                    // Use centralized calculation for source/destination rectangles
-                    const { sx, sy, sw, sh, dx, dy, dw, dh } = LayoutRenderer.calculateDrawParams(video, camConfig);
-                    renderCtx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-                }
-
-                // Add watermarks for free tier users
-                if (this._shouldWatermark) {
-                    this.addWatermarksToFrame(renderCtx, layoutConfig);
-                }
-
-                // Check privacy mode setting
-                const settings = window.app?.settingsManager;
-                const privacyMode = settings && settings.get('privacyModeExport') === true;
-
-                // Calculate mini-map rect for label occlusion avoidance (if mini-map will be drawn)
-                let miniMapRect = null;
-                const miniMapInExport = !settings || settings.get('miniMapInExport') !== false;
-                if (!privacyMode && window.app?.miniMapOverlay && miniMapInExport) {
-                    const pos = window.app.miniMapOverlay.position || { x: 80, y: 10 };
-                    const scale = canvasWidth / 1920;
-                    const mapWidth = Math.round(200 * scale);
-                    const mapHeight = Math.round(200 * scale);
-                    miniMapRect = {
-                        x: (pos.x / 100) * canvasWidth,
-                        y: (pos.y / 100) * canvasHeight,
-                        w: mapWidth,
-                        h: mapHeight
-                    };
-                }
-
-                // Calculate scale factor for label overlays (1920px reference)
-                const labelScale = canvasWidth / 1920;
-                // Base font size 18px to match live view proportions
-                const scaledFontSize = Math.round(18 * labelScale);
-
-                // Add camera labels using centralized smart positioning (matches live view)
-                if (this.layoutManager?.renderer) {
-                    this.layoutManager.renderer.addLabelsToCanvas(renderCtx, layoutConfig, {
-                        fontSize: scaledFontSize,
-                        cameraMapping: cameraMapping,
-                        videos: videos,
-                        miniMapRect: miniMapRect
-                    });
-                } else {
-                    // Fallback if no renderer
-                    this.addCameraLabelsForLayout(renderCtx, layoutConfig, cameraMapping);
-                }
-
-                // Add timestamp overlay (skipped in privacy mode)
-                if (includeOverlay && !privacyMode) {
-                    this.addOverlay(renderCtx, canvasWidth, canvasHeight, absoluteTime);
-                }
-
-                // Telemetry HUD and mini-map (shared with all export paths)
-                this._renderTelemetryAndMap(renderCtx, canvasWidth, canvasHeight, absoluteTime, { privacyMode });
-
-                // Store frame as ImageBitmap (more efficient than ImageData)
-                const bitmap = await createImageBitmap(renderCanvas);
-                frameBuffer.push(bitmap);
-
-                // Report render progress (0% to phase1PctMax)
-                if (this.onProgress) {
-                    const progressPercent = ((frameNum + 1) / totalFrames) * phase1PctMax;
-                    this.onProgress(progressPercent, absoluteTime - exportStart, exportDuration);
-                }
-
-                // Yield every 5 frames
-                if (frameNum % 5 === 0) {
-                    await new Promise(r => setTimeout(r, 0));
-                }
-            }
-            } // end of if (!usedFastDecoder) — legacy loop block
-
-            console.log(`Rendered ${frameBuffer.length} frames to buffer`);
-
-            // Phase 2: Play back frames at correct timing and record
-            console.log('Phase 2: Recording from buffer...');
-
-            // ----- Fast Export (Experimental) branch -----
-            // If the user has opted in AND WebCodecs is available, bypass MediaRecorder
-            // entirely and encode the already-rendered frame buffer directly via
-            // VideoEncoder + mp4-muxer. On any failure we fall through to the
-            // MediaRecorder path below, so this is always a strict upgrade.
-            // Fast encode is default-on — user must explicitly set the flag
-            // to false to opt out (emergency rollback path).
-            // Also skip when user asked for WebM — this path outputs MP4
-            // only (mp4-muxer), and bypassing it was the piece that let
-            // MP4 files slip through even after the outer fast-decoder
-            // gate was added.
-            const fastEnabled = window.app?.settingsManager?.get('fastExportExperimental') !== false
-                && format !== 'webm';
-            if (fastEnabled && window.VideoExportFast?.isSupported()) {
-                try {
-                    console.log('[FastExport] Attempting WebCodecs-based encode...');
-                    const wallStart = performance.now();
-                    const fast = new window.VideoExportFast();
-                    const blob = await fast.encodeFrames({
-                        frameBuffer,
-                        fps,
-                        width: canvasWidth,
-                        height: canvasHeight,
-                        onProgress: (done, total) => {
-                            if (this.onProgress) {
-                                const pct = phase1PctMax + (done / total) * (100 - phase1PctMax);
-                                this.onProgress(pct, done / fps, exportDuration);
-                            }
-                        },
-                        onSpeed: (multiplier) => {
-                            console.log(`[FastExport] Encoding at ${multiplier.toFixed(2)}× realtime`);
-                        }
-                    });
-                    const wallElapsed = (performance.now() - wallStart) / 1000;
-                    console.log(`[FastExport] Encoded ${frameBuffer.length} frames in ${wallElapsed.toFixed(2)}s (${(exportDuration / wallElapsed).toFixed(2)}× realtime)`);
-
-                    // Download
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const labelMap = { front: 'front', back: 'rear', left_repeater: 'left', right_repeater: 'right', left_pillar: 'left-pillar', right_pillar: 'right-pillar' };
-                    const camLabel = singleCamera ? `_${labelMap[singleCamera] || singleCamera}` : '';
-                    a.download = `TeslaCam_Export${camLabel}_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}_fast.mp4`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    this._recordExportSuccess();
-
-                    for (const bitmap of frameBuffer) {
-                        if (bitmap && typeof bitmap.close === 'function') bitmap.close();
-                    }
-                    console.log('[FastExport] Export complete');
-                    return;
-                } catch (err) {
-                    console.warn('[FastExport] Failed, falling back to MediaRecorder:', err);
-                    // Fall through to standard path below
-                }
-            }
-            // ----- End Fast Export branch -----
-
-            const playbackCanvas = document.createElement('canvas');
-            playbackCanvas.width = canvasWidth;
-            playbackCanvas.height = canvasHeight;
-            const playbackCtx = playbackCanvas.getContext('2d', { alpha: false });
-
-            // Phase 2 canvas is where MediaRecorder hooks its captureStream —
-            // this is the spot most likely to TDR (allocating hardware encoder
-            // + 20Mbps real-time encode simultaneously). Same listener
-            // pattern as Phase 1 so the diagnostics buffer captures it.
-            this._playbackCanvasLost = false;
-            playbackCanvas.addEventListener('contextlost', () => {
-                this._playbackCanvasLost = true;
-                console.error(`[GPUContextLost] Phase 2 playback canvas — ${canvasWidth}x${canvasHeight} @ ${fps}fps — likely hardware encoder failure or Windows TDR. format=${format} bitrate=20Mbps`);
-            });
-            playbackCanvas.addEventListener('contextrestored', () => {
-                console.warn('[GPUContextLost] Phase 2 playback canvas restored — recording will not recover automatically');
+            const resp = await fetch('/api/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    eventName: event.name,
+                    camera,
+                    format,
+                    clips,
+                    inPoint,
+                    outPoint
+                })
             });
 
-            // Setup MediaRecorder with target framerate
-            const stream = playbackCanvas.captureStream(fps);
-            const mimeType = format === 'mp4'
-                ? (MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=h264')
-                : 'video/webm;codecs=vp9';
-
-            this.mediaRecorder = new MediaRecorder(stream, {
-                mimeType,
-                videoBitsPerSecond: 20_000_000
-            });
-
-            // MediaRecorder fires `error` events when the underlying
-            // hardware encoder hangs/crashes — historically we silently
-            // dropped these and the user just saw "Export failed" with
-            // no context. Now capture codec + dims + timing so support
-            // requests have actionable info.
-            const mrStartTime = performance.now();
-            this.mediaRecorder.onerror = (event) => {
-                const err = event?.error;
-                const errName = err?.name || 'unknown';
-                const errMsg = err?.message || String(err) || 'no message';
-                const elapsedMs = Math.round(performance.now() - mrStartTime);
-                console.error(`[MediaRecorderError] ${errName}: ${errMsg} | mime=${mimeType} ${canvasWidth}x${canvasHeight} @ ${fps}fps bitrate=20Mbps elapsed=${elapsedMs}ms — typically hardware encoder failure or GPU reset`);
-            };
-
-            this.mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    this.recordedChunks.push(e.data);
-                }
-            };
-
-            // Record all frames at correct timing for MediaRecorder
-            // Using real-time playback to ensure proper frame capture
-            await new Promise((resolve, reject) => {
-                this.mediaRecorder.onstop = resolve;
-                this.mediaRecorder.onerror = reject;
-
-                this.mediaRecorder.start();
-
-                let frameIndex = 0;
-                const frameIntervalMs = 1000 / fps;
-                const startTime = performance.now();
-
-                const drawNextFrame = () => {
-                    if (frameIndex >= frameBuffer.length || !this.isExporting) {
-                        // All frames drawn, wait for last frame to be captured
-                        setTimeout(() => {
-                            this.mediaRecorder.stop();
-                        }, frameIntervalMs * 2);
-                        return;
-                    }
-
-                    // Draw frame
-                    playbackCtx.drawImage(frameBuffer[frameIndex], 0, 0);
-
-                    // Report playback progress (phase1PctMax to 100%)
-                    if (this.onProgress) {
-                        const progressPercent = phase1PctMax + ((frameIndex + 1) / frameBuffer.length) * (100 - phase1PctMax);
-                        const elapsedSec = (frameIndex / fps);
-                        this.onProgress(progressPercent, elapsedSec, exportDuration);
-                    }
-
-                    frameIndex++;
-
-                    // Schedule next frame at precise interval
-                    const elapsed = performance.now() - startTime;
-                    const expectedTime = frameIndex * frameIntervalMs;
-                    const delay = Math.max(0, expectedTime - elapsed);
-                    setTimeout(drawNextFrame, delay);
-                };
-
-                drawNextFrame();
-            });
-
-            // Don't silently download a 0-byte file. When the hardware
-            // H.264 encoder is broken on this device (we saw this on a
-            // test PC: VideoEncoder fails with "Unexpected frame format",
-            // MediaRecorder ALSO fails to produce any data, so the blob
-            // ends up empty), the previous code happily saved a 0-byte
-            // .mp4 and reported success. Throw clearly instead so the
-            // user sees an actionable message.
-            const totalChunkBytes = this.recordedChunks.reduce((n, c) => n + (c?.size || 0), 0);
-            if (totalChunkBytes === 0) {
-                throw new Error(
-                    `MediaRecorder produced no data — likely an unstable hardware ` +
-                    `encoder on this device (${mimeType} ${canvasWidth}x${canvasHeight} @ ${fps}fps). ` +
-                    `Try switching the export format to WebM in Settings, ` +
-                    `lowering the export resolution, or updating your graphics driver.`
-                );
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({ error: 'Export failed to start' }));
+                throw new Error(err.error || 'Server rejected export');
             }
 
-            // Create and download the video
-            const blob = new Blob(this.recordedChunks, { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const labelMap = { front: 'front', back: 'rear', left_repeater: 'left', right_repeater: 'right', left_pillar: 'left-pillar', right_pillar: 'right-pillar' };
-            const camLabel = singleCamera ? `_${labelMap[singleCamera] || singleCamera}` : '';
-            const ext = format === 'mp4' ? 'mp4' : 'webm';
-            a.download = `TeslaCam_Export${camLabel}_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            this._recordExportSuccess();
+            const { jobId } = await resp.json();
+            this.currentJobId = jobId;
 
-            // Clean up frame buffer
-            for (const bitmap of frameBuffer) {
-                bitmap.close();
-            }
-
-            console.log('Buffered frame-by-frame export complete!');
-
+            // Poll for job completion
+            await this._pollJob(jobId);
         } catch (error) {
-            console.error('Buffered export error:', error);
-            // Clean up frame buffer
-            for (const bitmap of frameBuffer) {
-                if (bitmap && typeof bitmap.close === 'function') {
-                    bitmap.close();
-                }
+            if (error.name !== 'AbortError') {
+                console.error('[Export] Server export error:', error);
+                alert(`Export failed: ${error.message}`);
             }
-            throw error;
+            this._hideExportOverlay();
+            window.app?.enableControls?.();
         } finally {
             this.isExporting = false;
+            this.currentJobId = null;
         }
     }
 
-    /**
-     * Add camera labels based on layout configuration
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {Object} layoutConfig - Layout configuration from getLayoutConfig()
-     */
-    addCameraLabelsForLayout(ctx, layoutConfig, cameraMapping = null) {
-        const videos = this.videoPlayer.videos;
-        // Use uppercase to match live view CSS styling (text-transform: uppercase)
-        const labelMap = {
-            front: 'FRONT',
-            back: 'BACK',
-            left_repeater: 'LEFT',
-            right_repeater: 'RIGHT',
-            left_pillar: 'LEFT PILLAR',
-            right_pillar: 'RIGHT PILLAR'
-        };
+    _showExportOverlay(camera, format) {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        if (!loadingOverlay || !loadingText) return;
 
-        // Sort cameras by z-index to process in order
-        // Filter out cameras without video sources (e.g., pillar cams on events without them)
-        const sortedCameras = Object.entries(layoutConfig.cameras)
-            .filter(([name, cam]) => {
-                if (!cam.visible || cam.w <= 0 || cam.h <= 0) return false;
-                // Check if this camera actually has a video source
-                const actualCamera = cameraMapping ? (cameraMapping[name] || name) : name;
-                const video = videos[actualCamera];
-                return video && video.src;
-            })
-            .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.position = 'fixed';
+        loadingOverlay.style.top = '0';
+        loadingOverlay.style.left = '0';
+        loadingOverlay.style.right = '0';
+        loadingOverlay.style.bottom = '0';
+        loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        loadingOverlay.style.zIndex = '9999';
 
-        // Get cameras with higher z-index for occlusion checking
-        const camerasByZIndex = sortedCameras.map(([name, cam]) => ({
-            name,
-            x: cam.x,
-            y: cam.y,
-            w: cam.w,
-            h: cam.h,
-            zIndex: cam.zIndex || 1
-        }));
+        const title = format === 'gif' 
+            ? 'Exporting Animated GIF...' 
+            : (camera === 'all' ? 'Exporting 4-Camera Grid...' : `Exporting ${camera} Camera...`);
 
-        for (const [camName, camConfig] of sortedCameras) {
-            // Use mapping to get the actual camera shown in this position
-            const actualCamera = cameraMapping ? (cameraMapping[camName] || camName) : camName;
-            const label = labelMap[actualCamera];
-            const video = videos[actualCamera];
-            const isEnded = video && video.ended;
-            const myZIndex = camConfig.zIndex || 1;
+        loadingText.innerHTML = `
+            <div style="text-align: center;">
+                <div id="exportTitle" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; color: #ffffff;">
+                    ${title}
+                </div>
+                <div id="exportProgress" style="font-size: 0.9rem; color: #a0a0a0;">
+                    Sending to server FFmpeg encoder...
+                </div>
+                <div style="width: 320px; height: 8px; background: #3a3a3a; border-radius: 4px; margin: 1rem auto; overflow: hidden;">
+                    <div id="exportProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4a9eff, #6bb1ff); transition: width 0.3s ease;"></div>
+                </div>
+                <button id="cancelExportBtn" style="margin-top: 1rem; padding: 0.5rem 1.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">
+                    Cancel
+                </button>
+            </div>
+        `;
 
-            // Calculate label dimensions
-            ctx.font = 'bold 18px Arial';
-            const labelWidth = label.length * 12 + 10;
-            const labelHeight = 28;
-            const padding = 10;
+        document.getElementById('cancelExportBtn')?.addEventListener('click', () => {
+            this.cancelExport();
+        });
+    }
 
-            // Get canvas dimensions for bounds clamping
-            const canvasWidth = ctx.canvas.width;
-            const canvasHeight = ctx.canvas.height;
+    _hideExportOverlay() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+            loadingOverlay.style.display = 'none';
+        }
+    }
 
-            // Calculate the VISIBLE portion of this camera (clamped to canvas bounds)
-            // This handles cameras that extend beyond canvas edges
-            const visibleX = Math.max(0, camConfig.x);
-            const visibleY = Math.max(0, camConfig.y);
-            const visibleRight = Math.min(canvasWidth, camConfig.x + camConfig.w);
-            const visibleBottom = Math.min(canvasHeight, camConfig.y + camConfig.h);
-            const visibleW = visibleRight - visibleX;
-            const visibleH = visibleBottom - visibleY;
+    async _pollJob(jobId) {
+        return new Promise((resolve, reject) => {
+            const check = async () => {
+                if (!this.isExporting || this.currentJobId !== jobId) {
+                    return resolve();
+                }
 
-            // Skip if camera has no visible area
-            if (visibleW <= 0 || visibleH <= 0) continue;
+                try {
+                    const res = await fetch(`/api/export/status/${jobId}`);
+                    if (!res.ok) throw new Error('Failed to check export status');
 
-            // Try positions: top-left, top-right, bottom-left, bottom-right
-            // Use VISIBLE bounds, not camera config bounds
-            const positions = [
-                { x: visibleX + padding, y: visibleY + labelHeight + 5, name: 'top-left' },
-                { x: visibleRight - labelWidth - padding, y: visibleY + labelHeight + 5, name: 'top-right' },
-                { x: visibleX + padding, y: visibleBottom - 10, name: 'bottom-left' },
-                { x: visibleRight - labelWidth - padding, y: visibleBottom - 10, name: 'bottom-right' }
-            ];
+                    const job = await res.json();
+                    const progressBar = document.getElementById('exportProgressBar');
+                    const progressEl = document.getElementById('exportProgress');
 
-            // Find first position not occluded by higher z-index cameras
-            let bestPos = positions[0];
-            for (const pos of positions) {
-                const labelRect = {
-                    x: pos.x - 5,
-                    y: pos.y - 22,
-                    w: labelWidth,
-                    h: labelHeight
-                };
+                    if (job.status === 'encoding' || job.status === 'starting') {
+                        const pct = Math.max(5, job.percent || 0);
+                        if (progressBar) progressBar.style.width = `${pct}%`;
+                        if (progressEl) progressEl.textContent = `Encoding with FFmpeg: ${pct}%`;
+                        this._pollTimer = setTimeout(check, 600);
+                    } else if (job.status === 'completed') {
+                        if (progressBar) progressBar.style.width = '100%';
+                        if (progressEl) progressEl.textContent = 'Encoding complete! Downloading...';
 
-                // Check if this position is covered by a higher z-index camera
-                let isOccluded = false;
-                for (const cam of camerasByZIndex) {
-                    if (cam.name === camName) continue;
-                    if ((cam.zIndex || 1) <= myZIndex) continue;
-
-                    // Check rectangle overlap
-                    if (labelRect.x < cam.x + cam.w &&
-                        labelRect.x + labelRect.w > cam.x &&
-                        labelRect.y < cam.y + cam.h &&
-                        labelRect.y + labelRect.h > cam.y) {
-                        isOccluded = true;
-                        break;
+                        // Trigger download
+                        this._downloadFile(`/api/export/download/${jobId}`, job.filename);
+                        this._showComplete(job.filename, `/api/export/download/${jobId}`);
+                        resolve();
+                    } else if (job.status === 'error') {
+                        throw new Error(job.error || 'Server FFmpeg encoding failed');
                     }
+                } catch (e) {
+                    reject(e);
                 }
-
-                if (!isOccluded) {
-                    bestPos = pos;
-                    break;
-                }
-            }
-
-            const x = bestPos.x;
-            const y = bestPos.y;
-
-            // Background - dark red if video ended, black otherwise
-            ctx.fillStyle = isEnded ? 'rgba(139, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(x - 5, y - 22, labelWidth, labelHeight);
-
-            // Text
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(label, x, y);
-        }
-    }
-
-    /**
-     * Add overlay to frame
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {number} width
-     * @param {number} height
-     * @param {number} absoluteTime Absolute time in event (seconds from start)
-     */
-    addOverlay(ctx, width, height, absoluteTime, options = {}) {
-        const { camera = null } = options;
-        const event = this.videoPlayer.currentEvent;
-        if (!event) return;
-
-        // Resolve clipIndex + timeInClip from absoluteTime + cached clip
-        // durations. Previously we read `videoPlayer.currentClipIndex` and
-        // `videoPlayer.getCurrentTime()` here, which works on the legacy
-        // export path (every frame seeks the player). But the WebCodecs
-        // fast-decoder path doesn't drive the player at all — currentTime
-        // stays frozen at where it was before export started, so the
-        // exported overlay's timecode stopped rolling. Same fix pattern
-        // as _renderTelemetryAndMap got during the 2026.20.5.1 merge.
-        let clipIndex = 0;
-        let currentTimeInClip = 0;
-        const durations = this.videoPlayer?.cachedClipDurations || [];
-        if (durations.length > 0) {
-            let preceding = 0;
-            let found = false;
-            for (let i = 0; i < durations.length; i++) {
-                const d = durations[i] || 60;
-                if (absoluteTime < preceding + d) {
-                    clipIndex = i;
-                    currentTimeInClip = Math.max(0, absoluteTime - preceding);
-                    found = true;
-                    break;
-                }
-                preceding += d;
-            }
-            if (!found) {
-                // Beyond the last clip's end — clamp to last clip's tail
-                clipIndex = durations.length - 1;
-                currentTimeInClip = durations[clipIndex] || 60;
-            }
-        } else {
-            // No cached durations (rare; legacy player init race). Fall
-            // back to the player's live state so we degrade to the old
-            // behavior instead of drawing a 0:00 clock.
-            clipIndex = this.videoPlayer.currentClipIndex || 0;
-            currentTimeInClip = this.videoPlayer.currentTime || 0;
-        }
-
-        const clipGroup = event.clipGroups[clipIndex];
-        if (!clipGroup) return;
-
-        ctx.save();
-
-        // Cache clip start time to avoid re-parsing every frame
-        if (!this.cachedOverlayData || this.cachedOverlayData.clipIndex !== clipIndex) {
-            const clip = (camera ? clipGroup.clips[camera] : null) || clipGroup.clips.front || Object.values(clipGroup.clips)[0];
-            if (!clip) { ctx.restore(); return; }
-
-            const filename = clip.name || clip.fileHandle?.name;
-            if (!filename) { ctx.restore(); return; }
-
-            const timestampMatch = filename.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/);
-            if (!timestampMatch) { ctx.restore(); return; }
-
-            const [, year, month, day, hour, minute, second] = timestampMatch;
-            const clipStartTime = new Date(
-                parseInt(year), parseInt(month) - 1, parseInt(day),
-                parseInt(hour), parseInt(minute), parseInt(second)
-            );
-
-            const totalDuration = this.cachedTotalDuration;
-            const sentryMarkerTime = totalDuration - 60;
-            const isSentryEvent = event.type && (event.type === 'Sentry' || event.type.includes('Sentry'));
-
-            this.cachedOverlayData = { clipIndex, clipStartTime, sentryMarkerTime, isSentryEvent };
-        }
-
-        const { clipStartTime, sentryMarkerTime, isSentryEvent } = this.cachedOverlayData;
-        const actualTimestamp = new Date(clipStartTime.getTime() + (currentTimeInClip * 1000));
-
-        const dateStr = actualTimestamp.toLocaleDateString();
-        let hours = actualTimestamp.getHours();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
-        const hoursStr = hours.toString().padStart(2, '0');
-        const minutes = actualTimestamp.getMinutes().toString().padStart(2, '0');
-        const seconds = actualTimestamp.getSeconds().toString().padStart(2, '0');
-        const frameNumber = Math.floor((currentTimeInClip % 1) * 30).toString().padStart(2, '0');
-        const timestampStr = `${dateStr} ${hoursStr}:${minutes}:${seconds}.${frameNumber} ${ampm}`;
-
-        const isPastMarker = absoluteTime >= sentryMarkerTime;
-        const isSentry = isSentryEvent && isPastMarker;
-
-        // Debug logging (throttled to every ~2 seconds)
-        if (!this.overlayLogCounter) this.overlayLogCounter = 0;
-        this.overlayLogCounter++;
-        if (this.overlayLogCounter % 60 === 1) {
-            console.log('[EXPORT OVERLAY] Time:', absoluteTime.toFixed(2), '| Marker:', sentryMarkerTime.toFixed(2), '| Past?', isPastMarker, '| Showing:', isSentry ? 'YES - RED SENTRY' : 'no');
-        }
-
-        // Scale overlay proportionally to canvas width so single-camera (1280w) and
-        // multi-camera (1920w+) exports have visually consistent bar/font sizes.
-        const scale = width / 1920;
-        const barHeight = Math.round(44 * scale);
-        const margin = Math.round(12 * scale);
-        const fontBrand = Math.round(20 * scale);
-        const fontTimestamp = Math.round(20 * scale);
-        const fontSentry = Math.round(22 * scale);
-
-        const showBranding = this.shouldShowBranding();
-
-        ctx.textBaseline = 'middle';
-
-        if (showBranding) {
-            // Full-width banner mode (free users + Pro users who kept branding on)
-            const y = height - barHeight;
-            const cy = y + barHeight / 2;
-
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(0, y, width, barHeight);
-
-            // Red "Sentry" indicator in lower left (only when past marker)
-            if (isSentry) {
-                ctx.font = `bold ${fontSentry}px Arial`;
-                ctx.fillStyle = '#ff0000';
-                ctx.textAlign = 'left';
-                ctx.fillText('Sentry', margin, cy);
-            }
-
-            // TeslaCamViewer.com branding (centered)
-            ctx.font = `bold ${fontBrand}px Arial`;
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.fillText('TeslaCamViewer.com', width / 2, cy);
-
-            // Timestamp (right)
-            ctx.font = `bold ${fontTimestamp}px Arial`;
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'right';
-            ctx.fillText(timestampStr, width - margin, cy);
-        } else {
-            // Pro-branding-off mode: no full-width bar, individual pill backgrounds
-            // behind each corner element. Keeps the video visible edge-to-edge
-            // while preserving readability of metadata over any scene.
-            const pillPadX = Math.round(12 * scale);
-            const pillPadY = Math.round(6 * scale);
-            const pillRadius = Math.round(8 * scale);
-            const pillInset = Math.round(14 * scale); // inset from canvas edges
-            const pillBg = 'rgba(0, 0, 0, 0.65)';
-
-            const drawPill = (text, fontSize, color, alignX) => {
-                ctx.font = `bold ${fontSize}px Arial`;
-                const metrics = ctx.measureText(text);
-                const measuredH = (metrics.actualBoundingBoxAscent || 0) + (metrics.actualBoundingBoxDescent || 0);
-                const textH = measuredH > 0 ? measuredH : fontSize;
-                const pillH = textH + pillPadY * 2;
-                const pillW = Math.ceil(metrics.width) + pillPadX * 2;
-                const pillX = alignX === 'left' ? pillInset : width - pillInset - pillW;
-                const pillY = height - pillInset - pillH;
-
-                ctx.fillStyle = pillBg;
-                ctx.beginPath();
-                ctx.roundRect(pillX, pillY, pillW, pillH, pillRadius);
-                ctx.fill();
-
-                ctx.fillStyle = color;
-                ctx.textAlign = 'left';
-                ctx.fillText(text, pillX + pillPadX, pillY + pillH / 2);
             };
 
-            if (isSentry) {
-                drawPill('Sentry', fontSentry, '#ff3030', 'left');
-            }
-            drawPill(timestampStr, fontTimestamp, '#ffffff', 'right');
-        }
-
-        ctx.restore();
+            check();
+        });
     }
 
-    /**
-     * Format time in MM:SS
-     * @param {number} seconds
-     * @returns {string}
-     */
-    formatTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * Get formatted timestamp for filename
-     * @returns {string}
-     */
-    getFormattedTimestamp() {
-        const event = this.videoPlayer.currentEvent;
-        if (event && event.timestamp) {
-            const eventDate = new Date(event.timestamp);
-            return eventDate.toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        }
-
-        const now = new Date();
-        return now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    }
-
-    /**
-     * Gate an export at start. Returns true to proceed, false if the
-     * limit modal was shown and the caller should bail out. Must be
-     * called from every public export entrypoint (exportFrameByFrame,
-     * startExport, exportAsGif) — the UI today only uses the first,
-     * and the cap was leaking because that path didn't check. Pass the
-     * current event's compoundKey so soft lockout (re-exports of
-     * already-exported events) still goes through.
-     */
-    async _checkExportAccess() {
-        try {
-            const sessionManager = window.app?.sessionManager;
-            if (!sessionManager) return true;
-            const ev = this.videoPlayer?.currentEvent;
-            const exportContextId = ev?.compoundKey || ev?.name || null;
-            const access = await sessionManager.checkAccess('exportEvent', exportContextId);
-            if (!access.allowed) {
-                sessionManager.showLimitModal(access.type || 'export');
-                return false;
-            }
-            // Toast on first export of the day. Skip on already-counted
-            // re-exports (access.reviewed === true).
-            if (!access.reviewed && typeof window.app?._maybeShowExportWarning === 'function') {
-                window.app._maybeShowExportWarning(access);
-            }
-            return true;
-        } catch (e) {
-            console.warn('[VideoExport] checkAccess failed, allowing export:', e);
-            return true; // Fail open
-        }
-    }
-
-    /**
-     * Mark this event as exported in session usage. Must be called from
-     * every successful download branch — fast WebCodecs, buffered fast,
-     * MediaRecorder, GIF — or the free-tier export cap silently leaks
-     * (user could export unlimited times).
-     */
-    _recordExportSuccess() {
-        try {
-            const sessionManager = window.app?.sessionManager;
-            if (!sessionManager) return;
-            const event = this.videoPlayer?.currentEvent;
-            const eventId = event?.compoundKey || event?.name || 'unknown';
-            sessionManager.recordEventExport(eventId);
-        } catch (e) {
-            console.warn('[VideoExport] Unable to record export:', e);
-        }
-    }
-
-    /**
-     * Download blob as file
-     * @param {Blob} blob
-     * @param {string} filename
-     */
-    downloadBlob(blob, filename) {
-        const url = URL.createObjectURL(blob);
+    _downloadFile(url, filename) {
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename;
+        a.download = filename || 'TeslaCam_Export.mp4';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
-    /**
-     * Cancel ongoing export
-     */
-    cancelExport() {
-        if (!this.isExporting) return;
+    _showComplete(filename, downloadUrl) {
+        const loadingText = document.getElementById('loadingText');
+        if (!loadingText) return;
 
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('EXPORT CANCELLED BY USER');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        loadingText.innerHTML = `
+            <div style="text-align: center; color: white;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎉</div>
+                <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem;">Export Complete!</div>
+                <div style="color: #a0a0a0; font-size: 0.9rem; margin-bottom: 1.5rem;">${filename} has been saved.</div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <a href="${downloadUrl}" download="${filename}" style="background: #4a9eff; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Download Again</a>
+                    <button id="exportDoneBtn" style="background: #333; color: white; border: 1px solid #555; padding: 10px 24px; border-radius: 6px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        `;
 
-        // Mark as not exporting first to stop any loops
-        this.isExporting = false;
+        document.getElementById('exportDoneBtn')?.addEventListener('click', () => {
+            this._hideExportOverlay();
+            window.app?.enableControls?.();
+        });
+    }
 
-        // Abort GIF encoder if active
-        if (this.gifEncoder) {
-            console.log('Aborting GIF encoder...');
+    async cancelExport() {
+        if (this._pollTimer) {
+            clearTimeout(this._pollTimer);
+            this._pollTimer = null;
+        }
+
+        if (this.currentJobId) {
             try {
-                this.gifEncoder.abort();
-            } catch (e) {
-                console.log('GIF abort error (may already be finished):', e.message);
-            }
-            this.gifEncoder = null;
+                await fetch(`/api/export/cancel/${this.currentJobId}`, { method: 'POST' });
+            } catch (e) {}
         }
 
-        // Handle video/webm export cancellation
-        if (this.mediaRecorder) {
-            const videos = this.videoPlayer.videos;
-            console.log('Current State at Cancel:');
-            console.log('  - MediaRecorder state:', this.mediaRecorder.state);
-            console.log('  - Chunks collected:', this.recordedChunks.length);
-            console.log('  - Current clip:', this.videoPlayer.currentClipIndex);
-            console.log('  - Time in clip:', this.videoPlayer.currentTime.toFixed(2) + 's');
-
-            console.log('\n  Video ready states:');
-            Object.entries(videos).forEach(([name, video]) => {
-                console.log('    ' + name + ':', video.readyState, '| paused:', video.paused, '| time:', video.currentTime.toFixed(2) + 's');
-            });
-            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
-            // Stop the render interval
-            if (this.renderIntervalId) {
-                clearInterval(this.renderIntervalId);
-                this.renderIntervalId = null;
-                console.log('Render interval stopped');
-            }
-
-            // Set up cleanup handler before stopping
-            this.mediaRecorder.onstop = () => {
-                console.log('Export cancelled, cleaning up...');
-                this.recordedChunks = [];
-                this.mediaRecorder = null;
-
-                // Reject the promise if it exists
-                if (this.exportReject) {
-                    this.exportReject(new Error('Export cancelled by user'));
-                }
-            };
-
-            // Stop the recorder
-            if (this.mediaRecorder.state === 'recording') {
-                this.mediaRecorder.stop();
-            }
-        }
-
-        // Stop playback
-        this.videoPlayer.pause();
-
-        // Reject export promise if exists
-        if (this.exportReject) {
-            this.exportReject(new Error('Export cancelled by user'));
-        }
-    }
-
-    // ==================== Session/Watermark Methods ====================
-
-    /**
-     * Check if watermarks should be applied (async, sets flag for render loop)
-     */
-    async _checkWatermark() {
-        const sessionManager = window.app?.sessionManager;
-        if (sessionManager) {
-            this._shouldWatermark = await sessionManager.shouldWatermark();
-            console.log('[VideoExport] _shouldWatermark set to:', this._shouldWatermark);
-        } else {
-            // No session manager, default to watermark
-            this._shouldWatermark = true;
-            console.log('[VideoExport] No sessionManager, defaulting _shouldWatermark to true');
-        }
-    }
-
-    /**
-     * Pre-cache mini-map tiles for export range
-     * Shared setup used by all export methods to ensure map tiles render correctly
-     * @param {number} exportStart - Start time in seconds
-     * @param {number} exportEnd - End time in seconds
-     */
-    async _preCacheMiniMapTiles(exportStart, exportEnd) {
-        const settings = window.app?.settingsManager;
-        const miniMapInExport = !settings || settings.get('miniMapInExport') !== false;
-        if (!window.app?.miniMapOverlay || !miniMapInExport) return;
-
-        // The user must have the mini-map visible on screen (Show Mini-Map)
-        // for it to appear in the export. Otherwise we'd include an overlay
-        // they explicitly didn't opt into.
-        if (!window.app.miniMapOverlay.isVisible) {
-            console.log('[Export] Mini-map not visible on screen — skipping export overlay');
-            return;
-        }
-
-        const eventGps = this._getEventFallbackGps();
-        if (!eventGps) return;
-
-        console.log('[Export] Pre-caching mini-map tiles...');
-        window.app.miniMapOverlay.clearTrail();
-        try {
-            const positions = [{ lat: eventGps.lat, lng: eventGps.lng }];
-            await window.app.miniMapOverlay.preCacheTilesForExport(positions);
-            console.log(`[Export] Pre-cached tiles for ${positions.length} position(s)`);
-        } catch (e) {
-            console.warn('[Export] Unable to pre-cache mini-map tiles:', e);
-        }
-    }
-
-    /**
-     * Pull the single fallback GPS point from the current event's event.json.
-     * @returns {{lat:number, lng:number}|null}
-     */
-    _getEventFallbackGps() {
-        const meta = window.app?.currentEvent?.metadata;
-        if (!meta?.est_lat || !meta?.est_lon) return null;
-        const lat = parseFloat(meta.est_lat);
-        const lng = parseFloat(meta.est_lon);
-        if (!isFinite(lat) || !isFinite(lng)) return null;
-        if (Math.abs(lat) < 0.001 || Math.abs(lng) < 0.001) return null;
-        return { lat, lng };
-    }
-
-    /**
-     * Render mini-map overlay to export canvas
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {number} canvasWidth
-     * @param {number} canvasHeight
-     * @param {number} absoluteTime
-     * @param {Object} [options]
-     * @param {boolean} [options.privacyMode=false]
-     */
-    _renderTelemetryAndMap(ctx, canvasWidth, canvasHeight, absoluteTime, options = {}) {
-        const { privacyMode = false } = options;
-        if (privacyMode) return;
-
-        const settings = window.app?.settingsManager;
-        const map = window.app?.miniMapOverlay;
-
-        const mapEnabledInSettings = !settings || settings.get('miniMapInExport') !== false;
-        const mapOn = !!map && map.isVisible !== false && mapEnabledInSettings;
-
-        if (!mapOn) return;
-
-        const mirror = options.mirror || null;
-        const mScaleX = options.mirrorScaleX || 1;
-        const mScaleY = options.mirrorScaleY || 1;
-
-        const event = this.videoPlayer?.currentEvent;
-        if (event?.metadata?.est_lat != null && event?.metadata?.est_lon != null) {
-            const lat = Number(event.metadata.est_lat);
-            const lng = Number(event.metadata.est_lon);
-            map.updatePositionForExport(lat, lng, 0);
-        }
-
-        const drawOpts = {};
-        if (mirror?.map) {
-            drawOpts.pixelRect = {
-                x: mirror.map.x * mScaleX,
-                y: mirror.map.y * mScaleY,
-                w: mirror.map.w * mScaleX,
-                h: mirror.map.h * mScaleY
-            };
-        }
-        map.drawToCanvas(ctx, canvasWidth, canvasHeight, drawOpts);
-    }
-
-    /**
-     * Check if branding should be shown in the banner overlay
-     * Licensed users can disable branding via settings; free users always see branding
-     * @returns {boolean} True if branding should be shown
-     */
-    shouldShowBranding() {
-        // Free users always see branding — detected via _shouldWatermark, which is
-        // populated by _checkWatermark() at export start from sessionManager.shouldWatermark().
-        // (sessionManager has no hasValidLicense() method — that was a stale reference
-        // that always returned undefined, forcing branding on for Pro users too.)
-        if (this._shouldWatermark !== false) {
-            return true;
-        }
-
-        // Pro users can opt out via the "Show TeslaCamViewer.com branding" toggle
-        const settings = window.app?.settingsManager;
-        return settings?.get('showBrandingInExport') !== false;
-    }
-
-    /**
-     * Add watermarks to each camera in the frame
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {Object} layoutConfig
-     */
-    addWatermarksToFrame(ctx, layoutConfig) {
-        const watermarkText = 'TeslaCamViewer.com - Unlicensed';
-
-        if (layoutConfig && layoutConfig.cameras) {
-            for (const [cameraName, camConfig] of Object.entries(layoutConfig.cameras)) {
-                if (!camConfig.visible || camConfig.w <= 0 || camConfig.h <= 0) continue;
-                this.drawWatermarkOnRegion(ctx, camConfig.x, camConfig.y, camConfig.w, camConfig.h, watermarkText);
-            }
-        }
-    }
-
-    /**
-     * Draw diagonal watermark on a region
-     * @param {CanvasRenderingContext2D} ctx
-     * @param {number} x - Region x
-     * @param {number} y - Region y
-     * @param {number} w - Region width
-     * @param {number} h - Region height
-     * @param {string} text - Watermark text
-     */
-    drawWatermarkOnRegion(ctx, x, y, w, h, text) {
-        ctx.save();
-
-        // Move to center of region
-        const centerX = x + w / 2;
-        const centerY = y + h / 2;
-
-        ctx.translate(centerX, centerY);
-        ctx.rotate(-Math.PI / 6); // -30 degrees
-
-        // Calculate font size based on region size
-        const fontSize = Math.max(16, Math.min(w, h) / 12);
-        ctx.font = `bold ${fontSize}px Arial`;
-
-        // Measure text
-        const textMetrics = ctx.measureText(text);
-        const textWidth = textMetrics.width;
-
-        // Draw text shadow for better visibility
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillText(text, -textWidth / 2 + 2, 2);
-
-        // Draw semi-transparent white text
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.fillText(text, -textWidth / 2, 0);
-
-        ctx.restore();
-    }
-
-    // ==================== GIF Export Methods ====================
-
-    /**
-     * Export as animated GIF
-     * Uses gif.js library for encoding
-     * Limited to 30 seconds at 10fps to keep file size reasonable
-     */
-    async exportAsGif(options = {}) {
-        const {
-            startTime = null,
-            endTime = null,
-            includeOverlay = true,
-            onProgress = null,
-            singleCamera = null,
-            _accessChecked = false
-        } = options;
-
-        const GIF_FPS = 20;  // Smoother motion — was 10, bumped for feel
-        const GIF_MAX_DURATION = 30;  // Max 30 seconds
-        const GIF_QUALITY = 10;  // gif.js quality (1-30, lower is better)
-
-        console.log('Starting GIF export...');
-
-        // Free-tier gate. Skipped when called via exportFrameByFrame
-        // since that path already gated us (avoids double-modal).
-        if (!_accessChecked) {
-            const accessOK = await this._checkExportAccess();
-            if (!accessOK) return;
-        }
-
-        if (this.isExporting) {
-            throw new Error('Export already in progress');
-        }
-
-        // Check if gif.js is available
-        if (typeof GIF === 'undefined') {
-            throw new Error('GIF library not loaded. Please refresh the page and try again.');
-        }
-
-        this.isExporting = true;
-        this.exportWallStartTime = Date.now();
-        this.onProgress = onProgress;
-
-        const videos = this.videoPlayer.videos;
-        const primaryCamera = singleCamera || 'front';
-        if (!videos[primaryCamera] || !videos[primaryCamera].src) {
-            this.isExporting = false;
-            throw new Error(`No video loaded${singleCamera ? ` for ${singleCamera}` : ''}`);
-        }
-
-        // Pause any playback
-        await this.videoPlayer.pause();
-
-        try {
-            // Calculate total duration
-            if (!this.cachedTotalDuration) {
-                this.cachedTotalDuration = await this.videoPlayer.getTotalDuration();
-            }
-
-            // Determine export range (cap at 30 seconds)
-            const exportStart = startTime !== null ? startTime : 0;
-            let exportEnd = endTime !== null ? endTime : this.cachedTotalDuration;
-            let exportDuration = exportEnd - exportStart;
-
-            if (exportDuration > GIF_MAX_DURATION) {
-                console.log(`GIF export capped from ${exportDuration.toFixed(2)}s to ${GIF_MAX_DURATION}s`);
-                exportEnd = exportStart + GIF_MAX_DURATION;
-                exportDuration = GIF_MAX_DURATION;
-            }
-
-            const frameInterval = 1 / GIF_FPS;
-            const totalFrames = Math.ceil(exportDuration * GIF_FPS);
-
-            console.log(`GIF export: ${totalFrames} frames @ ${GIF_FPS}fps, ${exportStart.toFixed(2)}s to ${exportEnd.toFixed(2)}s`);
-
-            // Get video dimensions
-            const refVideo = videos[primaryCamera];
-            const videoWidth = refVideo.videoWidth || 1280;
-            const videoHeight = refVideo.videoHeight || 960;
-
-            // Get layout config — override to single-camera fullscreen if requested
-            let layoutConfig;
-            if (singleCamera) {
-                const outW = videoWidth;
-                const outH = videoHeight;
-                layoutConfig = {
-                    canvasWidth: outW,
-                    canvasHeight: outH,
-                    cameras: {
-                        [singleCamera]: {
-                            x: 0, y: 0, w: outW, h: outH,
-                            visible: true, zIndex: 1,
-                            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-                            objectFit: 'contain'
-                        }
-                    }
-                };
-            } else {
-                layoutConfig = this.getLayoutConfig(videoWidth, videoHeight);
-            }
-            // Apply user's Export → Quality preset first, then GIF always
-            // caps at 800px wide on top of that (to keep GIF file size sane
-            // even when the user picked "Full").
-            layoutConfig = this._applyResolutionScale(layoutConfig);
-            const canvasWidth = layoutConfig.canvasWidth || 1920;
-            const canvasHeight = layoutConfig.canvasHeight || 1080;
-
-            // Scale down for GIF (max 800px wide to keep file size reasonable)
-            const gifScale = Math.min(1, 800 / canvasWidth);
-            const gifWidth = Math.round(canvasWidth * gifScale);
-            const gifHeight = Math.round(canvasHeight * gifScale);
-
-            console.log(`GIF dimensions: ${gifWidth}x${gifHeight} (scale: ${gifScale.toFixed(2)})`);
-
-            // Create canvas for rendering frames
-            const canvas = document.createElement('canvas');
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-            const ctx = canvas.getContext('2d');
-
-            // Create scaled canvas for GIF
-            const gifCanvas = document.createElement('canvas');
-            gifCanvas.width = gifWidth;
-            gifCanvas.height = gifHeight;
-            const gifCtx = gifCanvas.getContext('2d');
-
-            // Get camera mapping (single-camera mode bypasses position remapping)
-            const cameraMapping = singleCamera
-                ? { [singleCamera]: singleCamera }
-                : this.buildCameraMapping();
-
-            // Capture live DOM overlay state once for the GIF pass. Same
-            // mirror system as MP4/WebM — gives labels + HUD + mini-map at
-            // 1:1 parity with the main UI.
-            const gifMirror = this._captureLiveOverlayMirror();
-
-            // Pre-cache mini-map tiles (shared method)
-            await this._preCacheMiniMapTiles(exportStart, exportEnd);
-
-            // Check watermark once
-            await this._checkWatermark();
-
-            // Initialize gif.js
-            const gif = new GIF({
-                workers: 2,
-                quality: GIF_QUALITY,
-                width: gifWidth,
-                height: gifHeight,
-                workerScript: 'vendor/gif.worker.js'
-            });
-
-            // Store reference for cancellation
-            this.gifEncoder = gif;
-
-            // Report initial progress (use same format as video export)
-            if (this.onProgress) {
-                this.onProgress(0, 0, exportDuration, 0);
-            }
-
-            // Capture frames
-            for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
-                if (!this.isExporting) {
-                    console.log('GIF export cancelled');
-                    throw new Error('Export cancelled by user');
-                }
-
-                const frameTime = exportStart + (frameIndex * frameInterval);
-
-                // Seek to frame time
-                await this.videoPlayer.seekToEventTime(frameTime, false);
-
-                // Wait for seek to complete and videos to be fully ready
-                const waitForVideosReady = async (maxWait = 800) => {
-                    const startWait = Date.now();
-
-                    // First, wait for all videos to stop seeking
-                    while (Date.now() - startWait < maxWait) {
-                        let allDoneSeeking = true;
-                        let allHaveData = true;
-
-                        for (const video of Object.values(videos)) {
-                            if (!video || !video.src) continue;
-                            if (video.seeking) {
-                                allDoneSeeking = false;
-                                break;
-                            }
-                            if (video.readyState < 4) {
-                                allHaveData = false;
-                            }
-                        }
-
-                        if (allDoneSeeking && allHaveData) {
-                            break;
-                        }
-
-                        await new Promise(r => setTimeout(r, 25));
-                    }
-
-                    // Crucial: Wait for video decoder to actually update the displayed frame
-                    // This fixed delay is necessary because readyState can be 4 before
-                    // the visual frame is actually updated in the video element
-                    await new Promise(r => setTimeout(r, 100));
-                };
-
-                await waitForVideosReady();
-
-                // Double requestAnimationFrame to ensure paint
-                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-                // Final verification: if any video is still seeking, wait more
-                let retryCount = 0;
-                while (retryCount < 3) {
-                    let needsRetry = false;
-                    for (const video of Object.values(videos)) {
-                        if (!video || !video.src) continue;
-                        if (video.seeking || video.readyState < 3) {
-                            needsRetry = true;
-                            break;
-                        }
-                    }
-                    if (!needsRetry) break;
-                    await new Promise(r => setTimeout(r, 50));
-                    retryCount++;
-                }
-
-                // Clear canvas
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-                // Draw all cameras sorted by z-index (lower z-index first, so higher ones are on top)
-                const sortedCameras = Object.entries(layoutConfig.cameras)
-                    .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
-                    .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
-
-                for (const [camName, camConfig] of sortedCameras) {
-                    const videoSource = cameraMapping[camName] || camName;
-                    const video = videos[videoSource];
-
-                    // Skip cameras without video sources (e.g., pillar cams on events without them)
-                    if (!video || !video.src) continue;
-
-                    // Only draw if video has enough data
-                    if (video.readyState >= 3 && !video.seeking) {
-                        // Use centralized calculation for source/destination rectangles
-                        const { sx, sy, sw, sh, dx, dy, dw, dh } = LayoutRenderer.calculateDrawParams(video, camConfig);
-                        ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-                    }
-                }
-
-                // Check settings for overlays
-                const settings = window.app?.settingsManager;
-                const privacyMode = settings && settings.get('privacyModeExport') === true;
-
-                // Camera labels — the GIF path previously didn't render any
-                // labels at all. Now mirrors the live DOM same as MP4.
-                if (gifMirror) {
-                    this._drawLabelsFromMirror(ctx, gifMirror, canvasWidth, canvasHeight);
-                }
-
-                // Add overlays if enabled
-                if (includeOverlay && !privacyMode) {
-                    // Add banner overlay using the existing addOverlay method
-                    this.addOverlay(ctx, canvasWidth, canvasHeight, frameTime);
-                }
-
-                // Telemetry HUD and mini-map — pass the mirror so positions
-                // match the live DOM exactly.
-                const gifMScaleX = gifMirror ? canvasWidth / gifMirror.grid.w : 1;
-                const gifMScaleY = gifMirror ? canvasHeight / gifMirror.grid.h : 1;
-                this._renderTelemetryAndMap(ctx, canvasWidth, canvasHeight, frameTime, {
-                    privacyMode, mirror: gifMirror,
-                    mirrorScaleX: gifMScaleX, mirrorScaleY: gifMScaleY
-                });
-
-                // Add watermarks for free tier
-                if (this._shouldWatermark) {
-                    this.addWatermarksToFrame(ctx, layoutConfig);
-                }
-
-                // Scale down to GIF canvas
-                gifCtx.drawImage(canvas, 0, 0, gifWidth, gifHeight);
-
-                // Add frame to GIF
-                gif.addFrame(gifCtx, { copy: true, delay: Math.round(1000 / GIF_FPS) });
-
-                // Update progress (use same format as video export)
-                if (this.onProgress) {
-                    const progressPercent = ((frameIndex + 1) / totalFrames) * 70; // 70% for capturing
-                    const elapsedTime = frameTime - exportStart;
-                    this.onProgress(progressPercent, elapsedTime, exportDuration, 0);
-                }
-            }
-
-            // Render GIF
-            console.log('Encoding GIF...');
-
-            if (this.onProgress) {
-                this.onProgress(70, exportDuration, exportDuration, 0);
-            }
-
-            return new Promise((resolve, reject) => {
-                gif.on('progress', (p) => {
-                    if (this.onProgress) {
-                        const progressPercent = 70 + (p * 30); // Last 30% for encoding
-                        this.onProgress(progressPercent, exportDuration, exportDuration, 0);
-                    }
-                });
-
-                gif.on('finished', (blob) => {
-                    // Check if export was cancelled - don't show completion
-                    if (!this.isExporting && this.gifEncoder === null) {
-                        console.log('GIF export was cancelled, ignoring finished event');
-                        reject(new Error('Export cancelled by user'));
-                        return;
-                    }
-
-                    console.log('GIF export complete, size:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
-
-                    // Download the GIF
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `TeslaCam_Export_${this.getFormattedTimestamp()}.gif`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    this._recordExportSuccess();
-
-                    this.isExporting = false;
-                    this.gifEncoder = null;
-
-                    if (this.onProgress) {
-                        this.onProgress(100, exportDuration, exportDuration, 0);
-                    }
-
-                    resolve({ success: true, size: blob.size });
-                });
-
-                gif.on('error', (error) => {
-                    console.error('GIF encoding error:', error);
-                    this.isExporting = false;
-                    reject(error);
-                });
-
-                gif.render();
-            });
-
-        } catch (error) {
-            console.error('GIF export error:', error);
-            this.isExporting = false;
-            throw error;
-        }
-    }
-
-    /**
-     * Get formatted timestamp for a specific frame time
-     * @param {number} absoluteTime - Time in seconds from start of event
-     * @returns {string} Formatted timestamp string
-     */
-    getTimestampForFrame(absoluteTime) {
-        const event = this.videoPlayer.currentEvent;
-        if (!event?.timestamp) return '';
-
-        try {
-            const baseTime = new Date(event.timestamp);
-            const frameTime = new Date(baseTime.getTime() + (absoluteTime * 1000));
-            return frameTime.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            });
-        } catch {
-            return '';
-        }
+        this.isExporting = false;
+        this._hideExportOverlay();
+        window.app?.enableControls?.();
     }
 }
 
