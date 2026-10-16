@@ -233,10 +233,10 @@ export class VideoPlayer {
   }
 
   _checkPreloadTrigger() {
-    // 5 seconds before end, trigger preload of next clip
+    // 20 seconds before end, trigger preload of next clip
     if (this._isPlayingIntent && !this._preloading && this.currentEvent) {
       const remaining = this.duration - this.currentTime;
-      if (remaining > 0 && remaining < 5 * this.playbackRate) {
+      if (remaining > 0 && remaining < 20 * this.playbackRate) {
         const nextIndex = this.currentClipIndex + 1;
         if (nextIndex < this.currentEvent.clipGroups.length) {
           this._preloading = true;
