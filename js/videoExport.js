@@ -33,13 +33,52 @@ class VideoExport {
         const camera = options.camera || 'all';
         const format = options.format || 'mp4';
 
-        // Check if marks exist
+        // Check if marks exist (inPoint and outPoint from clipMarking are absolute event times in seconds)
         const marks = window.app?.clipMarking?.getMarks?.() || {};
         const inPoint = marks.inPoint != null ? marks.inPoint : null;
         const outPoint = marks.outPoint != null ? marks.outPoint : null;
 
-        // Gather clips from current clip group or event
-        const clipGroup = event.clipGroups?.[this.videoPlayer.currentClipIndex >= 0 ? this.videoPlayer.currentClipIndex : 0];
+        // Calculate target clip group and relative in/out offsets
+        const clipGroups = event.clipGroups || [];
+        let targetClipIndex = this.videoPlayer?.currentClipIndex >= 0 ? this.videoPlayer.currentClipIndex : 0;
+        let relativeInPoint = null;
+        let relativeOutPoint = null;
+
+        if (clipGroups.length > 0) {
+            const groupOffsets = [];
+            let total = 0;
+            for (let i = 0; i < clipGroups.length; i++) {
+                groupOffsets.push(total);
+                const g = clipGroups[i];
+                const dur = g.clips?.front?.duration || 60;
+                total += dur;
+            }
+
+            if (inPoint != null || outPoint != null) {
+                const refPoint = inPoint != null ? inPoint : outPoint;
+                for (let i = 0; i < clipGroups.length; i++) {
+                    const start = groupOffsets[i];
+                    const dur = clipGroups[i].clips?.front?.duration || 60;
+                    if (refPoint >= start && (refPoint < start + dur || i === clipGroups.length - 1)) {
+                        targetClipIndex = i;
+                        break;
+                    }
+                }
+
+                const groupStart = groupOffsets[targetClipIndex];
+                const groupDur = clipGroups[targetClipIndex]?.clips?.front?.duration || 60;
+
+                if (inPoint != null) {
+                    relativeInPoint = Math.max(0, Math.min(groupDur - 0.5, inPoint - groupStart));
+                }
+                if (outPoint != null) {
+                    const calculatedOut = outPoint - groupStart;
+                    relativeOutPoint = Math.min(groupDur, Math.max((relativeInPoint || 0) + 0.5, calculatedOut));
+                }
+            }
+        }
+
+        const clipGroup = clipGroups[targetClipIndex];
         if (!clipGroup || !clipGroup.clips) {
             alert('No video clips found for this event');
             return;
@@ -47,7 +86,7 @@ class VideoExport {
 
         const clips = {};
         for (const [cam, clip] of Object.entries(clipGroup.clips)) {
-            if (clip.url) {
+            if (clip.url && !clip.url.startsWith('blob:')) {
                 clips[cam] = clip.url;
             }
         }
@@ -72,8 +111,8 @@ class VideoExport {
                     camera,
                     format,
                     clips,
-                    inPoint,
-                    outPoint
+                    inPoint: relativeInPoint,
+                    outPoint: relativeOutPoint
                 })
             });
 

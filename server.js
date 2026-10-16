@@ -309,7 +309,7 @@ app.post('/api/export', (req, res) => {
 
     if (camera !== 'all' && clips[camera]) {
       cmd.input(clips[camera]);
-      if (trimStart !== null) cmd.setStartTime(trimStart);
+      if (trimStart !== null) cmd.seekInput(trimStart);
       if (trimDuration !== null) cmd.setDuration(trimDuration);
 
       if (format === 'gif') {
@@ -329,7 +329,17 @@ app.post('/api/export', (req, res) => {
           ]);
       }
     } else {
-      const cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
+      const is6Cam = !!(clips.left_pillar && clips.right_pillar);
+      const cameraOrder = is6Cam
+        ? [
+            'left_pillar',
+            'front',
+            'right_pillar',
+            'left_repeater',
+            'back',
+            'right_repeater',
+          ]
+        : ['front', 'back', 'left_repeater', 'right_repeater'];
       const activeCameras = cameraOrder.filter((c) => !!clips[c]);
 
       if (activeCameras.length === 0) {
@@ -338,13 +348,27 @@ app.post('/api/export', (req, res) => {
 
       activeCameras.forEach((cam) => {
         cmd.input(clips[cam]);
+        if (trimStart !== null) {
+          cmd.seekInput(trimStart);
+        }
       });
 
-      if (trimStart !== null) cmd.setStartTime(trimStart);
       if (trimDuration !== null) cmd.setDuration(trimDuration);
 
       let filterChain;
-      if (activeCameras.length === 4) {
+      if (activeCameras.length === 6) {
+        filterChain = [
+          '[0:v]scale=640:360[v0]',
+          '[1:v]scale=640:360[v1]',
+          '[2:v]scale=640:360[v2]',
+          '[3:v]scale=640:360[v3]',
+          '[4:v]scale=640:360[v4]',
+          '[5:v]scale=640:360[v5]',
+          '[v0][v1][v2]hstack=inputs=3[top]',
+          '[v3][v4][v5]hstack=inputs=3[bottom]',
+          '[top][bottom]vstack=inputs=2[v]',
+        ];
+      } else if (activeCameras.length === 4) {
         filterChain = [
           '[0:v]scale=960:540[v0]',
           '[1:v]scale=960:540[v1]',
@@ -400,6 +424,21 @@ app.post('/api/export', (req, res) => {
     });
 
     cmd.on('end', () => {
+      try {
+        const stats = fs.statSync(outputPath);
+        if (stats.size < 1000) {
+          job.status = 'error';
+          job.error = 'Export produced an empty video file';
+          console.error(
+            `[Export] Job ${jobId} produced empty file (${stats.size} bytes): ${outputPath}`
+          );
+          return;
+        }
+      } catch (e) {
+        job.status = 'error';
+        job.error = 'Export failed to produce output file';
+        return;
+      }
       job.status = 'completed';
       job.percent = 100;
       console.log(`[Export] Job ${jobId} completed: ${outputPath}`);

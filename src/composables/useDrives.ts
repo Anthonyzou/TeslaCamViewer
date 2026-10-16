@@ -57,8 +57,9 @@ export function useDrives() {
     (window as any).app?.addNewDrive();
   }
 
-  function openSyncModal(): void {
-    (window as any).app?.driveSyncUI?.show();
+  async function refreshDrives(): Promise<void> {
+    await (window as any).app?.refreshDrives();
+    syncDrives();
   }
 
   return {
@@ -69,7 +70,7 @@ export function useDrives() {
     changeDrive,
     manageDrives,
     addDrive,
-    openSyncModal,
+    refreshDrives,
     syncDrives,
   };
 }

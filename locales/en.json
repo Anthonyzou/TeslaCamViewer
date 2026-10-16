@@ -18,7 +18,7 @@
     "allDrives": "All Drives",
     "addDrive": "Add another drive",
     "manageDrives": "Manage drives",
-    "syncDrives": "Sync between drives",
+    "refreshDrives": "Refresh drives",
     "selectFolder": "Select TeslaCam Folder",
     "emptyState": "Click \"Select TeslaCam Folder\" to get started",
     "emptyStateHint": "You can select the TeslaCam folder, or any parent/child folder containing Tesla dashcam footage"

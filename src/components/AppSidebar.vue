@@ -55,10 +55,10 @@
           <Plus :size="16" />
         </button>
         <button
-          id="syncDrivesBtn"
+          id="refreshDrivesBtn"
           class="drive-action-btn"
-          :title="t('sidebar.syncDrives')"
-          @click="emit('syncDrives')"
+          :title="t('sidebar.refreshDrives') || 'Refresh drives'"
+          @click="emit('refreshDrives')"
         >
           <RefreshCw :size="16" />
         </button>
@@ -183,7 +183,7 @@ const emit = defineEmits<{
   (e: 'changeDrive', driveId: string): void;
   (e: 'manageDrives'): void;
   (e: 'addDrive'): void;
-  (e: 'syncDrives'): void;
+  (e: 'refreshDrives'): void;
   (e: 'selectFolder'): void;
   (e: 'loadB2'): void;
 }>();

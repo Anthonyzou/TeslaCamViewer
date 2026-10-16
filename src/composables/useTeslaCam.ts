@@ -96,7 +96,8 @@ export function useTeslaCam() {
     changeDrive: drives.changeDrive,
     manageDrives: drives.manageDrives,
     addDrive: drives.addDrive,
-    syncDrives: drives.openSyncModal,
+    refreshDrives: drives.refreshDrives,
+    syncDrives: drives.refreshDrives,
 
     // Layout
     layout: layout.layout,

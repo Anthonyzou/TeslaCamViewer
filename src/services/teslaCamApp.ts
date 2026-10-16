@@ -26,8 +26,6 @@ export class TeslaCamApp {
   public quickStartGuide: any;
   public b2Client: any;
   public commandPalette: any;
-  public driveSync: any;
-  public driveSyncUI: any;
 
   public allEvents: TeslaCamEvent[] = [];
   public filteredEvents: TeslaCamEvent[] = [];
@@ -107,8 +105,6 @@ export class TeslaCamApp {
 
     this.b2Client = new w.B2Client();
     this.commandPalette = w.commandPaletteInstance || null;
-    this.driveSync = new w.DriveSync();
-    this.driveSyncUI = new w.DriveSyncUI(this.driveSync, this.folderManager);
   }
 
   private wireCallbacks(): void {
@@ -491,8 +487,24 @@ export class TeslaCamApp {
   }
 
   public async exportVideo(camera: string = 'all'): Promise<void> {
-    if (!this.videoExport || !this.currentEvent) return;
-    await this.videoExport.exportEvent(this.currentEvent, camera);
+    if (
+      camera === 'all' &&
+      this.layoutManager?.currentLayout === 'layout-focus'
+    ) {
+      camera = this.layoutManager.focusCamera || 'front';
+    }
+
+    if (!this.currentEvent) {
+      alert('Please select an event to export.');
+      return;
+    }
+
+    const formatSelect = document.getElementById('exportFormatSelect') as HTMLSelectElement | null;
+    const format =
+      formatSelect?.value || this.settingsManager?.get('exportFormat') || 'mp4';
+    if (this.videoExport) {
+      await this.videoExport.startExport({ camera, format });
+    }
   }
 
   public async captureScreenshot(): Promise<void> {
@@ -579,10 +591,10 @@ export class TeslaCamApp {
     }
   }
 
-  public async loadFromB2(): Promise<void> {
-    this.showLoading('Connecting to Backblaze B2...');
+  public async loadFromB2(forceRefresh: boolean = false): Promise<void> {
+    this.showLoading(forceRefresh ? 'Refreshing Backblaze B2...' : 'Connecting to Backblaze B2...');
     try {
-      const result = await this.b2Client.parseBucket();
+      const result = await this.b2Client.parseBucket(undefined, undefined, undefined, forceRefresh);
       if (!result?.events) throw new Error('No events found in B2 bucket');
 
       const events = result.events;
@@ -613,6 +625,41 @@ export class TeslaCamApp {
       console.error('B2 Load Error:', error);
       this.hideLoading();
       alert('Failed to load from Backblaze B2: ' + error.message);
+    }
+  }
+
+  public async refreshDrives(): Promise<void> {
+    const activeDrive = this.folderManager?.getActiveDrive();
+    if (activeDrive?.id === 'b2' || (!activeDrive && this.b2Client)) {
+      await this.loadFromB2(true);
+      return;
+    }
+
+    if (activeDrive?.handle) {
+      this.showLoading(`Refreshing ${activeDrive.label || 'drive'}...`);
+      try {
+        this.folderParser.setDriveContext(activeDrive.id, activeDrive.label, activeDrive.color);
+        this.folderParser.rootHandle = activeDrive.handle;
+        const events = await this.folderParser.parseFolder();
+        activeDrive.events = events;
+        this.allEvents = [
+          ...this.allEvents.filter((e) => e.driveId !== activeDrive.id),
+          ...events,
+        ];
+        this.statisticsManager.setEvents(this.allEvents);
+        this.applyFilters();
+        this.updateDriveSelector(this.folderManager.getDrives());
+      } catch (err: any) {
+        console.error('Error refreshing drive:', err);
+      } finally {
+        this.hideLoading();
+      }
+      return;
+    }
+
+    const config = await this.b2Client?.getConfig();
+    if (config?.isConfigured) {
+      await this.loadFromB2(true);
     }
   }
 

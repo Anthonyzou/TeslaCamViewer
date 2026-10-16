@@ -16,7 +16,6 @@ interface Window {
   CommandPalette?: any;
   SettingsManager?: any;
   StatisticsManager?: any;
-  DriveSyncUI?: any;
   EventFilter?: any;
   FolderParser?: any;
 }

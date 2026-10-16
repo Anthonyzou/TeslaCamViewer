@@ -20,7 +20,7 @@
         @changeDrive="changeDrive"
         @manageDrives="manageDrives"
         @addDrive="addDrive"
-        @syncDrives="syncDrives"
+        @refreshDrives="refreshDrives"
         @selectFolder="selectFolder"
         @loadB2="loadB2"
       />
@@ -82,9 +82,6 @@
       @prevEvent="prevEvent"
       @nextEvent="nextEvent"
     />
-
-    <!-- Drive Sync Modal container -->
-    <div id="driveSyncModal" class="drive-sync-modal hidden"></div>
 
     <!-- Modals -->
     <CommandPalette />
@@ -159,7 +156,7 @@ const {
   changeDrive,
   manageDrives,
   addDrive,
-  syncDrives,
+  refreshDrives,
   openStats,
   openHelp,
   openSettings,

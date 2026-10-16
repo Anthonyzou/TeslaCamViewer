@@ -19,11 +19,11 @@ class B2Client {
     /**
      * Call the local server to parse the B2 bucket
      */
-    async parseBucket(keyId, appKey, bucketName) {
+    async parseBucket(keyId, appKey, bucketName, forceRefresh = false) {
         const response = await fetch('/api/b2/parse', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyId, appKey, bucketName })
+            body: JSON.stringify({ keyId, appKey, bucketName, refresh: forceRefresh })
         });
 
         if (!response.ok) {

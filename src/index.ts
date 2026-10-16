@@ -57,9 +57,5 @@ import '../js/settingsManager.js';
 import '../js/versionManager.js';
 import '../js/statisticsManager.js';
 
-// Drive Sync
-import '../js/driveSync.js';
-import '../js/driveSyncUI.js';
-
 // B2 Cloud Client
 import '../js/b2Client.js';
