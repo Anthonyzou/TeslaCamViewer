@@ -296,12 +296,6 @@
                     <div class="event-info-content">
                         <span id="eventDate" class="event-date" data-i18n="player.noEventLoaded">No event loaded</span>
                         <span id="eventLocation" class="event-location"></span>
-                        <button id="streetViewBtn" class="street-view-btn" disabled title="Open Street View">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <circle cx="12" cy="4.5" r="2.5" />
-                                <path d="M12 7c-1.1 0-2 .9-2 2v6h1.5v7h1v-7h1v7h1v-7H16v-6c0-1.1-.9-2-2-2h-2z" />
-                            </svg>
-                        </button>
                         <span id="eventReason" class="event-reason"></span>
                         <span id="eventWeather" class="event-weather"></span>
                     </div>
@@ -535,33 +529,6 @@
                         </div>
                     </div>
 
-                    <!-- Overlay Controls Group (hidden on mobile, accessible via More menu) -->
-                    <div class="control-group control-group-overlays">
-                        <button id="toggleMiniMapBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle Mini-Map (M)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
-                            </svg>
-                        </button>
-                        <button id="toggleBirdsEyeBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle Bird's Eye View (B)">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-                            </svg>
-                        </button>
-                        <button id="toggleStreetViewBtn" class="control-btn overlay-toggle-btn" disabled
-                            title="Toggle Street View (V)" style="display: none;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12.56 14.33c-.34.27-.56.7-.56 1.17V21h7c1.1 0 2-.9 2-2v-5.98c-.94-.33-1.95-.52-3-.52-2.03 0-3.93.7-5.44 1.83z" />
-                                <circle cx="18" cy="6" r="5" />
-                                <path
-                                    d="M11.5 6c0-1.08.27-2.1.74-3H5c-1.1 0-2 .9-2 2v14c0 .55.23 1.05.59 1.41l9.82-9.82C12.23 9.42 11.5 7.8 11.5 6z" />
-                            </svg>
-                        </button>
-                    </div>
-
                     <!-- Mobile More Menu -->
                     <div class="control-group control-group-mobile-more">
                         <div class="mobile-more-container">
@@ -573,18 +540,6 @@
                                 </svg>
                             </button>
                             <div id="mobileMoreMenu" class="mobile-more-menu hidden">
-                                <div class="mobile-more-section">
-                                    <div class="mobile-more-label">Overlays</div>
-                                    <button class="mobile-more-option" data-action="toggle-minimap">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                            <path
-                                                d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
-                                        </svg>
-                                        <span>Mini-Map</span>
-                                        <span class="mobile-more-status" id="mobileMiniMapStatus">OFF</span>
-                                    </button>
-                                </div>
-                                <div class="mobile-more-divider"></div>
                                 <div class="mobile-more-section">
                                     <div class="mobile-more-label">View</div>
                                     <button class="mobile-more-option" data-action="enhance">

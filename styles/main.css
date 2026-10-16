@@ -2278,78 +2278,6 @@ button svg *,
     font-size: 0.85rem;
 }
 
-.street-view-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    transition: all 0.15s ease;
-    position: relative;
-}
-
-.street-view-btn:hover:not(:disabled) {
-    color: var(--accent);
-    background: rgba(var(--accent-rgb, 0, 212, 255), 0.15);
-}
-
-.street-view-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.street-view-btn svg {
-    display: block;
-}
-
-/* Street View Tooltip */
-.street-view-tooltip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 11px;
-    white-space: nowrap;
-    z-index: 1000;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.street-view-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
-}
-
-.street-view-btn:hover .street-view-tooltip {
-    opacity: 1;
-}
-
-.street-view-tooltip .coords {
-    color: var(--accent);
-    font-family: var(--font-mono);
-}
-
-.street-view-tooltip .hint {
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 4px;
-    font-size: 10px;
-}
-
 .event-reason {
     color: var(--text-muted);
     font-size: 0.8rem;
@@ -6241,9 +6169,8 @@ select option:hover,
         display: flex !important;
     }
 
-    /* Hide notes, street view, zoom on mobile */
+    /* Hide notes, zoom on mobile */
     .event-info-notes-btn,
-    .street-view-btn,
     .timeline-zoom-controls {
         display: none !important;
     }
@@ -6357,21 +6284,6 @@ select option:hover,
     .video-grid-container {
         margin-top: 120px !important;
         margin-bottom: 90px !important;
-    }
-
-    /* Mini-map mobile fixes - ONLY vehicle marker */
-    /* Smaller SVG with margin to center within 24px container, preserves rotation transform */
-    .minimap-vehicle-marker svg {
-        width: 14px !important;
-        height: 14px !important;
-        margin: 5px !important;
-    }
-
-    /* Hide close, dark mode buttons, and weather badge on mobile */
-    .minimap-overlay .minimap-close-btn,
-    .minimap-overlay .minimap-darkmode-btn,
-    .minimap-overlay .minimap-weather-badge {
-        display: none !important;
     }
 
     /* Smaller camera labels on mobile */

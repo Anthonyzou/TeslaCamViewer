@@ -34,11 +34,6 @@ class SettingsManager {
       // Weather (Open-Meteo)
       temperatureUnits: (navigator.language || 'en-US').includes('US') ? 'fahrenheit' : 'celsius', // 'celsius', 'fahrenheit'
 
-      // Mini-Map Overlay (requires GPS telemetry)
-      miniMapEnabled: false,
-      miniMapInExport: true, // Include mini-map in video exports
-      miniMapDarkMode: true, // Dark/light map tiles
-
       // Timeline
       enableTimelineZoom: false,
       showClipMarkers: true,
@@ -98,14 +93,6 @@ class SettingsManager {
       let settings = stored
         ? { ...this.defaults, ...JSON.parse(stored) }
         : { ...this.defaults };
-
-      // Sync mini-map dark mode from mini-map's own localStorage (for backwards compatibility)
-      const miniMapDarkMode = localStorage.getItem(
-        'teslacamviewer_minimap_dark_mode'
-      );
-      if (miniMapDarkMode !== null) {
-        settings.miniMapDarkMode = miniMapDarkMode !== 'false';
-      }
 
       return settings;
     } catch (e) {
@@ -376,37 +363,6 @@ class SettingsManager {
                                 <option value="celsius">${this.t('settings.weather.unitsCelsius')}</option>
                                 <option value="fahrenheit">${this.t('settings.weather.unitsFahrenheit')}</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <!-- Mini-Map Overlay Section -->
-                    <div class="settings-section">
-                        <h3>${this.t('settings.sections.miniMap')}</h3>
-                        <p class="setting-hint" style="margin-bottom: 0.75rem;">
-                            ${this.t('settings.miniMap.description')}
-                        </p>
-                        <div class="setting-row">
-                            <label for="setting-miniMapEnabled">${this.t('settings.miniMap.enabled')}</label>
-                            <input type="checkbox" id="setting-miniMapEnabled" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.miniMap.enabledHint')}</span>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-miniMapInExport">${this.t('settings.miniMap.inExport')}</label>
-                            <input type="checkbox" id="setting-miniMapInExport" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.miniMap.inExportHint')}</span>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-miniMapDarkMode">${this.t('settings.miniMap.darkMode')}</label>
-                            <input type="checkbox" id="setting-miniMapDarkMode" class="setting-checkbox">
-                            <span class="setting-hint">${this.t('settings.miniMap.darkModeHint')}</span>
-                        </div>
-                        <div class="setting-row">
-                            <label for="setting-mapTileProvider">${this.t('settings.miniMap.tileProvider')}</label>
-                            <select id="setting-mapTileProvider" class="setting-select">
-                                <option value="osm">${this.t('settings.miniMap.providerOsm')}</option>
-                                <option value="stadia">${this.t('settings.miniMap.providerStadia')}</option>
-                            </select>
-                            <span class="setting-hint">${this.t('settings.miniMap.tileProviderHint')}</span>
                         </div>
                     </div>
                 </div>

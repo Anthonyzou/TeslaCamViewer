@@ -30,9 +30,7 @@ import '../js/layoutEditor.js';
 // Overlays & Sensors
 import '../js/screenshotCapture.js';
 import '../js/videoEnhancer.js';
-import '../js/miniMapOverlay.js';
 import '../js/weatherService.js';
-import '../js/streetViewOverlay.js';
 
 // Export & Reports
 import '../js/videoExport.js';
@@ -48,7 +46,6 @@ import '../js/quickStartGuide.js';
 // Drive Sync
 import '../js/driveSync.js';
 import '../js/driveSyncUI.js';
-import '../js/regionTracker.js';
 
 // B2 Cloud Client & Main App Controller
 import '../js/b2Client.js';

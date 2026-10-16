@@ -28,30 +28,14 @@ class TeslaCamViewerApp {
 
     // Connect eventBrowser to videoPlayer for preview pause/resume
     this.eventBrowser.setVideoPlayer(this.videoPlayer);
-    this.timeline = new Timeline(
-      document.getElementById('timeline'),
-      (time) => this.onTimelineSeeked(time)
+    this.timeline = new Timeline(document.getElementById('timeline'), (time) =>
+      this.onTimelineSeeked(time)
     );
     this.syncController = new SyncController(this.videoPlayer);
     this.layoutManager = new LayoutManager();
     this.layoutEditor = new LayoutEditor(this.layoutManager);
     this.screenshotCapture = new ScreenshotCapture(this.videoPlayer);
     this.videoEnhancer = new VideoEnhancer();
-    this.miniMapOverlay = new MiniMapOverlay(this.videoPlayer);
-    this.miniMapOverlay.initLayoutCallback &&
-      this.miniMapOverlay.initLayoutCallback(this.layoutManager);
-
-    this.streetViewOverlay = new StreetViewOverlay(this.videoPlayer);
-
-    // Wire up visibility change callbacks for overlays
-    this.miniMapOverlay.onVisibilityChange = (visible) => {
-      this.settingsManager.set('miniMapEnabled', visible);
-      this._updateOverlayButtonStates();
-    };
-    this.streetViewOverlay.onVisibilityChange = (visible) => {
-      this.settingsManager.set('streetViewEnabled', visible);
-      this._updateOverlayButtonStates();
-    };
 
     this.videoExport = new VideoExport(this.videoPlayer, this.layoutManager);
     this.clipMarking = new ClipMarking(this.timeline, this.videoPlayer);
@@ -127,10 +111,6 @@ class TeslaCamViewerApp {
     this.layoutSelect = document.getElementById('layoutSelect');
     this.focusCameraSelect = document.getElementById('focusCameraSelect');
 
-    // Overlay toggle buttons
-    this.toggleMiniMapBtn = document.getElementById('toggleMiniMapBtn');
-    this.toggleStreetViewBtn = document.getElementById('toggleStreetViewBtn');
-    this.toggleBirdsEyeBtn = document.getElementById('toggleBirdsEyeBtn');
     this.loadingOverlay = document.getElementById('loadingOverlay');
     this.loadingText = document.getElementById('loadingText');
 
@@ -142,7 +122,6 @@ class TeslaCamViewerApp {
     // Mobile more menu elements
     this.mobileMoreBtn = document.getElementById('mobileMoreBtn');
     this.mobileMoreMenu = document.getElementById('mobileMoreMenu');
-    this.mobileMiniMapStatus = document.getElementById('mobileMiniMapStatus');
     this.mobileLayoutSelect = document.getElementById('mobileLayoutSelect');
     this.bsMoreBtn = document.getElementById('bsMoreBtn');
     this.bsMoreContainer = document.querySelector('.bs-more-container');
@@ -177,12 +156,6 @@ class TeslaCamViewerApp {
     this.eventLocationElement = document.getElementById('eventLocation');
     this.eventReasonElement = document.getElementById('eventReason');
     this.eventWeatherElement = document.getElementById('eventWeather');
-    this.streetViewBtn = document.getElementById('streetViewBtn');
-
-    // Current GPS for Street View
-    this.currentGpsLat = null;
-    this.currentGpsLng = null;
-    this.currentGpsHeading = 0;
 
     // State
     this.currentEvent = null;
@@ -385,18 +358,6 @@ class TeslaCamViewerApp {
         // Setting disabled - clear saved folder
         await this.folderParser.clearSavedFolder();
       }
-
-      // Apply mini-map settings
-      if (this.miniMapOverlay) {
-        // Only toggle if state needs to change (avoid infinite loop with onVisibilityChange)
-        if (settings.miniMapEnabled && !this.miniMapOverlay.isVisible) {
-          this.miniMapOverlay.show();
-        } else if (!settings.miniMapEnabled && this.miniMapOverlay.isVisible) {
-          this.miniMapOverlay.hide();
-        }
-        // Apply dark mode setting
-        this.miniMapOverlay.setDarkMode(settings.miniMapDarkMode);
-      }
     });
   }
 
@@ -532,29 +493,6 @@ class TeslaCamViewerApp {
     const videoGridContainer = document.querySelector('.video-grid-container');
     if (videoGridContainer) {
       this.videoEnhancer.initialize(videoGridContainer);
-    }
-
-    // Overlay toggle buttons
-    this.toggleMiniMapBtn?.addEventListener('click', () => {
-      if (this.miniMapOverlay) {
-        this.miniMapOverlay.toggle();
-        this._updateOverlayButtonStates();
-      }
-    });
-    this.toggleStreetViewBtn?.addEventListener('click', () => {
-      if (this.streetViewOverlay) {
-        this.streetViewOverlay.toggle();
-        this.settingsManager.set(
-          'streetViewEnabled',
-          this.streetViewOverlay.isVisible
-        );
-        this._updateOverlayButtonStates();
-      }
-    });
-
-    // Street View button in info bar
-    if (this.streetViewBtn) {
-      this._setupStreetViewButton();
     }
 
     // Clip marking
@@ -2250,10 +2188,6 @@ class TeslaCamViewerApp {
       this.eventBrowser.refreshNearMissIndicators();
     }
 
-    // Bulk-hydrate severity badges from IDB so pills appear on the
-    // cards immediately after reload — no click required.
-    this._bulkHydrateSeverityBadges(filteredEvents);
-
     // Update map with filtered events
     this.mapView.loadEvents(filteredEvents);
 
@@ -2582,12 +2516,7 @@ class TeslaCamViewerApp {
           const gpsText = `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
           location += location ? ` • ` : '';
           location += `<a href="${gpsLink}" target="_blank" style="color: var(--accent); text-decoration: none;" title="Open in Google Maps">${gpsText}</a>`;
-          // Initialize street view button with event GPS
-          this._updateStreetViewButton(lat, lon, 0);
         }
-      } else {
-        // Disable street view button when no GPS
-        this._updateStreetViewButton(null, null, 0);
       }
 
       // Add camera info for Sentry events.
@@ -2630,8 +2559,6 @@ class TeslaCamViewerApp {
       this.eventLocationElement.textContent = '';
       this.eventReasonElement.textContent = '';
       this.eventWeatherElement.textContent = '';
-      // Disable street view button when no metadata
-      this._updateStreetViewButton(null, null, 0);
     }
   }
 
@@ -2666,9 +2593,6 @@ class TeslaCamViewerApp {
       if (weather && this.currentEvent === event) {
         const formatted = window.weatherService.formatForDisplay(weather);
         this.eventWeatherElement.textContent = formatted;
-        if (this.miniMapOverlay?.isVisible) {
-          this.miniMapOverlay.setWeather(weather);
-        }
       }
     } catch (error) {
       console.warn('[App] Failed to fetch weather:', error);
@@ -2716,15 +2640,6 @@ class TeslaCamViewerApp {
       if (weather) {
         const formatted = window.weatherService.formatForDisplay(weather);
         this.eventWeatherElement.textContent = formatted;
-
-        // Also update mini-map if visible
-        if (this.miniMapOverlay?.isVisible) {
-          this.miniMapOverlay.setWeather(weather);
-        }
-
-        // Update street view button with telemetry GPS
-        this._updateStreetViewButton(lat, lng, frameWithGps.heading_deg || 0);
-
         console.log(`[Weather] Loaded from telemetry: ${formatted}`);
       }
     } catch (error) {
@@ -2954,11 +2869,6 @@ class TeslaCamViewerApp {
     this.exportBtn.disabled = false;
     this.exportDropdownBtn.disabled = false;
 
-    // Enable overlay toggle buttons
-    if (this.toggleMiniMapBtn) this.toggleMiniMapBtn.disabled = false;
-    if (this.toggleStreetViewBtn) this.toggleStreetViewBtn.disabled = false;
-    if (this.toggleBirdsEyeBtn) this.toggleBirdsEyeBtn.disabled = false;
-    this._updateOverlayButtonStates();
     this.zoomOutBtn.disabled = false;
     this.zoomInBtn.disabled = false;
     this.zoomResetBtn.disabled = false;
@@ -2978,43 +2888,9 @@ class TeslaCamViewerApp {
   }
 
   /**
-   * Update overlay button active states
-   */
-  _updateOverlayButtonStates() {
-    if (this.toggleMiniMapBtn) {
-      this.toggleMiniMapBtn.classList.toggle(
-        'active',
-        this.miniMapOverlay?.isVisible || false
-      );
-    }
-    if (this.toggleStreetViewBtn) {
-      this.toggleStreetViewBtn.classList.toggle(
-        'active',
-        this.streetViewOverlay?.isVisible || false
-      );
-    }
-    if (this.toggleBirdsEyeBtn) {
-      this.toggleBirdsEyeBtn.classList.toggle(
-        'active',
-        this.collisionReconstruction?.isVisible || false
-      );
-    }
-
-    // Also update mobile more menu status
-    this._updateMobileMoreMenuStatus();
-  }
-
-  /**
    * Update mobile more menu status indicators
    */
   _updateMobileMoreMenuStatus() {
-    if (this.mobileMiniMapStatus) {
-      const isMapOn = this.miniMapOverlay?.isVisible || false;
-      this.mobileMiniMapStatus.textContent = isMapOn ? 'ON' : 'OFF';
-      this.mobileMiniMapStatus
-        .closest('.mobile-more-option')
-        ?.classList.toggle('active', isMapOn);
-    }
     // Sync mobile layout select with main layout select
     if (this.mobileLayoutSelect && this.layoutSelect) {
       this.mobileLayoutSelect.value = this.layoutSelect.value;
@@ -3026,9 +2902,6 @@ class TeslaCamViewerApp {
    */
   _handleMobileMoreAction(action) {
     switch (action) {
-      case 'toggle-minimap':
-        this.toggleMiniMapBtn?.click();
-        break;
       case 'enhance':
         this.enhanceBtn?.click();
         this.mobileMoreMenu?.classList.add('hidden');
@@ -3044,69 +2917,6 @@ class TeslaCamViewerApp {
     }
     // Update status after action
     setTimeout(() => this._updateMobileMoreMenuStatus(), 100);
-  }
-
-  /**
-   * Set up the Street View button in the info bar
-   */
-  _setupStreetViewButton() {
-    // Create tooltip element
-    this.streetViewTooltip = document.createElement('div');
-    this.streetViewTooltip.className = 'street-view-tooltip';
-    this.streetViewTooltip.innerHTML = `
-            <div class="coords">--</div>
-            <div class="hint">Click to open Street View</div>
-        `;
-    this.streetViewBtn.appendChild(this.streetViewTooltip);
-
-    // Click handler - open Google Street View
-    this.streetViewBtn.addEventListener('click', () => {
-      if (this.currentGpsLat !== null && this.currentGpsLng !== null) {
-        const heading = this.currentGpsHeading || 0;
-        const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${this.currentGpsLat},${this.currentGpsLng}&heading=${heading}`;
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
-    });
-  }
-
-  /**
-   * Update Street View button with current GPS position
-   */
-  _updateStreetViewButton(lat, lng, heading = 0) {
-    this.currentGpsLat = lat;
-    this.currentGpsLng = lng;
-    this.currentGpsHeading = heading;
-
-    if (this.streetViewBtn) {
-      if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
-        this.streetViewBtn.disabled = false;
-        // Update tooltip with coordinates and heading
-        if (this.streetViewTooltip) {
-          const latDir = lat >= 0 ? 'N' : 'S';
-          const lngDir = lng >= 0 ? 'E' : 'W';
-          const coordsEl = this.streetViewTooltip.querySelector('.coords');
-          if (coordsEl) {
-            let text = `${Math.abs(lat).toFixed(5)}° ${latDir}, ${Math.abs(lng).toFixed(5)}° ${lngDir}`;
-            if (heading !== null && heading !== undefined && !isNaN(heading)) {
-              const dir = this._headingToDirection(heading);
-              text += ` · ${Math.round(heading)}° ${dir}`;
-            }
-            coordsEl.textContent = text;
-          }
-        }
-      } else {
-        this.streetViewBtn.disabled = true;
-      }
-    }
-  }
-
-  /**
-   * Convert heading degrees to cardinal direction
-   */
-  _headingToDirection(heading) {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const index = Math.round((((heading % 360) + 360) % 360) / 45) % 8;
-    return dirs[index];
   }
 
   /**
@@ -3315,7 +3125,8 @@ class TeslaCamViewerApp {
     }
 
     const formatSelect = document.getElementById('exportFormatSelect');
-    const format = formatSelect?.value || this.settingsManager?.get('exportFormat') || 'mp4';
+    const format =
+      formatSelect?.value || this.settingsManager?.get('exportFormat') || 'mp4';
     await this.videoExport.startExport({ camera, format });
   }
 
@@ -3485,16 +3296,6 @@ class TeslaCamViewerApp {
           this.captureScreenshot();
         }
         break;
-
-      case 'KeyM':
-        // M for mini-map toggle
-        event.preventDefault();
-        if (this.miniMapOverlay) {
-          this.miniMapOverlay.toggle();
-        }
-        break;
-
-      // Note: 'G' keyboard shortcut removed - telemetry graphs are now always visible in sidebar
 
       case 'KeyP':
         // P for Picture-in-Picture
@@ -3858,33 +3659,6 @@ class TeslaCamViewerApp {
     }, 100);
   }
 
-  /**
-   * Update mini-map from event GPS coordinates
-   */
-  _updateMiniMapFromEventGPS() {
-    if (!this.currentEvent) return;
-
-    const event = this.currentEvent;
-    if (event.metadata?.est_lat && event.metadata?.est_lon) {
-      const lat = parseFloat(event.metadata.est_lat);
-      const lng = parseFloat(event.metadata.est_lon);
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        if (this.miniMapOverlay) {
-          if (
-            this.miniMapOverlay.currentLat !== lat ||
-            this.miniMapOverlay.currentLng !== lng
-          ) {
-            this.miniMapOverlay.updatePosition(lat, lng, 0);
-          }
-        }
-        if (this.streetViewOverlay && this.streetViewOverlay.isVisible) {
-          this.streetViewOverlay.updatePosition(lat, lng, 0);
-        }
-        this._updateStreetViewButton(lat, lng, 0);
-      }
-    }
-  }
-
   // ==================== PILLAR CAMERA SUPPORT ====================
 
   /**
@@ -4216,16 +3990,6 @@ class TeslaCamViewerApp {
         }),
       },
 
-      // Overlays
-      {
-        id: 'toggle-minimap',
-        title: 'Toggle Mini-Map',
-        category: 'Overlay',
-        keywords: 'map mini gps',
-        action: safe(
-          () => this.miniMapOverlay?.toggle && this.miniMapOverlay.toggle()
-        ),
-      },
       {
         id: 'open-settings',
         title: 'Open Settings',

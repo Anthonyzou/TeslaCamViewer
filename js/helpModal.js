@@ -139,10 +139,6 @@ class HelpModal {
                             <kbd>Double-click video</kbd>
                             <span>${this.t('help.shortcuts.focusCameraFullscreen')}</span>
                         </div>
-                        <div class="shortcut-row">
-                            <kbd>M</kbd>
-                            <span>Toggle Mini-Map</span>
-                        </div>
                     </div>
                 </div>
 

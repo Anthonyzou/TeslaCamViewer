@@ -609,14 +609,13 @@ class LayoutRenderer {
      * Add camera labels to canvas with smart positioning to avoid occlusion
      * @param {CanvasRenderingContext2D} ctx - Canvas context
      * @param {Object} exportConfig - Export configuration with cameras
-     * @param {Object} options - Options: fontSize, cameraMapping, videos, miniMapRect
+     * @param {Object} options - Options: fontSize, cameraMapping, videos
      */
     addLabelsToCanvas(ctx, exportConfig, options = {}) {
         const { cameras } = exportConfig;
         const fontSize = options.fontSize || 14;
         const cameraMapping = options.cameraMapping || null;
         const videos = options.videos || null;
-        const miniMapRect = options.miniMapRect || null; // { x, y, w, h }
 
         // CSS-matching styling
         const paddingX = Math.round(fontSize * 0.85);  // ~0.75rem horizontal
@@ -754,16 +753,6 @@ class LayoutRenderer {
                             labelRect.y + labelRect.h > cam.y) {
                             isOccluded = true;
                             break;
-                        }
-                    }
-
-                    // Also check if occluded by mini-map overlay
-                    if (!isOccluded && miniMapRect) {
-                        if (labelRect.x < miniMapRect.x + miniMapRect.w &&
-                            labelRect.x + labelRect.w > miniMapRect.x &&
-                            labelRect.y < miniMapRect.y + miniMapRect.h &&
-                            labelRect.y + labelRect.h > miniMapRect.y) {
-                            isOccluded = true;
                         }
                     }
 
