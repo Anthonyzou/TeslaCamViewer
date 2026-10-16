@@ -168,25 +168,6 @@
                 t('export.exportVideo')
               }}</span>
             </button>
-            <select
-              id="exportFormatSelect"
-              class="export-format-select"
-              title="Export format"
-              v-model="exportFormat"
-            >
-              <option value="webm">WebM</option>
-              <option value="mp4">MP4</option>
-              <option value="gif">GIF</option>
-            </select>
-          </div>
-
-          <div
-            id="gifWarning"
-            class="gif-warning"
-            :class="{ hidden: exportFormat !== 'gif' }"
-          >
-            <span class="gif-warning-icon">⏱️</span>
-            <span>GIF export takes ~10x clip length</span>
           </div>
 
           <div class="export-dropdown-divider"></div>
@@ -534,7 +515,6 @@ const selectedLayout = ref(props.layout || 'layout-6-3');
 const focusCamera = ref('front');
 const isExportDropdownOpen = ref(false);
 const isMobileMoreOpen = ref(false);
-const exportFormat = ref('webm');
 const privacyMode = ref(false);
 
 const localeTick = ref(0);

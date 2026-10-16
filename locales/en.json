@@ -187,7 +187,6 @@
     "performance": {
       "preloadNextClip": "Preload next clip",
       "preloadHint": "Smoother playback, uses more memory",
-      "memoryOptimization": "Memory optimization",
       "memoryHint": "Release unused video resources"
     },
     "ui": {
@@ -224,8 +223,6 @@
     },
     "export": {
       "videoFormat": "Video Format",
-      "webm": "WebM (VP9) - Smaller files",
-      "mp4": "MP4 (H.264) - Better compatibility",
       "formatHint": "Format used when exporting videos",
       "privacyMode": "Privacy Mode Export",
       "privacyModeHint": "Strip timestamp, GPS, location, and mini-map from exports",

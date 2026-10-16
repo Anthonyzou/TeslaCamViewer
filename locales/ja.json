@@ -176,8 +176,6 @@
     },
     "export": {
       "videoFormat": "ビデオ形式",
-      "webm": "WebM (VP9) - ファイルサイズ小",
-      "mp4": "MP4 (H.264) - 互換性良好",
       "formatHint": "ビデオエクスポート時の形式",
       "privacyMode": "Privacy Mode Export",
       "privacyModeHint": "Strip timestamp, GPS, location, and mini-map from exports",

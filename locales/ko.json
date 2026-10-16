@@ -176,8 +176,6 @@
     },
     "export": {
       "videoFormat": "비디오 형식",
-      "webm": "WebM (VP9) - 작은 파일",
-      "mp4": "MP4 (H.264) - 더 나은 호환성",
       "formatHint": "비디오 내보내기 시 사용되는 형식",
       "privacyMode": "Privacy Mode Export",
       "privacyModeHint": "Strip timestamp, GPS, location, and mini-map from exports",

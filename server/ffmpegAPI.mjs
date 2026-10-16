@@ -13,21 +13,14 @@ if (!fs.existsSync(EXPORT_DIR)) {
 export default function registerFfmpegRoutes(app) {
   // 3. Server-Side FFmpeg Video Export Routes
   app.post('/api/export', (req, res) => {
-    const {
-      eventName,
-      camera = 'all',
-      format = 'mp4',
-      clips,
-      inPoint,
-      outPoint,
-    } = req.body;
+    const { eventName, camera = 'all', clips, inPoint, outPoint } = req.body;
 
     if (!clips || Object.keys(clips).length === 0) {
       return res.status(400).json({ error: 'No clips provided for export' });
     }
 
     const jobId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const ext = format === 'gif' ? 'gif' : 'mp4';
+    const ext = 'mp4';
     const filename = `TeslaCam_${eventName || 'Export'}_${camera}.${ext}`;
     const outputPath = path.join(EXPORT_DIR, `${jobId}.${ext}`);
 
@@ -58,22 +51,14 @@ export default function registerFfmpegRoutes(app) {
         if (trimStart !== null) cmd.seekInput(trimStart);
         if (trimDuration !== null) cmd.setDuration(trimDuration);
 
-        if (format === 'gif') {
-          cmd.complexFilter([
-            'fps=15,scale=640:-1:flags=lanczos,split[s0][s1]',
-            '[s0]palettegen[p]',
-            '[s1][p]paletteuse',
+        cmd
+          .videoCodec('libx264')
+          .outputOptions([
+            '-preset fast',
+            '-crf 22',
+            '-pix_fmt yuv420p',
+            '-movflags +faststart',
           ]);
-        } else {
-          cmd
-            .videoCodec('libx264')
-            .outputOptions([
-              '-preset fast',
-              '-crf 22',
-              '-pix_fmt yuv420p',
-              '-movflags +faststart',
-            ]);
-        }
       } else {
         const is6Cam = !!(clips.left_pillar && clips.right_pillar);
         const cameraOrder = is6Cam
@@ -142,21 +127,15 @@ export default function registerFfmpegRoutes(app) {
           filterChain = ['[0:v]scale=1280:720[v]'];
         }
 
-        if (format === 'gif') {
-          filterChain.push(
-            '[v]fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse'
-          );
-        } else {
-          cmd
-            .videoCodec('libx264')
-            .outputOptions([
-              '-map [v]',
-              '-preset fast',
-              '-crf 22',
-              '-pix_fmt yuv420p',
-              '-movflags +faststart',
-            ]);
-        }
+        cmd
+          .videoCodec('libx264')
+          .outputOptions([
+            '-map [v]',
+            '-preset fast',
+            '-crf 22',
+            '-pix_fmt yuv420p',
+            '-movflags +faststart',
+          ]);
 
         cmd.complexFilter(filterChain);
       }

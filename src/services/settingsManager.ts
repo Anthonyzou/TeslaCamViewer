@@ -18,7 +18,6 @@ class SettingsManager {
 
     // Performance
     preloadNextClip: true,
-    memoryOptimization: true,
 
     // UI
     theme: 'dark',

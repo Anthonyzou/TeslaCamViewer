@@ -39,14 +39,6 @@
             </button>
             <button
               class="settings-nav-item"
-              :class="{ active: activeTab === 'export' }"
-              @click="activeTab = 'export'"
-            >
-              <Download :size="18" />
-              <span>{{ t('settings.tabs.export') }}</span>
-            </button>
-            <button
-              class="settings-nav-item"
               :class="{ active: activeTab === 'advanced' }"
               @click="activeTab = 'advanced'"
             >
@@ -330,104 +322,6 @@
               </div>
             </div>
 
-            <!-- EXPORT TAB -->
-            <div
-              v-show="activeTab === 'export'"
-              class="settings-tab-content active"
-            >
-              <div class="settings-section">
-                <h3>{{ t('settings.sections.export') }}</h3>
-                <div class="setting-row">
-                  <label for="setting-exportFormat">{{
-                    t('settings.export.videoFormat')
-                  }}</label>
-                  <select
-                    id="setting-exportFormat"
-                    class="setting-select"
-                    v-model="settings.exportFormat"
-                    @change="save('exportFormat', settings.exportFormat)"
-                  >
-                    <option value="webm">
-                      {{ t('settings.export.webm') }}
-                    </option>
-                    <option value="mp4">{{ t('settings.export.mp4') }}</option>
-                    <option value="gif">GIF (Animated)</option>
-                  </select>
-                  <span class="setting-hint">{{
-                    t('settings.export.formatHint')
-                  }}</span>
-                </div>
-                <div class="setting-row">
-                  <label for="setting-exportResolution">Export quality</label>
-                  <select
-                    id="setting-exportResolution"
-                    class="setting-select"
-                    v-model="settings.exportResolution"
-                    @change="
-                      save('exportResolution', settings.exportResolution)
-                    "
-                  >
-                    <option value="full">
-                      Full — native layout resolution
-                    </option>
-                    <option value="hd">HD — 1080p height</option>
-                    <option value="web">Web — 720p height</option>
-                    <option value="custom">Custom — specify height</option>
-                  </select>
-                  <span class="setting-hint"
-                    >Scales the export canvas. Full never downsamples; HD/Web
-                    cap but never upscale; Custom lets you pick (can
-                    upscale).</span
-                  >
-                </div>
-                <div
-                  v-show="settings.exportResolution === 'custom'"
-                  class="setting-row"
-                >
-                  <label for="setting-exportResolutionCustomHeight"
-                    >Custom height (px)</label
-                  >
-                  <input
-                    type="number"
-                    id="setting-exportResolutionCustomHeight"
-                    class="setting-input"
-                    min="240"
-                    max="4320"
-                    step="10"
-                    style="width: 120px"
-                    v-model.number="settings.exportResolutionCustomHeight"
-                    @change="
-                      save(
-                        'exportResolutionCustomHeight',
-                        settings.exportResolutionCustomHeight
-                      )
-                    "
-                  />
-                  <span class="setting-hint"
-                    >Width is computed to preserve the layout's aspect
-                    ratio.</span
-                  >
-                </div>
-                <div class="setting-row">
-                  <label for="setting-privacyModeExport">{{
-                    t('settings.export.privacyMode')
-                  }}</label>
-                  <input
-                    type="checkbox"
-                    id="setting-privacyModeExport"
-                    class="setting-checkbox"
-                    v-model="settings.privacyModeExport"
-                    @change="
-                      save('privacyModeExport', settings.privacyModeExport)
-                    "
-                  />
-                  <span class="setting-hint">{{
-                    t('settings.export.privacyModeHint')
-                  }}</span>
-                </div>
-              </div>
-            </div>
-
             <!-- ADVANCED TAB -->
             <div
               v-show="activeTab === 'advanced'"
@@ -448,23 +342,6 @@
                   />
                   <span class="setting-hint">{{
                     t('settings.performance.preloadHint')
-                  }}</span>
-                </div>
-                <div class="setting-row">
-                  <label for="setting-memoryOptimization">{{
-                    t('settings.performance.memoryOptimization')
-                  }}</label>
-                  <input
-                    type="checkbox"
-                    id="setting-memoryOptimization"
-                    class="setting-checkbox"
-                    v-model="settings.memoryOptimization"
-                    @change="
-                      save('memoryOptimization', settings.memoryOptimization)
-                    "
-                  />
-                  <span class="setting-hint">{{
-                    t('settings.performance.memoryHint')
                   }}</span>
                 </div>
               </div>
@@ -564,15 +441,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Cpu,
-  Download,
-  Layers,
-  Play,
-  RotateCcw,
-  Sliders,
-  X,
-} from 'lucide-vue-next';
+import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import type { SettingsManagerLike } from '../types';
 

@@ -176,8 +176,6 @@
     },
     "export": {
       "videoFormat": "Format vidéo",
-      "webm": "WebM (VP9) - Fichiers plus petits",
-      "mp4": "MP4 (H.264) - Meilleure compatibilité",
       "formatHint": "Format utilisé lors de l'exportation des vidéos",
       "privacyMode": "Privacy Mode Export",
       "privacyModeHint": "Strip timestamp, GPS, location, and mini-map from exports",
