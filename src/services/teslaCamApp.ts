@@ -68,7 +68,9 @@ export class TeslaCamApp {
     };
 
     const mapEl = document.getElementById('map');
-    if (mapEl && !this.mapView && w.MapView) {
+    if ((window as any)._vueMapView) {
+      this.mapView = (window as any)._vueMapView;
+    } else if (mapEl && !this.mapView && w.MapView) {
       this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) => this.onEventSelected(event));
     }
 
@@ -79,15 +81,27 @@ export class TeslaCamApp {
 
     this.videoPlayer = new w.VideoPlayer();
 
-    const timelineEl = document.getElementById('timeline');
-    this.timeline = new w.Timeline(timelineEl, (time: number) => this.onTimelineSeeked(time));
+    this.timeline = {
+      get isDragging() { return (window as any)._vueTimeline?.isDragging || false; },
+      updateTime: (t: number) => (window as any)._vueTimeline?.updateTime(t),
+      setDuration: (d: number) => (window as any)._vueTimeline?.setDuration(d),
+      setClipMarkers: (g: any[]) => (window as any)._vueTimeline?.setClipMarkers(g),
+      resetThumbnailTooltip: () => (window as any)._vueTimeline?.resetThumbnailTooltip?.(),
+      setGapMarkers: (g: any[], c: any[]) => (window as any)._vueTimeline?.setGapMarkers?.(g, c),
+      setSentryTriggerMarker: (t: number) => (window as any)._vueTimeline?.setSentryTriggerMarker?.(t),
+    };
 
     this.syncController = new w.SyncController(this.videoPlayer);
     this.layoutManager = new w.LayoutManager();
     this.screenshotCapture = new w.ScreenshotCapture(this.videoPlayer);
     this.videoEnhancer = new w.VideoEnhancer();
     this.videoExport = new w.VideoExport(this.videoPlayer, this.layoutManager);
-    this.clipMarking = new w.ClipMarking(this.timeline, this.videoPlayer);
+    this.clipMarking = {
+      getMarks: () => (window as any)._vueClipMarking?.getMarks?.() || { inPoint: null, outPoint: null },
+      setInPoint: () => (window as any)._vueClipMarking?.setInPoint?.(),
+      setOutPoint: () => (window as any)._vueClipMarking?.setOutPoint?.(),
+      clearMarks: () => (window as any)._vueClipMarking?.clearMarks?.(),
+    };
 
     this.settingsManager = new w.SettingsManager();
     this.versionManager = new w.VersionManager();

@@ -2166,3 +2166,6 @@ class MapView {
 if (typeof window !== 'undefined') {
   window.MapView = MapView;
 }
+
+export { MapView };
+export default MapView;

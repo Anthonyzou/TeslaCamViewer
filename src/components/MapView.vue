@@ -9,11 +9,13 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.heat';
+import { MapView } from '../../js/mapView.js';
 import type { TeslaCamEvent } from '../types';
 
-// Ensure L is globally available for plugins and existing helper modules
+// Ensure L and MapView are globally available for plugins and existing helper modules
 if (typeof window !== 'undefined') {
   (window as any).L = L;
+  (window as any).MapView = MapView;
 }
 
 const props = defineProps<{
@@ -38,28 +40,28 @@ function invalidateMapSize(): void {
 onMounted(() => {
   if (!mapContainer.value) return;
 
-  const app = (window as any).app;
-  const MapViewClass = (window as any).MapView;
-
-  if (MapViewClass) {
-    mapViewInstance = new MapViewClass(
-      mapContainer.value,
-      (event: TeslaCamEvent) => {
-        emit('selectEvent', event);
-        if (app?.onEventSelected) {
-          app.onEventSelected(event);
-        }
+  mapViewInstance = new MapView(
+    mapContainer.value,
+    (event: TeslaCamEvent) => {
+      emit('selectEvent', event);
+      const app = (window as any).app;
+      if (app?.onEventSelected) {
+        app.onEventSelected(event);
       }
-    );
-
-    if (app) {
-      app.mapView = mapViewInstance;
     }
+  );
 
-    const eventsToLoad = props.events || app?.filteredEvents || app?.allEvents;
-    if (eventsToLoad && eventsToLoad.length > 0) {
-      mapViewInstance.loadEvents(eventsToLoad);
-    }
+  mapViewInstance.initialize();
+
+  (window as any)._vueMapView = mapViewInstance;
+  const app = (window as any).app;
+  if (app) {
+    app.mapView = mapViewInstance;
+  }
+
+  const eventsToLoad = props.events || app?.filteredEvents || app?.allEvents;
+  if (eventsToLoad && eventsToLoad.length > 0) {
+    mapViewInstance.loadEvents(eventsToLoad);
   }
 
   // Use ResizeObserver for automatic sizing
