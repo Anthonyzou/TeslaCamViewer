@@ -8,6 +8,7 @@
     "dev": "node build.mjs --watch",
     "start": "node server/index.mjs",
     "test": "node --test",
+    "lint": "eslint",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -18,21 +19,25 @@
     "backblaze-b2": "1.7.1",
     "cors": "^2.8.5",
     "dayjs": "1.11.23",
-    "dotenv": "^16.3.1",
+    "dotenv": "^18.0.8",
     "express": "^4.18.2",
     "fluent-ffmpeg": "2.1.3",
     "leaflet": "1.9.4",
     "leaflet.heat": "0.2.0",
     "leaflet.markercluster": "1.5.3",
     "lucide-vue-next": "1.0.0",
-    "multer": "2.4.0",
     "uuid": "14.0.3",
     "vue": "3.5.44"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
     "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-vue": "10.11.1",
+    "globals": "17.13.0",
+    "jiti": "2.7.0",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2",
     "unplugin-vue": "8.0.0",
     "vue-tsc": "3.3.13"
   }

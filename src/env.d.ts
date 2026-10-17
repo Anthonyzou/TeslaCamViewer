@@ -19,7 +19,6 @@ declare global {
     helpModalInstance?: any;
     quickStartGuideInstance?: any;
     commandPaletteInstance?: any;
-    weatherService?: import('./utils/weatherService').WeatherService;
     FileSystemObserver?: any;
   }
 }

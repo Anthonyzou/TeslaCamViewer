@@ -49,15 +49,6 @@ export interface TeslaCamEvent {
   [key: string]: any;
 }
 
-export interface SettingsManagerLike {
-  settings: Record<string, any>;
-  defaults: Record<string, any>;
-  get: (key: string) => any;
-  set: (key: string, val: any) => void;
-  saveSettings: () => void;
-  resetToDefaults: () => void;
-}
-
 export interface DriveInfo {
   id: string;
   label?: string;

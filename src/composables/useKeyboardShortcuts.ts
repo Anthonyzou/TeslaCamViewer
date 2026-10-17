@@ -1,4 +1,5 @@
 import { onMounted, onUnmounted } from 'vue';
+import { settingsManager } from '../services/settingsManager';
 
 interface ShortcutActions {
   togglePlay?: () => void;
@@ -98,7 +99,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
       case 'KeyQ':
         event.preventDefault();
         if (actions?.openSettings) actions.openSettings();
-        else app?.settingsManager?.showSettingsModal();
+        else settingsManager?.showSettingsModal();
         break;
 
       case 'KeyI':

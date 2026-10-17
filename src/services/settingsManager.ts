@@ -250,5 +250,6 @@ class SettingsManager {
   }
 }
 
-export { SettingsManager };
+const settingsManager = new SettingsManager();
+export { SettingsManager, settingsManager };
 export default SettingsManager;

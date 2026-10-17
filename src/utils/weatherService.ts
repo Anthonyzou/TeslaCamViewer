@@ -4,6 +4,8 @@
  * Caches results in IndexedDB for offline access
  */
 
+import { settingsManager } from '../services/settingsManager';
+
 class WeatherService {
   private DB_NAME = 'TeslaCamViewer';
   private STORE_NAME = 'weatherCache';
@@ -222,7 +224,7 @@ class WeatherService {
     }
 
     // Check user preference from settings
-    const settings = window.app?.settingsManager;
+    const settings = settingsManager;
     const preference = settings?.get('temperatureUnits');
 
     let useFahrenheit;
@@ -252,7 +254,7 @@ class WeatherService {
     }
 
     // Use telemetry units setting if available
-    const settings = window.app?.settingsManager;
+    const settings = settingsManager;
     const units = settings?.get('telemetryOverlayUnits');
 
     let useMph;

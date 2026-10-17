@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 /**
  * usePlayback - Composable for multi-camera video playback controls
@@ -22,10 +22,13 @@ export function usePlayback() {
     const sp = String(vp.playbackRate ?? vp.playbackSpeed ?? '1');
     if (speed.value !== sp) speed.value = sp;
 
-    const loop = vp.loopEnabled ?? vp.isLooping ?? false;
-    if (isLooping.value !== loop) isLooping.value = loop;
+    // const loop = vp.loopEnabled ?? vp.isLooping ?? false;
+    // if (isLooping.value !== loop) isLooping.value = loop;
 
-    if (vp.currentClipIndex !== undefined && currentClipIndex.value !== vp.currentClipIndex) {
+    if (
+      vp.currentClipIndex !== undefined &&
+      currentClipIndex.value !== vp.currentClipIndex
+    ) {
       currentClipIndex.value = vp.currentClipIndex;
     }
   }
@@ -112,13 +115,8 @@ export function usePlayback() {
   function toggleLoop(): void {
     const vp = window.app?.videoPlayer;
     if (vp) {
-      const nextLoop = !(vp.loopEnabled ?? vp.isLooping ?? false);
-      if (typeof vp.setLoop === 'function') {
-        vp.setLoop(nextLoop);
-      } else {
-        vp.loopEnabled = nextLoop;
-      }
-      isLooping.value = nextLoop;
+      vp.loopEnabled = !vp.loopEnabled;
+      isLooping.value = vp.loopEnabled;
     }
   }
 

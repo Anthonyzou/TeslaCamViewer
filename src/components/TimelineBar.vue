@@ -56,53 +56,15 @@
         </div>
       </div>
     </div>
-
-    <!-- Zoom Controls (right side) -->
-    <div class="timeline-zoom-controls">
-      <button
-        id="zoomInBtn"
-        class="control-btn zoom-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.zoomIn')"
-        @click="emit('zoomIn')"
-      >
-        <ZoomIn :size="18" />
-      </button>
-      <button
-        id="zoomOutBtn"
-        class="control-btn zoom-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.zoomOut')"
-        @click="emit('zoomOut')"
-      >
-        <ZoomOut :size="18" />
-      </button>
-      <button
-        id="zoomResetBtn"
-        class="control-btn zoom-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.resetZoom')"
-        @click="emit('zoomReset')"
-      >
-        <RotateCcw :size="18" />
-      </button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useClipMarking } from '../composables/useClipMarking';
 
 defineProps<{
   hasEvent: boolean;
-}>();
-
-const emit = defineEmits<{
-  (e: 'zoomIn'): void;
-  (e: 'zoomOut'): void;
-  (e: 'zoomReset'): void;
 }>();
 
 const timelineEl = ref<HTMLElement | null>(null);

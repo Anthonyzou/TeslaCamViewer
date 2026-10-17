@@ -443,11 +443,7 @@
 <script setup lang="ts">
 import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import type { SettingsManagerLike } from '../types';
-
-const props = defineProps<{
-  settingsManager?: SettingsManagerLike;
-}>();
+import { settingsManager } from '../services/settingsManager';
 
 const isOpen = ref(false);
 const activeTab = ref('general');
@@ -455,8 +451,8 @@ const localeTick = ref(0);
 const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
 let mouseDownOnOverlay = false;
 
-function getManager(): SettingsManagerLike | null {
-  return props.settingsManager || window.app?.settingsManager || null;
+function getManager() {
+  return settingsManager;
 }
 
 // Reactive state mirroring settings

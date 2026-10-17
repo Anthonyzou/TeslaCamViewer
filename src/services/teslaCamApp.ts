@@ -2,15 +2,15 @@ import dayjs from 'dayjs';
 import { LayoutManager } from '../layout/layoutManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
+import weatherService from '../utils/weatherService';
 import { B2Client } from './b2Client';
 import { EventBrowser } from './eventBrowser';
 import { FolderManager } from './folderManager';
 import { FolderParser } from './folderParser';
 import { ScreenshotCapture } from './screenshotCapture';
-import { SettingsManager } from './settingsManager';
+import { settingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
 import { SyncController } from './syncController';
-import { VersionManager } from './versionManager';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
 
@@ -27,8 +27,6 @@ export class TeslaCamApp {
   public layoutManager = new LayoutManager();
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
   public videoExport = new VideoExport(this.videoPlayer);
-  public settingsManager = new SettingsManager();
-  public versionManager = new VersionManager();
   public statisticsManager = new StatisticsManager();
   public b2Client = new B2Client();
 
@@ -47,9 +45,6 @@ export class TeslaCamApp {
       window._vueTimeline?.setGapMarkers?.(g, c),
     setSentryTriggerMarker: (t: number) =>
       window._vueTimeline?.setSentryTriggerMarker?.(t),
-    zoomIn: () => window._vueTimeline?.zoomIn?.(),
-    zoomOut: () => window._vueTimeline?.zoomOut?.(),
-    resetZoom: () => window._vueTimeline?.resetZoom?.(),
   };
 
   public clipMarking = {
@@ -115,13 +110,8 @@ export class TeslaCamApp {
       togglePanel: () => w.filterPanelInstance?.togglePanel?.(),
     };
 
-    const mapEl = document.getElementById('map');
     if (w._vueMapView) {
       this.mapView = w._vueMapView;
-    } else if (mapEl && !this.mapView && w.MapView) {
-      this.mapView = new w.MapView(mapEl, (event: TeslaCamEvent) =>
-        this.onEventSelected(event)
-      );
     }
 
     const eventListEl = document.getElementById('eventList');
@@ -161,7 +151,7 @@ export class TeslaCamApp {
       };
 
       this.videoPlayer.onEnded = () => {
-        if (this.settingsManager?.get('autoPlayNextEvent')) {
+        if (settingsManager?.get('autoPlayNextEvent')) {
           this.autoPlayNextEvent();
         }
       };
@@ -177,20 +167,20 @@ export class TeslaCamApp {
   }
 
   public applyUserSettings(): void {
-    if (!this.settingsManager) return;
-    this.settingsManager.applySettings(this);
+    if (!settingsManager) return;
+    settingsManager.applySettings(this);
   }
 
   public applyPerformanceSettings(): void {
-    if (!this.settingsManager) return;
-    const preload = this.settingsManager.get('preloadNextClip');
+    if (!settingsManager) return;
+    const preload = settingsManager.get('preloadNextClip');
     if (this.videoPlayer) {
       this.videoPlayer.disablePreload = !preload;
     }
   }
 
   public async tryRestoreLastFolder(): Promise<void> {
-    if (!this.settingsManager?.get('rememberLastFolder')) return;
+    if (!settingsManager?.get('rememberLastFolder')) return;
     try {
       if (this.folderParser?.hasStoredHandle) {
         const hasStored = await this.folderParser.hasStoredHandle();
@@ -274,8 +264,9 @@ export class TeslaCamApp {
       }
 
       this.updateEventInfo(event);
+
       if (typeof this.mapView?.selectEvent === 'function') {
-        this.mapView.selectEvent(event);
+        this.mapView?.selectEvent(event);
       }
 
       if (this.clipMarking) {
@@ -310,7 +301,7 @@ export class TeslaCamApp {
       }
 
       if (
-        this.settingsManager?.get('autoPlayNextEvent') ||
+        settingsManager?.get('autoPlayNextEvent') ||
         this.currentEventIndex > 0
       ) {
         await this.play();
@@ -440,22 +431,17 @@ export class TeslaCamApp {
       return;
     }
 
-    const weatherService = window.WeatherService?.getInstance?.();
-    if (!weatherService) return;
-
     const lat = event.metadata?.est_lat;
     const lon = event.metadata?.est_lon;
     const time = event.timestamp;
 
     if (lat && lon && time) {
       try {
-        const units =
-          this.settingsManager?.get('temperatureUnits') || 'celsius';
-        const weather = await weatherService.getHistoricalWeather(
+        const units = settingsManager?.get('temperatureUnits') || 'celsius';
+        const weather = await weatherService.getWeather(
           lat,
           lon,
-          new Date(time),
-          units
+          new Date(time)
         );
         if (weather) {
           weatherEl.textContent = `${weather.temperature}°${units === 'fahrenheit' ? 'F' : 'C'} ${weather.description}`;
@@ -576,7 +562,7 @@ export class TeslaCamApp {
       'exportFormatSelect'
     ) as HTMLSelectElement | null;
     const format =
-      formatSelect?.value || this.settingsManager?.get('exportFormat') || 'mp4';
+      formatSelect?.value || settingsManager?.get('exportFormat') || 'mp4';
     if (this.videoExport) {
       await this.videoExport.startExport({ camera, format });
     }
@@ -661,7 +647,7 @@ export class TeslaCamApp {
         this.applyFilters();
         this.updateDriveSelector(this.folderManager.getDrives());
 
-        if (this.settingsManager?.get('rememberLastFolder')) {
+        if (settingsManager?.get('rememberLastFolder')) {
           await this.folderParser.saveFolderHandle();
         }
 
@@ -1084,7 +1070,7 @@ export class TeslaCamApp {
         title: 'Open Settings',
         category: 'General',
         shortcut: 'Q',
-        action: () => this.settingsManager?.showSettingsModal(),
+        action: () => settingsManager?.showSettingsModal(),
       },
       {
         id: 'shortcuts',

@@ -1,3 +1,4 @@
+import { settingsManager } from '../services/settingsManager';
 import { useDrives } from './useDrives';
 import { useEvents } from './useEvents';
 import { useLayout } from './useLayout';
@@ -46,7 +47,7 @@ export function useTeslaCam() {
   }
 
   function openSettings(): void {
-    window.app?.settingsManager?.showSettingsModal();
+    settingsManager?.showSettingsModal();
   }
 
   function syncFromApp(): void {
@@ -106,9 +107,6 @@ export function useTeslaCam() {
     unhideCamera: layout.unhideCamera,
     toggleSidebar: layout.toggleSidebar,
     closeSidebar: layout.closeSidebar,
-    zoomIn: layout.zoomIn,
-    zoomOut: layout.zoomOut,
-    zoomReset: layout.zoomReset,
 
     // Marks, Export & Modals
     markIn,

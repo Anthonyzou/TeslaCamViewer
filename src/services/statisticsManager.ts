@@ -812,5 +812,6 @@ class StatisticsManager {
   }
 }
 
-export { StatisticsManager };
+const statisticsManager = new StatisticsManager();
+export { StatisticsManager, statisticsManager };
 export default StatisticsManager;

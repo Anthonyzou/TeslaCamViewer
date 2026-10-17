@@ -2,7 +2,9 @@
  * EventBrowser - Handles displaying and selecting events
  * Cache limit: 128 entries
  */
+import weatherService from '../utils/weatherService';
 import { FolderParser } from './folderParser';
+import { settingsManager } from './settingsManager';
 
 class EventBrowser {
   [key: string]: any;
@@ -10,13 +12,11 @@ class EventBrowser {
   constructor(
     containerElement: any,
     onEventSelect: any,
-    videoPlayer: any = null,
-    settingsManager: any = null
+    videoPlayer: any = null
   ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
     this.videoPlayer = videoPlayer;
-    this.settingsManager = settingsManager;
     this._src = atob('dGVzbGFjYW12aWV3ZXI='); // source ref
     this.events = [];
     this.selectedEvent = null;
@@ -27,11 +27,9 @@ class EventBrowser {
     this.setupLazyLoading();
 
     // Listen for settings changes to refresh weather units
-    if (this.settingsManager) {
-      this.settingsManager.onChange(() => {
-        this.refreshAllWeather();
-      });
-    }
+    settingsManager.onChange(() => {
+      this.refreshAllWeather();
+    });
   }
 
   /**
@@ -684,7 +682,7 @@ class EventBrowser {
     }
 
     try {
-      const weather = await window.weatherService?.getWeather(
+      const weather = await weatherService.getWeather(
         lat,
         lng,
         event.timestamp

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 /**
  * useLayout - Composable for multi-camera layouts, camera visibility, and sidebar toggling
@@ -64,18 +64,6 @@ export function useLayout() {
     window.app?.closeSidebar();
   }
 
-  function zoomIn(): void {
-    window.app?.timeline?.zoomIn();
-  }
-
-  function zoomOut(): void {
-    window.app?.timeline?.zoomOut();
-  }
-
-  function zoomReset(): void {
-    window.app?.timeline?.resetZoom();
-  }
-
   return {
     layout,
     hiddenCameras,
@@ -86,9 +74,7 @@ export function useLayout() {
     unhideCamera,
     toggleSidebar,
     closeSidebar,
-    zoomIn,
-    zoomOut,
-    zoomReset,
+
     syncLayout,
   };
 }
