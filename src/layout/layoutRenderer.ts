@@ -344,7 +344,9 @@ export class LayoutRenderer {
       // Collect rects of higher z-index cameras for occlusion checking
       const higherCameraRects = [];
       if (fullConfig?.cameras && gridRect) {
-        for (const [camName, cam] of Object.entries(fullConfig.cameras as Record<string, any>)) {
+        for (const [camName, cam] of Object.entries(
+          fullConfig.cameras as Record<string, any>
+        )) {
           if (!cam.enabled || (cam.zIndex || 1) <= myZIndex) continue;
 
           // Get the container for this camera
@@ -532,7 +534,12 @@ export class LayoutRenderer {
    * @param {number} videoHeight - Native video height
    * @returns {Object} Export config with pixel positions
    */
-  calculateExportConfig(config: any, videoWidth: number, videoHeight: number, options: any = {}) {
+  calculateExportConfig(
+    config: any,
+    videoWidth: number,
+    videoHeight: number,
+    options: any = {}
+  ) {
     const visibleCameras = options.visibleCameras || null;
     const aspectRatio = config.canvas?.aspectRatio || '4:3';
     const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatio] || {
@@ -620,7 +627,9 @@ export class LayoutRenderer {
 
     // Sort cameras by z-index for proper layering
     const sortedCameras = Object.entries(cameras as Record<string, any>)
-      .filter(([name, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0)
+      .filter(
+        ([name, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0
+      )
       .sort((a: any, b: any) => a[1].zIndex - b[1].zIndex);
 
     // Draw each camera
@@ -885,7 +894,7 @@ export class LayoutRenderer {
    * @param {number} y
    * @param {number} spacing
    */
-  drawTextWithLetterSpacing(ctx, text, x, y, spacing) {
+  drawTextWithLetterSpacing(ctx, text: string, x, y, spacing) {
     let currentX = x;
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
@@ -971,7 +980,9 @@ export class LayoutRenderer {
    */
   getVisibleCameraCount(config: any) {
     if (!config?.cameras) return 0;
-    return Object.values(config.cameras as Record<string, any>).filter((c: any) => c.enabled).length;
+    return Object.values(config.cameras as Record<string, any>).filter(
+      (c: any) => c.enabled
+    ).length;
   }
 
   /**

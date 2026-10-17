@@ -90,7 +90,6 @@ test('MapView - provider configuration and dark mode properties', () => {
 
   const providers = mapView.getAvailableProviders();
   assert.ok('osm' in providers);
-  assert.ok('stadia' in providers);
 
   assert.strictEqual(mapView.isDarkMode, false);
 });

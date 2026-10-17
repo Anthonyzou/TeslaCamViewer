@@ -10,6 +10,7 @@
           id="videoFront"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.front">
           {{ t('cameras.front') }}
@@ -28,6 +29,7 @@
           id="videoBack"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.back">
           {{ t('cameras.back') }}
@@ -49,6 +51,7 @@
           id="videoLeft"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.left">
           {{ t('cameras.left') }}
@@ -70,6 +73,7 @@
           id="videoRight"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.right">
           {{ t('cameras.right') }}
@@ -91,6 +95,7 @@
           id="videoLeftPillar"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.leftPillar">
           {{ t('cameras.leftPillar') }}
@@ -112,6 +117,7 @@
           id="videoRightPillar"
           class="video-player"
           crossorigin="anonymous"
+          preload="auto"
         ></video>
         <div class="video-label" data-i18n="cameras.rightPillar">
           {{ t('cameras.rightPillar') }}

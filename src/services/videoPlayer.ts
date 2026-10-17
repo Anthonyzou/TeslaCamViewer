@@ -8,16 +8,16 @@ export class VideoPlayer {
     a: {},
     b: {},
   };
-  public activeBank: string = 'a';
+  public activeBank = 'a';
   public currentEvent: any = null;
-  public currentClipIndex: number = -1;
-  public loopEnabled: boolean = false;
-  public disableAutoAdvance: boolean = false;
-  public hasPillarCameras: boolean = false;
-  public _isPlayingIntent: boolean = false;
-  public _preloading: boolean = false;
-  public _intendedPlaybackRate: number = 1.0;
-  public disablePreload: boolean = false;
+  public currentClipIndex = -1;
+  public loopEnabled = false;
+  public disableAutoAdvance = false;
+  public hasPillarCameras = false;
+  public _isPlayingIntent = false;
+  public _preloading = false;
+  public _intendedPlaybackRate = 1.0;
+  public disablePreload = false;
 
   public onClipChange: any = null;
   public onTimeUpdate: any = null;
@@ -81,19 +81,13 @@ export class VideoPlayer {
     this.loopEnabled = enabled;
   }
 
-  getCurrentTime() {
-    return this.currentTime;
-  }
-
-  getCurrentAbsoluteTime() {
-    return this.absoluteTime;
-  }
-
   _applyPlaybackRateToAll() {
-    for (const v of Object.values(this.banks.a))
-      v.playbackRate = this._intendedPlaybackRate;
-    for (const v of Object.values(this.banks.b))
-      v.playbackRate = this._intendedPlaybackRate;
+    for (const v of Object.values(this.banks.a)) {
+      if (v) v.playbackRate = this._intendedPlaybackRate;
+    }
+    for (const v of Object.values(this.banks.b)) {
+      if (v) v.playbackRate = this._intendedPlaybackRate;
+    }
   }
 
   /**
@@ -127,6 +121,7 @@ export class VideoPlayer {
   }
 
   _resolveVideos(className: string): Record<string, HTMLVideoElement> {
+    if (typeof document === 'undefined') return {};
     const ids: Record<string, string> = {
       front: 'videoFront',
       back: 'videoBack',
@@ -140,7 +135,17 @@ export class VideoPlayer {
       const el = document.getElementById(id) as HTMLVideoElement | null;
       if (el) {
         el.crossOrigin = 'anonymous';
+        el.preload = 'auto';
         el.classList.add(className);
+        el.style.position = 'absolute';
+        el.style.top = '0';
+        el.style.left = '0';
+        el.style.width = '100%';
+        el.style.height = '100%';
+        el.style.objectFit = 'inherit';
+        el.style.visibility = 'visible';
+        el.style.opacity = '1';
+        el.style.zIndex = '1';
         out[cam] = el;
       }
     }
@@ -148,18 +153,23 @@ export class VideoPlayer {
   }
 
   _createSecondBank(className: string): Record<string, HTMLVideoElement> {
+    if (typeof document === 'undefined') return {};
     const out: Record<string, HTMLVideoElement> = {};
     for (const [cam, primary] of Object.entries(this.banks.a)) {
       const el = document.createElement('video');
       el.className = `video-player ${className}`;
       el.crossOrigin = 'anonymous';
-      el.style.display = 'none';
+      el.preload = 'auto';
       el.style.position = 'absolute';
       el.style.top = '0';
       el.style.left = '0';
       el.style.width = '100%';
       el.style.height = '100%';
       el.style.objectFit = 'inherit';
+      el.style.visibility = 'hidden';
+      el.style.opacity = '0';
+      el.style.zIndex = '0';
+      el.style.pointerEvents = 'none';
       el.muted = true;
       el.playsInline = true;
       primary.parentElement?.appendChild(el);
@@ -233,15 +243,10 @@ export class VideoPlayer {
   }
 
   _checkPreloadTrigger() {
-    // 20 seconds before end, trigger preload of next clip
-    if (this._isPlayingIntent && !this._preloading && this.currentEvent) {
-      const remaining = this.duration - this.currentTime;
-      if (remaining > 0 && remaining < 20 * this.playbackRate) {
-        const nextIndex = this.currentClipIndex + 1;
-        if (nextIndex < this.currentEvent.clipGroups.length) {
-          this._preloading = true;
-          this.preloadClip(nextIndex);
-        }
+    if (!this.disablePreload && !this._preloading && this.currentEvent) {
+      const nextIndex = this.currentClipIndex + 1;
+      if (nextIndex < this.currentEvent.clipGroups.length) {
+        this.preloadClip(nextIndex);
       }
     }
   }
@@ -272,7 +277,9 @@ export class VideoPlayer {
 
     if (!isPreload) {
       // Hardware pause only, preserve user intent
-      for (const v of Object.values(this.videos)) v.pause();
+      for (const v of Object.values(this.videos)) {
+        if (v && typeof v.pause === 'function') v.pause();
+      }
       this.currentClipIndex = clipIndex;
       this.resetAllVideoLabelStates();
     }
@@ -298,7 +305,11 @@ export class VideoPlayer {
           clearTimeout(timeout);
           resolve();
         };
+        video.preload = 'auto';
         video.src = url;
+        if (typeof video.load === 'function') {
+          video.load();
+        }
         if (!url) {
           clearTimeout(timeout);
           resolve();
@@ -315,24 +326,52 @@ export class VideoPlayer {
       if (this.onClipChange) this.onClipChange(clipIndex);
       if (this._isPlayingIntent) this.play();
       this._preloading = false;
+
+      // Preload next clip immediately into the idle bank
+      const nextIndex = clipIndex + 1;
+      if (
+        !this.disablePreload &&
+        this.currentEvent &&
+        nextIndex < this.currentEvent.clipGroups.length
+      ) {
+        this.preloadClip(nextIndex);
+      }
     }
   }
 
   async preloadClip(clipIndex) {
-    await this.loadClip(clipIndex, true);
+    if (this.disablePreload || this._preloading) return;
+    this._preloading = true;
+    try {
+      await this.loadClip(clipIndex, true);
+    } finally {
+      this._preloading = false;
+    }
   }
 
   async swapBanks() {
     const oldBankId = this.activeBank;
     const newBankId = this.activeBank === 'a' ? 'b' : 'a';
 
-    // Hide old, show new
+    // Hide old, show new using visibility & opacity so preload is never suspended by Chrome
     for (const v of Object.values(this.banks[oldBankId])) {
-      v.style.display = 'none';
-      v.pause();
+      if (v) {
+        if (v.style) {
+          v.style.visibility = 'hidden';
+          v.style.opacity = '0';
+          v.style.zIndex = '0';
+          v.style.pointerEvents = 'none';
+        }
+        if (typeof v.pause === 'function') v.pause();
+      }
     }
     for (const v of Object.values(this.banks[newBankId])) {
-      v.style.display = 'block';
+      if (v && v.style) {
+        v.style.visibility = 'visible';
+        v.style.opacity = '1';
+        v.style.zIndex = '1';
+        v.style.pointerEvents = 'auto';
+      }
     }
 
     this.activeBank = newBankId;
@@ -342,6 +381,16 @@ export class VideoPlayer {
 
     if (this.onClipChange) this.onClipChange(this.currentClipIndex);
     if (this._isPlayingIntent) this.play();
+
+    // Preload next clip immediately into the newly idle bank
+    const nextIndex = this.currentClipIndex + 1;
+    if (
+      !this.disablePreload &&
+      this.currentEvent &&
+      nextIndex < this.currentEvent.clipGroups.length
+    ) {
+      this.preloadClip(nextIndex);
+    }
   }
 
   play() {

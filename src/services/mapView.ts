@@ -450,6 +450,24 @@ class MapView {
   }
 
   /**
+   * Get available tile providers
+   */
+  getAvailableProviders(): Record<string, string> {
+    const providers: Record<string, string> = {};
+    for (const [id, config] of Object.entries(this.TILE_PROVIDERS)) {
+      providers[id] = config.name;
+    }
+    return providers;
+  }
+
+  /**
+   * Get current tile provider ID
+   */
+  getCurrentProvider(): string {
+    return this.tileProvider;
+  }
+
+  /**
    * Destroy map instance
    */
   destroy(): void {
