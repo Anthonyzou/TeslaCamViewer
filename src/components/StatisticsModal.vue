@@ -313,9 +313,11 @@ import {
   Shield,
   X,
 } from 'lucide-vue-next';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useModals } from '../composables/useModals';
 
-const isOpen = ref(false);
+const { isStatisticsOpen: isOpen, statisticsData, statisticsModal } =
+  useModals();
 const activeTab = ref('overview');
 const localeTick = ref(0);
 let mouseDownOnOverlay = false;
@@ -332,6 +334,17 @@ const telemetryResults = ref<{
 
 const payload = ref<Record<string, any>>({});
 
+watch(
+  statisticsData,
+  (data) => {
+    if (data) {
+      payload.value = data;
+      activeTab.value = 'overview';
+    }
+  },
+  { immediate: true }
+);
+
 function t(key: string): string {
   void localeTick.value;
   return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
@@ -346,13 +359,11 @@ const hasSentryData = computed<boolean>(() => {
 });
 
 function open(data: Record<string, any>): void {
-  payload.value = data;
-  activeTab.value = 'overview';
-  isOpen.value = true;
+  statisticsModal.open(data);
 }
 
 function close(): void {
-  isOpen.value = false;
+  statisticsModal.close();
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
@@ -417,17 +428,10 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.statisticsModalInstance = {
-    open,
-    close,
-  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.statisticsModalInstance?.open === open) {
-    delete window.statisticsModalInstance;
-  }
 });
 
 defineExpose({

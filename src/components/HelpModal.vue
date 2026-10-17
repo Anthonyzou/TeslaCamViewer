@@ -199,8 +199,9 @@
 <script setup lang="ts">
 import { X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useModals } from '../composables/useModals';
 
-const isOpen = ref(false);
+const { isHelpOpen: isOpen, helpModal } = useModals();
 const localeTick = ref(0);
 let mouseDownOnOverlay = false;
 
@@ -210,15 +211,15 @@ function t(key: string): string {
 }
 
 function open(): void {
-  isOpen.value = true;
+  helpModal.open();
 }
 
 function close(): void {
-  isOpen.value = false;
+  helpModal.close();
 }
 
 function toggle(): void {
-  isOpen.value = !isOpen.value;
+  helpModal.toggle();
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
@@ -266,20 +267,10 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.helpModalInstance = {
-    open,
-    close,
-    toggle,
-    show: open,
-    hide: close,
-  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.helpModalInstance?.open === open) {
-    delete window.helpModalInstance;
-  }
 });
 
 defineExpose({

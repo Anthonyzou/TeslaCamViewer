@@ -142,9 +142,10 @@
 <script setup lang="ts">
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useModals } from '../composables/useModals';
 import { folderManager } from '../services/folderManager';
 
-const isOpen = ref(false);
+const { isDriveManagementOpen: isOpen, driveManagementModal } = useModals();
 const drivesList = ref<any[]>([]);
 const localeTick = ref(0);
 let mouseDownOnOverlay = false;
@@ -160,11 +161,11 @@ function refreshDrives(): void {
 
 function open(): void {
   refreshDrives();
-  isOpen.value = true;
+  driveManagementModal.open();
 }
 
 function close(): void {
-  isOpen.value = false;
+  driveManagementModal.close();
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
@@ -289,18 +290,12 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.driveManagementModalInstance = {
-    open,
-    close,
-    refreshDrives,
-  };
+  driveManagementModal.registerRefreshHandler(refreshDrives);
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.driveManagementModalInstance?.open === open) {
-    delete window.driveManagementModalInstance;
-  }
+  driveManagementModal.unregisterRefreshHandler();
 });
 
 defineExpose({

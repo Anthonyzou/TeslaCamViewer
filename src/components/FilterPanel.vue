@@ -133,6 +133,7 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
 import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { filterPanelStore, useFilterPanel } from '../composables/useFilterPanel';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{
@@ -144,10 +145,9 @@ function getFilter(): EventFilterLike | null {
   return props.eventFilter || window.app?.eventFilter || null;
 }
 
-const isExpanded = ref(false);
+const { isExpanded, filterCount } = useFilterPanel();
 const localeTick = ref(0);
 const searchQuery = ref('');
-const filterCount = ref(0);
 
 const filters = reactive({
   types: {
@@ -274,23 +274,18 @@ onMounted(() => {
   syncFromEventFilter();
   updateBadge();
   window.addEventListener('localeChanged', onLocaleChange);
-  window.filterPanelInstance = {
+  filterPanelStore.registerHandlers({
     updateBadge,
-    updateFilterBadge: updateBadge,
     syncFromEventFilter,
-    refresh: syncFromEventFilter,
-    togglePanel,
     clearAllFilters,
     getFilters: () => getFilter()?.getFilters() || null,
-  };
+  });
 });
 
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
   window.removeEventListener('localeChanged', onLocaleChange);
-  if (window.filterPanelInstance?.updateBadge === updateBadge) {
-    delete window.filterPanelInstance;
-  }
+  filterPanelStore.unregisterHandlers();
 });
 
 defineExpose({

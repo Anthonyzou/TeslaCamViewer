@@ -1,5 +1,15 @@
 import dayjs from 'dayjs';
 import { useClipMarking } from '../composables/useClipMarking';
+import { filterPanelStore } from '../composables/useFilterPanel';
+import { mapViewStore } from '../composables/useMapView';
+import {
+  commandPaletteModalStore,
+  diagnosticsModalStore,
+  driveManagementModalStore,
+  driveSetupModalStore,
+  helpModalStore,
+  quickStartGuideModalStore,
+} from '../composables/useModals';
 import { timelineStore } from '../composables/useTimeline';
 import { LayoutManager } from '../layout/layoutManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
@@ -30,16 +40,21 @@ export class TeslaCamApp {
   public statisticsManager = new StatisticsManager();
   public b2Client = new B2Client();
 
-  public mapView: any = null;
+  public get mapView() {
+    return mapViewStore.instance;
+  }
+  public set mapView(v: any) {
+    mapViewStore.setInstance(v);
+  }
   public eventBrowser: any = null;
 
   public timeline = timelineStore;
   public clipMarking = useClipMarking(() => this.videoPlayer);
 
-  public filterPanel: any = null;
-  public helpModal: any = null;
-  public quickStartGuide: any = null;
-  public commandPalette: any = null;
+  public filterPanel = filterPanelStore;
+  public helpModal = helpModalStore;
+  public quickStartGuide = quickStartGuideModalStore;
+  public commandPalette = commandPaletteModalStore;
   public telemetryOverlay: any = null;
 
   public navigateToNearMiss(key: string, index: number = 0): void {
@@ -76,22 +91,6 @@ export class TeslaCamApp {
   }
 
   private initEngines(): void {
-    const w = window;
-
-    this.filterPanel = w.filterPanelInstance || {
-      updateFilterBadge: () => w.filterPanelInstance?.updateBadge(),
-      updateBadge: () => w.filterPanelInstance?.updateBadge(),
-      refresh: () => w.filterPanelInstance?.syncFromEventFilter(),
-      syncFromEventFilter: () => w.filterPanelInstance?.syncFromEventFilter(),
-      clearAllFilters: () => w.filterPanelInstance?.clearAllFilters(),
-      getFilters: () => w.filterPanelInstance?.getFilters() || {},
-      togglePanel: () => w.filterPanelInstance?.togglePanel?.(),
-    };
-
-    if (w._vueMapView) {
-      this.mapView = w._vueMapView;
-    }
-
     const eventListEl = document.getElementById('eventList');
     if (eventListEl) {
       this.eventBrowser = new EventBrowser(
@@ -99,20 +98,6 @@ export class TeslaCamApp {
         (event: TeslaCamEvent) => this.onEventSelected(event)
       );
     }
-
-    this.helpModal = w.helpModalInstance || {
-      show: () => w.helpModalInstance?.open(),
-      hide: () => w.helpModalInstance?.close(),
-      toggle: () => w.helpModalInstance?.toggle(),
-    };
-
-    this.quickStartGuide = w.quickStartGuideInstance || {
-      show: () => w.quickStartGuideInstance?.open(),
-      hide: () => w.quickStartGuideInstance?.close(),
-      showIfFirstRun: () => w.quickStartGuideInstance?.showIfFirstRun(),
-    };
-
-    this.commandPalette = w.commandPaletteInstance || null;
   }
 
   private wireCallbacks(): void {
@@ -820,19 +805,15 @@ export class TeslaCamApp {
     handle: any,
     existingDrive: any = null
   ): Promise<any> {
-    const inst = window.driveSetupModalInstance;
-    if (inst) {
-      return await inst.promptSetup(handle, existingDrive);
-    }
-    return null;
+    return await driveSetupModalStore.promptSetup(handle, existingDrive);
   }
 
   public showDriveManagementModal(): void {
-    window.driveManagementModalInstance?.open();
+    driveManagementModalStore.open();
   }
 
   public showDiagnosticModal(report: string): void {
-    window.diagnosticsModalInstance?.open(report);
+    diagnosticsModalStore.open(report);
   }
 
   public async copyDiagnosticReport(): Promise<void> {
@@ -965,10 +946,9 @@ export class TeslaCamApp {
   }
 
   private _registerCommandPaletteCommands(): void {
-    const cp = window.commandPaletteInstance;
-    if (!cp || typeof cp.registerMany !== 'function') return;
+    const cp = this.commandPalette;
 
-    cp.registerMany([
+    cp?.registerMany([
       {
         id: 'play-pause',
         title: 'Play / Pause',

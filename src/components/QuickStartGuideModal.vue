@@ -170,11 +170,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useModals } from '../composables/useModals';
 
 const STORAGE_KEY = 'teslacamviewer_quickstart_shown';
 const totalSteps = 5;
 
-const isOpen = ref(false);
+const { isQuickStartGuideOpen: isOpen, quickStartGuideModal } = useModals();
 const currentStep = ref(0);
 const localeTick = ref(0);
 const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
@@ -203,11 +204,11 @@ const currentStepData = computed(() => {
 
 function open(): void {
   currentStep.value = 0;
-  isOpen.value = true;
+  quickStartGuideModal.open();
 }
 
 function close(): void {
-  isOpen.value = false;
+  quickStartGuideModal.close();
   try {
     localStorage.setItem(STORAGE_KEY, 'true');
   } catch {}
@@ -266,25 +267,10 @@ function showIfFirstRun(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.quickStartGuideInstance = {
-    open,
-    close,
-    show: open,
-    hide: close,
-    showIfFirstRun,
-    reset: () => {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {}
-    },
-  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.quickStartGuideInstance?.open === open) {
-    delete window.quickStartGuideInstance;
-  }
 });
 
 defineExpose({

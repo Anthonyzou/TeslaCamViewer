@@ -8,17 +8,7 @@ declare global {
   interface Window {
     app?: import('./services/teslaCamApp').TeslaCamApp;
     i18n?: import('./utils/i18n').I18n;
-    _vueMapView?: any;
     showDirectoryPicker: any;
-    settingsModalInstance?: any;
-    driveSetupModalInstance?: any;
-    driveManagementModalInstance?: any;
-    diagnosticsModalInstance?: any;
-    statisticsModalInstance?: any;
-    filterPanelInstance?: any;
-    helpModalInstance?: any;
-    quickStartGuideInstance?: any;
-    commandPaletteInstance?: any;
     FileSystemObserver?: any;
   }
 }

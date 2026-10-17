@@ -9,6 +9,7 @@ import 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { useMapView } from '../composables/useMapView';
 import { MapView } from '../services/mapView';
 import type { TeslaCamEvent } from '../types';
 
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   (e: 'selectEvent', event: TeslaCamEvent): void;
 }>();
 
+const { setMapView } = useMapView();
 const mapContainer = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 let mapViewInstance: any = null;
@@ -44,7 +46,7 @@ onMounted(() => {
 
   mapViewInstance.initialize();
 
-  window._vueMapView = mapViewInstance;
+  setMapView(mapViewInstance);
   const app = window.app;
   if (app) {
     app.mapView = mapViewInstance;
@@ -91,6 +93,7 @@ onUnmounted(() => {
     resizeObserver = null;
   }
   if (mapViewInstance) {
+    setMapView(null);
     if (typeof mapViewInstance.destroy === 'function') {
       mapViewInstance.destroy();
     }

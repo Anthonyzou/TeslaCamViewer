@@ -10,6 +10,9 @@ export * from './useLayout';
 export * from './usePlayback';
 export * from './useTimeline';
 export * from './useClipMarking';
+export * from './useMapView';
+export * from './useFilterPanel';
+export * from './useModals';
 
 /**
  * useTeslaCam - Top-level orchestrator composing specialized domain composables

@@ -443,10 +443,11 @@
 <script setup lang="ts">
 import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { useModals } from '../composables/useModals';
 import { settingsManager } from '../services/settingsManager';
 
-const isOpen = ref(false);
-const activeTab = ref('general');
+const { isSettingsOpen: isOpen, settingsActiveTab: activeTab, settingsModal } =
+  useModals();
 const localeTick = ref(0);
 const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
 let mouseDownOnOverlay = false;
@@ -478,13 +479,11 @@ const currentSectionTitle = computed<string>(() => {
 });
 
 function open(tab?: string): void {
-  syncFromManager();
-  if (tab) activeTab.value = tab;
-  isOpen.value = true;
+  settingsModal.open(tab);
 }
 
 function close(): void {
-  isOpen.value = false;
+  settingsModal.close();
 }
 
 function onOverlayMouseDown(e: MouseEvent): void {
@@ -536,18 +535,12 @@ function onLocaleChanged(): void {
 onMounted(() => {
   syncFromManager();
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.settingsModalInstance = {
-    open,
-    close,
-    syncFromManager,
-  };
+  settingsModal.registerSyncHandler(syncFromManager);
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.settingsModalInstance?.open === open) {
-    delete window.settingsModalInstance;
-  }
+  settingsModal.unregisterSyncHandler();
 });
 
 defineExpose({

@@ -1,3 +1,5 @@
+import { statisticsModalStore } from '../composables/useModals';
+
 /**
  * StatisticsManager - Calculates and displays event statistics
  * Shows event breakdowns, recording stats, top locations, trigger analysis,
@@ -778,37 +780,33 @@ class StatisticsManager {
       })
       .join('');
 
-    if (window.statisticsModalInstance) {
-      window.statisticsModalInstance.open({
-        stats: {
-          ...stats,
-          formattedDuration: this.formatDuration(stats.totalRecordingTime),
-        },
-        storage,
-        charts: {
-          timeline: timelineChartHTML,
-          timeOfDay: timeOfDayChartHTML,
-          trends: trendsChartHTML,
-          cameraDistribution: cameraDistributionHTML,
-          dayOfWeek: dayOfWeekChartHTML,
-          dayNight: dayNightChartHTML,
-        },
-        triggerHTML,
-        locationsHTML,
-        sentryLocationsHTML,
-        typesHTML,
-        manager: this,
-      });
-    }
+    statisticsModalStore.open({
+      stats: {
+        ...stats,
+        formattedDuration: this.formatDuration(stats.totalRecordingTime),
+      },
+      storage,
+      charts: {
+        timeline: timelineChartHTML,
+        timeOfDay: timeOfDayChartHTML,
+        trends: trendsChartHTML,
+        cameraDistribution: cameraDistributionHTML,
+        dayOfWeek: dayOfWeekChartHTML,
+        dayNight: dayNightChartHTML,
+      },
+      triggerHTML,
+      locationsHTML,
+      sentryLocationsHTML,
+      typesHTML,
+      manager: this,
+    });
   }
 
   /**
    * Hide statistics modal
    */
   hideModal() {
-    if (window.statisticsModalInstance) {
-      window.statisticsModalInstance.close();
-    }
+    statisticsModalStore.close();
   }
 }
 

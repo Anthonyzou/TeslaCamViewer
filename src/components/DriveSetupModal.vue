@@ -109,8 +109,9 @@
 <script setup lang="ts">
 import { Folder, Info, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useModals } from '../composables/useModals';
 
-const isOpen = ref(false);
+const { isDriveSetupOpen: isOpen, driveSetupModal } = useModals();
 const isEdit = ref(false);
 const folderName = ref('');
 const label = ref('');
@@ -192,17 +193,12 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  window.driveSetupModalInstance = {
-    promptSetup,
-    close,
-  };
+  driveSetupModal.registerPromptHandler(promptSetup);
 });
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if (window.driveSetupModalInstance?.promptSetup === promptSetup) {
-    delete window.driveSetupModalInstance;
-  }
+  driveSetupModal.unregisterPromptHandler();
 });
 
 defineExpose({

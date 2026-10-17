@@ -215,9 +215,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
 
       case 'Escape':
         event.preventDefault();
-        if (app?.isMobileFullscreen) {
-          app?.exitMobileFullscreen();
-        } else if (actions?.clearMarks) {
+        if (actions?.clearMarks) {
           actions.clearMarks();
         } else {
           app?.clearMarks();

@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useModals } from '../composables/useModals';
 import type { CommandItem, TeslaCamEvent } from '../types';
 
 type FilteredItem =
@@ -72,22 +73,24 @@ const props = defineProps<{
 
 const MAX_EVENT_RESULTS = 17;
 
-const isOpen = ref(false);
+const {
+  isCommandPaletteOpen: isOpen,
+  commandPaletteCommands: commands,
+  commandPaletteModal,
+} = useModals();
+
 const query = ref('');
 const selectedIndex = ref(0);
-const commands = ref<CommandItem[]>([]);
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const listRef = ref<HTMLDivElement | null>(null);
 
 function register(command: CommandItem): void {
-  commands.value.push(command);
+  commandPaletteModal.register(command);
 }
 
 function registerMany(cmds: CommandItem[]): void {
-  for (const c of cmds) {
-    commands.value.push(c);
-  }
+  commandPaletteModal.registerMany(cmds);
 }
 
 function getSearchableEvents(): TeslaCamEvent[] {
@@ -159,8 +162,7 @@ watch(selectedIndex, () => {
 });
 
 function open(): void {
-  if (isOpen.value) return;
-  isOpen.value = true;
+  commandPaletteModal.open();
   query.value = '';
   selectedIndex.value = 0;
   nextTick(() => {
@@ -169,8 +171,7 @@ function open(): void {
 }
 
 function close(): void {
-  if (!isOpen.value) return;
-  isOpen.value = false;
+  commandPaletteModal.close();
   if (inputRef.value) {
     inputRef.value.blur();
   }
@@ -269,20 +270,10 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener('keydown', onGlobalKeyDown);
-  window.commandPaletteInstance = {
-    open,
-    close,
-    toggle,
-    register,
-    registerMany,
-  };
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown);
-  if (window.commandPaletteInstance?.open === open) {
-    delete window.commandPaletteInstance;
-  }
 });
 
 defineExpose({

@@ -1,3 +1,5 @@
+import { settingsModalStore } from '../composables/useModals';
+
 /**
  * Settings Manager - Handles user preferences and settings UI
  * Stores settings in localStorage for persistence across sessions
@@ -147,18 +149,14 @@ class SettingsManager {
    * Create and show the settings modal
    */
   showSettingsModal(tab = 'general') {
-    if (window.settingsModalInstance) {
-      window.settingsModalInstance.open(tab);
-    }
+    settingsModalStore.open(tab);
   }
 
   /**
    * Hide the settings modal
    */
   hideSettingsModal() {
-    if (window.settingsModalInstance) {
-      window.settingsModalInstance.close();
-    }
+    settingsModalStore.close();
   }
 
   /**
