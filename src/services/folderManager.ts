@@ -571,6 +571,19 @@ class FolderManager {
   }
 
   /**
+   * Get all events across all drives
+   * @returns {Array}
+   */
+  getAllEvents() {
+    return this.drives
+      .flatMap((d) => d.events || [])
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+  }
+
+  /**
    * Get events filtered by active drive
    * @returns {Array}
    */

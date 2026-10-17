@@ -1,39 +1,44 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { getCurrentInstance, onMounted, onUnmounted, ref, type Ref } from 'vue';
 import { folderManager } from '../services/folderManager';
 import type { DriveInfo } from '../types';
+
+const drives: Ref<DriveInfo[]> = ref([]);
+const activeDriveId: Ref<string> = ref('');
+
+function syncDrives(): void {
+  const currentDrives = folderManager.drives;
+  if (Array.isArray(currentDrives)) {
+    drives.value = [...currentDrives];
+  }
+
+  const currentActive = folderManager.activeDriveId || '';
+  if (activeDriveId.value !== currentActive) {
+    activeDriveId.value = currentActive;
+  }
+}
 
 /**
  * useDrives - Composable for local folder selection, multi-drive support, and B2 cloud loading
  */
 export function useDrives() {
-  const drives = ref<DriveInfo[]>([]);
-  const activeDriveId = ref<string>('');
+  syncDrives();
 
-  function syncDrives(): void {
-    const currentDrives = folderManager.drives;
-    if (
-      Array.isArray(currentDrives) &&
-      currentDrives.length !== drives.value.length
-    ) {
-      drives.value = [...currentDrives];
-    }
-
-    const currentActive = folderManager.activeDriveId || '';
-    if (activeDriveId.value !== currentActive) {
-      activeDriveId.value = currentActive;
-    }
-  }
-
-  let syncTimer: ReturnType<typeof setInterval> | null = null;
-
-  onMounted(() => {
+  folderManager.onDrivesChanged = () => {
     syncDrives();
-    syncTimer = setInterval(syncDrives, 500);
-  });
+  };
 
-  onUnmounted(() => {
-    if (syncTimer) clearInterval(syncTimer);
-  });
+  if (getCurrentInstance()) {
+    let syncTimer: ReturnType<typeof setInterval> | null = null;
+
+    onMounted(() => {
+      syncDrives();
+      syncTimer = setInterval(syncDrives, 1000);
+    });
+
+    onUnmounted(() => {
+      if (syncTimer) clearInterval(syncTimer);
+    });
+  }
 
   function selectFolder(): void {
     window.app?.selectFolder();
@@ -48,6 +53,8 @@ export function useDrives() {
   function changeDrive(id: string): void {
     activeDriveId.value = id;
     folderManager?.switchDrive(id || null);
+    window.app?.changeDrive(id || null);
+    syncDrives();
   }
 
   function manageDrives(): void {

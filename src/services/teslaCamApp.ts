@@ -165,8 +165,9 @@ export class TeslaCamApp {
               folderParser.rootHandle = handle;
               const events = await folderParser.parseFolder();
               drive.events = events;
-              this.allEvents = events;
-              this.statisticsManager.setEvents(events);
+              folderManager.setActiveDrive(drive.id);
+              this.allEvents = folderManager.getAllEvents();
+              this.statisticsManager.setEvents(this.allEvents);
               this.applyFilters();
               this.updateDriveSelector(folderManager.getDrives());
               this.hideLoading();
@@ -546,6 +547,21 @@ export class TeslaCamApp {
     if (this.videoPlayer) this.videoPlayer.playbackRate = newSpeed;
   }
 
+  public changeDrive(driveId: string | null): void {
+    folderManager.setActiveDrive(driveId || null);
+    this.allEvents = folderManager.getAllEvents();
+    this.statisticsManager.setEvents(this.allEvents);
+    this.applyFilters();
+    this.updateDriveSelector(folderManager.getDrives());
+    if (
+      this.filteredEvents.length > 0 &&
+      (!this.currentEvent ||
+        !this.filteredEvents.some((e) => e.name === this.currentEvent.name))
+    ) {
+      this.onEventSelected(this.filteredEvents[0]);
+    }
+  }
+
   public applyFilters(): void {
     let eventsToFilter = this.allEvents;
     const activeDriveId = folderManager?.activeDriveId;
@@ -601,10 +617,14 @@ export class TeslaCamApp {
         const events = await folderParser.parseFolder();
 
         drive.events = events;
-        this.allEvents = events;
-        this.statisticsManager.setEvents(events);
+        folderManager.setActiveDrive(drive.id);
+        this.allEvents = folderManager.getAllEvents();
+        this.statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
         this.updateDriveSelector(folderManager.getDrives());
+        if (this.filteredEvents.length > 0) {
+          this.onEventSelected(this.filteredEvents[0]);
+        }
 
         if (settingsManager?.get('rememberLastFolder')) {
           await folderParser.saveFolderHandle();
@@ -654,10 +674,13 @@ export class TeslaCamApp {
       }
 
       folderManager.activeDriveId = 'b2';
-      this.allEvents = events;
-      this.statisticsManager.setEvents(events);
+      this.allEvents = folderManager.getAllEvents();
+      this.statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
       this.updateDriveSelector(folderManager.getDrives());
+      if (this.filteredEvents.length > 0) {
+        this.onEventSelected(this.filteredEvents[0]);
+      }
       this.hideLoading();
     } catch (error: any) {
       console.error('B2 Load Error:', error);
