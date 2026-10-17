@@ -304,68 +304,6 @@ class FolderParser {
   }
 
   /**
-   * Get formatted diagnostic report for bug reporting
-   * @returns {string} Formatted diagnostic text
-   */
-  getDiagnosticReport() {
-    if (!this._lastDiagnostics) {
-      return 'No parse data available. Please load a TeslaCam folder first.';
-    }
-
-    const d = this._lastDiagnostics;
-    const s = d.stats;
-
-    let report = `=== TeslaCamViewer Diagnostic Report ===
-Generated: ${d.timestamp}
-App Version: ${window.app?.versionManager?.currentVersion || 'Unknown'}
-
---- Environment ---
-Platform: ${d.platform}
-User Agent: ${d.userAgent}
-
---- Parse Results ---
-Root Folder: ${d.rootFolder}
-Parse Time: ${d.elapsedSeconds}s
-Directories Scanned: ${s.directoriesScanned}
-Total Files Found: ${s.filesFound}
-Video Files (.mp4): ${s.videoFilesFound}
-
---- Events ---
-Events Created: ${s.eventsCreated}
-With Metadata: ${s.eventJsonRead}
-Metadata Failed: ${s.eventJsonFailed}
-With Thumbnails: ${s.thumbnailsFound}
-Empty Events: ${s.emptyEvents}
-`;
-
-    if (s.errors.length > 0) {
-      report += `
---- Errors (${s.errors.length}) ---
-${s.errors.slice(0, 20).join('\n')}`;
-      if (s.errors.length > 20) {
-        report += `\n... and ${s.errors.length - 20} more errors`;
-      }
-    } else {
-      report += `
---- Errors ---
-None`;
-    }
-
-    report += `
-========================================`;
-
-    return report;
-  }
-
-  /**
-   * Get diagnostic summary object for UI display
-   * @returns {Object|null} Summary object or null if no data
-   */
-  getDiagnosticSummary() {
-    return this._lastDiagnostics || null;
-  }
-
-  /**
    * Recursively search directory for event folders
    * @param {FileSystemDirectoryHandle} dirHandle
    * @param {number} depth - Current depth (limit recursion)

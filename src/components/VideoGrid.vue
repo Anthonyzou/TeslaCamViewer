@@ -206,8 +206,6 @@ const emit = defineEmits<{
 const localeTick = ref(0);
 
 function t(key: string): string {
-  console.log(i18n);
-
   return i18n.t ? window.i18n.t(key) : key.split('.').pop() || '';
 }
 

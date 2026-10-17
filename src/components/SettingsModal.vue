@@ -446,21 +446,20 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useModals } from '../composables/useModals';
 import { settingsManager } from '../services/settingsManager';
 
-const { isSettingsOpen: isOpen, settingsActiveTab: activeTab, settingsModal } =
-  useModals();
+const {
+  isSettingsOpen: isOpen,
+  settingsActiveTab: activeTab,
+  settingsModal,
+} = useModals();
 const localeTick = ref(0);
 const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
 let mouseDownOnOverlay = false;
-
-function getManager() {
-  return settingsManager;
-}
 
 // Reactive state mirroring settings
 const settings = reactive<Record<string, any>>({});
 
 function syncFromManager(): void {
-  const mgr = getManager();
+  const mgr = settingsManager;
   if (mgr && mgr.settings) {
     Object.assign(settings, mgr.settings);
   }
@@ -502,7 +501,7 @@ function onOverlayClick(e: MouseEvent): void {
 }
 
 function save(key: string, val: any): void {
-  const mgr = getManager();
+  const mgr = settingsManager;
   if (mgr) {
     mgr.set(key, val);
   }
@@ -517,7 +516,7 @@ function onLanguageChange(e: Event): void {
 
 function handleReset(): void {
   if (confirm(t('settings.confirmReset'))) {
-    const mgr = getManager();
+    const mgr = settingsManager;
     if (mgr) {
       mgr.resetToDefaults();
       syncFromManager();
