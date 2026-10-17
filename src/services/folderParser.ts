@@ -124,6 +124,7 @@ class FolderParser {
       const tx = db.transaction(this.DB_STORE, 'readonly');
       const store = tx.objectStore(this.DB_STORE);
       const request = store.get(this.DB_KEY);
+
       return await new Promise((resolve, reject) => {
         request.onsuccess = () => resolve(request.result || null);
         request.onerror = () => reject(request.error);
@@ -925,5 +926,6 @@ None`;
   }
 }
 
-export { FolderParser };
+const folderParser = new FolderParser();
+export { FolderParser, folderParser };
 export default FolderParser;

@@ -641,5 +641,6 @@ class FolderManager {
   }
 }
 
-export { FolderManager };
+const folderManager = new FolderManager();
+export { FolderManager, folderManager };
 export default FolderManager;

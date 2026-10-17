@@ -494,4 +494,6 @@ export class VideoPlayer {
   }
 }
 
+const videoPlayer = new VideoPlayer();
+export { videoPlayer };
 export default VideoPlayer;

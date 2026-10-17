@@ -170,7 +170,7 @@
 
 <script setup lang="ts">
 import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { DriveInfo } from '../types';
 import FilterPanel from './FilterPanel.vue';
 import MapView from './MapView.vue';
@@ -332,20 +332,6 @@ watch(
     }
   }
 );
-
-watch(activeTab, (newTab) => {
-  if (newTab === 'map') {
-    nextTick(() => {
-      window.app?.mapView?.invalidateSize();
-      setTimeout(() => {
-        window.app?.mapView?.invalidateSize();
-      }, 50);
-      setTimeout(() => {
-        window.app?.mapView?.invalidateSize();
-      }, 200);
-    });
-  }
-});
 
 const localeTick = ref(0);
 

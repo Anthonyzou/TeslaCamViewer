@@ -142,6 +142,7 @@
 <script setup lang="ts">
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { folderManager } from '../services/folderManager';
 
 const isOpen = ref(false);
 const drivesList = ref<any[]>([]);
@@ -154,10 +155,7 @@ function t(key: string): string {
 }
 
 function refreshDrives(): void {
-  const app = window.app;
-  if (app?.folderManager) {
-    drivesList.value = app.folderManager.getDrives() || [];
-  }
+  drivesList.value = folderManager.getDrives() || [];
 }
 
 function open(): void {
@@ -194,8 +192,7 @@ function getEventCountText(drive: any): string {
 
 function getDateFilterText(drive: any): string {
   if (!drive.dateFilter || drive.dateFilter === 'all') return '';
-  const app = window.app;
-  return app?.folderManager?.getDateFilterLabel(drive.dateFilter) || '';
+  return folderManager?.getDateFilterLabel(drive.dateFilter) || '';
 }
 
 function onColorInput(drive: any, e: Event): void {
@@ -206,8 +203,8 @@ async function onColorChange(drive: any, e: Event): Promise<void> {
   const newColor = (e.target as HTMLInputElement).value;
   drive.color = newColor;
   const app = window.app;
-  if (app?.folderManager) {
-    await app.folderManager.updateDriveColor(drive.id, newColor);
+  if (folderManager) {
+    await folderManager.updateDriveColor(drive.id, newColor);
     if (Array.isArray(app.allEvents)) {
       app.allEvents.forEach((ev: any) => {
         if (ev.driveId === drive.id) {
@@ -224,8 +221,8 @@ async function onLabelChange(drive: any, e: Event): Promise<void> {
   if (!newLabel) return;
   drive.label = newLabel;
   const app = window.app;
-  if (app?.folderManager) {
-    await app.folderManager.updateDriveLabel(drive.id, newLabel);
+  if (folderManager) {
+    await folderManager.updateDriveLabel(drive.id, newLabel);
     app.eventBrowser?.render(app.filteredEvents);
   }
 }
@@ -240,8 +237,8 @@ async function handleSync(driveId: string): Promise<void> {
 
 async function handleEdit(driveId: string): Promise<void> {
   const app = window.app;
-  if (!app?.folderManager) return;
-  const drive = app.folderManager.getDrive(driveId);
+  if (!folderManager) return;
+  const drive = folderManager.getDrive(driveId);
   if (!drive) return;
 
   const oldDateFilter = drive.dateFilter;
@@ -250,7 +247,7 @@ async function handleEdit(driveId: string): Promise<void> {
   close();
   const settings = await app.showDriveSetupDialog(null, drive);
   if (settings && !settings.changeFolder) {
-    await app.folderManager.updateDriveSettings(driveId, settings);
+    await folderManager.updateDriveSettings(driveId, settings);
     const filterChanged = oldDateFilter !== settings.dateFilter;
     const archiveChanged = oldIsArchive !== settings.isArchive;
 
@@ -266,8 +263,8 @@ async function handleEdit(driveId: string): Promise<void> {
 async function handleRemove(driveId: string): Promise<void> {
   if (confirm('Remove this drive? Events will no longer be shown.')) {
     const app = window.app;
-    if (app?.folderManager) {
-      await app.folderManager.removeDrive(driveId);
+    if (folderManager) {
+      await folderManager.removeDrive(driveId);
       if (Array.isArray(app.allEvents)) {
         app.allEvents = app.allEvents.filter((e: any) => e.driveId !== driveId);
         app.statisticsManager?.setEvents(app.allEvents);

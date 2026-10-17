@@ -1,4 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { folderManager } from '../services/folderManager';
 import type { DriveInfo } from '../types';
 
 /**
@@ -9,15 +10,15 @@ export function useDrives() {
   const activeDriveId = ref<string>('');
 
   function syncDrives(): void {
-    const app = window.app;
-    if (!app?.folderManager) return;
-
-    const currentDrives = app.folderManager.drives;
-    if (Array.isArray(currentDrives) && currentDrives.length !== drives.value.length) {
+    const currentDrives = folderManager.drives;
+    if (
+      Array.isArray(currentDrives) &&
+      currentDrives.length !== drives.value.length
+    ) {
       drives.value = [...currentDrives];
     }
 
-    const currentActive = app.folderManager.activeDriveId || '';
+    const currentActive = folderManager.activeDriveId || '';
     if (activeDriveId.value !== currentActive) {
       activeDriveId.value = currentActive;
     }
@@ -46,7 +47,7 @@ export function useDrives() {
 
   function changeDrive(id: string): void {
     activeDriveId.value = id;
-    window.app?.folderManager?.switchDrive(id || null);
+    folderManager?.switchDrive(id || null);
   }
 
   function manageDrives(): void {

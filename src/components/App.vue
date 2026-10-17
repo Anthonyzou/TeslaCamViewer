@@ -42,12 +42,7 @@
 
         <EventInfoBar />
 
-        <TimelineBar
-          :hasEvent="hasEvent"
-          @zoomIn="zoomIn"
-          @zoomOut="zoomOut"
-          @zoomReset="zoomReset"
-        />
+        <TimelineBar :hasEvent="hasEvent" />
 
         <PlaybackControls
           :hasEvent="hasEvent"
@@ -153,9 +148,6 @@ const {
   frameForward,
   prevEvent,
   nextEvent,
-  zoomIn,
-  zoomOut,
-  zoomReset,
   selectFolder,
   loadB2,
   changeDrive,

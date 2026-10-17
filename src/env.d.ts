@@ -14,6 +14,9 @@ declare global {
     _vueClipMarking?: any;
     showDirectoryPicker: any;
     settingsModalInstance?: any;
+    driveSetupModalInstance?: any;
+    driveManagementModalInstance?: any;
+    diagnosticsModalInstance?: any;
     statisticsModalInstance?: any;
     filterPanelInstance?: any;
     helpModalInstance?: any;

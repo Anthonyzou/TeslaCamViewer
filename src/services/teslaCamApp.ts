@@ -5,8 +5,8 @@ import { EventFilter } from '../utils/eventFilter';
 import weatherService from '../utils/weatherService';
 import { B2Client } from './b2Client';
 import { EventBrowser } from './eventBrowser';
-import { FolderManager } from './folderManager';
-import { FolderParser } from './folderParser';
+import { folderManager } from './folderManager';
+import { folderParser } from './folderParser';
 import { ScreenshotCapture } from './screenshotCapture';
 import { settingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
@@ -19,8 +19,6 @@ import { VideoPlayer } from './videoPlayer';
  * Replaces the monolithic js/app.js file.
  */
 export class TeslaCamApp {
-  public folderParser = new FolderParser();
-  public folderManager = new FolderManager();
   public eventFilter = new EventFilter();
   public videoPlayer = new VideoPlayer();
   public syncController = new SyncController(this.videoPlayer);
@@ -182,10 +180,10 @@ export class TeslaCamApp {
   public async tryRestoreLastFolder(): Promise<void> {
     if (!settingsManager?.get('rememberLastFolder')) return;
     try {
-      if (this.folderParser?.hasStoredHandle) {
-        const hasStored = await this.folderParser.hasStoredHandle();
+      if (folderParser?.hasStoredHandle) {
+        const hasStored = await folderParser.hasStoredHandle();
         if (hasStored) {
-          const handle = await this.folderParser.getStoredHandle();
+          const handle = await folderParser.getStoredHandle();
           if (handle) {
             console.log('[App] Restoring last folder handle...');
             this.showLoading('Restoring last folder...');
@@ -193,23 +191,19 @@ export class TeslaCamApp {
               mode: 'read',
             });
             if (permission === 'granted') {
-              const drive = await this.folderManager.addDrive(handle, {
+              const drive = await folderManager.addDrive(handle, {
                 label: handle.name,
                 isArchive: false,
                 dateFilter: 'all',
               });
-              this.folderParser.setDriveContext(
-                drive.id,
-                drive.label,
-                drive.color
-              );
-              this.folderParser.rootHandle = handle;
-              const events = await this.folderParser.parseFolder();
+              folderParser.setDriveContext(drive.id, drive.label, drive.color);
+              folderParser.rootHandle = handle;
+              const events = await folderParser.parseFolder();
               drive.events = events;
               this.allEvents = events;
               this.statisticsManager.setEvents(events);
               this.applyFilters();
-              this.updateDriveSelector(this.folderManager.getDrives());
+              this.updateDriveSelector(folderManager.getDrives());
               this.hideLoading();
               return;
             }
@@ -256,8 +250,8 @@ export class TeslaCamApp {
         this.timeline.resetThumbnailTooltip();
       }
 
-      if (this.folderParser?.detectGaps) {
-        const gaps = this.folderParser.detectGaps(event.clipGroups);
+      if (folderParser?.detectGaps) {
+        const gaps = folderParser.detectGaps(event.clipGroups);
         if (gaps && gaps.length > 0) {
           this.timeline?.setGapMarkers(gaps, event.clipGroups);
         }
@@ -589,7 +583,7 @@ export class TeslaCamApp {
 
   public applyFilters(): void {
     let eventsToFilter = this.allEvents;
-    const activeDriveId = this.folderManager?.activeDriveId;
+    const activeDriveId = folderManager?.activeDriveId;
 
     if (activeDriveId) {
       eventsToFilter = this.allEvents.filter(
@@ -625,7 +619,7 @@ export class TeslaCamApp {
       this.showLoading('Parsing TeslaCam folder...');
 
       try {
-        const drive = await this.folderManager.addDrive(handle, {
+        const drive = await folderManager.addDrive(handle, {
           label: settings.label,
           isArchive: settings.isArchive,
           dateFilter: settings.dateFilter,
@@ -633,22 +627,22 @@ export class TeslaCamApp {
 
         if (settings.isArchive) {
           this.hideLoading();
-          this.updateDriveSelector(this.folderManager.getDrives());
+          this.updateDriveSelector(folderManager.getDrives());
           return;
         }
 
-        this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
-        this.folderParser.rootHandle = handle;
-        const events = await this.folderParser.parseFolder();
+        folderParser.setDriveContext(drive.id, drive.label, drive.color);
+        folderParser.rootHandle = handle;
+        const events = await folderParser.parseFolder();
 
         drive.events = events;
         this.allEvents = events;
         this.statisticsManager.setEvents(events);
         this.applyFilters();
-        this.updateDriveSelector(this.folderManager.getDrives());
+        this.updateDriveSelector(folderManager.getDrives());
 
         if (settingsManager?.get('rememberLastFolder')) {
-          await this.folderParser.saveFolderHandle();
+          await folderParser.saveFolderHandle();
         }
 
         this.hideLoading();
@@ -677,7 +671,7 @@ export class TeslaCamApp {
       if (!result?.events) throw new Error('No events found in B2 bucket');
 
       const events = result.events;
-      let b2Drive = this.folderManager.drives.find((d: any) => d.id === 'b2');
+      let b2Drive = folderManager.drives.find((d: any) => d.id === 'b2');
       if (!b2Drive) {
         b2Drive = {
           id: 'b2',
@@ -689,16 +683,16 @@ export class TeslaCamApp {
           handle: null,
           isB2: true,
         };
-        this.folderManager.drives.push(b2Drive);
+        folderManager.drives.push(b2Drive);
       } else {
         b2Drive.events = events;
       }
 
-      this.folderManager.activeDriveId = 'b2';
+      folderManager.activeDriveId = 'b2';
       this.allEvents = events;
       this.statisticsManager.setEvents(events);
       this.applyFilters();
-      this.updateDriveSelector(this.folderManager.getDrives());
+      this.updateDriveSelector(folderManager.getDrives());
       this.hideLoading();
     } catch (error: any) {
       console.error('B2 Load Error:', error);
@@ -708,7 +702,7 @@ export class TeslaCamApp {
   }
 
   public async refreshDrives(): Promise<void> {
-    const activeDrive = this.folderManager?.getActiveDrive();
+    const activeDrive = folderManager?.getActiveDrive();
     if (activeDrive?.id === 'b2' || (!activeDrive && this.b2Client)) {
       await this.loadFromB2(true);
       return;
@@ -717,13 +711,13 @@ export class TeslaCamApp {
     if (activeDrive?.handle) {
       this.showLoading(`Refreshing ${activeDrive.label || 'drive'}...`);
       try {
-        this.folderParser.setDriveContext(
+        folderParser.setDriveContext(
           activeDrive.id,
           activeDrive.label,
           activeDrive.color
         );
-        this.folderParser.rootHandle = activeDrive.handle;
-        const events = await this.folderParser.parseFolder();
+        folderParser.rootHandle = activeDrive.handle;
+        const events = await folderParser.parseFolder();
         activeDrive.events = events;
         this.allEvents = [
           ...this.allEvents.filter((e) => e.driveId !== activeDrive.id),
@@ -731,7 +725,7 @@ export class TeslaCamApp {
         ];
         this.statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
-        this.updateDriveSelector(this.folderManager.getDrives());
+        this.updateDriveSelector(folderManager.getDrives());
       } catch (err: any) {
         console.error('Error refreshing drive:', err);
       } finally {
@@ -763,23 +757,23 @@ export class TeslaCamApp {
 
       this.showLoading('Adding drive...');
       try {
-        const drive = await this.folderManager.addDrive(handle, {
+        const drive = await folderManager.addDrive(handle, {
           label: settings.label,
           isArchive: settings.isArchive,
           dateFilter: settings.dateFilter,
         });
 
         if (!settings.isArchive) {
-          this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
-          this.folderParser.rootHandle = handle;
-          const events = await this.folderParser.parseFolder();
+          folderParser.setDriveContext(drive.id, drive.label, drive.color);
+          folderParser.rootHandle = handle;
+          const events = await folderParser.parseFolder();
           drive.events = events;
           this.allEvents = [...this.allEvents, ...events];
           this.statisticsManager.setEvents(this.allEvents);
           this.applyFilters();
         }
 
-        this.updateDriveSelector(this.folderManager.getDrives());
+        this.updateDriveSelector(folderManager.getDrives());
         this.hideLoading();
       } catch (e) {
         this.hideLoading();
@@ -790,14 +784,14 @@ export class TeslaCamApp {
   }
 
   public async syncArchiveDrive(driveId: string): Promise<void> {
-    const drive = this.folderManager.getDrive(driveId);
+    const drive = folderManager.getDrive(driveId);
     if (!drive) return;
 
     this.showLoading(`Loading ${drive.label}...`);
     try {
-      this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
-      this.folderParser.rootHandle = drive.handle;
-      const events = await this.folderParser.parseFolder();
+      folderParser.setDriveContext(drive.id, drive.label, drive.color);
+      folderParser.rootHandle = drive.handle;
+      const events = await folderParser.parseFolder();
       drive.events = events;
       this.allEvents = [
         ...this.allEvents.filter((e) => e.driveId !== driveId),
@@ -805,7 +799,7 @@ export class TeslaCamApp {
       ];
       this.statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
-      this.updateDriveSelector(this.folderManager.getDrives());
+      this.updateDriveSelector(folderManager.getDrives());
       this.hideLoading();
     } catch (e) {
       this.hideLoading();
@@ -817,15 +811,15 @@ export class TeslaCamApp {
     driveId: string,
     settings: any
   ): Promise<void> {
-    const drive = this.folderManager.getDrive(driveId);
+    const drive = folderManager.getDrive(driveId);
     if (!drive) return;
 
     this.showLoading(`Reloading ${drive.label}...`);
     try {
       if (drive.handle && !settings.isArchive) {
-        this.folderParser.setDriveContext(drive.id, drive.label, drive.color);
-        this.folderParser.rootHandle = drive.handle;
-        const events = await this.folderParser.parseFolder();
+        folderParser.setDriveContext(drive.id, drive.label, drive.color);
+        folderParser.rootHandle = drive.handle;
+        const events = await folderParser.parseFolder();
         drive.events = events;
         this.allEvents = [
           ...this.allEvents.filter((e) => e.driveId !== driveId),
@@ -834,7 +828,7 @@ export class TeslaCamApp {
         this.statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
       }
-      this.updateDriveSelector(this.folderManager.getDrives());
+      this.updateDriveSelector(folderManager.getDrives());
       this.hideLoading();
     } catch (e) {
       this.hideLoading();
@@ -862,7 +856,7 @@ export class TeslaCamApp {
   }
 
   public async copyDiagnosticReport(): Promise<void> {
-    const report = this.folderParser?.getDiagnosticReport?.();
+    const report = folderParser?.getDiagnosticReport?.();
     if (!report) {
       this.showSimpleToast('No diagnostic data available');
       return;
