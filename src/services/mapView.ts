@@ -6,42 +6,27 @@ import L from 'leaflet';
 import { FolderParser } from './folderParser';
 
 class MapView {
-  [key: string]: any;
-
-  private container: any = null;
-  private onEventSelect: any = null; // Callback to load event
-  private map = null;
-  private markerCluster = null;
-  private heatLayer = null;
-  private heatmapEnabled = false;
-  private heatmapDataSource = 'telemetry'; // 'telemetry' or 'events' - telemetry uses SEI GPS data
-  private events = [];
-  private telemetryGpsPoints = []; // Cached GPS points from SEI telemetry data
+  private container: HTMLElement | null = null;
+  private onEventSelect: ((event: any) => void) | null = null;
+  public map: L.Map | null = null;
+  private markerCluster: any = null;
+  private events: any[] = [];
   private initialized = false;
-  private offlineOverlay = null;
+  private offlineOverlay: HTMLElement | null = null;
   private isOffline = !navigator.onLine;
 
-  // Autopilot Struggle Zones data
-  private struggleZonesEnabled = false;
-  private struggleZonesLayer = null;
-  private struggleZonesMarkers = null; // Marker cluster for clickable disengagement points
-  private apDisengagementPoints = []; // Array of {lat, lng, eventName, timestamp, fromState}
-  private struggleZonesControl = null;
-
-  // Incident Markers data (replaces Incident Hotspots)
-  private incidentMarkersEnabled = false;
-  private incidentHeatLayer = null;
-  private incidentMarkers = null; // Marker cluster for clickable incident points
-  private incidentPoints = []; // Array of {lat, lng, severity, type, eventName, timestamp, ...}
-  private incidentControl = null;
-
   // Tile layer management
-  private currentTileLayer = null;
-  private isDarkMode = false;
-  private tileProvider = localStorage.getItem('teslacam_map_provider') || 'osm';
+  private currentTileLayer: L.TileLayer | null = null;
+  public isDarkMode = false;
+  private _darkModeButton: HTMLElement | null = null;
+  private darkModeControl: any = null;
+  private tileProvider =
+    (typeof localStorage !== 'undefined'
+      ? localStorage.getItem('teslacam_map_provider')
+      : null) || 'osm';
 
   // Tile provider configurations
-  private TILE_PROVIDERS = {
+  private TILE_PROVIDERS: Record<string, any> = {
     osm: {
       name: 'OpenStreetMap',
       light: {
@@ -75,16 +60,12 @@ class MapView {
     },
   };
 
-  // Legacy TILE_LAYERS for backward compatibility
-  private TILE_LAYERS =
-    this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
   private DARK_MODE_KEY = 'teslacam_map_dark_mode';
 
-  // Cache keys for localStorage persistence
-  private CACHE_KEY_GPS = 'teslacam_mapview_gps_cache';
-  // Per-event caching: 'teslacamviewer_incident_per_event', 'teslacamviewer_ap_per_event'
-  private cacheVersion = 7; // Increment to invalidate cache (v7: Incident markers replace incidents)
-  constructor(containerElement: any, onEventSelect: any) {
+  constructor(
+    containerElement: HTMLElement,
+    onEventSelect: (event: any) => void
+  ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
 
@@ -100,238 +81,14 @@ class MapView {
   /**
    * Get translation helper
    */
-  t(key) {
-    return window.i18n ? window.i18n.t(key) : key.split('.').pop();
-  }
-
-  /**
-   * Generate cache key based on event timestamps
-   */
-  _getCacheKey(events) {
-    if (!events || events.length === 0) return null;
-    // Create a hash based on event count and first/last timestamps
-    const firstTs = events[0]?.timestamp || '';
-    const lastTs = events[events.length - 1]?.timestamp || '';
-    return `v${this.cacheVersion}_${events.length}_${firstTs}_${lastTs}`;
-  }
-
-  /**
-   * Load GPS points from cache
-   */
-  _loadGpsCache(events) {
-    try {
-      const cached = localStorage.getItem(this.CACHE_KEY_GPS);
-      if (!cached) return null;
-      const data = JSON.parse(cached);
-      if (data.key === this._getCacheKey(events)) {
-        console.log(
-          `[MapView] Loaded ${data.points.length} GPS points from cache`
-        );
-        return data.points;
-      }
-    } catch (e) {
-      console.warn('[MapView] Failed to load GPS cache:', e);
-    }
-    return null;
-  }
-
-  /**
-   * Save GPS points to cache
-   */
-  _saveGpsCache(events, points) {
-    try {
-      const data = {
-        key: this._getCacheKey(events),
-        points: points,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(this.CACHE_KEY_GPS, JSON.stringify(data));
-      console.log(`[MapView] Saved ${points.length} GPS points to cache`);
-    } catch (e) {
-      console.warn('[MapView] Failed to save GPS cache:', e);
-    }
-  }
-
-  /**
-   * Show notification when cache is invalidated due to version update
-   * @param {string} featureName - Name of the feature (e.g., "Incident Hotspots")
-   * @param {string} oldVersion - Previous cache version
-   * @param {string} newVersion - Current cache version
-   */
-  _showCacheInvalidationNotice(featureName, oldVersion, newVersion) {
-    // Only show once per feature per session
-    const noticeKey = `_cacheNoticeShown_${featureName}`;
-    if (this[noticeKey]) return;
-    this[noticeKey] = true;
-
-    console.log(
-      `[MapView] Cache invalidated for ${featureName}: v${oldVersion} -> v${newVersion}`
-    );
-
-    // Show toast notification if available
-    if (window.app?.showToast) {
-      window.app.showToast(
-        `${featureName} data will be rescanned due to detection improvements in this update.`,
-        'info',
-        5000
-      );
-    }
-  }
-
-  /**
-   * Show progress indicator during data scanning
-   * @param {string} scanType - Type of scan (e.g., "GPS Telemetry", "Autopilot Data")
-   * @param {number} totalEvents - Total events to process
-   * @returns {HTMLElement} Progress element
-   */
-  _showScanProgress(scanType, totalEvents) {
-    // Remove any existing progress
-    const existing = document.querySelector('.map-scan-progress');
-    if (existing) existing.remove();
-
-    const progressEl = document.createElement('div');
-    progressEl.className = 'map-scan-progress';
-    progressEl.innerHTML = `
-            <div class="scan-progress-content">
-                <div class="scan-progress-header">
-                    <span class="scan-progress-title">Scanning ${scanType}...</span>
-                    <button class="scan-progress-cancel" title="Cancel scan">✕</button>
-                </div>
-                <div class="scan-progress-bar">
-                    <div class="scan-progress-fill" style="width: 0%"></div>
-                </div>
-                <div class="scan-progress-text">0 / ${totalEvents} events</div>
-            </div>
-        `;
-
-    // Add cancel handler
-    const cancelBtn = progressEl.querySelector('.scan-progress-cancel');
-    cancelBtn.addEventListener('click', () => {
-      this._scanCancelled = true;
-      progressEl.querySelector('.scan-progress-title').textContent =
-        'Cancelling...';
-    });
-
-    // Style the progress element
-    progressEl.style.cssText = `
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--panel-bg, #2d2d2d);
-            border: 1px solid var(--border, #3a3a3a);
-            border-radius: 8px;
-            padding: 12px 16px;
-            z-index: 10000;
-            min-width: 280px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-
-    const content = progressEl.querySelector(
-      '.scan-progress-content'
-    ) as HTMLElement;
-    if (content)
-      content.style.cssText =
-        'display: flex; flex-direction: column; gap: 8px;';
-
-    const header = progressEl.querySelector(
-      '.scan-progress-header'
-    ) as HTMLElement;
-    if (header)
-      header.style.cssText =
-        'display: flex; justify-content: space-between; align-items: center;';
-
-    const title = progressEl.querySelector(
-      '.scan-progress-title'
-    ) as HTMLElement;
-    if (title)
-      title.style.cssText = 'font-weight: 500; color: var(--text, #e0e0e0);';
-
-    if (cancelBtn)
-      (cancelBtn as HTMLElement).style.cssText = `
-            background: none;
-            border: none;
-            color: var(--text-muted, #888);
-            cursor: pointer;
-            padding: 2px 6px;
-            font-size: 14px;
-        `;
-
-    const barContainer = progressEl.querySelector(
-      '.scan-progress-bar'
-    ) as HTMLElement;
-    if (barContainer)
-      barContainer.style.cssText = `
-            height: 6px;
-            background: var(--bg, #1a1a1a);
-            border-radius: 3px;
-            overflow: hidden;
-        `;
-
-    const fill = progressEl.querySelector('.scan-progress-fill') as HTMLElement;
-    if (fill)
-      fill.style.cssText = `
-            height: 100%;
-            background: var(--accent, #4a9eff);
-            border-radius: 3px;
-            transition: width 0.2s ease;
-        `;
-
-    const text = progressEl.querySelector('.scan-progress-text') as HTMLElement;
-    if (text)
-      text.style.cssText = 'font-size: 12px; color: var(--text-muted, #888);';
-
-    document.body.appendChild(progressEl);
-    return progressEl;
-  }
-
-  /**
-   * Update progress indicator
-   * @param {HTMLElement} progressEl
-   * @param {number} current - Current event number
-   * @param {number} total - Total events
-   * @param {number} foundCount - Number of items found
-   * @param {number} clipsProcessed - Optional clips processed count
-   */
-  _updateScanProgress(
-    progressEl,
-    current,
-    total,
-    foundCount,
-    clipsProcessed = null
-  ) {
-    if (!progressEl) return;
-
-    const percent = Math.round((current / total) * 100);
-    const fill = progressEl.querySelector('.scan-progress-fill');
-    const text = progressEl.querySelector('.scan-progress-text');
-
-    if (fill) fill.style.width = `${percent}%`;
-    if (text) {
-      let statusText = `${current} / ${total} events`;
-      if (clipsProcessed !== null) {
-        statusText += ` (${clipsProcessed} clips)`;
-      }
-      statusText += ` • ${foundCount} found`;
-      text.textContent = statusText;
-    }
-  }
-
-  /**
-   * Hide and remove progress indicator
-   * @param {HTMLElement} progressEl
-   */
-  _hideScanProgress(progressEl) {
-    if (progressEl && progressEl.parentNode) {
-      progressEl.remove();
-    }
+  t(key: string): string {
+    return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
   }
 
   /**
    * Handle online/offline status change
-   * @param {boolean} isOnline
    */
-  handleOnlineStatusChange(isOnline) {
+  handleOnlineStatusChange(isOnline: boolean): void {
     this.isOffline = !isOnline;
     console.log(
       `[MapView] Connection status changed: ${isOnline ? 'online' : 'offline'}`
@@ -339,7 +96,6 @@ class MapView {
 
     if (isOnline && this.offlineOverlay) {
       this.hideOfflineOverlay();
-      // Re-initialize map if it was blocked
       if (!this.initialized && this.container) {
         this.initialize();
         if (this.events.length > 0) {
@@ -354,32 +110,33 @@ class MapView {
   /**
    * Show offline overlay
    */
-  showOfflineOverlay() {
-    if (this.offlineOverlay) return;
+  showOfflineOverlay(): void {
+    if (this.offlineOverlay || !this.container) return;
 
     this.offlineOverlay = document.createElement('div');
     this.offlineOverlay.className = 'map-offline-overlay';
     this.offlineOverlay.innerHTML = `
-            <div class="map-offline-content">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zM17.04 15.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z"/>
-                </svg>
-                <h3>Map Unavailable Offline</h3>
-                <p>Map tiles require an internet connection to load.</p>
-                <button class="map-offline-retry-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                    </svg>
-                    Check Connection
-                </button>
-            </div>
-        `;
+      <div class="map-offline-content">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zM17.04 15.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z"/>
+        </svg>
+        <h3>Map Unavailable Offline</h3>
+        <p>Map tiles require an internet connection to load.</p>
+        <button class="map-offline-retry-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Check Connection
+        </button>
+      </div>
+    `;
 
-    // Add retry button handler
     const retryBtn = this.offlineOverlay.querySelector(
       '.map-offline-retry-btn'
     );
-    retryBtn.addEventListener('click', () => this.checkConnection());
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => this.checkConnection());
+    }
 
     this.container.appendChild(this.offlineOverlay);
   }
@@ -387,7 +144,7 @@ class MapView {
   /**
    * Hide offline overlay
    */
-  hideOfflineOverlay() {
+  hideOfflineOverlay(): void {
     if (this.offlineOverlay) {
       this.offlineOverlay.remove();
       this.offlineOverlay = null;
@@ -397,51 +154,48 @@ class MapView {
   /**
    * Check if connection is available
    */
-  async checkConnection() {
+  async checkConnection(): Promise<void> {
     const retryBtn = this.offlineOverlay?.querySelector(
       '.map-offline-retry-btn'
-    );
+    ) as HTMLButtonElement | null;
     if (retryBtn) {
       retryBtn.disabled = true;
       retryBtn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spin">
-                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                </svg>
-                Checking...
-            `;
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spin">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        Checking...
+      `;
     }
 
     try {
-      // Try to fetch a small resource to verify connection (use current tile provider)
       const provider = this.TILE_PROVIDERS[this.tileProvider];
       let testUrl =
         provider?.light?.url ||
         'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-      // Replace placeholders with test tile coordinates
       testUrl = testUrl
         .replace('{s}', 'a')
         .replace('{z}', '0')
         .replace('{x}', '0')
         .replace('{y}', '0')
         .replace('{r}', '');
-      const response = await fetch(testUrl, {
+      await fetch(testUrl, {
         method: 'HEAD',
         mode: 'no-cors',
         cache: 'no-store',
       });
 
-      // If we get here without error, we're online
       this.handleOnlineStatusChange(true);
     } catch (error) {
-      console.log('[MapView] Still offline:', error.message);
+      console.log('[MapView] Still offline:', error);
       if (retryBtn) {
         retryBtn.disabled = false;
         retryBtn.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                    </svg>
-                    Still Offline - Try Again
-                `;
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Still Offline - Try Again
+        `;
       }
     }
   }
@@ -449,12 +203,11 @@ class MapView {
   /**
    * Initialize Leaflet map
    */
-  initialize() {
+  initialize(): void {
     if (this.initialized || !this.container) {
       return;
     }
 
-    // Check if we're offline
     if (!navigator.onLine) {
       this.isOffline = true;
       this.showOfflineOverlay();
@@ -463,24 +216,22 @@ class MapView {
     }
 
     try {
-      // Default center: Orlando, FL area (center of sample data)
       const defaultCenter: [number, number] = [28.4, -81.5];
-      const defaultZoom = 10;
+      const defaultZoom = 20;
 
-      // Create Leaflet map (keyboard: false prevents arrow keys from panning map)
       this.map = L.map(this.container, { keyboard: false }).setView(
         defaultCenter,
         defaultZoom
       );
 
-      // Load dark mode preference
-      this.isDarkMode = localStorage.getItem(this.DARK_MODE_KEY) === 'true';
-
-      // Add tile layer based on preference
+      this.isDarkMode =
+        (typeof localStorage !== 'undefined'
+          ? localStorage.getItem(this.DARK_MODE_KEY)
+          : null) === 'true';
       this.setTileLayer(this.isDarkMode ? 'dark' : 'light');
 
       // Initialize marker cluster group
-      this.markerCluster = L.markerClusterGroup({
+      this.markerCluster = (L as any).markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
@@ -489,52 +240,8 @@ class MapView {
 
       this.map.addLayer(this.markerCluster);
 
-      // Add heatmap toggle control
-      this.addHeatmapControl();
-
-      // Add struggle zones toggle control
-      this.addStruggleZonesControl();
-
-      // Add incident hotspots toggle control
-      this.addIncidentControl();
-
       // Add dark mode toggle control
       this.addDarkModeControl();
-
-      // Add scan all events control
-      this.addScanAllEventsControl();
-
-      // Initialize struggle zones marker cluster (hidden by default)
-      this.struggleZonesMarkers = L.markerClusterGroup({
-        maxClusterRadius: 30,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        iconCreateFunction: (cluster) => {
-          const count = cluster.getChildCount();
-          return L.divIcon({
-            html: `<div class="struggle-zone-cluster">${count}</div>`,
-            className: 'struggle-zone-cluster-icon',
-            iconSize: [36, 36],
-          });
-        },
-      });
-
-      // Initialize incident marker cluster (hidden by default)
-      this.incidentMarkers = L.markerClusterGroup({
-        maxClusterRadius: 30,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        iconCreateFunction: (cluster) => {
-          const count = cluster.getChildCount();
-          return L.divIcon({
-            html: `<div class="incident-cluster">${count}</div>`,
-            className: 'incident-cluster-icon',
-            iconSize: [36, 36],
-          });
-        },
-      });
 
       this.initialized = true;
       console.log('[MapView] Map initialized successfully');
@@ -545,9 +252,8 @@ class MapView {
 
   /**
    * Load events onto the map
-   * @param {Array} events
    */
-  loadEvents(events) {
+  loadEvents(events: any[]): void {
     if (!this.initialized) {
       this.initialize();
     }
@@ -557,15 +263,13 @@ class MapView {
       return;
     }
 
-    // Clear existing markers
     this.markerCluster.clearLayers();
-    this.events = events;
+    this.events = events || [];
 
-    // Add markers for events with GPS coordinates
-    const markers = [];
+    const markers: L.Marker[] = [];
     let validEventCount = 0;
 
-    events.forEach((event) => {
+    this.events.forEach((event) => {
       if (this.hasValidGPS(event)) {
         const marker = this.createMarker(event);
         if (marker) {
@@ -575,14 +279,11 @@ class MapView {
       }
     });
 
-    // Add all markers to cluster
     if (markers.length > 0) {
       this.markerCluster.addLayers(markers);
       console.log(
         `[MapView] Loaded ${validEventCount} events with GPS coordinates`
       );
-
-      // Fit map bounds to show all markers
       this.fitBounds();
     } else {
       console.log('[MapView] No events with valid GPS coordinates');
@@ -591,11 +292,9 @@ class MapView {
 
   /**
    * Check if event has valid GPS coordinates
-   * @param {Object} event
-   * @returns {boolean}
    */
-  hasValidGPS(event) {
-    if (!event.metadata) return false;
+  hasValidGPS(event: any): boolean {
+    if (!event?.metadata) return false;
 
     const lat = parseFloat(event.metadata.est_lat);
     const lon = parseFloat(event.metadata.est_lon);
@@ -605,25 +304,20 @@ class MapView {
 
   /**
    * Create a marker for an event
-   * @param {Object} event
-   * @returns {L.Marker|null}
    */
-  createMarker(event) {
+  createMarker(event: any): L.Marker | null {
     try {
       const lat = parseFloat(event.metadata.est_lat);
       const lon = parseFloat(event.metadata.est_lon);
 
-      // Create marker with custom icon based on event type
       const marker = L.marker([lat, lon], {
         icon: this.getIconForType(event.type),
         title: event.name,
       });
 
-      // Bind popup with event details
       const popupContent = this.createPopupContent(event);
       marker.bindPopup(popupContent);
 
-      // Click marker to load event
       marker.on('click', () => {
         if (this.onEventSelect) {
           this.onEventSelect(event);
@@ -634,7 +328,7 @@ class MapView {
     } catch (error) {
       console.error(
         '[MapView] Error creating marker for event:',
-        event.name,
+        event?.name,
         error
       );
       return null;
@@ -643,10 +337,8 @@ class MapView {
 
   /**
    * Get custom icon for event type
-   * @param {string} type
-   * @returns {L.Icon}
    */
-  getIconForType(type) {
+  getIconForType(type: string): L.DivIcon {
     let color = '#2196f3'; // Default blue
 
     if (type === 'SavedClips') {
@@ -657,13 +349,12 @@ class MapView {
       color = '#757575'; // Gray
     }
 
-    // Create colored marker icon using SVG
     const svgIcon = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
-                <path fill="${color}" stroke="#fff" stroke-width="2" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 8.4 12.5 28.5 12.5 28.5S25 20.9 25 12.5C25 5.6 19.4 0 12.5 0z"/>
-                <circle cx="12.5" cy="12.5" r="5" fill="#fff"/>
-            </svg>
-        `;
+      <svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
+        <path fill="${color}" stroke="#fff" stroke-width="2" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 8.4 12.5 28.5 12.5 28.5S25 20.9 25 12.5C25 5.6 19.4 0 12.5 0z"/>
+        <circle cx="12.5" cy="12.5" r="5" fill="#fff"/>
+      </svg>
+    `;
 
     return L.divIcon({
       html: svgIcon,
@@ -676,10 +367,8 @@ class MapView {
 
   /**
    * Create popup content for event
-   * @param {Object} event
-   * @returns {string}
    */
-  createPopupContent(event) {
+  createPopupContent(event: any): string {
     const date = new Date(event.timestamp);
     const dateStr = date.toLocaleDateString('en-US', {
       month: 'short',
@@ -691,10 +380,8 @@ class MapView {
       minute: '2-digit',
     });
 
-    // Get event type badge class
-    const typeClass = event.type.toLowerCase().replace('clips', '');
+    const typeClass = (event.type || '').toLowerCase().replace('clips', '');
 
-    // Format location
     let location = '';
     if (event.metadata) {
       const city = event.metadata.city || '';
@@ -708,20 +395,18 @@ class MapView {
       }
     }
 
-    // Format reason
     const reason = event.metadata
       ? FolderParser.formatReason(event.metadata.reason)
       : '';
 
-    // Build popup HTML
     let html = `
-            <div class="map-popup">
-                <div class="map-popup-header">
-                    <span class="event-type ${typeClass}">${typeClass}</span>
-                    <span class="map-popup-date">${dateStr}</span>
-                </div>
-                <div class="map-popup-time">${timeStr}</div>
-        `;
+      <div class="map-popup">
+        <div class="map-popup-header">
+          <span class="event-type ${typeClass}">${typeClass}</span>
+          <span class="map-popup-date">${dateStr}</span>
+        </div>
+        <div class="map-popup-time">${timeStr}</div>
+    `;
 
     if (location) {
       html += `<div class="map-popup-location">${location}</div>`;
@@ -731,11 +416,12 @@ class MapView {
       html += `<div class="map-popup-reason">${reason}</div>`;
     }
 
+    const clipCount = event.clipGroups?.length || 0;
     html += `
-                <div class="map-popup-clips">${event.clipGroups.length} clips</div>
-                <div class="map-popup-action">Click to view event</div>
-            </div>
-        `;
+        <div class="map-popup-clips">${clipCount} clips</div>
+        <div class="map-popup-action">Click to view event</div>
+      </div>
+    `;
 
     return html;
   }
@@ -743,27 +429,36 @@ class MapView {
   /**
    * Fit map bounds to show all markers
    */
-  fitBounds() {
+  fitBounds(): void {
     if (!this.map || !this.markerCluster) {
       return;
     }
 
-    const bounds = this.markerCluster.getBounds();
-    if (bounds.isValid()) {
-      this.map.fitBounds(bounds, {
-        padding: [50, 50],
-        maxZoom: 15,
-      });
+    try {
+      const size = this.map.getSize();
+      if (size.x === 0 || size.y === 0) {
+        return;
+      }
+
+      const bounds = this.markerCluster.getBounds();
+      if (bounds.isValid()) {
+        this.map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 15,
+        });
+      }
+    } catch (e) {
+      console.warn('[MapView] fitBounds failed:', e);
     }
   }
 
   /**
    * Invalidate map size (call when container resizes)
    */
-  invalidateSize() {
+  invalidateSize(): void {
     if (this.map) {
       setTimeout(() => {
-        this.map.invalidateSize();
+        this.map?.invalidateSize();
         this.fitBounds();
       }, 100);
     }
@@ -772,242 +467,19 @@ class MapView {
   /**
    * Clear all markers from map
    */
-  clear() {
+  clear(): void {
     if (this.markerCluster) {
       this.markerCluster.clearLayers();
     }
     this.events = [];
-    this.telemetryGpsPoints = [];
-
-    // Clear heatmap if exists
-    if (this.heatLayer && this.map) {
-      this.map.removeLayer(this.heatLayer);
-      this.heatLayer = null;
-    }
-
-    // Clear struggle zones data
-    this.apDisengagementPoints = [];
-    if (this.struggleZonesLayer && this.map) {
-      this.map.removeLayer(this.struggleZonesLayer);
-      this.struggleZonesLayer = null;
-    }
-    if (this.struggleZonesMarkers) {
-      this.struggleZonesMarkers.clearLayers();
-      if (this.map) {
-        this.map.removeLayer(this.struggleZonesMarkers);
-      }
-    }
-
-    // Clear incident markers data
-    this.incidentPoints = [];
-    if (this.incidentHeatLayer && this.map) {
-      this.map.removeLayer(this.incidentHeatLayer);
-      this.incidentHeatLayer = null;
-    }
-    if (this.incidentMarkers) {
-      this.incidentMarkers.clearLayers();
-      if (this.map) {
-        this.map.removeLayer(this.incidentMarkers);
-      }
-    }
   }
-
-  /**
-   * Load telemetry GPS data for heatmap visualization
-   * This provides much denser GPS coverage than event metadata alone
-   * @param {Array} events - Array of events to extract telemetry from
-   */
-  async loadTelemetryGpsData(events) {
-    return;
-  }
-
-  addTelemetryGpsPoints(points) {
-    if (!points || !Array.isArray(points)) return;
-
-    this.telemetryGpsPoints = this.telemetryGpsPoints.concat(points);
-    console.log(
-      `[MapView] Added ${points.length} telemetry GPS points (total: ${this.telemetryGpsPoints.length})`
-    );
-
-    // Recreate heatmap if enabled
-    if (this.heatmapEnabled && this.heatLayer) {
-      this.createHeatmap();
-      if (this.map) {
-        this.map.removeLayer(this.heatLayer);
-        this.map.addLayer(this.heatLayer);
-      }
-    }
-  }
-
-  /**
-   * Check if telemetry GPS data is available
-   * @returns {boolean}
-   */
-  hasTelemetryGpsData() {
-    return this.telemetryGpsPoints.length > 0;
-  }
-
-  /**
-   * Add heatmap toggle control to the map
-   */
-  addHeatmapControl() {
-    if (!this.map) return;
-
-    // Create custom control
-    const HeatmapControl = L.Control.extend({
-      options: { position: 'topright' },
-
-      onAdd: (map) => {
-        const container = L.DomUtil.create(
-          'div',
-          'leaflet-bar leaflet-control heatmap-control'
-        );
-        const button = L.DomUtil.create('a', 'heatmap-toggle-btn', container);
-        button.href = '#';
-        button.title = this.t('map.toggleHeatmap') || 'Toggle Driving Heatmap';
-        // Flame/heat icon for heatmap visualization
-        button.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M13.5 0.67s0.74 2.65 0.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5 0.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
-                    </svg>
-                `;
-
-        // Store button reference for updating state
-        this._heatmapButton = button;
-
-        L.DomEvent.on(button, 'click', (e) => {
-          L.DomEvent.preventDefault(e);
-          this.toggleHeatmap();
-          button.classList.toggle('active', this.heatmapEnabled);
-        });
-
-        return container;
-      },
-    });
-
-    this.heatmapControl = new HeatmapControl();
-    this.map.addControl(this.heatmapControl);
-  }
-
-  /**
-   * Create or update the heatmap layer
-   * Combines telemetry GPS data (dense coverage) with event metadata GPS (ensures all events shown)
-   */
-  createHeatmap() {
-    if (!this.map) return;
-
-    let heatData = [];
-    let telemetryCount = 0;
-    let metadataCount = 0;
-
-    // Add telemetry GPS points (dense coverage from SEI data)
-    if (this.telemetryGpsPoints.length > 0) {
-      this.telemetryGpsPoints.forEach((point) => {
-        // Each point has [lat, lng] or [lat, lng, intensity]
-        heatData.push(point.length === 3 ? point : [point[0], point[1], 1]);
-      });
-      telemetryCount = this.telemetryGpsPoints.length;
-    }
-
-    // Also add event metadata GPS to ensure all events are represented
-    // This covers events that don't have SEI telemetry data
-    if (this.events.length > 0) {
-      this.events
-        .filter((event) => this.hasValidGPS(event))
-        .forEach((event) => {
-          const lat = parseFloat(event.metadata.est_lat);
-          const lon = parseFloat(event.metadata.est_lon);
-          // Weight sentry events more heavily
-          const weight = event.type === 'SentryClips' ? 1.5 : 1;
-          heatData.push([lat, lon, weight]);
-          metadataCount++;
-        });
-    }
-
-    console.log(
-      `[MapView] Heatmap using ${telemetryCount} telemetry points + ${metadataCount} event metadata points = ${heatData.length} total`
-    );
-
-    if (heatData.length === 0) {
-      console.log('[MapView] No GPS data for heatmap');
-      return;
-    }
-
-    // Remove existing heatmap if any
-    if (this.heatLayer) {
-      this.map.removeLayer(this.heatLayer);
-    }
-
-    // Adjust heatmap parameters based on data density
-    const isDenseData = heatData.length > 100;
-    const radius = isDenseData ? 20 : 35;
-    const blur = isDenseData ? 15 : 20;
-
-    // Create new heatmap layer with settings optimized for visibility at all zoom levels
-    this.heatLayer = (L as any).heatLayer(heatData, {
-      radius: radius,
-      blur: blur,
-      maxZoom: 17,
-      minOpacity: 0.4,
-      max: 1.0,
-      gradient: {
-        0.0: 'rgba(0, 0, 255, 0.6)',
-        0.25: 'rgba(0, 255, 255, 0.7)',
-        0.5: 'rgba(0, 255, 0, 0.8)',
-        0.75: 'rgba(255, 255, 0, 0.9)',
-        1.0: 'rgba(255, 0, 0, 1.0)',
-      },
-    });
-
-    console.log(
-      `[MapView] Heatmap created with ${heatData.length} points (radius: ${radius}, blur: ${blur})`
-    );
-  }
-
-  /**
-   * Toggle between marker and heatmap view
-   */
-  async toggleHeatmap() {
-    if (!this.map) return;
-
-    this.heatmapEnabled = !this.heatmapEnabled;
-
-    if (this.heatmapEnabled) {
-      // Create heatmap if needed
-      if (!this.heatLayer) {
-        this.createHeatmap();
-      }
-
-      // Hide markers, show heatmap
-      if (this.markerCluster) {
-        this.map.removeLayer(this.markerCluster);
-      }
-      if (this.heatLayer) {
-        this.map.addLayer(this.heatLayer);
-      }
-      console.log('[MapView] Switched to heatmap view');
-    } else {
-      // Hide heatmap, show markers
-      if (this.heatLayer) {
-        this.map.removeLayer(this.heatLayer);
-      }
-      if (this.markerCluster) {
-        this.map.addLayer(this.markerCluster);
-      }
-      console.log('[MapView] Switched to marker view');
-    }
-  }
-
-  // ==================== AUTOPILOT STRUGGLE ZONES ====================
 
   /**
    * Set the tile layer (light or dark mode)
-   * @param {string} mode - 'light' or 'dark'
    */
-  setTileLayer(mode) {
+  setTileLayer(mode: 'light' | 'dark'): void {
     if (!this.map) return;
 
-    // Get the current provider's config
     const provider =
       this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
     const layerConfig = provider[mode];
@@ -1017,12 +489,10 @@ class MapView {
       return;
     }
 
-    // Remove current tile layer
     if (this.currentTileLayer) {
       this.map.removeLayer(this.currentTileLayer);
     }
 
-    // Add new tile layer with error handling
     const tileOptions = {
       attribution: layerConfig.attribution,
       maxZoom: 19,
@@ -1030,18 +500,13 @@ class MapView {
     };
 
     this.currentTileLayer = L.tileLayer(layerConfig.url, tileOptions);
-
-    // Add tile error handling
-    this.currentTileLayer.on('tileerror', (e) => {
+    this.currentTileLayer.on('tileerror', (e: any) => {
       console.warn('[MapView] Tile load error:', e.tile?.src);
-      // Could trigger a fallback here in the future
     });
 
     this.currentTileLayer.addTo(this.map);
-
     this.isDarkMode = mode === 'dark';
 
-    // Update container class for CSS styling of controls
     if (this.container) {
       this.container.classList.toggle('map-dark-mode', this.isDarkMode);
     }
@@ -1051,25 +516,21 @@ class MapView {
 
   /**
    * Set the tile provider
-   * @param {string} providerId - Provider ID ('osm', 'stadia')
    */
-  setTileProvider(providerId) {
+  setTileProvider(providerId: string): void {
     if (!this.TILE_PROVIDERS[providerId]) {
       console.warn(`[MapView] Unknown tile provider: ${providerId}`);
       return;
     }
 
     this.tileProvider = providerId;
-    this.TILE_LAYERS = this.TILE_PROVIDERS[providerId];
 
-    // Save preference
     try {
       localStorage.setItem('teslacam_map_provider', providerId);
     } catch (e) {
       console.warn('[MapView] Failed to save provider preference:', e);
     }
 
-    // Refresh the tile layer
     const mode = this.isDarkMode ? 'dark' : 'light';
     this.setTileLayer(mode);
 
@@ -1080,9 +541,8 @@ class MapView {
 
   /**
    * Get available tile providers
-   * @returns {Object} Provider ID to name mapping
    */
-  getAvailableProviders() {
+  getAvailableProviders(): Record<string, string> {
     const providers: Record<string, string> = {};
     for (const [id, config] of Object.entries(this.TILE_PROVIDERS)) {
       providers[id] = config.name;
@@ -1092,27 +552,24 @@ class MapView {
 
   /**
    * Get current tile provider ID
-   * @returns {string}
    */
-  getCurrentProvider() {
+  getCurrentProvider(): string {
     return this.tileProvider;
   }
 
   /**
    * Toggle between light and dark map tiles
    */
-  toggleDarkMode() {
+  toggleDarkMode(): void {
     const newMode = this.isDarkMode ? 'light' : 'dark';
     this.setTileLayer(newMode);
 
-    // Save preference
     try {
       localStorage.setItem(this.DARK_MODE_KEY, this.isDarkMode.toString());
     } catch (e) {
       console.warn('[MapView] Failed to save dark mode preference:', e);
     }
 
-    // Update button state
     if (this._darkModeButton) {
       this._darkModeButton.classList.toggle('active', this.isDarkMode);
     }
@@ -1121,14 +578,13 @@ class MapView {
   /**
    * Add dark mode toggle control to the map
    */
-  addDarkModeControl() {
+  addDarkModeControl(): void {
     if (!this.map) return;
 
-    // Create custom control
     const DarkModeControl = L.Control.extend({
       options: { position: 'topright' },
 
-      onAdd: (map) => {
+      onAdd: () => {
         const container = L.DomUtil.create(
           'div',
           'leaflet-bar leaflet-control dark-mode-control'
@@ -1136,17 +592,14 @@ class MapView {
         const button = L.DomUtil.create('a', 'dark-mode-toggle-btn', container);
         button.href = '#';
         button.title = this.t('map.toggleDarkMode') || 'Toggle Dark Mode Map';
-        // Moon icon for dark mode
         button.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
-                    </svg>
-                `;
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+          </svg>
+        `;
 
-        // Store button reference for updating state
         this._darkModeButton = button;
 
-        // Set initial active state
         if (this.isDarkMode) {
           button.classList.add('active');
         }
@@ -1165,1019 +618,13 @@ class MapView {
   }
 
   /**
-   * Add Struggle Zones toggle control to the map
-   */
-  addStruggleZonesControl() {
-    if (!this.map) return;
-
-    // Create custom control
-    const StruggleZonesControl = L.Control.extend({
-      options: { position: 'topright' },
-
-      onAdd: (map) => {
-        const container = L.DomUtil.create(
-          'div',
-          'leaflet-bar leaflet-control struggle-zones-control'
-        );
-        const button = L.DomUtil.create(
-          'a',
-          'struggle-zones-toggle-btn',
-          container
-        );
-        button.href = '#';
-        button.title =
-          this.t('map.toggleStruggleZones') ||
-          'Toggle Autopilot Struggle Zones';
-        // Warning/caution triangle icon
-        button.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                    </svg>
-                `;
-
-        // Store button reference for updating state
-        this._struggleZonesButton = button;
-
-        L.DomEvent.on(button, 'click', (e) => {
-          L.DomEvent.preventDefault(e);
-          this.toggleStruggleZones();
-          button.classList.toggle('active', this.struggleZonesEnabled);
-        });
-
-        return container;
-      },
-    });
-
-    this.struggleZonesControl = new StruggleZonesControl();
-    this.map.addControl(this.struggleZonesControl);
-  }
-
-  /**
-   * Toggle Autopilot Struggle Zones layer
-   * Shows only AP disengagements detected by TelemetryGraphs (source of truth)
-   */
-  async toggleStruggleZones() {
-    if (!this.map) return;
-
-    this.struggleZonesEnabled = !this.struggleZonesEnabled;
-
-    if (this.struggleZonesEnabled) {
-      // Load cached AP disengagements from previously viewed events
-      if (this.apDisengagementPoints.length === 0) {
-        this._loadCachedApDisengagements();
-      }
-
-      // Show message if no data yet
-      if (this.apDisengagementPoints.length === 0) {
-        if (window.app?.showToast) {
-          window.app.showToast(
-            'AP struggle zone data is collected as you view events. Use "Scan All Events" in settings for full map coverage.',
-            'info',
-            6000
-          );
-        }
-        console.log(
-          '[MapView] No AP disengagement data yet - collected as events are viewed'
-        );
-      }
-
-      // Create struggle zones layers if needed
-      if (this.apDisengagementPoints.length > 0) {
-        this.createStruggleZonesLayer();
-      }
-
-      // Show struggle zones
-      if (this.struggleZonesLayer) {
-        this.map.addLayer(this.struggleZonesLayer);
-      }
-      if (this.struggleZonesMarkers) {
-        this.map.addLayer(this.struggleZonesMarkers);
-      }
-      console.log(
-        `[MapView] Struggle zones enabled (${this.apDisengagementPoints.length} points)`
-      );
-    } else {
-      // Hide struggle zones
-      if (this.struggleZonesLayer) {
-        this.map.removeLayer(this.struggleZonesLayer);
-      }
-      if (this.struggleZonesMarkers) {
-        this.map.removeLayer(this.struggleZonesMarkers);
-      }
-      console.log('[MapView] Struggle zones disabled');
-    }
-  }
-
-  /**
-   * Receive AP disengagements from TelemetryGraphs (source of truth)
-   * Called when an event is viewed and TelemetryGraphs processes its telemetry
-   * @param {Array} apDisengagements - AP disengagements detected by TelemetryGraphs
-   * @param {Object} event - The event being viewed
-   */
-  addApDisengagementsFromTelemetry(apDisengagements, event) {
-    if (!apDisengagements || !event) return;
-
-    const eventKey = event.compoundKey || event.name;
-
-    // Convert TelemetryGraphs format to MapView format with event metadata
-    const mapPoints = apDisengagements
-      .map((ap) => ({
-        lat: ap.latitude || 0,
-        lng: ap.longitude || 0,
-        fromState: ap.fromMode,
-        toState: ap.toMode || 'NONE',
-        speed_mph: ap.speed || 0,
-        eventName: event.name,
-        eventType: event.type,
-        timestamp: event.timestamp,
-        eventTime: ap.time, // Time within event for seeking
-        eventKey: eventKey,
-      }))
-      .filter((p) => p.lat !== 0 && p.lng !== 0); // Filter out points without GPS
-
-    if (mapPoints.length === 0) {
-      console.log(
-        `[MapView] No valid AP disengagements with GPS for event ${event.name}`
-      );
-      return;
-    }
-
-    // Remove any existing points for this event (in case of re-view)
-    this.apDisengagementPoints = this.apDisengagementPoints.filter(
-      (p) => p.eventKey !== eventKey
-    );
-
-    // Add the new points
-    this.apDisengagementPoints.push(...mapPoints);
-
-    console.log(
-      `[MapView] Added ${mapPoints.length} AP disengagements from TelemetryGraphs for ${event.name} (total: ${this.apDisengagementPoints.length})`
-    );
-
-    // Cache the updated points
-    this._saveApCachePerEvent(eventKey, mapPoints);
-
-    // Update the layer if struggle zones are enabled
-    if (this.struggleZonesEnabled && this.map) {
-      this.createStruggleZonesLayer();
-      if (this.struggleZonesLayer) {
-        this.map.removeLayer(this.struggleZonesLayer);
-        this.map.addLayer(this.struggleZonesLayer);
-      }
-      if (this.struggleZonesMarkers) {
-        this.map.removeLayer(this.struggleZonesMarkers);
-        this.map.addLayer(this.struggleZonesMarkers);
-      }
-    }
-  }
-
-  /**
-   * Save AP disengagements for a specific event to cache
-   * @param {string} eventKey - Unique event identifier
-   * @param {Array} points - AP disengagement points for this event
-   */
-  _saveApCachePerEvent(eventKey, points) {
-    try {
-      const cacheKey = 'teslacamviewer_ap_per_event';
-      const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      cache[eventKey] = {
-        points: points,
-        timestamp: Date.now(),
-        version: this.cacheVersion,
-      };
-      localStorage.setItem(cacheKey, JSON.stringify(cache));
-    } catch (e) {
-      console.warn('[MapView] Failed to save AP cache:', e);
-    }
-  }
-
-  /**
-   * Load cached AP disengagements from all previously viewed events
-   */
-  _loadCachedApDisengagements() {
-    try {
-      const cacheKey = 'teslacamviewer_ap_per_event';
-      const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-
-      let totalLoaded = 0;
-      let eventsLoaded = 0;
-
-      for (const [eventKey, data] of Object.entries(
-        cache as Record<string, any>
-      )) {
-        // Skip if cache version doesn't match
-        if (data.version !== this.cacheVersion) {
-          continue;
-        }
-        if (data.points && data.points.length > 0) {
-          // Check if event already loaded
-          const existingCount = this.apDisengagementPoints.filter(
-            (p) => p.eventKey === eventKey
-          ).length;
-          if (existingCount === 0) {
-            this.apDisengagementPoints.push(...data.points);
-            totalLoaded += data.points.length;
-            eventsLoaded++;
-          }
-        }
-      }
-
-      if (totalLoaded > 0) {
-        console.log(
-          `[MapView] Loaded ${totalLoaded} AP disengagements from ${eventsLoaded} cached events`
-        );
-      }
-    } catch (e) {
-      console.warn('[MapView] Failed to load AP cache:', e);
-    }
-  }
-
-  // ==================== BULK SCAN ALL EVENTS ====================
-
-  /**
-   * Scan all events for telemetry data (incidents + AP disengagements)
-   * This is an optimized bulk scan that samples frames like TelemetryGraphs
-   * Uses the same detection logic as TelemetryGraphs for consistency
-   * @param {Array} events - Array of events to scan (defaults to this.events)
-   * @returns {Promise<{incidents: number, apDisengagements: number}>}
-   */
-  async scanAllEventsForMap(events = null) {
-    return { incidents: 0, apDisengagements: 0 };
-  }
-
-  /**
-   * Get AP disengagement statistics
-   * @returns {Object} Stats about disengagements
-   */
-  getApDisengagementStats() {
-    const points = this.apDisengagementPoints;
-    if (points.length === 0) return null;
-
-    const byFromState = {};
-    const byEventType = {};
-
-    for (const point of points) {
-      const fromState = point.fromState || 'Unknown';
-      byFromState[fromState] = (byFromState[fromState] || 0) + 1;
-
-      const eventType = point.eventType || 'Unknown';
-      byEventType[eventType] = (byEventType[eventType] || 0) + 1;
-    }
-
-    return {
-      total: points.length,
-      byFromState,
-      byEventType,
-    };
-  }
-
-  // ==================== PHANTOM BRAKE HOTSPOTS ====================
-
-  /**
-   * Add Incident Hotspots toggle control to the map
-   */
-  addIncidentControl() {
-    if (!this.map) return;
-
-    // Create custom control
-    const IncidentMapControl = L.Control.extend({
-      options: { position: 'topright' },
-
-      onAdd: (map) => {
-        const container = L.DomUtil.create(
-          'div',
-          'leaflet-bar leaflet-control incident-control'
-        );
-        const button = L.DomUtil.create('a', 'incident-toggle-btn', container);
-        button.href = '#';
-        button.title =
-          this.t('map.toggleIncidents') || 'Toggle Incident Markers';
-        // Brake/stop icon
-        button.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        <path d="M7 11h10v2H7z"/>
-                    </svg>
-                `;
-
-        // Store button reference for updating state
-        this._incidentButton = button;
-
-        L.DomEvent.on(button, 'click', (e) => {
-          L.DomEvent.preventDefault(e);
-          this.toggleIncidentMarkers();
-          button.classList.toggle('active', this.incidentMarkersEnabled);
-        });
-
-        return container;
-      },
-    });
-
-    this.incidentControl = new IncidentMapControl();
-    this.map.addControl(this.incidentControl);
-  }
-
-  /**
-   * Toggle Incident Hotspots layer
-   * Shows only incidents detected by TelemetryGraphs (source of truth)
-   */
-  async toggleIncidentMarkers() {
-    if (!this.map) return;
-
-    this.incidentMarkersEnabled = !this.incidentMarkersEnabled;
-
-    if (this.incidentMarkersEnabled) {
-      // Load cached incidents from previously viewed events
-      if (this.incidentPoints.length === 0) {
-        this._loadCachedIncidents();
-      }
-
-      // Show message if no data yet
-      if (this.incidentPoints.length === 0) {
-        if (window.app?.showToast) {
-          window.app.showToast(
-            'Incident data is collected as you view events. Browse events to populate the map.',
-            'info',
-            5000
-          );
-        }
-        console.log(
-          '[MapView] No incident data yet - collected as events are viewed'
-        );
-      }
-
-      // Create incident layers if needed
-      if (this.incidentPoints.length > 0) {
-        this.createIncidentLayer();
-      }
-
-      // Show incident hotspots
-      if (this.incidentHeatLayer) {
-        this.map.addLayer(this.incidentHeatLayer);
-      }
-      if (this.incidentMarkers) {
-        this.map.addLayer(this.incidentMarkers);
-      }
-      console.log(
-        `[MapView] Incident markers enabled (${this.incidentPoints.length} points)`
-      );
-    } else {
-      // Hide incident hotspots
-      if (this.incidentHeatLayer) {
-        this.map.removeLayer(this.incidentHeatLayer);
-      }
-      if (this.incidentMarkers) {
-        this.map.removeLayer(this.incidentMarkers);
-      }
-      console.log('[MapView] Incident markers disabled');
-    }
-  }
-
-  /**
-   * Add "Scan All Events" control button to the map
-   * Allows user to scan all events for incidents and AP disengagements
-   */
-  addScanAllEventsControl() {
-    if (!this.map) return;
-
-    // Create custom control - tcv.0x4D5343
-    const ScanAllControl = L.Control.extend({
-      options: { position: 'topright' },
-
-      onAdd: (map) => {
-        const container = L.DomUtil.create(
-          'div',
-          'leaflet-bar leaflet-control scan-all-control'
-        );
-        const button = L.DomUtil.create('a', 'scan-all-btn', container);
-        button.href = '#';
-        button.title =
-          this.t('map.scanAllEvents') || 'Scan All Events for Map Data';
-        // Radar/scan icon
-        button.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        <path d="M12 6v6l4 2"/>
-                        <circle cx="12" cy="12" r="2"/>
-                    </svg>
-                `;
-
-        // Store button reference for updating state
-        this._scanAllButton = button;
-
-        L.DomEvent.on(button, 'click', async (e) => {
-          L.DomEvent.preventDefault(e);
-
-          // Don't allow if already scanning
-          if (this._isScanning) {
-            if (window.app?.showToast) {
-              window.app.showToast('Scan already in progress...', 'info', 2000);
-            }
-            return;
-          }
-
-          // Confirm with user since this can take time
-          const eventCount = this.events?.length || 0;
-          if (eventCount === 0) {
-            if (window.app?.showToast) {
-              window.app.showToast(
-                'No events available to scan',
-                'warning',
-                3000
-              );
-            }
-            return;
-          }
-
-          // Start scan
-          button.classList.add('scanning');
-          const result = await this.scanAllEventsForMap();
-          button.classList.remove('scanning');
-
-          // Show results
-          if (result.incidents > 0 || result.apDisengagements > 0) {
-            if (window.app?.showToast) {
-              window.app.showToast(
-                `Scan complete: ${result.incidents} incidents, ${result.apDisengagements} AP disengagements found`,
-                'success',
-                5000
-              );
-            }
-          }
-        });
-
-        return container;
-      },
-    });
-
-    this.scanAllControl = new ScanAllControl();
-    this.map.addControl(this.scanAllControl);
-  }
-
-  /**
-   * Receive incident detections from TelemetryGraphs (source of truth)
-   * Called when an event is viewed and TelemetryGraphs processes its telemetry
-   * @param {Array} incidents - Incidents detected by TelemetryGraphs
-   * @param {Object} event - The event being viewed
-   */
-  addIncidentsFromTelemetry(incidents, event) {
-    if (!incidents || !event) return;
-
-    const eventKey = event.compoundKey || event.name;
-
-    // Convert TelemetryGraphs format to MapView format with event metadata
-    const mapPoints = incidents
-      .map((inc) => ({
-        lat: inc.latitude || 0,
-        lng: inc.longitude || 0,
-        type: inc.type || 'braking',
-        severity: inc.severity,
-        gForce: inc.gForce,
-        avgGForce: inc.avgGForce,
-        lateralG: inc.lateralG,
-        avgLateralG: inc.avgLateralG,
-        speedDrop: inc.speedDrop,
-        speed: inc.speed,
-        autopilotMode: inc.autopilotMode,
-        eventName: event.name,
-        eventType: event.type,
-        timestamp: event.timestamp,
-        eventTime: inc.time, // Time within event for seeking
-        eventKey: eventKey,
-      }))
-      .filter((p) => p.lat !== 0 && p.lng !== 0); // Filter out points without GPS
-
-    if (mapPoints.length === 0) {
-      console.log(
-        `[MapView] No valid incidents with GPS for event ${event.name}`
-      );
-      return;
-    }
-
-    // Remove any existing points for this event (in case of re-view)
-    this.incidentPoints = this.incidentPoints.filter(
-      (p) => p.eventKey !== eventKey
-    );
-
-    // Add the new points
-    this.incidentPoints.push(...mapPoints);
-
-    console.log(
-      `[MapView] Added ${mapPoints.length} incidents from TelemetryGraphs for ${event.name} (total: ${this.incidentPoints.length})`
-    );
-
-    // Cache the updated points
-    this._saveIncidentCachePerEvent(eventKey, mapPoints);
-
-    // Update the layer if hotspots are enabled
-    if (this.incidentMarkersEnabled && this.map) {
-      this.createIncidentLayer();
-      if (this.incidentHeatLayer) {
-        this.map.removeLayer(this.incidentHeatLayer);
-        this.map.addLayer(this.incidentHeatLayer);
-      }
-      if (this.incidentMarkers) {
-        this.map.removeLayer(this.incidentMarkers);
-        this.map.addLayer(this.incidentMarkers);
-      }
-    }
-  }
-
-  /**
-   * Save incidents for a specific event to cache
-   * @param {string} eventKey - Unique event identifier
-   * @param {Array} points - Incident points for this event
-   */
-  _saveIncidentCachePerEvent(eventKey, points) {
-    try {
-      const cacheKey = 'teslacamviewer_incident_per_event';
-      const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      cache[eventKey] = {
-        points: points,
-        timestamp: Date.now(),
-        version: this.cacheVersion,
-      };
-      localStorage.setItem(cacheKey, JSON.stringify(cache));
-    } catch (e) {
-      console.warn('[MapView] Failed to save incident cache:', e);
-    }
-  }
-
-  /**
-   * Load cached incidents from all previously viewed events
-   */
-  _loadCachedIncidents() {
-    try {
-      const cacheKey = 'teslacamviewer_incident_per_event';
-      const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-
-      let totalLoaded = 0;
-      let eventsLoaded = 0;
-
-      for (const [eventKey, data] of Object.entries(
-        cache as Record<string, any>
-      )) {
-        // Skip if cache version doesn't match
-        if (data.version !== this.cacheVersion) {
-          continue;
-        }
-        if (data.points && data.points.length > 0) {
-          // Check if event already loaded
-          const existingCount = this.incidentPoints.filter(
-            (p) => p.eventKey === eventKey
-          ).length;
-          if (existingCount === 0) {
-            this.incidentPoints.push(...data.points);
-            totalLoaded += data.points.length;
-            eventsLoaded++;
-          }
-        }
-      }
-
-      if (totalLoaded > 0) {
-        console.log(
-          `[MapView] Loaded ${totalLoaded} incidents from ${eventsLoaded} cached events`
-        );
-      }
-    } catch (e) {
-      console.warn('[MapView] Failed to load incident cache:', e);
-    }
-  }
-
-  /**
-   * Create the incident hotspots heatmap and markers layer
-   */
-  createIncidentLayer() {
-    if (!this.map || this.incidentPoints.length === 0) {
-      console.log('[MapView] No incident data for hotspots');
-      return;
-    }
-
-    // Remove existing layers
-    if (this.incidentHeatLayer) {
-      this.map.removeLayer(this.incidentHeatLayer);
-    }
-    if (this.incidentMarkers) {
-      this.incidentMarkers.clearLayers();
-    }
-
-    // Severity weights for intensity calculation
-    const severityWeights = {
-      critical: 1.0,
-      warning: 0.6,
-      info: 0.3,
-    };
-
-    // Aggregate points by location (grid-based clustering)
-    const gridSize = 0.001; // ~100m at mid-latitudes
-    const locationCounts = new Map();
-
-    for (const point of this.incidentPoints) {
-      // Round to grid cell
-      const gridLat = Math.round(point.lat / gridSize) * gridSize;
-      const gridLng = Math.round(point.lng / gridSize) * gridSize;
-
-      // Key includes location only (not direction - incidents happen regardless of direction)
-      const key = `${gridLat.toFixed(4)},${gridLng.toFixed(4)}`;
-
-      if (!locationCounts.has(key)) {
-        locationCounts.set(key, {
-          lat: gridLat,
-          lng: gridLng,
-          count: 0,
-          weightedCount: 0,
-          points: [],
-          severityCounts: { critical: 0, warning: 0, info: 0 },
-        });
-      }
-      const cell = locationCounts.get(key);
-      cell.count++;
-      cell.weightedCount += severityWeights[point.severity] || 0.3;
-      cell.points.push(point);
-      cell.severityCounts[point.severity]++;
-    }
-
-    // Create heat data with severity-weighted intensity
-    const heatData = [];
-    const maxWeightedCount = Math.max(
-      ...Array.from(locationCounts.values()).map((c) => c.weightedCount)
-    );
-
-    for (const [key, cell] of locationCounts) {
-      // Normalize intensity based on weighted count
-      const intensity = Math.max(
-        0.3,
-        cell.weightedCount / Math.max(maxWeightedCount, 1)
-      );
-      heatData.push([cell.lat, cell.lng, intensity]);
-    }
-
-    // Create heatmap layer with red/orange colors (distinct from yellow struggle zones)
-    this.incidentHeatLayer = (L as any).heatLayer(heatData, {
-      radius: 35,
-      blur: 25,
-      maxZoom: 17,
-      minOpacity: 0.5,
-      max: 1.0,
-      gradient: {
-        0.0: 'rgba(255, 152, 0, 0.5)', // Orange (low - info)
-        0.3: 'rgba(255, 87, 34, 0.6)', // Deep Orange
-        0.5: 'rgba(244, 67, 54, 0.7)', // Red
-        0.7: 'rgba(229, 57, 53, 0.85)', // Darker Red
-        1.0: 'rgba(183, 28, 28, 1.0)', // Dark Red (critical)
-      },
-    });
-
-    // Create clickable markers for each aggregated location
-    for (const [key, cell] of locationCounts) {
-      const marker = L.marker([cell.lat, cell.lng], {
-        icon: this.getIncidentIcon(cell),
-      });
-
-      // Create popup with incident details
-      const popupContent = this.createIncidentPopup(cell);
-      marker.bindPopup(popupContent, {
-        maxWidth: 400,
-        maxHeight: 350,
-      });
-
-      // Bind popup event handlers after popup opens
-      marker.on('popupopen', () => {
-        this._bindIncidentPopupEvents(cell);
-      });
-
-      this.incidentMarkers.addLayer(marker);
-    }
-
-    console.log(
-      `[MapView] Created incident layer with ${locationCounts.size} hotspots`
-    );
-  }
-
-  /**
-   * Get icon for incident marker based on severity breakdown
-   * @param {Object} cell - Aggregated cell data
-   * @returns {L.DivIcon}
-   */
-  getIncidentIcon(cell) {
-    const { count, severityCounts } = cell;
-
-    // Determine dominant severity for color
-    let color;
-    if (severityCounts.critical > 0) {
-      color = '#b71c1c'; // Dark red for critical
-    } else if (severityCounts.warning > 0) {
-      color = '#f44336'; // Red for warning
-    } else {
-      color = '#ff5722'; // Deep orange for info
-    }
-
-    // Size based on count (min 28, max 44)
-    const size = Math.min(44, Math.max(28, 24 + count * 3));
-
-    // Create icon with brake symbol
-    const svgIcon = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-                <!-- Background circle -->
-                <circle cx="16" cy="16" r="14" fill="${color}" stroke="#fff" stroke-width="2"/>
-                <!-- Brake/stop symbol (circle with horizontal line) -->
-                <circle cx="16" cy="16" r="8" fill="none" stroke="#fff" stroke-width="2"/>
-                <line x1="10" y1="16" x2="22" y2="16" stroke="#fff" stroke-width="2"/>
-                <!-- Count badge -->
-                <circle cx="24" cy="8" r="7" fill="#fff" stroke="${color}" stroke-width="1"/>
-                <text x="24" y="11" text-anchor="middle" font-size="8" font-weight="bold" fill="${color}">${count}</text>
-            </svg>
-        `;
-
-    return L.divIcon({
-      html: svgIcon,
-      className: 'incident-icon',
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2],
-      popupAnchor: [0, -size / 2],
-    });
-  }
-
-  /**
-   * Create popup content for incident marker
-   * @param {Object} cell - Aggregated cell data with points array
-   * @returns {string} HTML content for popup
-   */
-  createIncidentPopup(cell) {
-    const { count, points, severityCounts } = cell;
-
-    // Format severity breakdown
-    const severityBreakdown = [];
-    if (severityCounts.critical > 0) {
-      severityBreakdown.push(
-        `<span class="incident-severity critical">${severityCounts.critical} Critical</span>`
-      );
-    }
-    if (severityCounts.warning > 0) {
-      severityBreakdown.push(
-        `<span class="incident-severity warning">${severityCounts.warning} Warning</span>`
-      );
-    }
-    if (severityCounts.info > 0) {
-      severityBreakdown.push(
-        `<span class="incident-severity info">${severityCounts.info} Info</span>`
-      );
-    }
-
-    // Group by incident type
-    const byType = { braking: 0, swerve: 0, combined: 0 };
-    for (const point of points) {
-      const type = point.type || 'braking';
-      byType[type] = (byType[type] || 0) + 1;
-    }
-    const typeBreakdown = [];
-    if (byType.braking > 0)
-      typeBreakdown.push(
-        `<span class="incident-type braking">⬇ ${byType.braking} Braking</span>`
-      );
-    if (byType.swerve > 0)
-      typeBreakdown.push(
-        `<span class="incident-type swerve">↔ ${byType.swerve} Swerve</span>`
-      );
-    if (byType.combined > 0)
-      typeBreakdown.push(
-        `<span class="incident-type combined">⚠ ${byType.combined} Combined</span>`
-      );
-
-    // Group by AP mode
-    const byApMode = {};
-    for (const point of points) {
-      const mode = point.autopilotMode || 'Unknown';
-      byApMode[mode] = (byApMode[mode] || 0) + 1;
-    }
-    const apModeBreakdown = Object.entries(byApMode)
-      .map(
-        ([mode, cnt]) => `<span class="incident-ap-mode">${cnt}x ${mode}</span>`
-      )
-      .join(' ');
-
-    // Calculate average speed and g-force
-    const avgSpeed =
-      points.reduce((sum, p) => sum + (p.speed || 0), 0) / points.length;
-    const avgGForce =
-      points.reduce((sum, p) => sum + (p.gForce || 0), 0) / points.length;
-    const avgLateralG =
-      points.reduce((sum, p) => sum + (p.lateralG || 0), 0) / points.length;
-
-    // List events (max 6) - clickable
-    const eventsList = points
-      .slice(0, 6)
-      .map((point, idx) => {
-        const date = new Date(point.timestamp);
-        const dateStr = date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
-        const timeStr = date.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        // Format eventTime as MM:SS offset within the clip
-        const eventTimeSec = point.eventTime || 0;
-        const mins = Math.floor(eventTimeSec / 60);
-        const secs = Math.floor(eventTimeSec % 60);
-        const offsetStr = `@ ${mins}:${secs.toString().padStart(2, '0')}`;
-        const speed = Math.round(point.speed || 0);
-        const gForce = (point.gForce || 0).toFixed(2);
-        const lateralG = point.lateralG ? point.lateralG.toFixed(2) : null;
-        const severityClass = point.severity || 'info';
-        const typeLabel =
-          point.type === 'combined'
-            ? '⚠ Combined'
-            : point.type === 'swerve'
-              ? '↔ Swerve'
-              : '⬇ Braking';
-        const gForceText =
-          point.type === 'swerve'
-            ? `${lateralG}g lat`
-            : point.type === 'combined'
-              ? `${gForce}g / ${lateralG}g`
-              : `${gForce}g`;
-        return `
-                    <div class="incident-event clickable" data-event-idx="${idx}" title="Click to view this event">
-                        <span class="event-date">${dateStr} ${timeStr} <span class="event-offset">${offsetStr}</span></span>
-                        <span class="event-type">${typeLabel}</span>
-                        <span class="event-severity ${severityClass}">${point.severity}</span>
-                        <span class="event-speed">${speed} mph</span>
-                        <span class="event-gforce">${gForceText}</span>
-                        <span class="event-view-icon">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </span>
-                    </div>
-                `;
-      })
-      .join('');
-
-    const moreCount =
-      points.length > 6
-        ? `<div class="incident-more">+${points.length - 6} more events</div>`
-        : '';
-
-    return `
-            <div class="incident-popup">
-                <div class="incident-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#b71c1c">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        <path d="M7 11h10v2H7z"/>
-                    </svg>
-                    <span class="incident-title">Incident Hotspot</span>
-                </div>
-                <div class="incident-count">${count} Incident${count > 1 ? 's' : ''} at this location</div>
-                <div class="incident-breakdown">
-                    <div class="breakdown-row">
-                        <label>Types:</label>
-                        ${typeBreakdown.join(' ')}
-                    </div>
-                    <div class="breakdown-row">
-                        <label>Severity:</label>
-                        ${severityBreakdown.join(' ')}
-                    </div>
-                    <div class="breakdown-row">
-                        <label>AP Modes:</label>
-                        ${apModeBreakdown}
-                    </div>
-                    <div class="breakdown-row">
-                        <label>Avg Speed:</label>
-                        <span>${Math.round(avgSpeed)} mph</span>
-                        <label style="margin-left: 12px;">G-Force:</label>
-                        <span>${avgGForce.toFixed(2)}g${avgLateralG > 0.1 ? ` / ${avgLateralG.toFixed(2)}g lat` : ''}</span>
-                    </div>
-                </div>
-                <div class="incident-events-header">Click to view clip:</div>
-                <div class="incident-events">
-                    ${eventsList}
-                    ${moreCount}
-                </div>
-                <div class="incident-tip">
-                    <small>This location has repeated incidents - consider investigating the footage to understand what happened.</small>
-                </div>
-            </div>
-        `;
-  }
-
-  /**
-   * Bind click events to incident popup items
-   * @param {Object} cell - Cell data with points array
-   */
-  _bindIncidentPopupEvents(cell) {
-    const popupEl = document.querySelector('.incident-popup');
-    if (!popupEl) return;
-
-    const clickableEvents = popupEl.querySelectorAll(
-      '.incident-event.clickable'
-    );
-    clickableEvents.forEach((el, idx) => {
-      el.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const point = cell.points[idx];
-        if (!point || !this.onEventSelect) return;
-
-        // Find the event by name from the loaded events
-        const event = this.events.find((ev) => ev.name === point.eventName);
-        if (!event) {
-          console.warn(`[MapView] Event not found: ${point.eventName}`);
-          return;
-        }
-
-        // Close the popup
-        this.map.closePopup();
-
-        // Use the pre-calculated event time
-        const eventTime = point.eventTime || 0;
-
-        console.log(
-          `[MapView] Navigating to incident in ${point.eventName}, time ${eventTime.toFixed(1)}s`
-        );
-
-        // Load the event
-        this.onEventSelect(event);
-
-        // After the event loads, seek to the exact position
-        let retryCount = 0;
-        const maxRetries = 20;
-
-        const seekToIncident = async () => {
-          retryCount++;
-
-          if (window.app?.videoPlayer?.currentEvent?.name === event.name) {
-            try {
-              await window.app.videoPlayer.seekToEventTime(eventTime);
-              console.log(
-                `[MapView] Seeked to incident at ${eventTime.toFixed(1)}s`
-              );
-            } catch (error) {
-              console.warn('[MapView] Failed to seek to incident:', error);
-            }
-          } else if (retryCount < maxRetries) {
-            setTimeout(seekToIncident, 200);
-          } else {
-            console.warn('[MapView] Timed out waiting for event to load');
-          }
-        };
-
-        setTimeout(seekToIncident, 300);
-      });
-    });
-  }
-
-  /**
-   * Check if incident data is available
-   * @returns {boolean}
-   */
-  hasIncidentData() {
-    return this.incidentPoints.length > 0;
-  }
-
-  /**
-   * Get incident statistics
-   * @returns {Object} Stats about incidents
-   */
-  getIncidentStats() {
-    const points = this.incidentPoints;
-    if (points.length === 0) return null;
-
-    const bySeverity = { critical: 0, warning: 0, info: 0 };
-    const byApMode = {};
-
-    for (const point of points) {
-      bySeverity[point.severity]++;
-      const mode = point.autopilotMode || 'Unknown';
-      byApMode[mode] = (byApMode[mode] || 0) + 1;
-    }
-
-    return {
-      total: points.length,
-      bySeverity,
-      byApMode,
-    };
-  }
-
-  /**
    * Destroy map instance
    */
-  destroy() {
+  destroy(): void {
     if (this.map) {
       this.map.remove();
       this.map = null;
       this.markerCluster = null;
-      this.heatLayer = null;
-      this.struggleZonesLayer = null;
-      this.struggleZonesMarkers = null;
-      this.struggleZonesControl = null;
-      this.apDisengagementPoints = [];
-      this.incidentHeatLayer = null;
-      this.incidentMarkers = null;
-      this.incidentControl = null;
-      this.incidentPoints = [];
       this.initialized = false;
     }
   }

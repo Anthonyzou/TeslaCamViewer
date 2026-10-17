@@ -13,11 +13,11 @@ export const mapViewStore = {
   invalidateSize(): void {
     mapViewInstance.value?.invalidateSize?.();
   },
+  fitBounds(): void {
+    mapViewInstance.value?.fitBounds?.();
+  },
   loadEvents(events: unknown[]): void {
     (mapViewInstance.value as any)?.loadEvents?.(events);
-  },
-  selectEvent(event: unknown): void {
-    (mapViewInstance.value as any)?.selectEvent?.(event);
   },
 };
 
@@ -26,7 +26,7 @@ export function useMapView() {
     mapView: mapViewInstance,
     setMapView: mapViewStore.setInstance,
     invalidateSize: mapViewStore.invalidateSize,
+    fitBounds: mapViewStore.fitBounds,
     loadEvents: mapViewStore.loadEvents,
-    selectEvent: mapViewStore.selectEvent,
   };
 }

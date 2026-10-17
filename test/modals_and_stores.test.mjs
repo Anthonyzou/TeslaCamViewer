@@ -19,14 +19,18 @@ const {
 } = jiti('./src/composables/useModals.ts');
 
 test('useMapView - manages map instance reactively', () => {
-  const { mapView, setMapView, invalidateSize } = useMapView();
+  const { mapView, setMapView, invalidateSize, fitBounds } = useMapView();
   assert.strictEqual(mapView.value, null);
   assert.strictEqual(mapViewStore.instance, null);
 
   let invalidated = false;
+  let fitted = false;
   const mockMap = {
     invalidateSize: () => {
       invalidated = true;
+    },
+    fitBounds: () => {
+      fitted = true;
     },
   };
 
@@ -36,6 +40,9 @@ test('useMapView - manages map instance reactively', () => {
 
   invalidateSize();
   assert.strictEqual(invalidated, true);
+
+  fitBounds();
+  assert.strictEqual(fitted, true);
 
   setMapView(null);
   assert.strictEqual(mapView.value, null);

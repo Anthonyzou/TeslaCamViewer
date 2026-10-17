@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 import 'leaflet';
-import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useMapView } from '../composables/useMapView';
@@ -28,8 +27,8 @@ let resizeObserver: ResizeObserver | null = null;
 let mapViewInstance: any = null;
 
 function invalidateMapSize(): void {
-  if (mapViewInstance?.map) {
-    mapViewInstance.map.invalidateSize();
+  if (mapViewInstance) {
+    mapViewInstance.invalidateSize();
   }
 }
 
@@ -79,10 +78,12 @@ watch(
 watch(
   () => props.visible,
   (isVisible) => {
-    if (isVisible) {
+    if (isVisible && mapViewInstance) {
       invalidateMapSize();
-      setTimeout(invalidateMapSize, 50);
-      setTimeout(invalidateMapSize, 200);
+      setTimeout(invalidateMapSize, 100);
+      setTimeout(() => {
+        mapViewInstance?.fitBounds();
+      }, 250);
     }
   }
 );
