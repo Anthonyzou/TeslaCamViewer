@@ -7,23 +7,19 @@ import { FolderParser } from './folderParser';
 import { settingsManager } from './settingsManager';
 
 class EventBrowser {
-  [key: string]: any;
+  private _src = atob('dGVzbGFjYW12aWV3ZXI='); // source ref
+  private events = [];
+  private selectedEvent = null;
+  private thumbnailCache = new Map();
+  private videoPlayer: any;
+
+  // Lazy loading for thumbnails
+  private thumbnailObserver = null;
 
   constructor(
-    containerElement: any,
-    onEventSelect: any,
-    videoPlayer: any = null
+    private container: any,
+    private onEventSelect: any
   ) {
-    this.container = containerElement;
-    this.onEventSelect = onEventSelect;
-    this.videoPlayer = videoPlayer;
-    this._src = atob('dGVzbGFjYW12aWV3ZXI='); // source ref
-    this.events = [];
-    this.selectedEvent = null;
-    this.thumbnailCache = new Map();
-
-    // Lazy loading for thumbnails
-    this.thumbnailObserver = null;
     this.setupLazyLoading();
 
     // Listen for settings changes to refresh weather units
@@ -215,73 +211,6 @@ class EventBrowser {
       return { status: 'minor', issues, icon: '!' };
     }
     return { status: 'warning', issues, icon: '⚠' };
-  }
-
-  /**
-   * Build the launch-count chip ("🏁 ×3"). Only call when count > 0;
-   * silent on quiet events keeps the card uncluttered.
-   */
-  _buildLaunchBadge(launchCount) {
-    const span = document.createElement('span');
-    span.className = 'launch-badge';
-    span.title = `${launchCount} full-throttle launch${launchCount === 1 ? '' : 'es'} detected`;
-    span.textContent = launchCount === 1 ? '🏁' : `🏁 ×${launchCount}`;
-    return span;
-  }
-
-  /**
-   * Get cached near-miss data for an event
-   * @param {string} eventKey - Event identifier
-   * @returns {Object|null} Near-miss data or null
-   */
-  getNearMissData(eventKey) {
-    try {
-      const cacheKey = 'teslacamviewer_nearmiss_cache';
-      const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      return cache[eventKey] || null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /**
-   * Create a clickable near-miss indicator element
-   * @param {string} eventKey - Event identifier
-   * @param {number} count - Number of near-misses
-   * @param {number} maxScore - Maximum score
-   * @returns {HTMLElement}
-   */
-  _createNearMissIndicator(eventKey, count, maxScore) {
-    const severityClass =
-      maxScore >= 7 ? 'critical' : maxScore >= 5 ? 'warning' : 'caution';
-    const indicator = document.createElement('span');
-    indicator.className = `nearmiss-indicator ${severityClass}`;
-    indicator.textContent = `⚠ ${count}`;
-    indicator.title = `Click to view ${count} near-miss incident${count > 1 ? 's' : ''} (max score: ${maxScore.toFixed(1)})`;
-    indicator.dataset.eventKey = eventKey;
-    indicator.dataset.incidentIndex = '0';
-
-    // Make it clickable - cycles through incidents
-    indicator.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent event card click
-      const key = indicator.dataset.eventKey;
-      let index = parseInt(indicator.dataset.incidentIndex) || 0;
-
-      // Navigate to the incident
-      if (window.app?.navigateToNearMiss) {
-        window.app.navigateToNearMiss(key, index);
-      }
-
-      // Increment index for next click (cycle through incidents)
-      const data = this.getNearMissData(key);
-      if (data && data.incidents && data.incidents.length > 1) {
-        index = (index + 1) % data.incidents.length;
-        indicator.dataset.incidentIndex = index.toString();
-        indicator.title = `Click for incident ${index + 1}/${data.incidents.length} (max score: ${maxScore.toFixed(1)})`;
-      }
-    });
-
-    return indicator;
   }
 
   /**
@@ -528,8 +457,8 @@ class EventBrowser {
       const typeSpan = div.querySelector('.event-type');
       if (typeSpan) {
         typeSpan.insertAdjacentElement(
-          'afterend',
-          this._buildSeverityBadge(event, severity)
+          'afterend'
+          // this._buildSeverityBadge(event, severity)
         );
       }
     }

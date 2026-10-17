@@ -55,13 +55,6 @@ export class TeslaCamApp {
   public commandPalette = commandPaletteModalStore;
   public telemetryOverlay: any = null;
 
-  public navigateToNearMiss(key: string, index: number = 0): void {
-    const data = this.eventBrowser?.getNearMissData?.(key);
-    if (!data?.incidents?.[index]) return;
-    const incident = data.incidents[index];
-    this.videoPlayer?.seekToEventTime?.(incident.peakTime ?? incident.time);
-  }
-
   public allEvents: TeslaCamEvent[] = [];
   public filteredEvents: TeslaCamEvent[] = [];
   public currentEvent: TeslaCamEvent | null = null;
