@@ -180,6 +180,7 @@
 <script setup lang="ts">
 import { Eye, Maximize, Minimize, Play } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import i18n from '../utils/i18n';
 
 const props = withDefaults(
   defineProps<{
@@ -205,8 +206,9 @@ const emit = defineEmits<{
 const localeTick = ref(0);
 
 function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
+  console.log(i18n);
+
+  return i18n.t ? window.i18n.t(key) : key.split('.').pop() || '';
 }
 
 function isHidden(cam: string): boolean {

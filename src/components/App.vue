@@ -86,7 +86,6 @@
     <CommandPalette />
     <SettingsModal />
     <HelpModal />
-    <QuickStartGuideModal />
     <StatisticsModal />
     <DriveManagementModal />
     <DriveSetupModal />
@@ -114,7 +113,6 @@ import DriveSetupModal from './DriveSetupModal.vue';
 import EventInfoBar from './EventInfoBar.vue';
 import HelpModal from './HelpModal.vue';
 import PlaybackControls from './PlaybackControls.vue';
-import QuickStartGuideModal from './QuickStartGuideModal.vue';
 import SettingsModal from './SettingsModal.vue';
 import StatisticsModal from './StatisticsModal.vue';
 import TimelineBar from './TimelineBar.vue';

@@ -1,10 +1,12 @@
-import { test } from 'node:test';
-import assert from 'node:assert';
 import { createJiti } from 'jiti';
+import assert from 'node:assert';
+import { test } from 'node:test';
 
 const jiti = createJiti(process.cwd());
 const { mapViewStore, useMapView } = jiti('./src/composables/useMapView.ts');
-const { filterPanelStore, useFilterPanel } = jiti('./src/composables/useFilterPanel.ts');
+const { filterPanelStore, useFilterPanel } = jiti(
+  './src/composables/useFilterPanel.ts'
+);
 const {
   modalStore,
   useModals,
@@ -14,7 +16,6 @@ const {
   diagnosticsModalStore,
   driveManagementModalStore,
   driveSetupModalStore,
-  quickStartGuideModalStore,
   commandPaletteModalStore,
 } = jiti('./src/composables/useModals.ts');
 
@@ -178,9 +179,15 @@ test('modalStore.commandPalette - registers and clears commands', () => {
   assert.strictEqual(commandPaletteModalStore.commands[0].title, 'Command 1');
 
   // Updating existing command by id
-  commandPaletteModalStore.register({ id: 'cmd-1', title: 'Command 1 Updated' });
+  commandPaletteModalStore.register({
+    id: 'cmd-1',
+    title: 'Command 1 Updated',
+  });
   assert.strictEqual(commandPaletteModalStore.commands.length, 2);
-  assert.strictEqual(commandPaletteModalStore.commands[0].title, 'Command 1 Updated');
+  assert.strictEqual(
+    commandPaletteModalStore.commands[0].title,
+    'Command 1 Updated'
+  );
 
   commandPaletteModalStore.toggle();
   assert.strictEqual(commandPaletteModalStore.isOpen, true);

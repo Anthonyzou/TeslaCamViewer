@@ -145,7 +145,8 @@ export class ScreenshotCapture {
     }
 
     // Check privacy mode setting
-    const settings = window.app?.settingsManager;
+
+    const settings = settingsManager;
     const privacyMode = settings && settings.get('privacyModeExport') === true;
 
     // Add timestamp overlay if requested (skipped in privacy mode)

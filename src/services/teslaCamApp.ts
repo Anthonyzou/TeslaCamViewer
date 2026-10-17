@@ -8,7 +8,6 @@ import {
   driveManagementModalStore,
   driveSetupModalStore,
   helpModalStore,
-  quickStartGuideModalStore,
 } from '../composables/useModals';
 import { timelineStore } from '../composables/useTimeline';
 import { LayoutManager } from '../layout/layoutManager';
@@ -53,7 +52,6 @@ export class TeslaCamApp {
 
   public filterPanel = filterPanelStore;
   public helpModal = helpModalStore;
-  public quickStartGuide = quickStartGuideModalStore;
   public commandPalette = commandPaletteModalStore;
   public telemetryOverlay: any = null;
 

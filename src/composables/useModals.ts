@@ -133,7 +133,9 @@ export const driveManagementModalStore = {
 
 // Drive Setup Modal
 const isDriveSetupOpen: Ref<boolean> = ref(false);
-let promptSetupHandler: ((handle: any, existingDrive?: any) => Promise<any>) | null = null;
+let promptSetupHandler:
+  | ((handle: any, existingDrive?: any) => Promise<any>)
+  | null = null;
 
 export const driveSetupModalStore = {
   get isOpen(): boolean {
@@ -148,46 +150,13 @@ export const driveSetupModalStore = {
   close(): void {
     isDriveSetupOpen.value = false;
   },
-  registerPromptHandler(handler: (handle: any, existingDrive?: any) => Promise<any>): void {
+  registerPromptHandler(
+    handler: (handle: any, existingDrive?: any) => Promise<any>
+  ): void {
     promptSetupHandler = handler;
   },
   unregisterPromptHandler(): void {
     promptSetupHandler = null;
-  },
-};
-
-// Quick Start Guide Modal
-const isQuickStartGuideOpen: Ref<boolean> = ref(false);
-
-export const quickStartGuideModalStore = {
-  get isOpen(): boolean {
-    return isQuickStartGuideOpen.value;
-  },
-  open(): void {
-    isQuickStartGuideOpen.value = true;
-  },
-  close(): void {
-    isQuickStartGuideOpen.value = false;
-  },
-  show(): void {
-    this.open();
-  },
-  hide(): void {
-    this.close();
-  },
-  showIfFirstRun(): void {
-    try {
-      if (typeof localStorage !== 'undefined' && !localStorage.getItem(STORAGE_KEY_GUIDE)) {
-        this.open();
-      }
-    } catch {}
-  },
-  reset(): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(STORAGE_KEY_GUIDE);
-      }
-    } catch {}
   },
 };
 
@@ -213,7 +182,9 @@ export const commandPaletteModalStore = {
   },
   register(cmd: any): void {
     if (!cmd?.id) return;
-    const existingIndex = commandPaletteList.value.findIndex((c) => c.id === cmd.id);
+    const existingIndex = commandPaletteList.value.findIndex(
+      (c) => c.id === cmd.id
+    );
     if (existingIndex >= 0) {
       commandPaletteList.value[existingIndex] = cmd;
     } else {
@@ -238,7 +209,6 @@ export const modalStore = {
   diagnostics: diagnosticsModalStore,
   driveManagement: driveManagementModalStore,
   driveSetup: driveSetupModalStore,
-  quickStartGuide: quickStartGuideModalStore,
   commandPalette: commandPaletteModalStore,
 };
 
@@ -270,10 +240,6 @@ export function useModals() {
     // Drive Setup
     isDriveSetupOpen,
     driveSetupModal: driveSetupModalStore,
-
-    // Quick Start Guide
-    isQuickStartGuideOpen,
-    quickStartGuideModal: quickStartGuideModalStore,
 
     // Command Palette
     isCommandPaletteOpen,

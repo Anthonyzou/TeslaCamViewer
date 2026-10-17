@@ -12,18 +12,13 @@ class MapView {
   private markerCluster: any = null;
   private events: any[] = [];
   private initialized = false;
-  private offlineOverlay: HTMLElement | null = null;
-  private isOffline = !navigator.onLine;
 
   // Tile layer management
   private currentTileLayer: L.TileLayer | null = null;
   public isDarkMode = false;
   private _darkModeButton: HTMLElement | null = null;
   private darkModeControl: any = null;
-  private tileProvider =
-    (typeof localStorage !== 'undefined'
-      ? localStorage.getItem('teslacam_map_provider')
-      : null) || 'osm';
+  private tileProvider = 'osm';
 
   // Tile provider configurations
   private TILE_PROVIDERS: Record<string, any> = {
@@ -43,21 +38,6 @@ class MapView {
         subdomains: '',
       },
     },
-    stadia: {
-      name: 'Stadia Maps',
-      light: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-        attribution:
-          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: '',
-      },
-      dark: {
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution:
-          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: '',
-      },
-    },
   };
 
   private DARK_MODE_KEY = 'teslacam_map_dark_mode';
@@ -68,14 +48,6 @@ class MapView {
   ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
-
-    // Listen for online/offline events
-    window.addEventListener('online', () =>
-      this.handleOnlineStatusChange(true)
-    );
-    window.addEventListener('offline', () =>
-      this.handleOnlineStatusChange(false)
-    );
   }
 
   /**
@@ -86,132 +58,10 @@ class MapView {
   }
 
   /**
-   * Handle online/offline status change
-   */
-  handleOnlineStatusChange(isOnline: boolean): void {
-    this.isOffline = !isOnline;
-    console.log(
-      `[MapView] Connection status changed: ${isOnline ? 'online' : 'offline'}`
-    );
-
-    if (isOnline && this.offlineOverlay) {
-      this.hideOfflineOverlay();
-      if (!this.initialized && this.container) {
-        this.initialize();
-        if (this.events.length > 0) {
-          this.loadEvents(this.events);
-        }
-      }
-    } else if (!isOnline && this.initialized) {
-      this.showOfflineOverlay();
-    }
-  }
-
-  /**
-   * Show offline overlay
-   */
-  showOfflineOverlay(): void {
-    if (this.offlineOverlay || !this.container) return;
-
-    this.offlineOverlay = document.createElement('div');
-    this.offlineOverlay.className = 'map-offline-overlay';
-    this.offlineOverlay.innerHTML = `
-      <div class="map-offline-content">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zM17.04 15.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z"/>
-        </svg>
-        <h3>Map Unavailable Offline</h3>
-        <p>Map tiles require an internet connection to load.</p>
-        <button class="map-offline-retry-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-          </svg>
-          Check Connection
-        </button>
-      </div>
-    `;
-
-    const retryBtn = this.offlineOverlay.querySelector(
-      '.map-offline-retry-btn'
-    );
-    if (retryBtn) {
-      retryBtn.addEventListener('click', () => this.checkConnection());
-    }
-
-    this.container.appendChild(this.offlineOverlay);
-  }
-
-  /**
-   * Hide offline overlay
-   */
-  hideOfflineOverlay(): void {
-    if (this.offlineOverlay) {
-      this.offlineOverlay.remove();
-      this.offlineOverlay = null;
-    }
-  }
-
-  /**
-   * Check if connection is available
-   */
-  async checkConnection(): Promise<void> {
-    const retryBtn = this.offlineOverlay?.querySelector(
-      '.map-offline-retry-btn'
-    ) as HTMLButtonElement | null;
-    if (retryBtn) {
-      retryBtn.disabled = true;
-      retryBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spin">
-          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-        </svg>
-        Checking...
-      `;
-    }
-
-    try {
-      const provider = this.TILE_PROVIDERS[this.tileProvider];
-      let testUrl =
-        provider?.light?.url ||
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-      testUrl = testUrl
-        .replace('{s}', 'a')
-        .replace('{z}', '0')
-        .replace('{x}', '0')
-        .replace('{y}', '0')
-        .replace('{r}', '');
-      await fetch(testUrl, {
-        method: 'HEAD',
-        mode: 'no-cors',
-        cache: 'no-store',
-      });
-
-      this.handleOnlineStatusChange(true);
-    } catch (error) {
-      console.log('[MapView] Still offline:', error);
-      if (retryBtn) {
-        retryBtn.disabled = false;
-        retryBtn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-          </svg>
-          Still Offline - Try Again
-        `;
-      }
-    }
-  }
-
-  /**
    * Initialize Leaflet map
    */
   initialize(): void {
     if (this.initialized || !this.container) {
-      return;
-    }
-
-    if (!navigator.onLine) {
-      this.isOffline = true;
-      this.showOfflineOverlay();
-      console.log('[MapView] Offline - map initialization deferred');
       return;
     }
 
@@ -537,24 +387,6 @@ class MapView {
     console.log(
       `[MapView] Tile provider changed to: ${this.TILE_PROVIDERS[providerId].name}`
     );
-  }
-
-  /**
-   * Get available tile providers
-   */
-  getAvailableProviders(): Record<string, string> {
-    const providers: Record<string, string> = {};
-    for (const [id, config] of Object.entries(this.TILE_PROVIDERS)) {
-      providers[id] = config.name;
-    }
-    return providers;
-  }
-
-  /**
-   * Get current tile provider ID
-   */
-  getCurrentProvider(): string {
-    return this.tileProvider;
   }
 
   /**
