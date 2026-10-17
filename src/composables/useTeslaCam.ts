@@ -8,6 +8,8 @@ export * from './useDrives';
 export * from './useEvents';
 export * from './useLayout';
 export * from './usePlayback';
+export * from './useTimeline';
+export * from './useClipMarking';
 
 /**
  * useTeslaCam - Top-level orchestrator composing specialized domain composables

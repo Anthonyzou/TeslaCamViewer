@@ -16,8 +16,17 @@
         @mousedown="onTimelineMouseDown"
         @touchstart.passive="onTimelineTouchStart"
       >
-        <div id="timelineProgress" class="timeline-progress"></div>
-        <div id="timelineScrubber" class="timeline-scrubber"></div>
+        <div
+          id="timelineProgress"
+          class="timeline-progress"
+          :style="{ width: `${progressPercent}%` }"
+        ></div>
+        <div
+          id="timelineScrubber"
+          class="timeline-scrubber"
+          :class="{ dragging: isDragging }"
+          :style="{ left: `${progressPercent}%` }"
+        ></div>
 
         <div id="timelineClips" class="timeline-clips">
           <!-- Clip Boundary Markers -->
@@ -60,89 +69,36 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useClipMarking } from '../composables/useClipMarking';
+import { useTimeline } from '../composables/useTimeline';
 
 defineProps<{
   hasEvent: boolean;
 }>();
 
 const timelineEl = ref<HTMLElement | null>(null);
-const clipMarkers = ref<number[]>([]);
-const sentryMarker = ref<number | null>(null);
-const isDragging = ref(false);
 
-const clipMarking = useClipMarking(
+const {
+  totalDuration,
+  isDragging,
+  clipMarkers,
+  sentryMarker,
+  progressPercent,
+  seekToPercent,
+} = useTimeline();
+
+const { inPoint, outPoint } = useClipMarking(
   () => window.app?.videoPlayer,
   () => timelineEl.value
 );
-
-const { inPoint, outPoint } = clipMarking;
-
-const totalDuration = ref<number>(0);
-let currentTime = 0;
-
-const timelineInterface = {
-  get isDragging() {
-    return isDragging.value;
-  },
-  updateTime(time: number) {
-    if (isDragging.value) return;
-    currentTime = time;
-    const progressEl = document.getElementById('timelineProgress');
-    const scrubberEl = document.getElementById('timelineScrubber');
-    const pct =
-      totalDuration.value > 0 ? (time / totalDuration.value) * 100 : 0;
-    const clampedPct = Math.min(100, Math.max(0, pct));
-    if (progressEl) progressEl.style.width = `${clampedPct}%`;
-    if (scrubberEl) scrubberEl.style.left = `${clampedPct}%`;
-  },
-  setDuration(dur: number) {
-    totalDuration.value = dur;
-  },
-  setClipMarkers(clipGroups: any[]) {
-    const markers: number[] = [];
-    if (clipGroups && clipGroups.length > 0 && totalDuration.value > 0) {
-      let accum = 0;
-      const cached = window.app?.videoPlayer?.cachedClipDurations || [];
-      for (let i = 0; i < clipGroups.length; i++) {
-        const dur = cached[i] || 60;
-        if (i > 0) {
-          markers.push((accum / totalDuration.value) * 100);
-        }
-        accum += dur;
-      }
-    }
-    clipMarkers.value = markers;
-  },
-  setSentryTriggerMarker(triggerTime: number) {
-    if (triggerTime > 0 && totalDuration.value > 0) {
-      sentryMarker.value = (triggerTime / totalDuration.value) * 100;
-    } else {
-      sentryMarker.value = null;
-    }
-  },
-  resetThumbnailTooltip() {},
-  setGapMarkers() {},
-};
 
 function handleSeek(clientX: number) {
   if (!timelineEl.value || totalDuration.value <= 0) return;
   const rect = timelineEl.value.getBoundingClientRect();
   const clickX = clientX - rect.left;
   const pct = Math.max(0, Math.min(1, clickX / rect.width));
-  const targetTime = pct * totalDuration.value;
-
-  // Immediate visual feedback
-  const progressEl = document.getElementById('timelineProgress');
-  const scrubberEl = document.getElementById('timelineScrubber');
-  if (progressEl) progressEl.style.width = `${pct * 100}%`;
-  if (scrubberEl) scrubberEl.style.left = `${pct * 100}%`;
-
-  const app = window.app;
-  if (app?.videoPlayer?.seekToEventTime) {
-    app.videoPlayer.seekToEventTime(targetTime);
-  }
+  seekToPercent(pct);
 }
 
 function onTimelineMouseDown(e: MouseEvent) {
@@ -195,27 +151,7 @@ function getMarkerStyle(time: number) {
   return { left: `${pct}%` };
 }
 
-const localeTick = ref(0);
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
-
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
-onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
-  if (typeof window !== 'undefined') {
-    window._vueClipMarking = clipMarking;
-    window._vueTimeline = timelineInterface;
-  }
-});
-
 onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
   window.removeEventListener('mousemove', onTimelineMouseMove);
   window.removeEventListener('mouseup', onTimelineMouseUp);
   window.removeEventListener('touchmove', onTimelineTouchMove);

@@ -34,7 +34,10 @@ class VideoExport {
     const format = options.format || 'mp4';
 
     // Check if marks exist (inPoint and outPoint from clipMarking are absolute event times in seconds)
-    const marks = window.app?.clipMarking?.getMarks?.() || {};
+    const marks = window.app?.clipMarking?.getMarks?.() || {
+      inPoint: null,
+      outPoint: null,
+    };
     const inPoint = marks.inPoint != null ? marks.inPoint : null;
     const outPoint = marks.outPoint != null ? marks.outPoint : null;
 

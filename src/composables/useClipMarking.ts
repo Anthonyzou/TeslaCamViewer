@@ -1,11 +1,24 @@
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 
-export function useClipMarking(getVideoPlayer: () => any, getTimeline: () => any) {
-  const inPoint = ref<number | null>(null);
-  const outPoint = ref<number | null>(null);
+const inPoint: Ref<number | null> = ref(null);
+const outPoint: Ref<number | null> = ref(null);
+let defaultVideoPlayerGetter: (() => any) | null = null;
+
+export function useClipMarking(
+  getVideoPlayer?: () => any,
+  _getTimeline?: () => any
+) {
+  if (getVideoPlayer) {
+    defaultVideoPlayerGetter = getVideoPlayer;
+  }
 
   function getAbsoluteTime(): number {
-    const player = getVideoPlayer?.();
+    const player =
+      getVideoPlayer?.() ||
+      defaultVideoPlayerGetter?.() ||
+      (typeof window !== 'undefined'
+        ? (window as any).app?.videoPlayer
+        : null);
     return player?.absoluteTime ?? player?.currentTime ?? 0;
   }
 

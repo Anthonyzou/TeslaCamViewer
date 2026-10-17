@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import { useClipMarking } from '../composables/useClipMarking';
+import { timelineStore } from '../composables/useTimeline';
 import { LayoutManager } from '../layout/layoutManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
@@ -31,30 +33,8 @@ export class TeslaCamApp {
   public mapView: any = null;
   public eventBrowser: any = null;
 
-  public timeline = {
-    get isDragging() {
-      return window._vueTimeline?.isDragging || false;
-    },
-    updateTime: (t: number) => window._vueTimeline?.updateTime(t),
-    setDuration: (d: number) => window._vueTimeline?.setDuration(d),
-    setClipMarkers: (g: any[]) => window._vueTimeline?.setClipMarkers(g),
-    resetThumbnailTooltip: () => window._vueTimeline?.resetThumbnailTooltip?.(),
-    setGapMarkers: (g: any[], c: any[]) =>
-      window._vueTimeline?.setGapMarkers?.(g, c),
-    setSentryTriggerMarker: (t: number) =>
-      window._vueTimeline?.setSentryTriggerMarker?.(t),
-  };
-
-  public clipMarking = {
-    getMarks: () =>
-      window._vueClipMarking?.getMarks?.() || {
-        inPoint: null,
-        outPoint: null,
-      },
-    setInPoint: () => window._vueClipMarking?.setInPoint?.(),
-    setOutPoint: () => window._vueClipMarking?.setOutPoint?.(),
-    clearMarks: () => window._vueClipMarking?.clearMarks?.(),
-  };
+  public timeline = timelineStore;
+  public clipMarking = useClipMarking(() => this.videoPlayer);
 
   public filterPanel: any = null;
   public helpModal: any = null;

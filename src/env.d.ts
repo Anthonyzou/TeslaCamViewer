@@ -9,9 +9,6 @@ declare global {
     app?: import('./services/teslaCamApp').TeslaCamApp;
     i18n?: import('./utils/i18n').I18n;
     _vueMapView?: any;
-    _vueTimeline?: any;
-    _vueClipMarking?: any;
-    _vueClipMarking?: any;
     showDirectoryPicker: any;
     settingsModalInstance?: any;
     driveSetupModalInstance?: any;
