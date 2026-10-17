@@ -6,7 +6,7 @@ import { settingsModalStore } from '../composables/useModals';
  */
 class SettingsManager {
   public STORAGE_KEY: string = 'teslacamviewer_settings';
-  public settings: Record<string, any> = this.loadSettings();
+  public settings: typeof this.defaults = null;
   public modal: any = null;
   public callbacks: Array<(settings: Record<string, any>) => void> = [];
 
@@ -70,6 +70,9 @@ class SettingsManager {
     showBrandingInExport: true, // Show TeslaCamViewer.com branding by default
   };
 
+  constructor() {
+    this.loadSettings();
+  }
   /**
    * Get translation helper
    */
@@ -80,14 +83,15 @@ class SettingsManager {
   /**
    * Load settings from localStorage
    */
-  loadSettings() {
+  loadSettings(): typeof this.defaults {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
-      let settings = stored
-        ? { ...this.defaults, ...JSON.parse(stored) }
-        : { ...this.defaults };
-
-      return settings;
+      if (stored == '{}' || !stored) {
+        this.settings = { ...this.defaults };
+        this.saveSettings();
+      } else {
+        this.settings = { ...this.defaults, ...JSON.parse(stored) };
+      }
     } catch (e) {
       console.warn('Failed to load settings:', e);
     }
