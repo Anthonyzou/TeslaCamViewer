@@ -269,7 +269,7 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener('keydown', onGlobalKeyDown);
-  (window as any).commandPaletteInstance = {
+  window.commandPaletteInstance = {
     open,
     close,
     toggle,
@@ -280,8 +280,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown);
-  if ((window as any).commandPaletteInstance?.open === open) {
-    delete (window as any).commandPaletteInstance;
+  if (window.commandPaletteInstance?.open === open) {
+    delete window.commandPaletteInstance;
   }
 });
 

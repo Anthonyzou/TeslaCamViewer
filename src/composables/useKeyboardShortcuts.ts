@@ -34,7 +34,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
       return;
     }
 
-    const app = (window as any).app;
+    const app = window.app;
 
     switch (event.code) {
       case 'Space':

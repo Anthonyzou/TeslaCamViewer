@@ -192,7 +192,7 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).driveSetupModalInstance = {
+  window.driveSetupModalInstance = {
     promptSetup,
     close,
   };
@@ -200,8 +200,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).driveSetupModalInstance?.promptSetup === promptSetup) {
-    delete (window as any).driveSetupModalInstance;
+  if (window.driveSetupModalInstance?.promptSetup === promptSetup) {
+    delete window.driveSetupModalInstance;
   }
 });
 

@@ -63,8 +63,7 @@ class I18n {
    * @returns {string} Locale code
    */
   detectBrowserLocale() {
-    const browserLang =
-      navigator.language || (navigator as any).userLanguage || 'en';
+    const browserLang = navigator.language || 'en';
     const shortLang = browserLang.split('-')[0].toLowerCase();
 
     // Check if we support this language

@@ -141,7 +141,7 @@ const props = defineProps<{
 }>();
 
 function getFilter(): EventFilterLike | null {
-  return props.eventFilter || (window as any).app?.eventFilter || null;
+  return props.eventFilter || window.app?.eventFilter || null;
 }
 
 const isExpanded = ref(false);
@@ -196,8 +196,8 @@ function notifyFilterChange(): void {
   updateBadge();
   if (props.onFilterChange) {
     props.onFilterChange();
-  } else if (typeof (window as any).app?.applyFilters === 'function') {
-    (window as any).app.applyFilters();
+  } else if (typeof window.app?.applyFilters === 'function') {
+    window.app.applyFilters();
   }
 }
 
@@ -274,7 +274,7 @@ onMounted(() => {
   syncFromEventFilter();
   updateBadge();
   window.addEventListener('localeChanged', onLocaleChange);
-  (window as any).filterPanelInstance = {
+  window.filterPanelInstance = {
     updateBadge,
     updateFilterBadge: updateBadge,
     syncFromEventFilter,
@@ -288,8 +288,8 @@ onMounted(() => {
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
   window.removeEventListener('localeChanged', onLocaleChange);
-  if ((window as any).filterPanelInstance?.updateBadge === updateBadge) {
-    delete (window as any).filterPanelInstance;
+  if (window.filterPanelInstance?.updateBadge === updateBadge) {
+    delete window.filterPanelInstance;
   }
 });
 

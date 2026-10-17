@@ -289,7 +289,6 @@
     "noLocationData": "无位置数据",
     "noSentryLocationData": "无哨兵位置数据",
     "events": "事件",
-    "exportDescription": "Download your statistics data for offline analysis or record keeping.",
     "triggeringCamera": "Triggering Camera Distribution",
     "sentryByDayOfWeek": "Sentry Events by Day of Week",
     "dayVsNight": "Day vs Night Events",

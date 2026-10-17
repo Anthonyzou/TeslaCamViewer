@@ -56,7 +56,7 @@ export function useFolderLoader() {
       let durationLoaded = false;
 
       for (const camera of cameras) {
-        const clip = (group.clips as any)[camera];
+        const clip = group.clips[camera];
         if (!clip) continue;
 
         if (!clip.url && clip.fileHandle) {
@@ -64,8 +64,8 @@ export function useFolderLoader() {
             const file = await clip.fileHandle.getFile();
             if (file.size >= 1024) {
               clip.url = URL.createObjectURL(file);
-              if (!event._blobURLs) (event as any)._blobURLs = [];
-              (event as any)._blobURLs.push(clip.url);
+              if (!event._blobURLs) event._blobURLs = [];
+              event._blobURLs.push(clip.url);
 
               if (
                 camera === 'front' &&
@@ -86,7 +86,7 @@ export function useFolderLoader() {
         }
       }
 
-      const frontClip = (group.clips as any).front;
+      const frontClip = group.clips.front;
       if (!durationLoaded && frontClip && !frontClip.duration) {
         frontClip.duration = 60;
       }
@@ -98,14 +98,14 @@ export function useFolderLoader() {
    */
   function cleanupEventURLs(event: TeslaCamEvent | null): void {
     if (!event) return;
-    const urls = (event as any)._blobURLs;
+    const urls = event._blobURLs;
     if (Array.isArray(urls)) {
       urls.forEach((url) => {
         try {
           URL.revokeObjectURL(url);
         } catch {}
       });
-      (event as any)._blobURLs = [];
+      event._blobURLs = [];
     }
   }
 

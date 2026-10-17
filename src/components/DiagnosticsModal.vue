@@ -85,15 +85,15 @@ async function copyReport(): Promise<void> {
 }
 
 onMounted(() => {
-  (window as any).diagnosticsModalInstance = {
+  window.diagnosticsModalInstance = {
     open,
     close,
   };
 });
 
 onUnmounted(() => {
-  if ((window as any).diagnosticsModalInstance?.open === open) {
-    delete (window as any).diagnosticsModalInstance;
+  if (window.diagnosticsModalInstance?.open === open) {
+    delete window.diagnosticsModalInstance;
   }
 });
 

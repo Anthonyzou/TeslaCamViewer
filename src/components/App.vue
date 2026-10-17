@@ -65,7 +65,6 @@
           @clearMarks="clearMarks"
           @exportVideo="exportVideo"
           @captureScreenshot="captureScreenshot"
-          @toggleEnhance="toggleEnhance"
           @changeLayout="changeLayout"
           @changeFocusCamera="changeFocusCamera"
           @resetLayout="resetLayout"
@@ -147,7 +146,6 @@ const {
   clearMarks,
   exportVideo,
   captureScreenshot,
-  toggleEnhance,
   changeLayout,
   changeFocusCamera,
   resetLayout,
@@ -203,7 +201,7 @@ onMounted(async () => {
       await window.i18n.init();
     }
     const app = new TeslaCamApp();
-    (window as any).app = app;
+    window.app = app;
     await app.tryRestoreLastFolder();
 
     if (app.b2Client) {

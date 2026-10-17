@@ -266,7 +266,7 @@ function showIfFirstRun(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).quickStartGuideInstance = {
+  window.quickStartGuideInstance = {
     open,
     close,
     show: open,
@@ -282,8 +282,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).quickStartGuideInstance?.open === open) {
-    delete (window as any).quickStartGuideInstance;
+  if (window.quickStartGuideInstance?.open === open) {
+    delete window.quickStartGuideInstance;
   }
 });
 

@@ -11,7 +11,6 @@ import { SettingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
 import { SyncController } from './syncController';
 import { VersionManager } from './versionManager';
-import { VideoEnhancer } from './videoEnhancer';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
 
@@ -27,7 +26,6 @@ export class TeslaCamApp {
   public syncController = new SyncController(this.videoPlayer);
   public layoutManager = new LayoutManager();
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
-  public videoEnhancer = new VideoEnhancer();
   public videoExport = new VideoExport(this.videoPlayer);
   public settingsManager = new SettingsManager();
   public versionManager = new VersionManager();
@@ -39,32 +37,30 @@ export class TeslaCamApp {
 
   public timeline = {
     get isDragging() {
-      return (window as any)._vueTimeline?.isDragging || false;
+      return window._vueTimeline?.isDragging || false;
     },
-    updateTime: (t: number) => (window as any)._vueTimeline?.updateTime(t),
-    setDuration: (d: number) => (window as any)._vueTimeline?.setDuration(d),
-    setClipMarkers: (g: any[]) =>
-      (window as any)._vueTimeline?.setClipMarkers(g),
-    resetThumbnailTooltip: () =>
-      (window as any)._vueTimeline?.resetThumbnailTooltip?.(),
+    updateTime: (t: number) => window._vueTimeline?.updateTime(t),
+    setDuration: (d: number) => window._vueTimeline?.setDuration(d),
+    setClipMarkers: (g: any[]) => window._vueTimeline?.setClipMarkers(g),
+    resetThumbnailTooltip: () => window._vueTimeline?.resetThumbnailTooltip?.(),
     setGapMarkers: (g: any[], c: any[]) =>
-      (window as any)._vueTimeline?.setGapMarkers?.(g, c),
+      window._vueTimeline?.setGapMarkers?.(g, c),
     setSentryTriggerMarker: (t: number) =>
-      (window as any)._vueTimeline?.setSentryTriggerMarker?.(t),
-    zoomIn: () => (window as any)._vueTimeline?.zoomIn?.(),
-    zoomOut: () => (window as any)._vueTimeline?.zoomOut?.(),
-    resetZoom: () => (window as any)._vueTimeline?.resetZoom?.(),
+      window._vueTimeline?.setSentryTriggerMarker?.(t),
+    zoomIn: () => window._vueTimeline?.zoomIn?.(),
+    zoomOut: () => window._vueTimeline?.zoomOut?.(),
+    resetZoom: () => window._vueTimeline?.resetZoom?.(),
   };
 
   public clipMarking = {
     getMarks: () =>
-      (window as any)._vueClipMarking?.getMarks?.() || {
+      window._vueClipMarking?.getMarks?.() || {
         inPoint: null,
         outPoint: null,
       },
-    setInPoint: () => (window as any)._vueClipMarking?.setInPoint?.(),
-    setOutPoint: () => (window as any)._vueClipMarking?.setOutPoint?.(),
-    clearMarks: () => (window as any)._vueClipMarking?.clearMarks?.(),
+    setInPoint: () => window._vueClipMarking?.setInPoint?.(),
+    setOutPoint: () => window._vueClipMarking?.setOutPoint?.(),
+    clearMarks: () => window._vueClipMarking?.clearMarks?.(),
   };
 
   public filterPanel: any = null;
@@ -97,17 +93,17 @@ export class TeslaCamApp {
     this._registerCommandPaletteCommands();
 
     // Set global reference for backward compatibility
-    (window as any).app = this;
+    window.app = this;
   }
 
   public t(key: string, params?: Record<string, any>): string {
-    return (window as any).i18n
-      ? (window as any).i18n.t(key, params)
+    return window.i18n
+      ? window.i18n.t(key, params)
       : key.split('.').pop() || '';
   }
 
   private initEngines(): void {
-    const w = window as any;
+    const w = window;
 
     this.filterPanel = w.filterPanelInstance || {
       updateFilterBadge: () => w.filterPanelInstance?.updateBadge(),
@@ -203,12 +199,12 @@ export class TeslaCamApp {
           if (handle) {
             console.log('[App] Restoring last folder handle...');
             this.showLoading('Restoring last folder...');
-            const permission = await (handle as any).queryPermission({
+            const permission = await handle.queryPermission({
               mode: 'read',
             });
             if (permission === 'granted') {
               const drive = await this.folderManager.addDrive(handle, {
-                label: (handle as any).name,
+                label: handle.name,
                 isArchive: false,
                 dateFilter: 'all',
               });
@@ -238,11 +234,11 @@ export class TeslaCamApp {
   }
 
   public async onEventSelected(event: TeslaCamEvent): Promise<void> {
-    if (this.currentEvent && (this.currentEvent as any)._blobURLs) {
-      (this.currentEvent as any)._blobURLs.forEach((url: string) =>
+    if (this.currentEvent && this.currentEvent._blobURLs) {
+      this.currentEvent._blobURLs.forEach((url: string) =>
         URL.revokeObjectURL(url)
       );
-      (this.currentEvent as any)._blobURLs = [];
+      this.currentEvent._blobURLs = [];
     }
 
     this.showLoading('Loading event...');
@@ -345,7 +341,7 @@ export class TeslaCamApp {
       let durationLoaded = false;
 
       for (const camera of cameras) {
-        const clip = (group.clips as any)[camera];
+        const clip = group.clips[camera];
         if (!clip) continue;
 
         if (!clip.url && clip.fileHandle) {
@@ -353,8 +349,8 @@ export class TeslaCamApp {
             const file = await clip.fileHandle.getFile();
             if (file.size >= 1024) {
               clip.url = URL.createObjectURL(file);
-              if (!(event as any)._blobURLs) (event as any)._blobURLs = [];
-              (event as any)._blobURLs.push(clip.url);
+              if (!event._blobURLs) event._blobURLs = [];
+              event._blobURLs.push(clip.url);
 
               if (
                 camera === 'front' &&
@@ -374,7 +370,7 @@ export class TeslaCamApp {
         }
       }
 
-      const frontClip = (group.clips as any).front;
+      const frontClip = group.clips.front;
       if (!durationLoaded && frontClip && !frontClip.duration) {
         frontClip.duration = 60;
       }
@@ -444,7 +440,7 @@ export class TeslaCamApp {
       return;
     }
 
-    const weatherService = (window as any).WeatherService?.getInstance?.();
+    const weatherService = window.WeatherService?.getInstance?.();
     if (!weatherService) return;
 
     const lat = event.metadata?.est_lat;
@@ -629,7 +625,7 @@ export class TeslaCamApp {
 
     while (true) {
       try {
-        handle = await (window as any).showDirectoryPicker();
+        handle = await window.showDirectoryPicker();
       } catch (error: any) {
         if (error.name !== 'AbortError')
           console.error('Error selecting folder:', error);
@@ -768,7 +764,7 @@ export class TeslaCamApp {
     let handle: any = null;
     while (true) {
       try {
-        handle = await (window as any).showDirectoryPicker();
+        handle = await window.showDirectoryPicker();
       } catch (error: any) {
         if (error.name !== 'AbortError')
           console.error('Error selecting folder:', error);
@@ -864,7 +860,7 @@ export class TeslaCamApp {
     handle: any,
     existingDrive: any = null
   ): Promise<any> {
-    const inst = (window as any).driveSetupModalInstance;
+    const inst = window.driveSetupModalInstance;
     if (inst) {
       return await inst.promptSetup(handle, existingDrive);
     }
@@ -872,11 +868,11 @@ export class TeslaCamApp {
   }
 
   public showDriveManagementModal(): void {
-    (window as any).driveManagementModalInstance?.open();
+    window.driveManagementModalInstance?.open();
   }
 
   public showDiagnosticModal(report: string): void {
-    (window as any).diagnosticsModalInstance?.open(report);
+    window.diagnosticsModalInstance?.open(report);
   }
 
   public async copyDiagnosticReport(): Promise<void> {
@@ -1009,7 +1005,7 @@ export class TeslaCamApp {
   }
 
   private _registerCommandPaletteCommands(): void {
-    const cp = (window as any).commandPaletteInstance;
+    const cp = window.commandPaletteInstance;
     if (!cp || typeof cp.registerMany !== 'function') return;
 
     cp.registerMany([

@@ -11,6 +11,8 @@ declare global {
     _vueMapView?: any;
     _vueTimeline?: any;
     _vueClipMarking?: any;
+    _vueClipMarking?: any;
+    showDirectoryPicker: any;
     settingsModalInstance?: any;
     statisticsModalInstance?: any;
     filterPanelInstance?: any;

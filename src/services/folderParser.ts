@@ -155,7 +155,7 @@ class FolderParser {
       }
 
       // Request permission to access the folder
-      const permission = await (handle as any).requestPermission({
+      const permission = await handle.requestPermission({
         mode: 'read',
       });
       if (permission !== 'granted') {
@@ -197,7 +197,7 @@ class FolderParser {
    */
   async selectFolder() {
     try {
-      this.rootHandle = await (window as any).showDirectoryPicker();
+      this.rootHandle = await window.showDirectoryPicker();
       return true;
     } catch (error: any) {
       if (error?.name !== 'AbortError') {

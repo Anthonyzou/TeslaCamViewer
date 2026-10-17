@@ -29,8 +29,7 @@ class FileSystemObserverManager {
   constructor() {
     // driveId -> { observer: FSObserver|null, handle, lastCounts: { ... } }
 
-    this.isNativeSupported =
-      typeof (window as any).FileSystemObserver === 'function';
+    this.isNativeSupported = typeof window.FileSystemObserver === 'function';
     if (!this.isNativeSupported) {
       console.log(
         '[FSObserver] Native API unavailable — running polling-only mode'
@@ -59,7 +58,7 @@ class FileSystemObserverManager {
     // but when they do it's instant.
     if (this.isNativeSupported) {
       try {
-        const obs = new (window as any).FileSystemObserver((records) => {
+        const obs = new window.FileSystemObserver((records) => {
           // Filter to structural events only. `modified` records fire
           // on content OR metadata changes — including access-time
           // updates from our own library scanner opening files for
@@ -168,7 +167,7 @@ class FileSystemObserverManager {
 
   async _snapshotCounts(handle) {
     // Count direct children of the three Tesla subdirectories. This is
-    // a cheap proxy for "has anything changed?" — O(N) where N is number
+    // a cheap proxy for "did anything changed?" — O(N) where N is number
     // of event folders + rolling clips, all top-level.
     const subdirs = ['SavedClips', 'SentryClips', 'RecentClips'];
     const counts = {};

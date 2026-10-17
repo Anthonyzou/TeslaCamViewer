@@ -289,7 +289,6 @@
     "noLocationData": "Ingen stedsdata tilgjengelig",
     "noSentryLocationData": "Ingen vaktmodus stedsdata",
     "events": "hendelser",
-    "exportDescription": "Download your statistics data for offline analysis or record keeping.",
     "triggeringCamera": "Triggering Camera Distribution",
     "sentryByDayOfWeek": "Sentry Events by Day of Week",
     "dayVsNight": "Day vs Night Events",

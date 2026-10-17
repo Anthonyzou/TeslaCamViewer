@@ -982,7 +982,7 @@ class VersionManager {
     };
     dot.addEventListener('mouseenter', showTip);
     dot.addEventListener('mouseleave', hideTip);
-    (dot as any)._hideTip = hideTip;
+    dot['_hideTip'] = hideTip;
 
     // Suppress the anchor's native browser tooltip while hovering the dot —
     // otherwise title="…" text renders on top of our custom tooltip.

@@ -39,8 +39,8 @@ class StatisticsManager {
       totalClips: 0,
       averageEventLength: 0,
       triggerReasons: {},
-      topLocations: {},
-      sentryLocations: {},
+      topLocations: [],
+      sentryLocations: [],
       eventsByMonth: {},
       eventsByDay: {},
       sentryByHour: new Array(24).fill(0),
@@ -615,153 +615,6 @@ class StatisticsManager {
   }
 
   /**
-   * Export statistics as JSON or CSV
-   * @param {string} format - 'json' or 'csv'
-   */
-  exportStats(format = 'json') {
-    const stats = this.calculateStats();
-    if (!stats) {
-      alert(this.t('statistics.noStatsToExport'));
-      return;
-    }
-
-    const storage = this.calculateStorageEstimate(stats.totalClips);
-
-    // Build export data
-    const exportData = {
-      generatedAt: new Date().toISOString(),
-      summary: {
-        totalEvents: stats.totalEvents,
-        totalClips: stats.totalClips,
-        recordingTime: this.formatDuration(stats.totalRecordingTime),
-        estimatedStorage: storage.displayValue,
-        dateRange:
-          stats.earliestEvent && stats.latestEvent
-            ? `${new Date(stats.earliestEvent).toLocaleDateString()} - ${new Date(stats.latestEvent).toLocaleDateString()}`
-            : 'N/A',
-      },
-      eventsByType: {
-        saved: stats.eventsByType.saved,
-        sentry: stats.eventsByType.sentry,
-        recent: stats.eventsByType.recent,
-      },
-      triggerReasons: stats.triggerReasons,
-      topLocations: Object.fromEntries(stats.topLocations as any),
-      sentryLocations: Object.fromEntries(stats.sentryLocations as any),
-      sentryByHour: stats.sentryByHour.map((count: number, hour: number) => ({
-        hour: hour,
-        label:
-          hour === 0
-            ? '12am'
-            : hour === 12
-              ? '12pm'
-              : hour > 12
-                ? `${hour - 12}pm`
-                : `${hour}am`,
-        count: count,
-      })),
-      eventsByDay: stats.eventsByDay,
-      // New statistics
-      triggeringCamera: stats.triggeringCamera,
-      sentryByDayOfWeek: stats.sentryByDayOfWeek.map((count, day) => ({
-        day: [
-          'Sunday',
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-        ][day],
-        count: count,
-      })),
-      dayVsNight: stats.dayVsNight,
-      eventsWithTelemetry: stats.eventsWithTelemetry,
-      telemetryPercentage:
-        stats.totalEvents > 0
-          ? Math.round((stats.eventsWithTelemetry / stats.totalEvents) * 100)
-          : 0,
-    };
-
-    let blob, filename;
-
-    if (format === 'json') {
-      blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json',
-      });
-      filename = `teslacam-stats-${new Date().toISOString().split('T')[0]}.json`;
-    } else {
-      // CSV format
-      const lines = [
-        '# TeslaCam Statistics Export',
-        `# Generated: ${exportData.generatedAt}`,
-        '',
-        '## Summary',
-        `Total Events,${stats.totalEvents}`,
-        `Total Clips,${stats.totalClips}`,
-        `Recording Time,${this.formatDuration(stats.totalRecordingTime)}`,
-        `Estimated Storage,${storage.displayValue}`,
-        '',
-        '## Events by Type',
-        `Saved,${stats.eventsByType.saved}`,
-        `Sentry,${stats.eventsByType.sentry}`,
-        `Recent,${stats.eventsByType.recent}`,
-        '',
-        '## Trigger Reasons',
-        ...Object.entries(stats.triggerReasons).map(
-          ([reason, count]) => `${reason},${count}`
-        ),
-        '',
-        '## Top Locations (All Events)',
-        ...(stats.topLocations as any[]).map(
-          ([loc, count]) => `${loc},${count}`
-        ),
-        '',
-        '## Top Sentry Locations',
-        ...(stats.sentryLocations as any[]).map(
-          ([loc, count]) => `${loc},${count}`
-        ),
-        '',
-        '## Sentry Events by Hour',
-        'Hour,Count',
-        ...stats.sentryByHour.map((count, hour) => `${hour},${count}`),
-        '',
-        '## Triggering Camera Distribution',
-        ...Object.entries(stats.triggeringCamera).map(
-          ([camera, count]) => `${camera},${count}`
-        ),
-        '',
-        '## Sentry by Day of Week',
-        'Day,Count',
-        ...stats.sentryByDayOfWeek.map(
-          (count, day) =>
-            `${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]},${count}`
-        ),
-        '',
-        '## Day vs Night Events',
-        `Day (6am-8pm),${stats.dayVsNight.day}`,
-        `Night (8pm-6am),${stats.dayVsNight.night}`,
-        '',
-        '## Data Quality',
-        `Events with Telemetry,${stats.eventsWithTelemetry}`,
-        `Telemetry Percentage,${stats.totalEvents > 0 ? Math.round((stats.eventsWithTelemetry / stats.totalEvents) * 100) : 0}%`,
-      ];
-      blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-      filename = `teslacam-stats-${new Date().toISOString().split('T')[0]}.csv`;
-    }
-
-    // Download
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  /**
    * Normalize trigger reason for display
    * @param {string} reason - Raw trigger reason from event.json
    * @returns {string} Normalized reason
@@ -861,7 +714,7 @@ class StatisticsManager {
     // Build locations HTML (top 10)
     const eventsText = this.t('statistics.events');
     const locationsHTML =
-      (stats.topLocations as any[])
+      stats.topLocations
         .map(
           ([location, count], index) => `
                 <div class="stats-location-row">
@@ -876,8 +729,8 @@ class StatisticsManager {
 
     // Build sentry locations HTML
     const sentryLocationsHTML =
-      (stats.sentryLocations as any[]).length > 0
-        ? (stats.sentryLocations as any[])
+      stats.sentryLocations.length > 0
+        ? stats.sentryLocations
             .map(
               ([location, count], index) => `
                 <div class="stats-location-row">
@@ -925,14 +778,8 @@ class StatisticsManager {
       })
       .join('');
 
-    // Build tab content - build from tcv.0x535441
-    const hasSentryData = stats.eventsByType.sentry > 0;
-    const hasSentryLocations = (stats.sentryLocations as any[]).length > 0;
-    const hasCameraData = Object.keys(stats.triggeringCamera).length > 0;
-    const hasDayOfWeekData = stats.sentryByDayOfWeek.some((c: number) => c > 0);
-
-    if ((window as any).statisticsModalInstance) {
-      (window as any).statisticsModalInstance.open({
+    if (window.statisticsModalInstance) {
+      window.statisticsModalInstance.open({
         stats: {
           ...stats,
           formattedDuration: this.formatDuration(stats.totalRecordingTime),
@@ -959,8 +806,8 @@ class StatisticsManager {
    * Hide statistics modal
    */
   hideModal() {
-    if ((window as any).statisticsModalInstance) {
-      (window as any).statisticsModalInstance.close();
+    if (window.statisticsModalInstance) {
+      window.statisticsModalInstance.close();
     }
   }
 }

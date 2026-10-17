@@ -111,7 +111,7 @@ const sentryMarker = ref<number | null>(null);
 const isDragging = ref(false);
 
 const clipMarking = useClipMarking(
-  () => (window as any).app?.videoPlayer,
+  () => window.app?.videoPlayer,
   () => timelineEl.value
 );
 
@@ -142,8 +142,7 @@ const timelineInterface = {
     const markers: number[] = [];
     if (clipGroups && clipGroups.length > 0 && totalDuration.value > 0) {
       let accum = 0;
-      const cached =
-        (window as any).app?.videoPlayer?.cachedClipDurations || [];
+      const cached = window.app?.videoPlayer?.cachedClipDurations || [];
       for (let i = 0; i < clipGroups.length; i++) {
         const dur = cached[i] || 60;
         if (i > 0) {
@@ -178,7 +177,7 @@ function handleSeek(clientX: number) {
   if (progressEl) progressEl.style.width = `${pct * 100}%`;
   if (scrubberEl) scrubberEl.style.left = `${pct * 100}%`;
 
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.videoPlayer?.seekToEventTime) {
     app.videoPlayer.seekToEventTime(targetTime);
   }
@@ -248,8 +247,8 @@ function onLocaleChanged(): void {
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
   if (typeof window !== 'undefined') {
-    (window as any)._vueClipMarking = clipMarking;
-    (window as any)._vueTimeline = timelineInterface;
+    window._vueClipMarking = clipMarking;
+    window._vueTimeline = timelineInterface;
   }
 });
 

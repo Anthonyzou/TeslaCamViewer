@@ -47,7 +47,7 @@ export class ScreenshotCapture {
     const videoHeight = firstVideo?.videoHeight || 960;
 
     // Try to use the current layout from layoutManager
-    const layoutManager = (window as any).app?.layoutManager;
+    const layoutManager = window.app?.layoutManager;
     let layoutConfig: any = null;
 
     if (layoutManager && layoutManager.renderer) {
@@ -74,15 +74,6 @@ export class ScreenshotCapture {
     // Fill background with black
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Apply video enhancement filters if available
-    const enhancer = (window as any).app?.videoEnhancer;
-    if (enhancer && enhancer.settings) {
-      const { brightness, contrast, saturation } = enhancer.settings;
-      if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
-        ctx.filter = `brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100})`;
-      }
-    }
 
     if (layoutConfig && layoutConfig.cameras) {
       // Draw using current layout configuration
@@ -225,8 +216,8 @@ export class ScreenshotCapture {
       if (err?.name === 'SecurityError') {
         const msg =
           'Screenshot blocked by browser security (CORS): The video stream from this remote host does not allow pixel extraction.';
-        if ((window as any).app?.showToast) {
-          (window as any).app.showToast(msg, 'error');
+        if (window.app?.showToast) {
+          window.app.showToast(msg, 'error');
         } else {
           alert(msg);
         }
@@ -306,15 +297,6 @@ export class ScreenshotCapture {
     // Set canvas size to video dimensions
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-
-    // Apply video enhancement filters if available
-    const enhancer = window.app?.videoEnhancer;
-    if (enhancer && enhancer.settings) {
-      const { brightness, contrast, saturation } = enhancer.settings;
-      if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
-        ctx.filter = `brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100})`;
-      }
-    }
 
     // Draw video frame
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);

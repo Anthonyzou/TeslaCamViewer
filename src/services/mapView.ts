@@ -8,83 +8,85 @@ import { FolderParser } from './folderParser';
 class MapView {
   [key: string]: any;
 
+  private container: any = null;
+  private onEventSelect: any = null; // Callback to load event
+  private map = null;
+  private markerCluster = null;
+  private heatLayer = null;
+  private heatmapEnabled = false;
+  private heatmapDataSource = 'telemetry'; // 'telemetry' or 'events' - telemetry uses SEI GPS data
+  private events = [];
+  private telemetryGpsPoints = []; // Cached GPS points from SEI telemetry data
+  private initialized = false;
+  private offlineOverlay = null;
+  private isOffline = !navigator.onLine;
+
+  // Autopilot Struggle Zones data
+  private struggleZonesEnabled = false;
+  private struggleZonesLayer = null;
+  private struggleZonesMarkers = null; // Marker cluster for clickable disengagement points
+  private apDisengagementPoints = []; // Array of {lat, lng, eventName, timestamp, fromState}
+  private struggleZonesControl = null;
+
+  // Incident Markers data (replaces Incident Hotspots)
+  private incidentMarkersEnabled = false;
+  private incidentHeatLayer = null;
+  private incidentMarkers = null; // Marker cluster for clickable incident points
+  private incidentPoints = []; // Array of {lat, lng, severity, type, eventName, timestamp, ...}
+  private incidentControl = null;
+
+  // Tile layer management
+  private currentTileLayer = null;
+  private isDarkMode = false;
+  private tileProvider = localStorage.getItem('teslacam_map_provider') || 'osm';
+
+  // Tile provider configurations
+  private TILE_PROVIDERS = {
+    osm: {
+      name: 'OpenStreetMap',
+      light: {
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: '',
+      },
+      dark: {
+        // OSM doesn't have dark mode, use Stadia dark
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution:
+          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: '',
+      },
+    },
+    stadia: {
+      name: 'Stadia Maps',
+      light: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+        attribution:
+          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: '',
+      },
+      dark: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution:
+          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: '',
+      },
+    },
+  };
+
+  // Legacy TILE_LAYERS for backward compatibility
+  private TILE_LAYERS =
+    this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
+  private DARK_MODE_KEY = 'teslacam_map_dark_mode';
+
+  // Cache keys for localStorage persistence
+  private CACHE_KEY_GPS = 'teslacam_mapview_gps_cache';
+  // Per-event caching: 'teslacamviewer_incident_per_event', 'teslacamviewer_ap_per_event'
+  private cacheVersion = 7; // Increment to invalidate cache (v7: Incident markers replace incidents)
   constructor(containerElement: any, onEventSelect: any) {
     this.container = containerElement;
-    this.onEventSelect = onEventSelect; // Callback to load event
-    this.map = null;
-    this.markerCluster = null;
-    this.heatLayer = null;
-    this.heatmapEnabled = false;
-    this.heatmapDataSource = 'telemetry'; // 'telemetry' or 'events' - telemetry uses SEI GPS data
-    this.events = [];
-    this.telemetryGpsPoints = []; // Cached GPS points from SEI telemetry data
-    this.initialized = false;
-    this.offlineOverlay = null;
-    this.isOffline = !navigator.onLine;
-
-    // Autopilot Struggle Zones data
-    this.struggleZonesEnabled = false;
-    this.struggleZonesLayer = null;
-    this.struggleZonesMarkers = null; // Marker cluster for clickable disengagement points
-    this.apDisengagementPoints = []; // Array of {lat, lng, eventName, timestamp, fromState}
-    this.struggleZonesControl = null;
-
-    // Incident Markers data (replaces Incident Hotspots)
-    this.incidentMarkersEnabled = false;
-    this.incidentHeatLayer = null;
-    this.incidentMarkers = null; // Marker cluster for clickable incident points
-    this.incidentPoints = []; // Array of {lat, lng, severity, type, eventName, timestamp, ...}
-    this.incidentControl = null;
-
-    // Tile layer management
-    this.currentTileLayer = null;
-    this.isDarkMode = false;
-    this.tileProvider = localStorage.getItem('teslacam_map_provider') || 'osm';
-
-    // Tile provider configurations
-    this.TILE_PROVIDERS = {
-      osm: {
-        name: 'OpenStreetMap',
-        light: {
-          url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          subdomains: '',
-        },
-        dark: {
-          // OSM doesn't have dark mode, use Stadia dark
-          url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-          attribution:
-            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          subdomains: '',
-        },
-      },
-      stadia: {
-        name: 'Stadia Maps',
-        light: {
-          url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-          attribution:
-            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          subdomains: '',
-        },
-        dark: {
-          url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-          attribution:
-            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          subdomains: '',
-        },
-      },
-    };
-
-    // Legacy TILE_LAYERS for backward compatibility
-    this.TILE_LAYERS =
-      this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
-    this.DARK_MODE_KEY = 'teslacam_map_dark_mode';
-
-    // Cache keys for localStorage persistence
-    this.CACHE_KEY_GPS = 'teslacam_mapview_gps_cache';
-    // Per-event caching: 'teslacamviewer_incident_per_event', 'teslacamviewer_ap_per_event'
-    this.cacheVersion = 7; // Increment to invalidate cache (v7: Incident markers replace incidents)
+    this.onEventSelect = onEventSelect;
 
     // Listen for online/offline events
     window.addEventListener('online', () =>
@@ -1024,12 +1026,8 @@ class MapView {
     const tileOptions = {
       attribution: layerConfig.attribution,
       maxZoom: 19,
+      tileOptions: layerConfig.subdomains,
     };
-
-    // Add subdomains if specified
-    if (layerConfig.subdomains) {
-      (tileOptions as any).subdomains = layerConfig.subdomains;
-    }
 
     this.currentTileLayer = L.tileLayer(layerConfig.url, tileOptions);
 
@@ -1087,7 +1085,7 @@ class MapView {
   getAvailableProviders() {
     const providers: Record<string, string> = {};
     for (const [id, config] of Object.entries(this.TILE_PROVIDERS)) {
-      providers[id] = (config as any).name;
+      providers[id] = config.name;
     }
     return providers;
   }

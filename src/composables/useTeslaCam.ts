@@ -1,12 +1,12 @@
-import { usePlayback } from './usePlayback';
-import { useEvents } from './useEvents';
 import { useDrives } from './useDrives';
+import { useEvents } from './useEvents';
 import { useLayout } from './useLayout';
+import { usePlayback } from './usePlayback';
 
-export * from './usePlayback';
-export * from './useEvents';
 export * from './useDrives';
+export * from './useEvents';
 export * from './useLayout';
+export * from './usePlayback';
 
 /**
  * useTeslaCam - Top-level orchestrator composing specialized domain composables
@@ -35,10 +35,6 @@ export function useTeslaCam() {
 
   function captureScreenshot(): void {
     window.app?.captureScreenshot();
-  }
-
-  function toggleEnhance(): void {
-    window.app?.videoEnhancer?.toggleEnhancementModal();
   }
 
   function openStats(): void {
@@ -120,7 +116,6 @@ export function useTeslaCam() {
     clearMarks,
     exportVideo,
     captureScreenshot,
-    toggleEnhance,
     openStats,
     openHelp,
     openSettings,

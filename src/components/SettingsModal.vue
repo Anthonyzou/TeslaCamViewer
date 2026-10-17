@@ -456,7 +456,7 @@ const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
 let mouseDownOnOverlay = false;
 
 function getManager(): SettingsManagerLike | null {
-  return props.settingsManager || (window as any).app?.settingsManager || null;
+  return props.settingsManager || window.app?.settingsManager || null;
 }
 
 // Reactive state mirroring settings
@@ -540,7 +540,7 @@ function onLocaleChanged(): void {
 onMounted(() => {
   syncFromManager();
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).settingsModalInstance = {
+  window.settingsModalInstance = {
     open,
     close,
     syncFromManager,
@@ -549,8 +549,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).settingsModalInstance?.open === open) {
-    delete (window as any).settingsModalInstance;
+  if (window.settingsModalInstance?.open === open) {
+    delete window.settingsModalInstance;
   }
 });
 

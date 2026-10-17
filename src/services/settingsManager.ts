@@ -147,8 +147,8 @@ class SettingsManager {
    * Create and show the settings modal
    */
   showSettingsModal(tab = 'general') {
-    if ((window as any).settingsModalInstance) {
-      (window as any).settingsModalInstance.open(tab);
+    if (window.settingsModalInstance) {
+      window.settingsModalInstance.open(tab);
     }
   }
 
@@ -156,8 +156,8 @@ class SettingsManager {
    * Hide the settings modal
    */
   hideSettingsModal() {
-    if ((window as any).settingsModalInstance) {
-      (window as any).settingsModalInstance.close();
+    if (window.settingsModalInstance) {
+      window.settingsModalInstance.close();
     }
   }
 

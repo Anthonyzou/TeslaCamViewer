@@ -240,7 +240,7 @@ function resetWidth(): void {
   saveWidth(DEFAULT_WIDTH);
   window.dispatchEvent(new Event('resize'));
   setTimeout(() => {
-    (window as any).app?.mapView?.map?.invalidateSize();
+    window.app?.mapView?.map?.invalidateSize();
   }, 100);
 }
 
@@ -275,7 +275,7 @@ function endResize(): void {
   saveWidth(sidebarWidth.value);
   window.dispatchEvent(new Event('resize'));
   setTimeout(() => {
-    (window as any).app?.mapView?.map?.invalidateSize();
+    window.app?.mapView?.map?.invalidateSize();
   }, 100);
 
   window.removeEventListener('mousemove', onMouseMove);
@@ -336,12 +336,12 @@ watch(
 watch(activeTab, (newTab) => {
   if (newTab === 'map') {
     nextTick(() => {
-      (window as any).app?.mapView?.invalidateSize();
+      window.app?.mapView?.invalidateSize();
       setTimeout(() => {
-        (window as any).app?.mapView?.invalidateSize();
+        window.app?.mapView?.invalidateSize();
       }, 50);
       setTimeout(() => {
-        (window as any).app?.mapView?.invalidateSize();
+        window.app?.mapView?.invalidateSize();
       }, 200);
     });
   }
@@ -361,20 +361,6 @@ function onLocaleChanged(): void {
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
   window.addEventListener('resize', onWindowResize);
-
-  // Expose global for backward compatibility with any other callers
-  (window as any).sidebarResize = {
-    getWidth: () => sidebarWidth.value,
-    setWidth: (w: number) => {
-      sidebarWidth.value = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, w));
-      saveWidth(sidebarWidth.value);
-      window.dispatchEvent(new Event('resize'));
-      setTimeout(() => {
-        (window as any).app?.mapView?.map?.invalidateSize();
-      }, 100);
-    },
-    resetWidth,
-  };
 });
 
 onUnmounted(() => {

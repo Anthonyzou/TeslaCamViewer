@@ -5,18 +5,12 @@
 </template>
 
 <script setup lang="ts">
-import L from 'leaflet';
+import 'leaflet';
 import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { MapView } from '../services/mapView';
 import type { TeslaCamEvent } from '../types';
-
-// Ensure L and MapView are globally available for plugins and existing helper modules
-if (typeof window !== 'undefined') {
-  (window as any).L = L;
-  (window as any).MapView = MapView;
-}
 
 const props = defineProps<{
   events?: TeslaCamEvent[];
@@ -42,7 +36,7 @@ onMounted(() => {
 
   mapViewInstance = new MapView(mapContainer.value, (event: TeslaCamEvent) => {
     emit('selectEvent', event);
-    const app = (window as any).app;
+    const app = window.app;
     if (app?.onEventSelected) {
       app.onEventSelected(event);
     }
@@ -50,8 +44,8 @@ onMounted(() => {
 
   mapViewInstance.initialize();
 
-  (window as any)._vueMapView = mapViewInstance;
-  const app = (window as any).app;
+  window._vueMapView = mapViewInstance;
+  const app = window.app;
   if (app) {
     app.mapView = mapViewInstance;
   }

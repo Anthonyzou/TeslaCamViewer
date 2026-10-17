@@ -154,7 +154,7 @@ function t(key: string): string {
 }
 
 function refreshDrives(): void {
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.folderManager) {
     drivesList.value = app.folderManager.getDrives() || [];
   }
@@ -194,7 +194,7 @@ function getEventCountText(drive: any): string {
 
 function getDateFilterText(drive: any): string {
   if (!drive.dateFilter || drive.dateFilter === 'all') return '';
-  const app = (window as any).app;
+  const app = window.app;
   return app?.folderManager?.getDateFilterLabel(drive.dateFilter) || '';
 }
 
@@ -205,7 +205,7 @@ function onColorInput(drive: any, e: Event): void {
 async function onColorChange(drive: any, e: Event): Promise<void> {
   const newColor = (e.target as HTMLInputElement).value;
   drive.color = newColor;
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.folderManager) {
     await app.folderManager.updateDriveColor(drive.id, newColor);
     if (Array.isArray(app.allEvents)) {
@@ -223,7 +223,7 @@ async function onLabelChange(drive: any, e: Event): Promise<void> {
   const newLabel = (e.target as HTMLInputElement).value.trim();
   if (!newLabel) return;
   drive.label = newLabel;
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.folderManager) {
     await app.folderManager.updateDriveLabel(drive.id, newLabel);
     app.eventBrowser?.render(app.filteredEvents);
@@ -232,14 +232,14 @@ async function onLabelChange(drive: any, e: Event): Promise<void> {
 
 async function handleSync(driveId: string): Promise<void> {
   close();
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.syncArchiveDrive) {
     await app.syncArchiveDrive(driveId);
   }
 }
 
 async function handleEdit(driveId: string): Promise<void> {
-  const app = (window as any).app;
+  const app = window.app;
   if (!app?.folderManager) return;
   const drive = app.folderManager.getDrive(driveId);
   if (!drive) return;
@@ -265,7 +265,7 @@ async function handleEdit(driveId: string): Promise<void> {
 
 async function handleRemove(driveId: string): Promise<void> {
   if (confirm('Remove this drive? Events will no longer be shown.')) {
-    const app = (window as any).app;
+    const app = window.app;
     if (app?.folderManager) {
       await app.folderManager.removeDrive(driveId);
       if (Array.isArray(app.allEvents)) {
@@ -280,7 +280,7 @@ async function handleRemove(driveId: string): Promise<void> {
 
 async function handleAddDrive(): Promise<void> {
   close();
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.addNewDrive) {
     await app.addNewDrive();
   }
@@ -292,7 +292,7 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).driveManagementModalInstance = {
+  window.driveManagementModalInstance = {
     open,
     close,
     refreshDrives,
@@ -301,8 +301,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).driveManagementModalInstance?.open === open) {
-    delete (window as any).driveManagementModalInstance;
+  if (window.driveManagementModalInstance?.open === open) {
+    delete window.driveManagementModalInstance;
   }
 });
 

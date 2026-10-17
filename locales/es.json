@@ -347,7 +347,6 @@
     "weekly": "Semanal",
     "monthly": "Mensual",
     "exportStatistics": "Exportar estadísticas",
-    "exportDescription": "Download your statistics data for offline analysis or record keeping.",
     "exportJson": "Exportar JSON",
     "exportCsv": "Exportar CSV",
     "noEvents": "No hay eventos cargados. Abre una carpeta TeslaCam primero.",

@@ -237,7 +237,7 @@ function onOverlayClick(e: MouseEvent): void {
 }
 
 async function copyDiagnostics(): Promise<void> {
-  const app = (window as any).app;
+  const app = window.app;
   if (app?.copyDiagnosticReport) {
     await app.copyDiagnosticReport();
   } else {
@@ -266,7 +266,7 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).helpModalInstance = {
+  window.helpModalInstance = {
     open,
     close,
     toggle,
@@ -277,8 +277,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).helpModalInstance?.open === open) {
-    delete (window as any).helpModalInstance;
+  if (window.helpModalInstance?.open === open) {
+    delete window.helpModalInstance;
   }
 });
 

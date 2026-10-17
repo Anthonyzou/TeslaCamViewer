@@ -57,14 +57,6 @@
               <CheckCircle2 :size="18" />
               {{ t('statistics.tabs.quality') }}
             </button>
-            <button
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'export' }"
-              @click="activeTab = 'export'"
-            >
-              <Download :size="18" />
-              {{ t('statistics.tabs.export') }}
-            </button>
           </nav>
         </div>
 
@@ -305,52 +297,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Export Tab -->
-            <div
-              v-show="activeTab === 'export'"
-              class="stats-tab-content active"
-            >
-              <div class="stats-section">
-                <h3>{{ t('statistics.exportStatistics') }}</h3>
-                <p
-                  style="
-                    color: var(--text-secondary);
-                    font-size: 0.85rem;
-                    margin-bottom: 1rem;
-                  "
-                >
-                  {{ t('statistics.exportDescription') }}
-                </p>
-                <div class="stats-export-buttons">
-                  <button
-                    class="stats-export-btn"
-                    @click="handleExport('json')"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                    </svg>
-                    {{ t('statistics.exportJson') }}
-                  </button>
-                  <button class="stats-export-btn" @click="handleExport('csv')">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                    </svg>
-                    {{ t('statistics.exportCsv') }}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -363,7 +309,6 @@ import {
   BarChart3,
   CheckCircle2,
   Clock,
-  Download,
   MapPin,
   Shield,
   X,
@@ -439,7 +384,7 @@ async function handleVerifyTelemetry(): Promise<void> {
   telemetryText.value = 'Scanning events for telemetry...';
 
   try {
-    const events = (window as any).app?.allEvents || [];
+    const events = window.app?.allEvents || [];
     let withCount = 0;
     let withoutCount = 0;
 
@@ -472,7 +417,7 @@ function onLocaleChanged(): void {
 
 onMounted(() => {
   window.addEventListener('localeChanged', onLocaleChanged);
-  (window as any).statisticsModalInstance = {
+  window.statisticsModalInstance = {
     open,
     close,
   };
@@ -480,8 +425,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('localeChanged', onLocaleChanged);
-  if ((window as any).statisticsModalInstance?.open === open) {
-    delete (window as any).statisticsModalInstance;
+  if (window.statisticsModalInstance?.open === open) {
+    delete window.statisticsModalInstance;
   }
 });
 
