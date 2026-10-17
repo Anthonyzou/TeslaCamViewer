@@ -53,10 +53,6 @@ export class LayoutManager {
     this.draggedCamera = null;
     this.dragOverCamera = null;
 
-    // Custom layouts storage
-    this.customLayouts = [];
-    this.loadCustomLayouts();
-
     // Unified renderer for custom layouts
     this.renderer = new LayoutRenderer();
 
@@ -74,114 +70,6 @@ export class LayoutManager {
 
     // Update dropdown with custom layouts
     this.updateLayoutDropdown();
-  }
-
-  /**
-   * Load custom layouts from localStorage
-   */
-  loadCustomLayouts() {
-    try {
-      const saved = localStorage.getItem('teslacam_custom_layouts');
-      if (saved) {
-        this.customLayouts = JSON.parse(saved);
-        // Migrate any older configs
-        this.customLayouts = this.customLayouts.map((c) =>
-          LayoutConfig.migrate(c)
-        );
-      }
-    } catch (e) {
-      console.warn('Failed to load custom layouts:', e);
-      this.customLayouts = [];
-    }
-  }
-
-  /**
-   * Save custom layouts to localStorage
-   */
-  saveCustomLayouts() {
-    try {
-      localStorage.setItem(
-        'teslacam_custom_layouts',
-        JSON.stringify(this.customLayouts)
-      );
-    } catch (e) {
-      console.warn('Failed to save custom layouts:', e);
-    }
-  }
-
-  /**
-   * Add a custom layout
-   * @param {Object} config - LayoutConfig object
-   */
-  addCustomLayout(config) {
-    // Validate
-    const validation = LayoutConfig.validate(config);
-    if (!validation.valid) {
-      console.error('Invalid layout config:', validation.errors);
-      return false;
-    }
-
-    // Check for duplicate ID
-    const existingIndex = this.customLayouts.findIndex(
-      (c) => c.id === config.id
-    );
-    if (existingIndex !== -1) {
-      // Update existing
-      this.customLayouts[existingIndex] = config;
-    } else {
-      // Add new
-      this.customLayouts.push(config);
-    }
-
-    this.saveCustomLayouts();
-    this.updateLayoutDropdown();
-    return true;
-  }
-
-  /**
-   * Update an existing custom layout
-   * @param {Object} config - Layout config with matching id
-   * @returns {boolean}
-   */
-  updateCustomLayout(config) {
-    // Just delegate to addCustomLayout which handles updates
-    return this.addCustomLayout(config);
-  }
-
-  /**
-   * Delete a custom layout
-   * @param {string} layoutId
-   */
-  deleteCustomLayout(layoutId) {
-    const index = this.customLayouts.findIndex((c) => c.id === layoutId);
-    if (index !== -1) {
-      this.customLayouts.splice(index, 1);
-      this.saveCustomLayouts();
-      this.updateLayoutDropdown();
-
-      // If we deleted the current layout, switch to default
-      if (this.currentLayout === layoutId) {
-        this.setLayout('grid-2x2');
-      }
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Get a custom layout by ID
-   * @param {string} layoutId
-   * @returns {Object|null}
-   */
-  getCustomLayout(layoutId) {
-    return this.customLayouts.find((c) => c.id === layoutId) || null;
-  }
-
-  /**
-   * Check if current layout is a custom config
-   */
-  isCustomLayout() {
-    return this.currentConfig !== null;
   }
 
   /**
@@ -210,22 +98,6 @@ export class LayoutManager {
     // Remove existing custom group and edit option
     if (customGroup) customGroup.remove();
     if (editOption) editOption.remove();
-
-    // Add custom layouts if any exist
-    if (this.customLayouts.length > 0) {
-      const optGroup = document.createElement('optgroup');
-      optGroup.label = 'Custom Layouts';
-      customGroup = optGroup;
-
-      for (const config of this.customLayouts) {
-        const option = document.createElement('option');
-        option.value = config.id;
-        option.textContent = config.name;
-        customGroup.appendChild(option);
-      }
-
-      select.appendChild(customGroup);
-    }
   }
 
   /**
@@ -466,8 +338,7 @@ export class LayoutManager {
       this.currentLayout = layoutOrConfig;
 
       // Check if it's a custom layout
-      const customConfig = this.getCustomLayout(layoutOrConfig);
-      this.currentConfig = customConfig || null;
+      this.currentConfig = null;
     }
 
     this.applyLayout(this.currentLayout);
