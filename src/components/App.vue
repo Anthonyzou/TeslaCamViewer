@@ -20,8 +20,11 @@
         :drives="drives"
         :activeDriveId="activeDriveId"
         :hasEvents="hasEvent"
+        :events="filteredEvents"
+        :currentEvent="currentEvent"
         :eventCountText="eventCountText"
         :eventStatsText="eventStatsText"
+        @selectEvent="selectEvent"
         @changeDrive="changeDrive"
         @manageDrives="manageDrives"
         @addDrive="addDrive"
@@ -89,7 +92,6 @@
     <StatisticsModal />
     <DriveManagementModal />
     <DriveSetupModal />
-    <DiagnosticsModal />
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
@@ -107,7 +109,6 @@ import AppHeader from './AppHeader.vue';
 import AppSidebar from './AppSidebar.vue';
 import BottomSheet from './BottomSheet.vue';
 import CommandPalette from './CommandPalette.vue';
-import DiagnosticsModal from './DiagnosticsModal.vue';
 import DriveManagementModal from './DriveManagementModal.vue';
 import DriveSetupModal from './DriveSetupModal.vue';
 import EventInfoBar from './EventInfoBar.vue';
@@ -120,6 +121,8 @@ import VideoGrid from './VideoGrid.vue';
 
 const {
   currentEvent,
+  filteredEvents,
+  selectEvent,
   isPlaying,
   speed,
   isLooping,

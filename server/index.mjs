@@ -42,7 +42,7 @@ function isEntryFile() {
       invokedFile === path.dirname(currentFile) ||
       invokedFile === path.join(path.dirname(currentFile), 'index.mjs')
     );
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 }
@@ -57,7 +57,7 @@ if (isEntryFile()) {
         if (job.outputPath && fs.existsSync(job.outputPath)) {
           try {
             fs.unlinkSync(job.outputPath);
-          } catch (e) {}
+          } catch (_e) {}
         }
         exportJobs.delete(jobId);
       }

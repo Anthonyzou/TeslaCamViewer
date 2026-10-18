@@ -130,8 +130,11 @@ class SettingsManager {
   /**
    * Register callback for setting changes
    */
-  onChange(callback) {
+  onChange(callback: (settings: any) => void): () => void {
     this.callbacks.push(callback);
+    return () => {
+      this.callbacks = this.callbacks.filter((cb) => cb !== callback);
+    };
   }
 
   /**
@@ -203,7 +206,7 @@ class SettingsManager {
    * Apply accessibility settings (high contrast, text size)
    */
   applyAccessibilitySettings() {
-    const body = document.body;
+    const body = typeof document !== 'undefined' ? document.body : null;
 
     // High contrast mode
     if (this.get('highContrastMode')) {
@@ -225,7 +228,7 @@ class SettingsManager {
    * Apply theme setting
    */
   applyTheme() {
-    const body = document.body;
+    const body = typeof document !== 'undefined' ? document.body : null;
     const theme = this.get('theme') || 'dark';
 
     // Remove all theme classes
@@ -242,7 +245,7 @@ class SettingsManager {
     }
 
     // Sync map mode with theme: light theme = light map, all others = dark map
-    const mapView = window.app?.mapView;
+    const mapView = typeof window !== 'undefined' ? window.app?.mapView : null;
     if (mapView && mapView.map) {
       const mapShouldBeDark = theme !== 'light';
       if (mapView.isDarkMode !== mapShouldBeDark) {

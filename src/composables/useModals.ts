@@ -1,7 +1,5 @@
 import { ref, type Ref } from 'vue';
 
-const STORAGE_KEY_GUIDE = 'teslacam_quickstart_seen';
-
 // Settings Modal
 const isSettingsOpen: Ref<boolean> = ref(false);
 const settingsActiveTab: Ref<string> = ref('general');
@@ -82,26 +80,6 @@ export const statisticsModalStore = {
   },
   hide(): void {
     this.close();
-  },
-};
-
-// Diagnostics Modal
-const isDiagnosticsOpen: Ref<boolean> = ref(false);
-const diagnosticsReport: Ref<string> = ref('');
-
-export const diagnosticsModalStore = {
-  get isOpen(): boolean {
-    return isDiagnosticsOpen.value;
-  },
-  get report(): string {
-    return diagnosticsReport.value;
-  },
-  open(report: string = ''): void {
-    diagnosticsReport.value = report;
-    isDiagnosticsOpen.value = true;
-  },
-  close(): void {
-    isDiagnosticsOpen.value = false;
   },
 };
 
@@ -206,7 +184,6 @@ export const modalStore = {
   settings: settingsModalStore,
   help: helpModalStore,
   statistics: statisticsModalStore,
-  diagnostics: diagnosticsModalStore,
   driveManagement: driveManagementModalStore,
   driveSetup: driveSetupModalStore,
   commandPalette: commandPaletteModalStore,
@@ -227,11 +204,6 @@ export function useModals() {
     isStatisticsOpen,
     statisticsData,
     statisticsModal: statisticsModalStore,
-
-    // Diagnostics
-    isDiagnosticsOpen,
-    diagnosticsReport,
-    diagnosticsModal: diagnosticsModalStore,
 
     // Drive Management
     isDriveManagementOpen,

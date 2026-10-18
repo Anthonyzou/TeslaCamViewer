@@ -162,7 +162,7 @@ export default function registerFfmpegRoutes(app) {
             );
             return;
           }
-        } catch (e) {
+        } catch (_e) {
           job.status = 'error';
           job.error = 'Export failed to produce output file';
           return;
@@ -187,6 +187,8 @@ export default function registerFfmpegRoutes(app) {
     } catch (err) {
       job.status = 'error';
       job.error = err.message;
+      console.log(err);
+
       res.status(500).json({ error: err.message });
     }
   });
@@ -222,12 +224,12 @@ export default function registerFfmpegRoutes(app) {
       if (job.command) {
         try {
           job.command.kill('SIGKILL');
-        } catch (e) {}
+        } catch (_e) {}
       }
       if (job.outputPath && fs.existsSync(job.outputPath)) {
         try {
           fs.unlinkSync(job.outputPath);
-        } catch (e) {}
+        } catch (_e) {}
       }
     }
     res.json({ success: true });

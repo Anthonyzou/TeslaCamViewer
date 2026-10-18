@@ -82,7 +82,7 @@ export class ScreenshotCapture {
       const sortedCameras = Object.entries(
         layoutConfig.cameras as Record<string, any>
       )
-        .filter(([name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
+        .filter(([_name, cam]) => cam.visible && cam.w > 0 && cam.h > 0)
         .sort((a, b) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
 
       for (const [cameraName, camConfig] of sortedCameras) {

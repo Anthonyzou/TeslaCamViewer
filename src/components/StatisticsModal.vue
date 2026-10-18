@@ -381,7 +381,7 @@ function onOverlayClick(e: MouseEvent): void {
   }
 }
 
-function handleExport(format: 'json' | 'csv'): void {
+function _handleExport(format: 'json' | 'csv'): void {
   if (typeof payload.value.manager?.exportStats === 'function') {
     payload.value.manager.exportStats(format);
   }

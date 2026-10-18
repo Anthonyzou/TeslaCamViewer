@@ -64,7 +64,7 @@ class StatisticsManager {
 
     for (const event of this.events) {
       // Count by type (event.type is like 'SavedClips', 'SentryClips', 'RecentClips')
-      let type = (event.type || 'RecentClips')
+      const type = (event.type || 'RecentClips')
         .toLowerCase()
         .replace('clips', '');
       if (stats.eventsByType[type] !== undefined) {
@@ -165,7 +165,7 @@ class StatisticsManager {
    * @param {Function} onProgress - Callback with (checked, total, found) for progress updates
    * @returns {Promise<Object>} { eventsWithTelemetry, eventsChecked }
    */
-  async verifyTelemetryForEvents(onProgress = null) {
+  async verifyTelemetryForEvents(_onProgress = null) {
     return { eventsWithTelemetry: 0, eventsChecked: 0 };
   }
 
@@ -497,8 +497,6 @@ class StatisticsManager {
         weekStart.setDate(weekStart.getDate() - 6);
 
         let count = 0;
-        let savedCount = 0;
-        let sentryCount = 0;
 
         // Count events in this week
         for (let d = 0; d <= 6; d++) {

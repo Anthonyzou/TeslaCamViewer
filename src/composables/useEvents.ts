@@ -1,58 +1,77 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, type Ref } from 'vue';
 import type { TeslaCamEvent } from '../types';
+
+const currentEvent: Ref<TeslaCamEvent | null> = ref(null);
+const allEvents: Ref<TeslaCamEvent[]> = ref([]);
+const filteredEvents: Ref<TeslaCamEvent[]> = ref([]);
+
+export function setEventsState(state: {
+  current?: TeslaCamEvent | null;
+  all?: TeslaCamEvent[];
+  filtered?: TeslaCamEvent[];
+}): void {
+  if (state.current !== undefined) currentEvent.value = state.current;
+  if (state.all !== undefined) allEvents.value = state.all;
+  if (state.filtered !== undefined) filteredEvents.value = state.filtered;
+}
+
+export function syncEvents(): void {
+  if (typeof window === 'undefined') return;
+  const app = window.app;
+  if (!app) return;
+
+  if (currentEvent.value !== (app.currentEvent || null)) {
+    currentEvent.value = app.currentEvent || null;
+  }
+
+  if (Array.isArray(app.allEvents) && allEvents.value !== app.allEvents) {
+    allEvents.value = [...app.allEvents];
+  }
+
+  if (
+    Array.isArray(app.filteredEvents) &&
+    filteredEvents.value !== app.filteredEvents
+  ) {
+    filteredEvents.value = [...app.filteredEvents];
+  }
+}
 
 /**
  * useEvents - Composable for TeslaCam events list, current selection, and navigation
  */
 export function useEvents() {
-  const currentEvent = ref<TeslaCamEvent | null>(null);
-  const allEvents = ref<TeslaCamEvent[]>([]);
-  const filteredEvents = ref<TeslaCamEvent[]>([]);
-  const eventCountText = ref('');
-  const eventStatsText = ref('');
-
   const hasEvent = computed(() => currentEvent.value !== null);
 
-  function syncEvents(): void {
-    const app = window.app;
-    if (!app) return;
+  const eventCountText = computed(() => {
+    if (filteredEvents.value.length === 0) return '';
+    return `(${filteredEvents.value.length})`;
+  });
 
-    if (currentEvent.value !== (app.currentEvent || null)) {
-      currentEvent.value = app.currentEvent || null;
-    }
+  const eventStatsText = computed(() => {
+    const events = filteredEvents.value;
+    if (events.length === 0) return '';
+    const saved = events.filter((e) => e.type === 'SavedClips').length;
+    const sentry = events.filter((e) => e.type === 'SentryClips').length;
+    const recent = events.filter((e) => e.type === 'RecentClips').length;
+    const empty = events.filter((e) => e.isEmpty).length;
 
-    if (Array.isArray(app.allEvents) && allEvents.value.length !== app.allEvents.length) {
-      allEvents.value = app.allEvents;
+    let statsText = `${saved} saved, ${sentry} sentry, ${recent} recent`;
+    if (empty > 0) {
+      statsText += ` (${empty} empty)`;
     }
+    return statsText;
+  });
 
-    if (Array.isArray(app.filteredEvents) && filteredEvents.value.length !== app.filteredEvents.length) {
-      filteredEvents.value = app.filteredEvents;
-    }
+  syncEvents();
 
-    const countEl = document.getElementById('eventCount');
-    if (countEl && eventCountText.value !== (countEl.textContent || '')) {
-      eventCountText.value = countEl.textContent || '';
-    }
-
-    const statsEl = document.getElementById('eventStats');
-    if (statsEl && eventStatsText.value !== (statsEl.textContent || '')) {
-      eventStatsText.value = statsEl.textContent || '';
-    }
+  if (getCurrentInstance()) {
+    onMounted(() => {
+      syncEvents();
+    });
   }
 
-  let syncTimer: ReturnType<typeof setInterval> | null = null;
-
-  onMounted(() => {
-    syncEvents();
-    syncTimer = setInterval(syncEvents, 250);
-  });
-
-  onUnmounted(() => {
-    if (syncTimer) clearInterval(syncTimer);
-  });
-
   async function selectEvent(event: TeslaCamEvent): Promise<void> {
-    const app = window.app;
+    const app = typeof window !== 'undefined' ? window.app : undefined;
     if (app) {
       await app.onEventSelected(event);
       syncEvents();
@@ -60,17 +79,23 @@ export function useEvents() {
   }
 
   function prevEvent(): void {
-    window.app?.previousEvent();
+    if (typeof window !== 'undefined') {
+      window.app?.previousEvent();
+    }
     syncEvents();
   }
 
   function nextEvent(): void {
-    window.app?.nextEvent();
+    if (typeof window !== 'undefined') {
+      window.app?.nextEvent();
+    }
     syncEvents();
   }
 
   function applyFilters(): void {
-    window.app?.applyFilters();
+    if (typeof window !== 'undefined') {
+      window.app?.applyFilters();
+    }
     syncEvents();
   }
 

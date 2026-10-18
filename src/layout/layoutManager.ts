@@ -92,8 +92,8 @@ export class LayoutManager {
     if (!select) return;
 
     // Find the option group for custom layouts or create one
-    let customGroup = select.querySelector('optgroup[label="Custom Layouts"]');
-    let editOption = select.querySelector('option[value="edit-layouts"]');
+    const customGroup = select.querySelector('optgroup[label="Custom Layouts"]');
+    const editOption = select.querySelector('option[value="edit-layouts"]');
 
     // Remove existing custom group and edit option
     if (customGroup) customGroup.remove();

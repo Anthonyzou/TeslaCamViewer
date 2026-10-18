@@ -550,7 +550,6 @@ export class LayoutRenderer {
     // Calculate canvas size based on video dimensions and layout aspect ratio
     // Use video dimensions as base, scale to match layout aspect ratio
     const layoutAR = arParts.width / arParts.height;
-    const videoAR = videoWidth / videoHeight;
 
     let canvasWidth, canvasHeight;
 
@@ -628,7 +627,7 @@ export class LayoutRenderer {
     // Sort cameras by z-index for proper layering
     const sortedCameras = Object.entries(cameras as Record<string, any>)
       .filter(
-        ([name, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0
+        ([_name, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0
       )
       .sort((a: any, b: any) => a[1].zIndex - b[1].zIndex);
 
@@ -655,7 +654,7 @@ export class LayoutRenderer {
 
       try {
         ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-      } catch (e) {
+      } catch (_e) {
         // Video not ready, draw placeholder
         ctx.fillStyle = '#333333';
         ctx.fillRect(camConfig.x, camConfig.y, camConfig.w, camConfig.h);
@@ -911,7 +910,7 @@ export class LayoutRenderer {
    * @param {number} height - Preview container height
    * @returns {HTMLElement}
    */
-  createPreviewElement(config, width = 400, height = 300) {
+  createPreviewElement(config, width = 400, _height = 300) {
     const container = document.createElement('div');
     container.className = 'layout-preview';
     container.style.cssText = `
@@ -991,7 +990,7 @@ export class LayoutRenderer {
   getEnabledCameras(config: any) {
     if (!config?.cameras) return [];
     return Object.entries(config.cameras as Record<string, any>)
-      .filter(([name, cam]: [string, any]) => cam.enabled)
+      .filter(([_name, cam]: [string, any]) => cam.enabled)
       .map(([name]) => name);
   }
 }

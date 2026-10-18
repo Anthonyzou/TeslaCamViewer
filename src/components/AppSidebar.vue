@@ -125,18 +125,11 @@
         class="tab-pane"
         :class="{ active: activeTab === 'events' }"
       >
-        <div id="eventList" class="event-list">
-          <div
-            class="empty-state"
-            id="emptyState"
-            :class="{ hidden: hasEvents }"
-          >
-            <p data-i18n="sidebar.emptyState">{{ t('sidebar.emptyState') }}</p>
-            <p class="hint" data-i18n="sidebar.emptyStateHint">
-              {{ t('sidebar.emptyStateHint') }}
-            </p>
-          </div>
-        </div>
+        <EventList
+          :events="events || []"
+          :currentEvent="currentEvent"
+          @selectEvent="emit('selectEvent', $event)"
+        />
       </div>
 
       <!-- Map Tab -->
@@ -171,7 +164,8 @@
 <script setup lang="ts">
 import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import type { DriveInfo } from '../types';
+import type { DriveInfo, TeslaCamEvent } from '../types';
+import EventList from './EventList.vue';
 import FilterPanel from './FilterPanel.vue';
 import MapView from './MapView.vue';
 
@@ -179,6 +173,8 @@ const props = defineProps<{
   drives?: DriveInfo[];
   activeDriveId?: string;
   hasEvents: boolean;
+  events?: TeslaCamEvent[];
+  currentEvent?: TeslaCamEvent | null;
   eventCountText?: string;
   eventStatsText?: string;
 }>();
@@ -190,6 +186,7 @@ const emit = defineEmits<{
   (e: 'refreshDrives'): void;
   (e: 'selectFolder'): void;
   (e: 'loadB2'): void;
+  (e: 'selectEvent', event: TeslaCamEvent): void;
 }>();
 
 const STORAGE_KEY = 'teslacam_sidebar_width';

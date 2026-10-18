@@ -1,7 +1,9 @@
-FROM node:alpine
+FROM node:current-slim
 
 # Install FFmpeg
-RUN apk add --no-cache ffmpeg
+RUN  apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg && rm -rf /var/lib/apt/lists/*
+
 
 # Set the working directory
 WORKDIR /app
@@ -10,7 +12,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install production dependencies
-RUN npm install --omit=dev
+RUN npm install
 
 # Copy the rest of the application files
 COPY . .

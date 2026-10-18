@@ -17,7 +17,6 @@ class FolderParser {
   public currentDriveColor: string | null = null;
   public onProgress: any = null;
   public _debugStats: any = null;
-  public _lastDiagnostics: any = null;
 
   /**
    * Set progress callback for UI updates during parsing
@@ -307,17 +306,6 @@ class FolderParser {
     }
     console.log('[FolderParser] === End Summary ===');
 
-    // Store last diagnostic info for user access
-    this._lastDiagnostics = {
-      timestamp: new Date().toISOString(),
-      rootFolder: this.rootHandle.name,
-      elapsedSeconds: elapsed,
-      stats: { ...this._debugStats },
-      hasErrors: this._debugStats.errors.length > 0,
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-    };
-
     return this.events;
   }
 
@@ -339,7 +327,7 @@ class FolderParser {
 
     // Check if this directory contains video clips (is an event folder)
     let hasVideoClips = false;
-    let videoClips = [];
+    const videoClips = [];
     try {
       for await (const entry of dirHandle.values()) {
         if (entry.kind === 'file' && entry.name.endsWith('.mp4')) {

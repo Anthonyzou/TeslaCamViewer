@@ -6,10 +6,140 @@ import weatherService from '../utils/weatherService';
 import { FolderParser } from './folderParser';
 import { settingsManager } from './settingsManager';
 
+/**
+ * Compute recording health for an event.
+ */
+export function computeRecordingHealth(event: any): {
+  status: 'healthy' | 'minor' | 'warning';
+  issues: string[];
+  icon: string;
+} {
+  const issues: string[] = [];
+
+  // Virtual/aggregate events (hour-grouped RecentClips) — no health concept
+  if (!event || event.isVirtual || event.isEmpty) {
+    return { status: 'healthy', issues: [], icon: '' };
+  }
+  if (!event.clipGroups || event.clipGroups.length === 0) {
+    return { status: 'warning', issues: ['No video clips'], icon: '⚠' };
+  }
+
+  // 1. Missing cameras per clip group.
+  {
+    const expectedCams = event.hasPillarCameras ? 6 : 4;
+    let incompleteGroups = 0;
+    const missingCamsSet = new Set<string>();
+    const standardCams = ['front', 'back', 'left_repeater', 'right_repeater'];
+    const pillarCams = ['left_pillar', 'right_pillar'];
+    const expectedList = event.hasPillarCameras
+      ? [...standardCams, ...pillarCams]
+      : standardCams;
+    for (const g of event.clipGroups) {
+      const clips = g.clips || {};
+      const present = Object.keys(clips).length;
+      if (present < expectedCams) {
+        incompleteGroups++;
+        for (const c of expectedList) if (!clips[c]) missingCamsSet.add(c);
+      }
+    }
+    if (incompleteGroups > 0) {
+      const camList = Array.from(missingCamsSet).join(', ');
+      issues.push(
+        `${incompleteGroups} of ${event.clipGroups.length} clip groups missing ${camList}`
+      );
+    }
+  }
+
+  // 2. Missing event.json metadata (SavedClips/SentryClips should have one)
+  if (
+    (event.type === 'SavedClips' || event.type === 'SentryClips') &&
+    !event.metadata
+  ) {
+    issues.push('No event.json metadata (may be partial save)');
+  }
+
+  // 3. Very short event — likely interrupted
+  if (event.type === 'SentryClips' && event.clipGroups.length < 3) {
+    issues.push(
+      `Only ${event.clipGroups.length} clip${event.clipGroups.length === 1 ? '' : 's'} — recording may have been interrupted`
+    );
+  }
+
+  // 4. SavedClips are user-triggered and typically 11 clips
+  if (event.type === 'SavedClips' && event.clipGroups.length < 2) {
+    issues.push(
+      `Only ${event.clipGroups.length} clip${event.clipGroups.length === 1 ? '' : 's'} — save may have failed to capture full buffer`
+    );
+  }
+
+  // 5. SEI-derived issues
+  const sei = event._recordingHealth;
+  if (sei && sei.shortClipCount > 0) {
+    issues.push(
+      `${sei.shortClipCount} clip${sei.shortClipCount === 1 ? '' : 's'} with very few frames — possible dropped recording`
+    );
+  }
+
+  if (issues.length === 0) {
+    return { status: 'healthy', issues: [], icon: '' };
+  }
+  if (issues.length === 1) {
+    return { status: 'minor', issues, icon: '!' };
+  }
+  return { status: 'warning', issues, icon: '⚠' };
+}
+
+/**
+ * Get time range string from event clips (e.g., "From 7:00-7:59 AM")
+ */
+export function getTimeRangeFromClips(event: any): string | null {
+  if (!event || !event.clipGroups || event.clipGroups.length === 0) {
+    return null;
+  }
+
+  try {
+    const firstClip = event.clipGroups[0];
+    const lastClip = event.clipGroups[event.clipGroups.length - 1];
+
+    if (!firstClip?.timestamp || !lastClip?.timestamp) return null;
+
+    const firstMatch = String(firstClip.timestamp).match(
+      /(\d{2})-(\d{2})-(\d{2})$/
+    );
+    const lastMatch = String(lastClip.timestamp).match(
+      /(\d{2})-(\d{2})-(\d{2})$/
+    );
+
+    if (firstMatch && lastMatch) {
+      const firstHour = parseInt(firstMatch[1], 10);
+      const firstMin = parseInt(firstMatch[2], 10);
+      const lastHour = parseInt(lastMatch[1], 10);
+      const lastMin = parseInt(lastMatch[2], 10);
+
+      const formatTime = (h: number, m: number) => {
+        const period = h >= 12 ? 'PM' : 'AM';
+        const hour12 = h % 12 || 12;
+        return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+      };
+
+      if (firstHour === lastHour) {
+        return `From ${formatTime(firstHour, firstMin)}`;
+      }
+
+      return `From ${formatTime(firstHour, firstMin)} - ${formatTime(lastHour, lastMin)}`;
+    }
+  } catch (e) {
+    console.warn('[EventBrowser] Failed to parse time range:', e);
+  }
+
+  return null;
+}
+
 class EventBrowser {
   private events = [];
   private selectedEvent = null;
   private thumbnailCache = new Map();
+  public isVueManaged: boolean = false;
 
   constructor(
     private container: any,
@@ -25,10 +155,11 @@ class EventBrowser {
    * Refresh weather for all rendered event cards
    */
   refreshAllWeather() {
+    if (this.isVueManaged || !this.container?.querySelectorAll) return;
     const cards = this.container.querySelectorAll('.event-item');
-    cards.forEach((card) => {
+    cards.forEach((card: any) => {
       const eventName = card.dataset.eventName;
-      const event = this.events.find((e) => e.name === eventName);
+      const event = this.events.find((e: any) => e.name === eventName);
       if (event) {
         this.fetchEventWeather(event, card);
       }
@@ -36,104 +167,10 @@ class EventBrowser {
   }
 
   /**
-   * Compute recording health for an event. Used to surface obvious issues
-   * (missing cameras, truncated clips, missing metadata) as a sidebar
-   * badge so users can skip or investigate problematic events before
-   * loading them.
-   *
-   * Status tiers:
-   *   healthy  — no issues, no badge shown (clean UI)
-   *   minor    — one small issue, yellow "!" badge
-   *   warning  — multiple issues or severe one, orange "⚠" badge
-   *
-   * All checks are fast property reads — safe to call for every event row.
-   *
-   * @param {Object} event
-   * @returns {{status: string, issues: string[], icon: string}}
+   * Compute recording health for an event.
    */
-  computeRecordingHealth(event) {
-    const issues = [];
-
-    // Virtual/aggregate events (hour-grouped RecentClips) — no health concept
-    if (event.isVirtual || event.isEmpty) {
-      return { status: 'healthy', issues: [], icon: '' };
-    }
-    if (!event.clipGroups || event.clipGroups.length === 0) {
-      return { status: 'warning', issues: ['No video clips'], icon: '⚠' };
-    }
-
-    // 1. Missing cameras per clip group. RecentClips are Tesla's rolling
-    // buffer — every camera records to it continuously, so they should
-    // have the same camera completeness as saved/sentry events. Any
-    // missing camera here means data was lost or copied incompletely.
-    {
-      const expectedCams = event.hasPillarCameras ? 6 : 4;
-      let incompleteGroups = 0;
-      let missingCamsSet = new Set();
-      const standardCams = ['front', 'back', 'left_repeater', 'right_repeater'];
-      const pillarCams = ['left_pillar', 'right_pillar'];
-      const expectedList = event.hasPillarCameras
-        ? [...standardCams, ...pillarCams]
-        : standardCams;
-      for (const g of event.clipGroups) {
-        const clips = g.clips || {};
-        const present = Object.keys(clips).length;
-        if (present < expectedCams) {
-          incompleteGroups++;
-          for (const c of expectedList) if (!clips[c]) missingCamsSet.add(c);
-        }
-      }
-      if (incompleteGroups > 0) {
-        const camList = Array.from(missingCamsSet).join(', ');
-        issues.push(
-          `${incompleteGroups} of ${event.clipGroups.length} clip groups missing ${camList}`
-        );
-      }
-    }
-
-    // 2. Missing event.json metadata (SavedClips/SentryClips should have one)
-    if (
-      (event.type === 'SavedClips' || event.type === 'SentryClips') &&
-      !event.metadata
-    ) {
-      issues.push('No event.json metadata (may be partial save)');
-    }
-
-    // 3. Very short event — likely interrupted
-    // Sentry events are normally ~10 min (10 clips). Anything <3 clips is suspect.
-    if (event.type === 'SentryClips' && event.clipGroups.length < 3) {
-      issues.push(
-        `Only ${event.clipGroups.length} clip${event.clipGroups.length === 1 ? '' : 's'} — recording may have been interrupted`
-      );
-    }
-
-    // 4. SavedClips are user-triggered and typically 11 clips (10 min leading
-    // up to save). Very short ones may indicate a failed save.
-    if (event.type === 'SavedClips' && event.clipGroups.length < 2) {
-      issues.push(
-        `Only ${event.clipGroups.length} clip${event.clipGroups.length === 1 ? '' : 's'} — save may have failed to capture full buffer`
-      );
-    }
-
-    // 5. SEI-derived issues (hydrated from eventInsightsCache by
-    // app._bulkHydrateInsightBadges / _hydrateInsightsFromCache).
-    // Frame-count check needs SEI parsing, so it only contributes
-    // once the background scanner or the live load has populated
-    // event._recordingHealth — until then we silently skip it.
-    const sei = event._recordingHealth;
-    if (sei && sei.shortClipCount > 0) {
-      issues.push(
-        `${sei.shortClipCount} clip${sei.shortClipCount === 1 ? '' : 's'} with very few frames — possible dropped recording`
-      );
-    }
-
-    if (issues.length === 0) {
-      return { status: 'healthy', issues: [], icon: '' };
-    }
-    if (issues.length === 1) {
-      return { status: 'minor', issues, icon: '!' };
-    }
-    return { status: 'warning', issues, icon: '⚠' };
+  computeRecordingHealth(event: any) {
+    return computeRecordingHealth(event);
   }
 
   /**
@@ -153,33 +190,45 @@ class EventBrowser {
       })
     );
 
-    this.render();
+    if (!this.isVueManaged && this.container) {
+      this.render();
+    }
     // Notify AI Search + other listeners that a new library loaded
-    window.dispatchEvent(
-      new CustomEvent('folder-loaded', {
-        detail: { eventCount: events.length },
-      })
-    );
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(
+        new CustomEvent('folder-loaded', {
+          detail: { eventCount: events.length },
+        })
+      );
+    }
   }
 
   /** Public alias so aiSearchUI can navigate to events by object reference. */
   loadEvent(event) {
     if (!event) return;
-    const el = this.container.querySelector(
-      `[data-event-name="${CSS.escape(event.name)}"]`
-    );
-    if (el) el.click();
+    if (this.onEventSelect) {
+      this.onEventSelect(event);
+    }
+    if (this.container?.querySelector) {
+      const el = this.container.querySelector(
+        `[data-event-name="${CSS.escape(event.name)}"]`
+      );
+      if (el) el.click();
+    }
   }
 
   /** Public alias for re-rendering the whole list (used when clearing AI search). */
   renderEvents() {
-    this.render();
+    if (!this.isVueManaged) {
+      this.render();
+    }
   }
 
   /**
    * Render event list (synchronous for fast initial display)
    */
   render() {
+    if (this.isVueManaged || !this.container) return;
     this.container.innerHTML = '';
 
     if (this.events.length === 0) {
@@ -352,7 +401,7 @@ class EventBrowser {
 
     // Intervention Severity Badge — now always built via helper so the
     // initial render has the same click handler as refreshEventBadges.
-    const severity = event._severityScore;
+    const _severity = event._severityScore;
 
     div.innerHTML = `
             ${thumbnailHTML}
@@ -459,44 +508,8 @@ class EventBrowser {
    * @param {Object} event
    * @returns {string|null}
    */
-  _getTimeRangeFromClips(event) {
-    if (!event.clipGroups || event.clipGroups.length === 0) {
-      return null;
-    }
-
-    try {
-      // Get first and last clip timestamps
-      const firstClip = event.clipGroups[0];
-      const lastClip = event.clipGroups[event.clipGroups.length - 1];
-
-      // Parse timestamps from clip names (format: YYYY-MM-DD_HH-MM-SS)
-      const firstMatch = firstClip.timestamp.match(/(\d{2})-(\d{2})-(\d{2})$/);
-      const lastMatch = lastClip.timestamp.match(/(\d{2})-(\d{2})-(\d{2})$/);
-
-      if (firstMatch && lastMatch) {
-        const firstHour = parseInt(firstMatch[1]);
-        const firstMin = parseInt(firstMatch[2]);
-        const lastHour = parseInt(lastMatch[1]);
-        const lastMin = parseInt(lastMatch[2]);
-
-        const formatTime = (h, m) => {
-          const period = h >= 12 ? 'PM' : 'AM';
-          const hour12 = h % 12 || 12;
-          return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
-        };
-
-        // If same hour range, simplify
-        if (firstHour === lastHour) {
-          return `From ${formatTime(firstHour, firstMin)}`;
-        }
-
-        return `From ${formatTime(firstHour, firstMin)} - ${formatTime(lastHour, lastMin)}`;
-      }
-    } catch (e) {
-      console.warn('[EventBrowser] Failed to parse time range:', e);
-    }
-
-    return null;
+  _getTimeRangeFromClips(event: any) {
+    return getTimeRangeFromClips(event);
   }
 
   /**

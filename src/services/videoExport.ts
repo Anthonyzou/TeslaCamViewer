@@ -299,7 +299,7 @@ class VideoExport {
         await fetch(`/api/export/cancel/${this.currentJobId}`, {
           method: 'POST',
         });
-      } catch (e) {}
+      } catch (_e) {}
     }
 
     this.isExporting = false;

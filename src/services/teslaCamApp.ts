@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import { useClipMarking } from '../composables/useClipMarking';
+import { syncEvents } from '../composables/useEvents';
 import { filterPanelStore } from '../composables/useFilterPanel';
 import { mapViewStore } from '../composables/useMapView';
 import {
   commandPaletteModalStore,
-  diagnosticsModalStore,
   driveManagementModalStore,
   driveSetupModalStore,
   helpModalStore,
@@ -21,7 +21,6 @@ import { folderParser } from './folderParser';
 import { ScreenshotCapture } from './screenshotCapture';
 import { settingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
-import { SyncController } from './syncController';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
 
@@ -32,7 +31,6 @@ import { VideoPlayer } from './videoPlayer';
 export class TeslaCamApp {
   public eventFilter = new EventFilter();
   public videoPlayer = new VideoPlayer();
-  public syncController = new SyncController(this.videoPlayer);
   public layoutManager = new LayoutManager();
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
   public videoExport = new VideoExport(this.videoPlayer);
@@ -94,6 +92,7 @@ export class TeslaCamApp {
         eventListEl,
         (event: TeslaCamEvent) => this.onEventSelected(event)
       );
+      this.eventBrowser.isVueManaged = true;
     }
   }
 
@@ -240,6 +239,7 @@ export class TeslaCamApp {
       this.currentEventIndex = this.allEvents.findIndex(
         (e) => e.name === event.name
       );
+      syncEvents();
 
       this.showLoading('Preparing video URLs...');
       await this.prepareEventURLs(event);
@@ -286,7 +286,6 @@ export class TeslaCamApp {
         placeholder.classList.add('hidden');
       }
 
-      this.syncController?.start?.();
       this.hideLoading();
 
       const isSentryEvent =
@@ -648,6 +647,7 @@ export class TeslaCamApp {
     const filteredEvents =
       this.eventFilter?.applyFilters(eventsToFilter) || eventsToFilter;
     this.filteredEvents = filteredEvents;
+    syncEvents();
 
     this.eventBrowser?.loadEvents(filteredEvents);
     this.mapView?.loadEvents(filteredEvents);
@@ -906,24 +906,6 @@ export class TeslaCamApp {
 
   public showDriveManagementModal(): void {
     driveManagementModalStore.open();
-  }
-
-  public showDiagnosticModal(report: string): void {
-    diagnosticsModalStore.open(report);
-  }
-
-  public async copyDiagnosticReport(): Promise<void> {
-    const report = folderParser?.getDiagnosticReport?.();
-    if (!report) {
-      this.showSimpleToast('No diagnostic data available');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(report);
-      this.showSimpleToast('📋 Diagnostic report copied to clipboard!');
-    } catch {
-      this.showDiagnosticModal(report);
-    }
   }
 
   public showLoading(message: string = 'Loading...'): void {

@@ -365,31 +365,6 @@ class MapView {
   }
 
   /**
-   * Set the tile provider
-   */
-  setTileProvider(providerId: string): void {
-    if (!this.TILE_PROVIDERS[providerId]) {
-      console.warn(`[MapView] Unknown tile provider: ${providerId}`);
-      return;
-    }
-
-    this.tileProvider = providerId;
-
-    try {
-      localStorage.setItem('teslacam_map_provider', providerId);
-    } catch (e) {
-      console.warn('[MapView] Failed to save provider preference:', e);
-    }
-
-    const mode = this.isDarkMode ? 'dark' : 'light';
-    this.setTileLayer(mode);
-
-    console.log(
-      `[MapView] Tile provider changed to: ${this.TILE_PROVIDERS[providerId].name}`
-    );
-  }
-
-  /**
    * Toggle between light and dark map tiles
    */
   toggleDarkMode(): void {

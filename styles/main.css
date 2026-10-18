@@ -5293,7 +5293,6 @@ select option:hover,
 .region-list::-webkit-scrollbar,
 .modal-content::-webkit-scrollbar,
 .bottom-sheet-content::-webkit-scrollbar,
-.diagnostic-modal-body::-webkit-scrollbar,
 .stats-nav::-webkit-scrollbar,
 .struggle-zone-events::-webkit-scrollbar,
 .incident-events::-webkit-scrollbar,
@@ -5324,7 +5323,6 @@ select option:hover,
 .region-list::-webkit-scrollbar-track,
 .modal-content::-webkit-scrollbar-track,
 .bottom-sheet-content::-webkit-scrollbar-track,
-.diagnostic-modal-body::-webkit-scrollbar-track,
 .stats-nav::-webkit-scrollbar-track,
 .struggle-zone-events::-webkit-scrollbar-track,
 .incident-events::-webkit-scrollbar-track,
@@ -5355,7 +5353,6 @@ select option:hover,
 .region-list::-webkit-scrollbar-thumb,
 .modal-content::-webkit-scrollbar-thumb,
 .bottom-sheet-content::-webkit-scrollbar-thumb,
-.diagnostic-modal-body::-webkit-scrollbar-thumb,
 .stats-nav::-webkit-scrollbar-thumb,
 .struggle-zone-events::-webkit-scrollbar-thumb,
 .incident-events::-webkit-scrollbar-thumb,
@@ -5387,7 +5384,6 @@ select option:hover,
 .region-list::-webkit-scrollbar-thumb:hover,
 .modal-content::-webkit-scrollbar-thumb:hover,
 .bottom-sheet-content::-webkit-scrollbar-thumb:hover,
-.diagnostic-modal-body::-webkit-scrollbar-thumb:hover,
 .stats-nav::-webkit-scrollbar-thumb:hover,
 .struggle-zone-events::-webkit-scrollbar-thumb:hover,
 .incident-events::-webkit-scrollbar-thumb:hover,
@@ -11305,212 +11301,11 @@ body.theme-light .collision-overlay .collision-close-btn:hover {
     opacity: 1;
 }
 
-/* Diagnostic Toast */
-.diagnostic-toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--bg-elevated);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    box-shadow: 0 4px 24px rgba(0, 212, 255, 0.2);
-    z-index: 10000;
-    opacity: 0;
-    transition: all 0.3s ease;
-    max-width: 90vw;
-}
-
-.diagnostic-toast.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-}
-
-.diagnostic-toast.has-errors {
-    border-color: var(--warning);
-    box-shadow: 0 4px 24px rgba(255, 184, 0, 0.2);
-}
-
-.diagnostic-toast-content {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-}
-
-.diagnostic-message {
-    color: var(--text-primary);
-    font-size: 14px;
-    white-space: nowrap;
-}
-
-.diagnostic-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.diagnostic-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.diagnostic-btn:hover {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border-color: var(--accent);
-}
-
-.diagnostic-btn.copy-btn:hover {
-    background: var(--accent-subtle);
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.diagnostic-btn.close-btn {
-    padding: 6px 10px;
-    font-size: 14px;
-}
-
-/* Diagnostic Modal */
-.diagnostic-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10001;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.diagnostic-modal-overlay.show {
-    opacity: 1;
-}
-
-.diagnostic-modal {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-}
-
-.diagnostic-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-}
-
-.diagnostic-modal-header h3 {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.diagnostic-modal-close {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px 8px;
-    line-height: 1;
-}
-
-.diagnostic-modal-close:hover {
-    color: var(--text-primary);
-}
-
-.diagnostic-modal-body {
-    padding: 20px;
-    overflow: auto;
-    flex: 1;
-}
-
-.diagnostic-modal-body p {
-    margin: 0 0 12px 0;
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-
-.diagnostic-textarea {
-    width: 100%;
-    height: 300px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    padding: 12px;
-    resize: vertical;
-    box-sizing: border-box;
-}
-
-.diagnostic-textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-}
-
-.diagnostic-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-}
-
-.diagnostic-btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg-primary);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.diagnostic-btn.primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-}
-
 /* Light theme */
 body.theme-light .simple-toast {
     background: white;
     border-color: var(--border);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-body.theme-light .diagnostic-toast {
-    background: white;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-}
-
-body.theme-light .diagnostic-modal {
-    background: white;
-}
-
-body.theme-light .diagnostic-textarea {
-    background: #f5f5f5;
 }
 
 /* ==================== AI Search (sidebar) ==================== */

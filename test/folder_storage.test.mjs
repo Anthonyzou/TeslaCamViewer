@@ -24,7 +24,7 @@ class MockIDBDatabase {
     return store;
   }
 
-  transaction(storeNames, mode) {
+  transaction(storeNames, _mode) {
     const names = Array.isArray(storeNames) ? storeNames : [storeNames];
     for (const name of names) {
       if (!this._stores.has(name)) {

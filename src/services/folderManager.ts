@@ -183,7 +183,7 @@ class FolderManager {
           );
           return existingDrive;
         }
-      } catch (e) {
+      } catch (_e) {
         // Handle comparison may fail if permission was revoked, continue checking
       }
     }

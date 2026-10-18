@@ -7,3 +7,4 @@ README.md
 LICENSE
 package-lock.json
 *.md
+dist

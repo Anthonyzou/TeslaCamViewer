@@ -22,7 +22,7 @@ class WeatherService {
    * Initialize IndexedDB
    */
   async _initDB() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
       request.onerror = () => {
@@ -292,7 +292,7 @@ class WeatherService {
         request.onerror = () => {
           resolve(null);
         };
-      } catch (e) {
+      } catch (_e) {
         resolve(null);
       }
     });
@@ -312,7 +312,7 @@ class WeatherService {
 
         transaction.oncomplete = () => resolve(true);
         transaction.onerror = () => resolve(false);
-      } catch (e) {
+      } catch (_e) {
         resolve(false);
       }
     });

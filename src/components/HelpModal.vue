@@ -183,13 +183,16 @@
       <div class="help-footer">
         <span class="help-tip">{{ t('help.tip') }}</span>
         <div class="help-footer-actions">
-          <button
+          <a
             class="help-report-btn"
-            title="Copy diagnostic info for bug reports"
-            @click="copyDiagnostics"
+            href="https://github.com/teslacamviewer/teslacamviewer.github.io/issues/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Report an issue on GitHub"
+            style="text-decoration: none"
           >
             🐛 Report Bug
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -234,30 +237,6 @@ function onOverlayClick(e: MouseEvent): void {
     (e.target as HTMLElement).classList.contains('help-overlay')
   ) {
     close();
-  }
-}
-
-async function copyDiagnostics(): Promise<void> {
-  const app = window.app;
-  if (app?.copyDiagnosticReport) {
-    await app.copyDiagnosticReport();
-  } else {
-    const info = {
-      version: app?.versionManager?.currentVersion || 'Unknown',
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      timestamp: new Date().toISOString(),
-    };
-    const report = `TeslaCamViewer Bug Report\n${JSON.stringify(info, null, 2)}`;
-    try {
-      await navigator.clipboard.writeText(report);
-      alert('Basic diagnostic info copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      alert(
-        'Could not copy to clipboard. Please manually describe your issue.'
-      );
-    }
   }
 }
 

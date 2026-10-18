@@ -8,12 +8,9 @@ const { filterPanelStore, useFilterPanel } = jiti(
   './src/composables/useFilterPanel.ts'
 );
 const {
-  modalStore,
-  useModals,
   settingsModalStore,
   helpModalStore,
   statisticsModalStore,
-  diagnosticsModalStore,
   driveManagementModalStore,
   driveSetupModalStore,
   commandPaletteModalStore,
@@ -126,18 +123,6 @@ test('modalStore.statistics - stores payload and manages state', () => {
 
   statisticsModalStore.close();
   assert.strictEqual(statisticsModalStore.isOpen, false);
-});
-
-test('modalStore.diagnostics - handles report text', () => {
-  diagnosticsModalStore.close();
-  assert.strictEqual(diagnosticsModalStore.isOpen, false);
-
-  diagnosticsModalStore.open('Test Diagnostic Error');
-  assert.strictEqual(diagnosticsModalStore.isOpen, true);
-  assert.strictEqual(diagnosticsModalStore.report, 'Test Diagnostic Error');
-
-  diagnosticsModalStore.close();
-  assert.strictEqual(diagnosticsModalStore.isOpen, false);
 });
 
 test('modalStore.driveManagement - triggers registered refresh handler', () => {
