@@ -207,15 +207,15 @@ class SettingsManager {
 
     // High contrast mode
     if (this.get('highContrastMode')) {
-      body.classList.add('high-contrast');
+      body?.classList?.add('high-contrast');
     } else {
-      body.classList.remove('high-contrast');
+      body?.classList?.remove('high-contrast');
     }
 
     // Text size
-    body.classList.remove('text-small', 'text-medium', 'text-large');
+    body?.classList?.remove('text-small', 'text-medium', 'text-large');
     const textSize = this.get('textSize') || 'medium';
-    body.classList.add(`text-${textSize}`);
+    body?.classList?.add(`text-${textSize}`);
 
     // Theme
     this.applyTheme();
@@ -229,7 +229,7 @@ class SettingsManager {
     const theme = this.get('theme') || 'dark';
 
     // Remove all theme classes
-    body.classList.remove(
+    body?.classList?.remove(
       'theme-dark',
       'theme-light',
       'theme-midnight',
@@ -238,7 +238,7 @@ class SettingsManager {
 
     // Apply selected theme (dark is default, no class needed)
     if (theme !== 'dark') {
-      body.classList.add(`theme-${theme}`);
+      body?.classList?.add(`theme-${theme}`);
     }
 
     // Sync map mode with theme: light theme = light map, all others = dark map

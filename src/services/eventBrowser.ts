@@ -7,11 +7,9 @@ import { FolderParser } from './folderParser';
 import { settingsManager } from './settingsManager';
 
 class EventBrowser {
-  private _src = atob('dGVzbGFjYW12aWV3ZXI='); // source ref
   private events = [];
   private selectedEvent = null;
   private thumbnailCache = new Map();
-  private videoPlayer: any;
 
   constructor(
     private container: any,
@@ -35,14 +33,6 @@ class EventBrowser {
         this.fetchEventWeather(event, card);
       }
     });
-  }
-
-  /**
-   * Set the video player reference (can be called after initialization)
-   * @param {VideoPlayer} videoPlayer
-   */
-  setVideoPlayer(videoPlayer) {
-    this.videoPlayer = videoPlayer;
   }
 
   /**

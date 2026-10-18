@@ -73,6 +73,12 @@ export class TeslaCamApp {
 
     // Set global reference for backward compatibility
     window.app = this;
+
+    this.b2Client.getConfig().then((config: any) => {
+      if (config?.isConfigured && config?.isPreloaded) {
+        this.loadFromB2();
+      }
+    });
   }
 
   public t(key: string, params?: Record<string, any>): string {
@@ -92,10 +98,6 @@ export class TeslaCamApp {
   }
 
   private wireCallbacks(): void {
-    if (this.eventBrowser && this.videoPlayer) {
-      this.eventBrowser.setVideoPlayer(this.videoPlayer);
-    }
-
     if (this.videoPlayer) {
       this.videoPlayer.onTimeUpdate = (time: number) => {
         if (!this.timeline?.isDragging) {
@@ -134,42 +136,91 @@ export class TeslaCamApp {
   }
 
   public async tryRestoreLastFolder(): Promise<void> {
-    if (!settingsManager?.get('rememberLastFolder')) return;
     try {
-      if (folderParser?.hasStoredHandle) {
+      // 1. Always load all saved drives from IndexedDB
+      await folderManager.loadDrives();
+
+      // 2. If no drives are stored yet, check for legacy single folder handle to migrate
+      if (folderManager.drives.length === 0 && folderParser?.hasStoredHandle) {
         const hasStored = await folderParser.hasStoredHandle();
         if (hasStored) {
           const handle = await folderParser.getStoredHandle();
           if (handle) {
-            console.log('[App] Restoring last folder handle...');
-            this.showLoading('Restoring last folder...');
-            const permission = await handle.queryPermission({
-              mode: 'read',
-            });
-            if (permission === 'granted') {
-              const drive = await folderManager.addDrive(handle, {
-                label: handle.name,
-                isArchive: false,
-                dateFilter: 'all',
-              });
-              folderParser.setDriveContext(drive.id, drive.label, drive.color);
-              folderParser.rootHandle = handle;
-              const events = await folderParser.parseFolder();
-              drive.events = events;
-              folderManager.setActiveDrive(drive.id);
-              this.allEvents = folderManager.getAllEvents();
-              this.statisticsManager.setEvents(this.allEvents);
-              this.applyFilters();
-              this.updateDriveSelector(folderManager.getDrives());
-              this.hideLoading();
-              return;
-            }
-            this.hideLoading();
+            await folderManager.migrateFromLegacy(handle);
           }
         }
       }
+
+      // Update UI with loaded drives
+      this.updateDriveSelector(folderManager.getDrives());
+
+      // 3. Check if user enabled auto-restoring folders on startup
+      if (!settingsManager?.get('rememberLastFolder')) {
+        return;
+      }
+
+      if (folderManager.drives.length === 0) {
+        return;
+      }
+
+      this.showLoading('Restoring drives...');
+
+      let restoredAny = false;
+      for (const drive of folderManager.drives) {
+        if (drive.isArchive || !drive.handle) continue;
+
+        try {
+          let permission = 'prompt';
+          if (typeof drive.handle.queryPermission === 'function') {
+            permission = await drive.handle.queryPermission({ mode: 'read' });
+          }
+          if (permission === 'granted') {
+            folderParser.setDriveContext(drive.id, drive.label, drive.color);
+            folderParser.rootHandle = drive.handle;
+            const events = await folderParser.parseFolder();
+            const cutoff = folderManager.getDateFilterCutoff(drive.dateFilter);
+            drive.events = cutoff
+              ? events.filter((ev: any) => new Date(ev.timestamp) >= cutoff)
+              : events;
+
+            for (const event of drive.events) {
+              event.driveId = drive.id;
+              event.compoundKey = folderManager.getCompoundKey(
+                drive.id,
+                event.name
+              );
+              event.driveLabel = drive.label;
+              event.driveColor = drive.color;
+            }
+            restoredAny = true;
+            console.log(
+              `[App] Restored ${drive.events.length} events from ${drive.label}`
+            );
+          }
+        } catch (e) {
+          console.warn(`[App] Could not restore drive ${drive.label}:`, e);
+        }
+      }
+
+      if (restoredAny) {
+        const firstActive = folderManager.drives.find(
+          (d: any) => !d.isArchive && d.events?.length > 0
+        );
+        if (firstActive) {
+          folderManager.setActiveDrive(firstActive.id);
+        }
+        this.allEvents = folderManager.getAllEvents();
+        this.statisticsManager.setEvents(this.allEvents);
+        this.applyFilters();
+        this.updateDriveSelector(folderManager.getDrives());
+        if (this.filteredEvents.length > 0) {
+          this.onEventSelected(this.filteredEvents[0]);
+        }
+      }
+
+      this.hideLoading();
     } catch (e) {
-      console.log('[App] Could not restore folder:', e);
+      console.log('[App] Could not restore drives:', e);
       this.hideLoading();
     }
   }
@@ -538,8 +589,39 @@ export class TeslaCamApp {
     if (this.videoPlayer) this.videoPlayer.playbackRate = newSpeed;
   }
 
-  public changeDrive(driveId: string | null): void {
+  public async changeDrive(driveId: string | null): Promise<void> {
     folderManager.setActiveDrive(driveId || null);
+
+    if (driveId) {
+      const drive = folderManager.getDrive(driveId);
+      if (
+        drive &&
+        drive.handle &&
+        (!drive.events || drive.events.length === 0)
+      ) {
+        try {
+          let permission = 'prompt';
+          if (typeof drive.handle.queryPermission === 'function') {
+            permission = await drive.handle.queryPermission({ mode: 'read' });
+          }
+          if (
+            permission !== 'granted' &&
+            typeof drive.handle.requestPermission === 'function'
+          ) {
+            permission = await drive.handle.requestPermission({ mode: 'read' });
+          }
+          if (permission === 'granted') {
+            this.showLoading(`Loading ${drive.label}...`);
+            await folderManager.parseSingleDrive(folderParser, driveId);
+            this.hideLoading();
+          }
+        } catch (err) {
+          this.hideLoading();
+          console.warn(`Failed to access drive ${drive.label}:`, err);
+        }
+      }
+    }
+
     this.allEvents = folderManager.getAllEvents();
     this.statisticsManager.setEvents(this.allEvents);
     this.applyFilters();

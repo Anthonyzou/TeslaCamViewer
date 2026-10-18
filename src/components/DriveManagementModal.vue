@@ -204,16 +204,13 @@ async function onColorChange(drive: any, e: Event): Promise<void> {
   const newColor = (e.target as HTMLInputElement).value;
   drive.color = newColor;
   const app = window.app;
-  if (folderManager) {
-    await folderManager.updateDriveColor(drive.id, newColor);
-    if (Array.isArray(app.allEvents)) {
-      app.allEvents.forEach((ev: any) => {
-        if (ev.driveId === drive.id) {
-          ev.driveColor = newColor;
-        }
-      });
-    }
-    app.eventBrowser?.render(app.filteredEvents);
+  await folderManager.updateDriveColor(drive.id, newColor);
+  if (Array.isArray(app.allEvents)) {
+    app.allEvents.forEach((ev: any) => {
+      if (ev.driveId === drive.id) {
+        ev.driveColor = newColor;
+      }
+    });
   }
 }
 
@@ -221,11 +218,7 @@ async function onLabelChange(drive: any, e: Event): Promise<void> {
   const newLabel = (e.target as HTMLInputElement).value.trim();
   if (!newLabel) return;
   drive.label = newLabel;
-  const app = window.app;
-  if (folderManager) {
-    await folderManager.updateDriveLabel(drive.id, newLabel);
-    app.eventBrowser?.render(app.filteredEvents);
-  }
+  await folderManager.updateDriveLabel(drive.id, newLabel);
 }
 
 async function handleSync(driveId: string): Promise<void> {

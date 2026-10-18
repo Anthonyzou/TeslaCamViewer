@@ -10,7 +10,7 @@ class FolderManager {
   public activeDriveId: string | null = null;
   public DB_NAME: string = 'TeslaCamViewerDB';
   public DB_STORE: string = 'drives';
-  public DB_VERSION: number = 2;
+  public DB_VERSION: number = 3;
 
   public driveColors: string[] = [
     '#4a9eff',
@@ -60,6 +60,11 @@ class FolderManager {
   async loadDrives(): Promise<void> {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        this.drives = [];
+        return;
+      }
       const tx = db.transaction(this.DB_STORE, 'readonly');
       const store = tx.objectStore(this.DB_STORE);
       const request = store.getAll();
@@ -69,7 +74,16 @@ class FolderManager {
         request.onerror = () => reject(request.error);
       });
 
+      for (const d of drives) {
+        if (!Array.isArray(d.events)) {
+          d.events = [];
+        }
+      }
+
       this.drives = drives;
+      if (this.onDrivesChanged) {
+        this.onDrivesChanged(this.drives);
+      }
       console.log(`Loaded ${drives.length} drives from IndexedDB`);
     } catch (e) {
       console.warn('Failed to load drives:', e);
@@ -85,9 +99,24 @@ class FolderManager {
   async saveDrive(drive: any): Promise<void> {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        return;
+      }
       const tx = db.transaction(this.DB_STORE, 'readwrite');
       const store = tx.objectStore(this.DB_STORE);
-      store.put(drive);
+      const record = {
+        id: drive.id,
+        folderName: drive.folderName,
+        label: drive.label,
+        color: drive.color,
+        addedAt: drive.addedAt,
+        isArchive: !!drive.isArchive,
+        dateFilter: drive.dateFilter || 'all',
+        handle: drive.handle || null,
+        isB2: !!drive.isB2,
+      };
+      store.put(record);
 
       await new Promise((resolve, reject) => {
         tx.oncomplete = resolve;
@@ -105,9 +134,13 @@ class FolderManager {
    * @param {string} driveId
    * @returns {Promise<void>}
    */
-  async deleteDriveFromDB(driveId) {
+  async deleteDriveFromDB(driveId: string) {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        return;
+      }
       const tx = db.transaction(this.DB_STORE, 'readwrite');
       const store = tx.objectStore(this.DB_STORE);
       store.delete(driveId);

@@ -10,6 +10,7 @@ class FolderParser {
   public DB_NAME: string = 'TeslaCamViewerDB';
   public DB_STORE: string = 'folderHandles';
   public DB_KEY: string = 'lastFolder';
+  public DB_VERSION: number = 3;
 
   public currentDriveId: string | null = null;
   public currentDriveLabel: string | null = null;
@@ -65,13 +66,17 @@ class FolderParser {
    */
   async openDB(): Promise<IDBDatabase> {
     return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, 2);
+      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
 
       request.onupgradeneeded = (event: any) => {
         const db = event.target.result;
+        if (!db.objectStoreNames.contains('drives')) {
+          const store = db.createObjectStore('drives', { keyPath: 'id' });
+          store.createIndex('label', 'label', { unique: false });
+        }
         if (!db.objectStoreNames.contains(this.DB_STORE)) {
           db.createObjectStore(this.DB_STORE);
         }
@@ -88,6 +93,10 @@ class FolderParser {
 
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        return;
+      }
       const tx = db.transaction(this.DB_STORE, 'readwrite');
       const store = tx.objectStore(this.DB_STORE);
       store.put(this.rootHandle, this.DB_KEY);
@@ -121,6 +130,9 @@ class FolderParser {
   async getStoredHandle() {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        return null;
+      }
       const tx = db.transaction(this.DB_STORE, 'readonly');
       const store = tx.objectStore(this.DB_STORE);
       const request = store.get(this.DB_KEY);
@@ -141,6 +153,9 @@ class FolderParser {
   async loadSavedFolder() {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        return false;
+      }
       const tx = db.transaction(this.DB_STORE, 'readonly');
       const store = tx.objectStore(this.DB_STORE);
       const request = store.get(this.DB_KEY);
@@ -180,6 +195,9 @@ class FolderParser {
   async clearSavedFolder() {
     try {
       const db = await this.openDB();
+      if (!db.objectStoreNames.contains(this.DB_STORE)) {
+        return;
+      }
       const tx = db.transaction(this.DB_STORE, 'readwrite');
       const store = tx.objectStore(this.DB_STORE);
       store.delete(this.DB_KEY);

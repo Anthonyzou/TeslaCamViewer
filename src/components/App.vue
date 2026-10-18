@@ -193,14 +193,6 @@ onMounted(async () => {
     const app = new TeslaCamApp();
     window.app = app;
     await app.tryRestoreLastFolder();
-
-    if (app.b2Client) {
-      app.b2Client.getConfig().then((config: any) => {
-        if (config?.isConfigured && config?.isPreloaded) {
-          app.loadFromB2();
-        }
-      });
-    }
   }
 });
 </script>
