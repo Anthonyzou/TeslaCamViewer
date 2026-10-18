@@ -1,5 +1,6 @@
 import { shallowRef, type ShallowRef } from 'vue';
 import type { MapView } from '../services/mapView';
+import { TeslaCamEvent } from '../types';
 
 const mapViewInstance: ShallowRef<MapView | null> = shallowRef(null);
 
@@ -16,8 +17,8 @@ export const mapViewStore = {
   fitBounds(): void {
     mapViewInstance.value?.fitBounds?.();
   },
-  loadEvents(events: unknown[]): void {
-    (mapViewInstance.value as any)?.loadEvents?.(events);
+  loadEvents(events: TeslaCamEvent[]): void {
+    mapViewInstance.value?.loadEvents?.(events);
   },
 };
 

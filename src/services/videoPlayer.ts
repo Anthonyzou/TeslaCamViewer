@@ -1,3 +1,5 @@
+import { TeslaCamEvent } from '../types';
+
 /**
  * VideoPlayer - Manages synchronized video playback for 4-6 camera systems
  * Optimized for modern hardware and simplicity.
@@ -251,7 +253,7 @@ export class VideoPlayer {
     }
   }
 
-  async loadEvent(event) {
+  async loadEvent(event: TeslaCamEvent) {
     this.currentEvent = event;
     this.currentClipIndex = -1;
     this.hasPillarCameras = JSON.stringify(event).includes('_pillar');

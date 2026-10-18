@@ -2,6 +2,7 @@
  * EventBrowser - Handles displaying and selecting events
  * Cache limit: 128 entries
  */
+import { TeslaCamEvent } from '../types';
 import weatherService from '../utils/weatherService';
 import { FolderParser } from './folderParser';
 import { settingsManager } from './settingsManager';
@@ -136,7 +137,7 @@ export function getTimeRangeFromClips(event: any): string | null {
 }
 
 class EventBrowser {
-  private events = [];
+  private events: TeslaCamEvent[] = [];
   private selectedEvent = null;
   private thumbnailCache = new Map();
   public isVueManaged: boolean = false;
@@ -177,7 +178,7 @@ class EventBrowser {
    * Load and display events
    * @param {Array} events
    */
-  async loadEvents(events) {
+  async loadEvents(events: TeslaCamEvent[]) {
     this.events = events;
     this.selectedEvent = null;
 
@@ -194,7 +195,10 @@ class EventBrowser {
       this.render();
     }
     // Notify AI Search + other listeners that a new library loaded
-    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.dispatchEvent === 'function'
+    ) {
       window.dispatchEvent(
         new CustomEvent('folder-loaded', {
           detail: { eventCount: events.length },
@@ -204,7 +208,7 @@ class EventBrowser {
   }
 
   /** Public alias so aiSearchUI can navigate to events by object reference. */
-  loadEvent(event) {
+  loadEvent(event: TeslaCamEvent) {
     if (!event) return;
     if (this.onEventSelect) {
       this.onEventSelect(event);

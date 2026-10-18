@@ -3,6 +3,7 @@
  */
 
 import L from 'leaflet';
+import { TeslaCamEvent } from '../types';
 import { FolderParser } from './folderParser';
 
 class MapView {
@@ -103,7 +104,7 @@ class MapView {
   /**
    * Load events onto the map
    */
-  loadEvents(events: any[]): void {
+  loadEvents(events: TeslaCamEvent[]): void {
     if (!this.initialized) {
       this.initialize();
     }
