@@ -13,15 +13,10 @@ class EventBrowser {
   private thumbnailCache = new Map();
   private videoPlayer: any;
 
-  // Lazy loading for thumbnails
-  private thumbnailObserver = null;
-
   constructor(
     private container: any,
     private onEventSelect: any
   ) {
-    this.setupLazyLoading();
-
     // Listen for settings changes to refresh weather units
     settingsManager.onChange(() => {
       this.refreshAllWeather();
@@ -40,68 +35,6 @@ class EventBrowser {
         this.fetchEventWeather(event, card);
       }
     });
-  }
-
-  /**
-   * Setup IntersectionObserver for lazy thumbnail loading
-   */
-  setupLazyLoading() {
-    // Only create observer if IntersectionObserver is available
-    if ('IntersectionObserver' in window) {
-      this.thumbnailObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const eventItem = entry.target;
-              if (eventItem) {
-                const eventName = (eventItem as HTMLElement).dataset.eventName;
-                const event = this.events.find((e) => e.name === eventName);
-                if (event && (event.thumbnailFile || event.thumbnailUrl)) {
-                  this.loadThumbnailLazy(event, eventItem);
-                }
-
-                // Stop observing once loaded
-                this.thumbnailObserver.unobserve(eventItem);
-              }
-            }
-          });
-        },
-        {
-          root: this.container,
-          rootMargin: '100px', // Start loading 100px before entering viewport
-          threshold: 0,
-        }
-      );
-    }
-  }
-
-  /**
-   * Load thumbnail lazily for an event item
-   * @param {Object} event
-   * @param {HTMLElement} eventItem
-   */
-  async loadThumbnailLazy(event, eventItem) {
-    if (!event.thumbnailFile && !event.thumbnailUrl) return;
-
-    const placeholder = eventItem.querySelector('.event-thumbnail-placeholder');
-    if (!placeholder) return; // Already has thumbnail
-
-    try {
-      const thumbURL = await this.getThumbnail(event);
-      if (thumbURL) {
-        const img = document.createElement('img');
-        img.src = thumbURL;
-        img.alt = 'Event thumbnail';
-        img.className = 'event-thumbnail';
-        placeholder.replaceWith(img);
-      }
-    } catch (error) {
-      console.warn(
-        '[EventBrowser] Failed to load thumbnail for',
-        event.name,
-        error
-      );
-    }
   }
 
   /**
@@ -220,6 +153,16 @@ class EventBrowser {
   async loadEvents(events) {
     this.events = events;
     this.selectedEvent = null;
+
+    // Resolve local file thumbnails concurrently so img tags can use native loading="lazy"
+    await Promise.all(
+      events.map(async (event) => {
+        if (!event.thumbnailUrl && event.thumbnailFile) {
+          event.thumbnailUrl = await this.getThumbnail(event);
+        }
+      })
+    );
+
     this.render();
     // Notify AI Search + other listeners that a new library loaded
     window.dispatchEvent(
@@ -265,18 +208,10 @@ class EventBrowser {
     // Create document fragment for efficient batch insertion
     const fragment = document.createDocumentFragment();
 
-    // Render each event synchronously with placeholders
+    // Render each event
     for (const event of this.events) {
       const eventElement = this.createEventElementSync(event);
       fragment.appendChild(eventElement);
-
-      // Observe for lazy thumbnail loading if it has a thumbnail
-      if (
-        this.thumbnailObserver &&
-        (event.thumbnailFile || event.thumbnailUrl)
-      ) {
-        this.thumbnailObserver.observe(eventElement);
-      }
     }
 
     // Single DOM insertion
@@ -388,10 +323,12 @@ class EventBrowser {
       ? FolderParser.formatReason(event.metadata.reason)
       : '';
 
-    // Always use placeholder - thumbnails load lazily
+    // Render thumbnail with native loading="lazy" or show placeholder
     const clipCount = event.clipGroups?.length || 0;
     const timeRange = this._getTimeRangeFromClips(event);
-    const thumbnailHTML = `<div class="event-thumbnail-placeholder">
+    const thumbnailHTML = event.thumbnailUrl
+      ? `<img loading="lazy" src="${event.thumbnailUrl}" alt="Event thumbnail" class="event-thumbnail">`
+      : `<div class="event-thumbnail-placeholder">
             <span class="placeholder-icon">🎥</span>
             <span class="placeholder-text">${clipCount} Clips</span>
             ${timeRange ? `<span class="placeholder-time">${timeRange}</span>` : ''}
@@ -444,139 +381,6 @@ class EventBrowser {
         `;
 
     // Handle click
-    div.addEventListener('click', () => {
-      if (event.isEmpty) {
-        this.showEmptyEventWarning(event);
-      } else {
-        this.selectEvent(event, div);
-      }
-    });
-
-    // Attach severity badge if already computed (with click handler)
-    if (severity && severity.tier && severity.tier !== 'mild') {
-      const typeSpan = div.querySelector('.event-type');
-      if (typeSpan) {
-        typeSpan.insertAdjacentElement(
-          'afterend'
-          // this._buildSeverityBadge(event, severity)
-        );
-      }
-    }
-
-    return div;
-  }
-
-  /**
-   * Create DOM element for an event (async version - kept for compatibility)
-   * @param {Object} event
-   * @returns {Promise<HTMLElement>}
-   */
-  async createEventElement(event) {
-    const div = document.createElement('div');
-    div.className = event.isEmpty ? 'event-item event-empty' : 'event-item';
-    div.dataset.eventName = event.name;
-    div.dataset.eventKey = event.compoundKey || event.name;
-
-    // Get event type class
-    const typeClass = event.type.toLowerCase().replace('clips', '');
-
-    // Format date/time
-    const date = new Date(event.timestamp);
-    const dateStr = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const timeStr = date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    // Format location
-    let location = '';
-    if (event.metadata) {
-      const city = event.metadata.city || '';
-      const street = event.metadata.street || '';
-      if (city && street) {
-        location = `${street}, ${city}`;
-      } else if (city) {
-        location = city;
-      } else if (street) {
-        location = street;
-      }
-    }
-
-    // Format reason
-    const reason = event.metadata
-      ? FolderParser.formatReason(event.metadata.reason)
-      : '';
-
-    // Get thumbnail or show placeholder
-    let thumbnailHTML = '';
-    if (event.thumbnailFile || event.thumbnailUrl) {
-      const thumbURL = await this.getThumbnail(event);
-      if (thumbURL) {
-        thumbnailHTML = `<img src="${thumbURL}" alt="Event thumbnail" class="event-thumbnail">`;
-      }
-    }
-    // Show placeholder for events without thumbnails (e.g., RecentClips)
-    if (!thumbnailHTML) {
-      const clipCount = event.clipGroups?.length || 0;
-      const timeRange = this._getTimeRangeFromClips(event);
-      thumbnailHTML = `<div class="event-thumbnail-placeholder">
-                <span class="placeholder-icon">🎥</span>
-                <span class="placeholder-text">${clipCount} Clips</span>
-                ${timeRange ? `<span class="placeholder-time">${timeRange}</span>` : ''}
-            </div>`;
-    }
-
-    // GPS coordinates
-    let gpsHTML = '';
-    if (event.metadata?.est_lat && event.metadata?.est_lon) {
-      const lat = parseFloat(event.metadata.est_lat);
-      const lon = parseFloat(event.metadata.est_lon);
-      if (!isNaN(lat) && !isNaN(lon)) {
-        gpsHTML = `<div class="event-gps">GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}</div>`;
-      }
-    }
-
-    // Calculate event duration (approximately 60 seconds per clip)
-    const durationMinutes = ((event.clipGroups.length * 60) / 60).toFixed(1);
-
-    // Drive badge - always show drive label when available
-    const driveBadgeHTML = event.driveLabel
-      ? `<span class="drive-badge" style="background: ${event.driveColor || 'var(--accent)'};" title="${event.driveLabel}">${event.driveLabel}</span>`
-      : '';
-
-    // Recording health badge
-    const severityBadgeHTML = '';
-    const health = this.computeRecordingHealth(event);
-    const healthBadgeHTML =
-      health.status !== 'healthy'
-        ? `<span class="health-badge health-${health.status}" title="Recording health issues:\n• ${health.issues.join('\n• ')}">${health.icon}</span>`
-        : '';
-
-    div.innerHTML = `
-            ${thumbnailHTML}
-            <div class="event-item-header">
-                ${driveBadgeHTML}
-                <span class="event-type ${typeClass}">${typeClass}</span>
-                ${severityBadgeHTML}
-                ${healthBadgeHTML}
-                <span class="event-item-date">${dateStr}</span>
-            </div>
-            <div class="event-item-time">${timeStr}</div>
-            ${location ? `<div class="event-item-location">${location}</div>` : ''}
-            ${gpsHTML}
-            ${reason ? `<div class="event-item-reason">${reason}</div>` : ''}
-            <div class="event-item-weather"></div>
-            <div class="event-item-clips">${event.isEmpty ? '<span class="empty-warning">⚠ No video clips</span>' : `${event.clipGroups.length} clips (~${durationMinutes} min)`}</div>
-        `;
-
-    // Fetch weather asynchronously (don't block card rendering)
-    this.fetchEventWeather(event, div);
-
-    // Handle click - show warning for empty events
     div.addEventListener('click', () => {
       if (event.isEmpty) {
         this.showEmptyEventWarning(event);
@@ -756,11 +560,6 @@ class EventBrowser {
   clear() {
     this.events = [];
     this.selectedEvent = null;
-
-    // Disconnect observer before clearing DOM
-    if (this.thumbnailObserver) {
-      this.thumbnailObserver.disconnect();
-    }
 
     this.container.innerHTML = `
             <div class="empty-state">
