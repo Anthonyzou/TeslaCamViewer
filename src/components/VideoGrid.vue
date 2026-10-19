@@ -1,5 +1,5 @@
 <template>
-  <div class="video-grid-container">
+  <div ref="containerRef" class="video-grid-container">
     <div
       id="videoGrid"
       class="video-grid"
@@ -193,43 +193,46 @@
     >
       <Maximize :size="24" />
     </button>
-  </div>
 
-  <!-- Mobile Fullscreen Overlay -->
-  <div id="mobileFullscreenOverlay" class="mobile-fullscreen-overlay hidden">
-    <button
-      id="fullscreenPlayBtn"
-      class="fullscreen-control-btn"
-      @click="emit('togglePlay')"
-    >
-      <Play :size="48" />
-    </button>
-    <button
-      id="exitFullscreenBtn"
-      class="fullscreen-exit-btn"
-      :title="t('player.exitFullscreen')"
-      @click="emit('exitFullscreen')"
-    >
-      <Minimize :size="24" />
-    </button>
+    <!-- Mobile Fullscreen Overlay -->
+    <div id="mobileFullscreenOverlay" class="mobile-fullscreen-overlay hidden">
+      <button
+        id="fullscreenPlayBtn"
+        class="fullscreen-control-btn"
+        @click="emit('togglePlay')"
+      >
+        <Play :size="48" />
+      </button>
+      <button
+        id="exitFullscreenBtn"
+        class="fullscreen-exit-btn"
+        :title="t('player.exitFullscreen')"
+        @click="emit('exitFullscreen')"
+      >
+        <Minimize :size="24" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Eye, Maximize, Minimize, Play } from 'lucide-vue-next';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { LayoutConfig } from '../layout/layoutConfig';
+import { calculateContainSize } from '../layout/layoutMath';
 import type { LayoutConfigSchema } from '../types';
 
 const props = withDefaults(
   defineProps<{
+    hasEvent?: boolean;
     layout?: string;
     focusCamera?: string | null;
     hasPillarCameras?: boolean;
     hiddenCameras?: string[];
   }>(),
   {
+    hasEvent: false,
     layout: 'layout-6-3',
     focusCamera: null,
     hasPillarCameras: false,
@@ -247,6 +250,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const containerRef = ref<HTMLElement | null>(null);
+const gridWidth = ref(0);
+const gridHeight = ref(0);
+
 const activeConfig = computed<LayoutConfigSchema | any>(() => {
   const lm = typeof window !== 'undefined' ? window.app?.layoutManager : null;
   if (lm?.currentConfig) {
@@ -258,6 +265,46 @@ const activeConfig = computed<LayoutConfigSchema | any>(() => {
   );
 });
 
+function updateGridDimensions(): void {
+  if (!containerRef.value) return;
+  const width = containerRef.value.clientWidth;
+  const height = containerRef.value.clientHeight;
+  if (!width || !height) return;
+
+  const cfg = activeConfig.value;
+  const aspectRatioStr = cfg?.canvas?.aspectRatio || '4:3';
+  const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatioStr] || {
+    width: 4,
+    height: 3,
+  };
+  const ar = arParts.width / arParts.height;
+
+  const size = calculateContainSize(width, height, ar);
+  gridWidth.value = size.width;
+  gridHeight.value = size.height;
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      updateGridDimensions();
+    });
+    resizeObserver.observe(containerRef.value);
+  }
+  updateGridDimensions();
+});
+
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+});
+
+watch([activeConfig, () => props.layout], () => {
+  updateGridDimensions();
+});
+
 const gridStyle = computed(() => {
   const cfg = activeConfig.value;
   const aspectRatioStr = cfg?.canvas?.aspectRatio || '4:3';
@@ -265,11 +312,25 @@ const gridStyle = computed(() => {
     width: 4,
     height: 3,
   };
-  return {
-    aspectRatio: `${arParts.width} / ${arParts.height}`,
+
+  const style: Record<string, string> = {
+    position: 'relative',
     backgroundColor: cfg?.canvas?.backgroundColor || '#000000',
-    position: 'relative' as const,
+    aspectRatio: `${arParts.width} / ${arParts.height}`,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    display: 'block',
   };
+
+  if (gridWidth.value > 0 && gridHeight.value > 0) {
+    style.width = `${gridWidth.value}px`;
+    style.height = `${gridHeight.value}px`;
+  } else {
+    style.width = '100%';
+    style.height = '100%';
+  }
+
+  return style;
 });
 
 function isHidden(cam: string): boolean {
@@ -279,7 +340,8 @@ function isHidden(cam: string): boolean {
 function getCameraContainerStyle(
   cameraName: string
 ): Record<string, string | number> {
-  const isPillar = cameraName === 'left_pillar' || cameraName === 'right_pillar';
+  const isPillar =
+    cameraName === 'left_pillar' || cameraName === 'right_pillar';
   if (isPillar && !props.hasPillarCameras) {
     return { display: 'none' };
   }
@@ -314,7 +376,7 @@ function getCameraContainerStyle(
     top: `${pos.y}%`,
     width: `${pos.width}%`,
     height: `${pos.height}%`,
-    zIndex: isFocused ? 99 : (cam.zIndex || 1),
+    zIndex: isFocused ? 99 : cam.zIndex || 1,
     clipPath,
     display: 'block',
   };

@@ -35,15 +35,21 @@ export class LayoutManager {
     'left_pillar',
     'right_pillar',
   ];
-  private videoGrid = document.querySelector('.video-grid') as HTMLVideoElement;
-  private videoContainers = {
-    front: document.getElementById('videoFront')?.parentElement,
-    back: document.getElementById('videoBack')?.parentElement,
-    left_repeater: document.getElementById('videoLeft')?.parentElement,
-    right_repeater: document.getElementById('videoRight')?.parentElement,
-    left_pillar: document.getElementById('videoLeftPillar')?.parentElement,
-    right_pillar: document.getElementById('videoRightPillar')?.parentElement,
-  };
+  private get videoGrid(): HTMLElement | null {
+    return typeof document !== 'undefined'
+      ? (document.querySelector('.video-grid') as HTMLElement)
+      : null;
+  }
+  private get videoContainers() {
+    return {
+      front: document.getElementById('videoFront')?.parentElement,
+      back: document.getElementById('videoBack')?.parentElement,
+      left_repeater: document.getElementById('videoLeft')?.parentElement,
+      right_repeater: document.getElementById('videoRight')?.parentElement,
+      left_pillar: document.getElementById('videoLeftPillar')?.parentElement,
+      right_pillar: document.getElementById('videoRightPillar')?.parentElement,
+    };
+  }
 
   // Drag & drop state
   private draggedCamera = null;
