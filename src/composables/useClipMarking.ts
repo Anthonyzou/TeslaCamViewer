@@ -1,12 +1,13 @@
 import { ref, type Ref } from 'vue';
+import type { VideoPlayer } from '../services/videoPlayer';
 
 const inPoint: Ref<number | null> = ref(null);
 const outPoint: Ref<number | null> = ref(null);
-let defaultVideoPlayerGetter: (() => any) | null = null;
+let defaultVideoPlayerGetter: (() => VideoPlayer | null) | null = null;
 
 export function useClipMarking(
-  getVideoPlayer?: () => any,
-  _getTimeline?: () => any
+  getVideoPlayer?: () => VideoPlayer | null,
+  _getTimeline?: () => unknown
 ) {
   if (getVideoPlayer) {
     defaultVideoPlayerGetter = getVideoPlayer;
@@ -17,7 +18,7 @@ export function useClipMarking(
       getVideoPlayer?.() ||
       defaultVideoPlayerGetter?.() ||
       (typeof window !== 'undefined'
-        ? (window as any).app?.videoPlayer
+        ? window.app?.videoPlayer
         : null);
     return player?.absoluteTime ?? player?.currentTime ?? 0;
   }

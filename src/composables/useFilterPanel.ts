@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import type { FilterState } from '../types';
 
 const isExpanded: Ref<boolean> = ref(false);
 const filterCount: Ref<number> = ref(0);
@@ -7,7 +8,7 @@ type FilterHandler = () => void;
 let badgeUpdateHandler: FilterHandler | null = null;
 let syncHandler: FilterHandler | null = null;
 let clearHandler: FilterHandler | null = null;
-let getFiltersHandler: (() => any) | null = null;
+let getFiltersHandler: (() => FilterState | null) | null = null;
 
 export const filterPanelStore = {
   get isExpanded(): boolean {
@@ -34,14 +35,14 @@ export const filterPanelStore = {
   clearAllFilters(): void {
     clearHandler?.();
   },
-  getFilters(): any {
-    return getFiltersHandler?.() || {};
+  getFilters(): FilterState | null {
+    return getFiltersHandler?.() || null;
   },
   registerHandlers(handlers: {
     updateBadge?: FilterHandler;
     syncFromEventFilter?: FilterHandler;
     clearAllFilters?: FilterHandler;
-    getFilters?: () => any;
+    getFilters?: () => FilterState | null;
   }): void {
     if (handlers.updateBadge) badgeUpdateHandler = handlers.updateBadge;
     if (handlers.syncFromEventFilter) syncHandler = handlers.syncFromEventFilter;

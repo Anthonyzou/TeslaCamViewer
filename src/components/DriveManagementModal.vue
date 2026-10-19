@@ -145,10 +145,11 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 import { folderManager } from '../services/folderManager';
+import type { DriveInfo, TeslaCamEvent } from '../types';
 
 const { isDriveManagementOpen: isOpen, driveManagementModal } = useModals();
 const { t } = useI18n();
-const drivesList = ref<any[]>([]);
+const drivesList = ref<DriveInfo[]>([]);
 let mouseDownOnOverlay = false;
 
 function refreshDrives(): void {
@@ -179,7 +180,7 @@ function onOverlayClick(e: MouseEvent): void {
   }
 }
 
-function getEventCountText(drive: any): string {
+function getEventCountText(drive: DriveInfo): string {
   if (drive.isArchive && (!drive.events || drive.events.length === 0)) {
     return t('driveManager.notLoaded');
   }
@@ -187,22 +188,22 @@ function getEventCountText(drive: any): string {
   return `${count} ${t('driveManager.events')}`;
 }
 
-function getDateFilterText(drive: any): string {
+function getDateFilterText(drive: DriveInfo): string {
   if (!drive.dateFilter || drive.dateFilter === 'all') return '';
   return folderManager?.getDateFilterLabel(drive.dateFilter) || '';
 }
 
-function onColorInput(drive: any, e: Event): void {
+function onColorInput(drive: DriveInfo, e: Event): void {
   drive.color = (e.target as HTMLInputElement).value;
 }
 
-async function onColorChange(drive: any, e: Event): Promise<void> {
+async function onColorChange(drive: DriveInfo, e: Event): Promise<void> {
   const newColor = (e.target as HTMLInputElement).value;
   drive.color = newColor;
   const app = window.app;
   await folderManager.updateDriveColor(drive.id, newColor);
   if (Array.isArray(app.allEvents)) {
-    app.allEvents.forEach((ev: any) => {
+    app.allEvents.forEach((ev: TeslaCamEvent) => {
       if (ev.driveId === drive.id) {
         ev.driveColor = newColor;
       }
@@ -210,7 +211,7 @@ async function onColorChange(drive: any, e: Event): Promise<void> {
   }
 }
 
-async function onLabelChange(drive: any, e: Event): Promise<void> {
+async function onLabelChange(drive: DriveInfo, e: Event): Promise<void> {
   const newLabel = (e.target as HTMLInputElement).value.trim();
   if (!newLabel) return;
   drive.label = newLabel;

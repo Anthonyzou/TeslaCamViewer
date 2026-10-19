@@ -1,3 +1,5 @@
+import { ClipGroup } from '../utils/teslaCamFormat';
+
 export interface FilterTypes {
   SavedClips: boolean;
   SentryClips: boolean;
@@ -30,31 +32,112 @@ export interface CommandItem {
   category?: string;
   keywords?: string[] | string;
   shortcut?: string;
-  action: (app?: any) => void;
-  enabled?: (app?: any) => boolean;
+  action: (app?: unknown) => void;
+  enabled?: (app?: unknown) => boolean;
+}
+
+export interface EventMetadata {
+  city?: string;
+  street?: string;
+  reason?: string;
+  camera?: string;
+  est_lat?: string | number;
+  est_lon?: string | number;
+  timestamp?: string;
+  weather?: {
+    temp?: number | string;
+    condition?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface RecordingHealth {
+  status: 'healthy' | 'minor' | 'warning';
+  issues: string[];
+  icon: string;
 }
 
 export interface TeslaCamEvent {
-  name?: string;
-  type?: string;
-  timestamp?: string | number | Date;
-  metadata?: {
-    city?: string;
-    street?: string;
-    reason?: string;
-    camera?: string;
-    [key: string]: any;
-  };
-  clipGroups?: any[];
-  [key: string]: any;
+  name: string;
+  type?: 'SavedClips' | 'SentryClips' | 'RecentClips' | string;
+  timestamp: string | number | Date;
+  metadata?: EventMetadata | null;
+  clipGroups?: ClipGroup[];
+  clips?: Array<{
+    timestamp: string;
+    camera: string;
+    fileName: string;
+    fileHandle?: FileSystemFileHandle;
+    url?: string;
+  }>;
+  driveId?: string | null;
+  driveLabel?: string | null;
+  driveColor?: string | null;
+  compoundKey?: string;
+  thumbnailFile?: FileSystemFileHandle | null;
+  thumbnailUrl?: string;
+  eventVideoFile?: FileSystemFileHandle | null;
+  eventVideoUrl?: string;
+  isEmpty?: boolean;
+  isVirtual?: boolean;
+  hasPillarCameras?: boolean;
+  folderHandle?: FileSystemDirectoryHandle;
+  _blobURLs?: string[];
+  _severityScore?: number;
+  _recordingHealth?: { shortClipCount: number; [key: string]: unknown };
+  [key: string]: unknown;
 }
 
 export interface DriveInfo {
   id: string;
   label?: string;
   name?: string;
+  folderName?: string;
   color?: string;
-  handle?: any;
+  handle?: FileSystemDirectoryHandle | null;
   events?: TeslaCamEvent[];
-  [key: string]: any;
+  addedAt?: string;
+  isArchive?: boolean;
+  isB2?: boolean;
+  dateFilter?: string | null;
+  [key: string]: unknown;
+}
+
+export interface LayoutCameraPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface LayoutCameraCrop {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
+export interface LayoutCameraConfig {
+  enabled: boolean;
+  position: LayoutCameraPosition;
+  zIndex?: number;
+  aspectRatio?: string;
+  objectFit?: 'fill' | 'contain' | 'cover';
+  crop?: LayoutCameraCrop;
+}
+
+export interface LayoutCanvasConfig {
+  aspectRatio?: string;
+  backgroundColor?: string;
+}
+
+export interface LayoutConfigSchema {
+  id?: string;
+  name?: string;
+  author?: string;
+  canvas?: LayoutCanvasConfig;
+  cameras?: Record<string, LayoutCameraConfig>;
+  created?: string;
+  modified?: string;
 }

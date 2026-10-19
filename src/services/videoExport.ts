@@ -27,11 +27,6 @@ class VideoExport {
     return this.startExport({ camera, format: 'mp4' });
   }
 
-  async exportGif() {
-    // WebCodecs outputs MP4 natively with optimal compression
-    return this.startExport({ camera: 'all', format: 'mp4' });
-  }
-
   async startExport(options: any = {}) {
     const event = this.videoPlayer?.currentEvent;
     if (!event) {

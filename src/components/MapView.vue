@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const { setMapView } = useMapView();
 const mapContainer = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
-let mapViewInstance: any = null;
+let mapViewInstance: MapView | null = null;
 
 function invalidateMapSize(): void {
   if (mapViewInstance) {

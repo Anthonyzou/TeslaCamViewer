@@ -8,10 +8,10 @@ import { FolderParser } from './folderParser';
 
 class MapView {
   private container: HTMLElement | null = null;
-  private onEventSelect: ((event: any) => void) | null = null;
+  private onEventSelect: ((event: TeslaCamEvent) => void) | null = null;
   public map: L.Map | null = null;
   private markerCluster: any = null;
-  private events: any[] = [];
+  private events: TeslaCamEvent[] = [];
   private initialized = false;
 
   // Tile layer management
@@ -32,7 +32,7 @@ class MapView {
 
   constructor(
     containerElement: HTMLElement,
-    onEventSelect: (event: any) => void
+    onEventSelect: (event: TeslaCamEvent) => void
   ) {
     this.container = containerElement;
     this.onEventSelect = onEventSelect;
@@ -280,6 +280,20 @@ class MapView {
       }
     } catch (e) {
       console.warn('[MapView] fitBounds failed:', e);
+    }
+  }
+
+  /**
+   * Select an event and focus it on the map
+   */
+  selectEvent(event: TeslaCamEvent): void {
+    if (!this.map || !event) return;
+    if (event.metadata?.est_lat && event.metadata?.est_lon) {
+      const lat = parseFloat(String(event.metadata.est_lat));
+      const lon = parseFloat(String(event.metadata.est_lon));
+      if (!isNaN(lat) && !isNaN(lon)) {
+        this.map.setView([lat, lon], 16);
+      }
     }
   }
 

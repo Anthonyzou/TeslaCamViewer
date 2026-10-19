@@ -1,4 +1,6 @@
 import { ref, type Ref } from 'vue';
+import type { CommandItem, DriveInfo } from '../types';
+import type { DriveSetupOptions } from '../components/DriveSetupModal.vue';
 
 // Settings Modal
 const isSettingsOpen: Ref<boolean> = ref(false);
@@ -57,16 +59,16 @@ export const helpModalStore = {
 
 // Statistics Modal
 const isStatisticsOpen: Ref<boolean> = ref(false);
-const statisticsData: Ref<any> = ref(null);
+const statisticsData: Ref<Record<string, unknown> | null> = ref(null);
 
 export const statisticsModalStore = {
   get isOpen(): boolean {
     return isStatisticsOpen.value;
   },
-  get data(): any {
+  get data(): Record<string, unknown> | null {
     return statisticsData.value;
   },
-  open(data?: any): void {
+  open(data?: Record<string, unknown>): void {
     if (data !== undefined) {
       statisticsData.value = data;
     }
@@ -112,14 +114,17 @@ export const driveManagementModalStore = {
 // Drive Setup Modal
 const isDriveSetupOpen: Ref<boolean> = ref(false);
 let promptSetupHandler:
-  | ((handle: any, existingDrive?: any) => Promise<any>)
+  | ((handle: FileSystemDirectoryHandle | null, existingDrive?: DriveInfo | null) => Promise<DriveSetupOptions | null>)
   | null = null;
 
 export const driveSetupModalStore = {
   get isOpen(): boolean {
     return isDriveSetupOpen.value;
   },
-  promptSetup(handle: any, existingDrive: any = null): Promise<any> {
+  promptSetup(
+    handle: FileSystemDirectoryHandle | null,
+    existingDrive: DriveInfo | null = null
+  ): Promise<DriveSetupOptions | null> {
     if (promptSetupHandler) {
       return promptSetupHandler(handle, existingDrive);
     }
@@ -129,7 +134,10 @@ export const driveSetupModalStore = {
     isDriveSetupOpen.value = false;
   },
   registerPromptHandler(
-    handler: (handle: any, existingDrive?: any) => Promise<any>
+    handler: (
+      handle: FileSystemDirectoryHandle | null,
+      existingDrive?: DriveInfo | null
+    ) => Promise<DriveSetupOptions | null>
   ): void {
     promptSetupHandler = handler;
   },
@@ -140,13 +148,13 @@ export const driveSetupModalStore = {
 
 // Command Palette Modal
 const isCommandPaletteOpen: Ref<boolean> = ref(false);
-const commandPaletteList: Ref<any[]> = ref([]);
+const commandPaletteList: Ref<CommandItem[]> = ref([]);
 
 export const commandPaletteModalStore = {
   get isOpen(): boolean {
     return isCommandPaletteOpen.value;
   },
-  get commands(): any[] {
+  get commands(): CommandItem[] {
     return commandPaletteList.value;
   },
   open(): void {
@@ -158,7 +166,7 @@ export const commandPaletteModalStore = {
   toggle(): void {
     isCommandPaletteOpen.value = !isCommandPaletteOpen.value;
   },
-  register(cmd: any): void {
+  register(cmd: CommandItem): void {
     if (!cmd?.id) return;
     const existingIndex = commandPaletteList.value.findIndex(
       (c) => c.id === cmd.id
@@ -169,7 +177,7 @@ export const commandPaletteModalStore = {
       commandPaletteList.value.push(cmd);
     }
   },
-  registerMany(cmds: any[]): void {
+  registerMany(cmds: CommandItem[]): void {
     if (!Array.isArray(cmds)) return;
     for (const cmd of cmds) {
       this.register(cmd);

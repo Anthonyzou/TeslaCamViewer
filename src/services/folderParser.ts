@@ -12,10 +12,11 @@ import {
   parseClipTimestamp,
   parseEventFolderName,
 } from '../utils/teslaCamFormat';
+import type { TeslaCamEvent } from '../types';
 
 class FolderParser {
-  public rootHandle: any = null;
-  public events: any[] = [];
+  public rootHandle: FileSystemDirectoryHandle | null = null;
+  public events: TeslaCamEvent[] = [];
   private _sig = 'nmccomb';
   public DB_NAME = 'TeslaCamViewerDB';
   public DB_STORE = 'folderHandles';
@@ -25,7 +26,7 @@ class FolderParser {
   public currentDriveId: string | null = null;
   public currentDriveLabel: string | null = null;
   public currentDriveColor: string | null = null;
-  public onProgress: any = null;
+  public onProgress: ((message: string, count: number) => void) | null = null;
   public _debugStats: any = null;
 
   /**

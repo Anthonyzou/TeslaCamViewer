@@ -4,6 +4,7 @@
  * and declarative Vue grid styling.
  */
 import { LayoutConfig } from './layoutConfig';
+import type { LayoutConfigSchema } from '../types';
 
 export interface DrawParams {
   sx: number;
@@ -144,7 +145,7 @@ export function calculateContainSize(
  * Calculate canvas size and pixel layout for export / screenshot pipelines.
  */
 export function calculateExportConfig(
-  config: any,
+  config: LayoutConfigSchema | Record<string, any>,
   videoWidth: number,
   videoHeight: number,
   options: { visibleCameras?: Record<string, boolean> | null } = {}
@@ -181,7 +182,7 @@ export function calculateExportConfig(
     canvasHeight = Math.round(canvasWidth / layoutAR);
   }
 
-  const cameras: Record<string, any> = {};
+  const cameras: Record<string, CameraConfigLike> = {};
   for (const camName of LayoutConfig.CAMERAS) {
     const camConfig = config.cameras?.[camName];
     if (!camConfig) continue;

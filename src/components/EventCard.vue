@@ -137,8 +137,8 @@ const location = computed(() => {
 
 const gpsText = computed(() => {
   if (!props.event.metadata?.est_lat || !props.event.metadata?.est_lon) return '';
-  const lat = parseFloat(props.event.metadata.est_lat);
-  const lon = parseFloat(props.event.metadata.est_lon);
+  const lat = parseFloat(String(props.event.metadata.est_lat));
+  const lon = parseFloat(String(props.event.metadata.est_lon));
   if (!isNaN(lat) && !isNaN(lon)) {
     return `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   }
@@ -154,8 +154,8 @@ async function loadWeather(): Promise<void> {
   const metadata = props.event.metadata;
   if (!metadata?.est_lat || !metadata?.est_lon || !props.event.timestamp) return;
 
-  const lat = parseFloat(metadata.est_lat);
-  const lng = parseFloat(metadata.est_lon);
+  const lat = parseFloat(String(metadata.est_lat));
+  const lng = parseFloat(String(metadata.est_lon));
   if (isNaN(lat) || isNaN(lng)) return;
 
   try {

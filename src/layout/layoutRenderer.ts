@@ -7,7 +7,10 @@ import {
   calculateContainSize,
   calculateDrawParams,
   calculateExportConfig,
+  type CameraConfigLike,
+  type VideoDimensions,
 } from './layoutMath';
+import type { LayoutConfigSchema } from '../types';
 
 export class LayoutRenderer {
   [key: string]: any;
@@ -25,11 +28,11 @@ export class LayoutRenderer {
    * This is the SINGLE SOURCE OF TRUTH for crop/objectFit calculations
    * All rendering paths should use this method for consistency
    *
-   * @param {HTMLVideoElement} video - The video element
+   * @param {HTMLVideoElement|Object} video - The video element or dimensions
    * @param {Object} camConfig - Camera configuration { x, y, w, h, crop, objectFit }
    * @returns {Object} { sx, sy, sw, sh, dx, dy, dw, dh } - Source and destination rectangles
    */
-  static calculateDrawParams(video: any, camConfig: any) {
+  static calculateDrawParams(video: VideoDimensions, camConfig: CameraConfigLike) {
     return calculateDrawParams(video, camConfig);
   }
 
@@ -39,7 +42,7 @@ export class LayoutRenderer {
    * @param {number} aspectRatio - Width/height ratio (e.g., 1.333 for 4:3)
    * @returns {{ width: number, height: number }}
    */
-  calculateContainSize(container: any, aspectRatio: number) {
+  calculateContainSize(container: HTMLElement, aspectRatio: number) {
     return calculateContainSize(
       container.clientWidth,
       container.clientHeight,
@@ -471,10 +474,10 @@ export class LayoutRenderer {
    * @returns {Object} Export config with pixel positions
    */
   calculateExportConfig(
-    config: any,
+    config: LayoutConfigSchema | Record<string, any>,
     videoWidth: number,
     videoHeight: number,
-    options: any = {}
+    options: { visibleCameras?: Record<string, boolean> | null } = {}
   ) {
     const result = calculateExportConfig(
       config,
@@ -493,15 +496,15 @@ export class LayoutRenderer {
   /**
    * Render videos to canvas using layout config
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} videos - { front: HTMLVideoElement, back: ..., etc }
    * @param {Object} exportConfig - Result from calculateExportConfig
+   * @param {Object} videos - { front: HTMLVideoElement, back: ..., etc }
    * @param {Object} options - { fillEnded: boolean }
    */
   renderToCanvas(
     ctx: CanvasRenderingContext2D,
-    exportConfig: any,
+    exportConfig: { canvasWidth: number; canvasHeight: number; cameras: Record<string, CameraConfigLike> } | any,
     videos: Record<string, HTMLVideoElement>,
-    options: any = {}
+    options: { fillEnded?: boolean } = {}
   ) {
     const { canvasWidth, canvasHeight, cameras } = exportConfig;
 

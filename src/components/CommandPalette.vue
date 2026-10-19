@@ -61,6 +61,7 @@
 import { Search } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useModals } from '../composables/useModals';
+import type { TeslaCamApp } from '../services/teslaCamApp';
 import type { CommandItem, TeslaCamEvent } from '../types';
 
 type FilteredItem =
@@ -68,7 +69,7 @@ type FilteredItem =
   | { kind: 'event'; event: TeslaCamEvent; label: string };
 
 const props = defineProps<{
-  app?: any;
+  app?: TeslaCamApp;
 }>();
 
 const MAX_EVENT_RESULTS = 17;
@@ -201,10 +202,8 @@ function executeSelected(): void {
     if (item.kind === 'cmd') {
       item.cmd.action(props.app);
     } else if (item.kind === 'event') {
-      if (typeof props.app?.loadEvent === 'function') {
-        props.app.loadEvent(item.event);
-      } else if (typeof props.app?.onEventClick === 'function') {
-        props.app.onEventClick(item.event);
+      if (typeof props.app?.onEventSelected === 'function') {
+        props.app.onEventSelected(item.event);
       }
     }
   } catch (err) {

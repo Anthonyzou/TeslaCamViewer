@@ -23,6 +23,8 @@ import { settingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
+import type MapView from './mapView';
+import type { DriveSetupOptions } from '../components/DriveSetupModal.vue';
 
 /**
  * TeslaCamApp - Central application service orchestrating headless engines
@@ -37,13 +39,13 @@ export class TeslaCamApp {
   public statisticsManager = new StatisticsManager();
   public b2Client = new B2Client();
 
-  public get mapView() {
-    return mapViewStore.instance;
+  public get mapView(): MapView | null {
+    return mapViewStore.instance as MapView | null;
   }
-  public set mapView(v: any) {
+  public set mapView(v: MapView | null) {
     mapViewStore.setInstance(v);
   }
-  public eventBrowser: any = null;
+  public eventBrowser: EventBrowser | null = null;
 
   public timeline = timelineStore;
   public clipMarking = useClipMarking(() => this.videoPlayer);
@@ -60,7 +62,7 @@ export class TeslaCamApp {
 
   public isMobileFullscreen: boolean = false;
   private _isFrameStepping: boolean = false;
-  private _frameStepInterval: any = null;
+  private _frameStepInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.initEngines();
@@ -182,7 +184,7 @@ export class TeslaCamApp {
             const events = await folderParser.parseFolder();
             const cutoff = folderManager.getDateFilterCutoff(drive.dateFilter);
             drive.events = cutoff
-              ? events.filter((ev: any) => new Date(ev.timestamp) >= cutoff)
+              ? events.filter((ev: TeslaCamEvent) => new Date(ev.timestamp) >= cutoff)
               : events;
 
             for (const event of drive.events) {
@@ -206,7 +208,7 @@ export class TeslaCamApp {
 
       if (restoredAny) {
         const firstActive = folderManager.drives.find(
-          (d: any) => !d.isArchive && d.events?.length > 0
+          (d: DriveInfo) => !d.isArchive && (d.events?.length ?? 0) > 0
         );
         if (firstActive) {
           folderManager.setActiveDrive(firstActive.id);
@@ -443,8 +445,8 @@ export class TeslaCamApp {
       try {
         const units = settingsManager?.get('temperatureUnits') || 'celsius';
         const weather = await weatherService.getWeather(
-          lat,
-          lon,
+          parseFloat(String(lat)),
+          parseFloat(String(lon)),
           new Date(time)
         );
         if (weather) {
@@ -658,13 +660,13 @@ export class TeslaCamApp {
   }
 
   public async selectFolder(): Promise<void> {
-    let handle: any = null;
+    let handle: FileSystemDirectoryHandle | null = null;
 
     while (true) {
       try {
         handle = await window.showDirectoryPicker();
-      } catch (error: any) {
-        if (error.name !== 'AbortError')
+      } catch (error: unknown) {
+        if ((error as Error).name !== 'AbortError')
           console.error('Error selecting folder:', error);
         return;
       }
@@ -790,12 +792,12 @@ export class TeslaCamApp {
   }
 
   public async addNewDrive(): Promise<void> {
-    let handle: any = null;
+    let handle: FileSystemDirectoryHandle | null = null;
     while (true) {
       try {
         handle = await window.showDirectoryPicker();
-      } catch (error: any) {
-        if (error.name !== 'AbortError')
+      } catch (error: unknown) {
+        if ((error as Error).name !== 'AbortError')
           console.error('Error selecting folder:', error);
         return;
       }
@@ -886,9 +888,9 @@ export class TeslaCamApp {
   }
 
   public async showDriveSetupDialog(
-    handle: any,
-    existingDrive: any = null
-  ): Promise<any> {
+    handle: FileSystemDirectoryHandle | null,
+    existingDrive: DriveInfo | null = null
+  ): Promise<DriveSetupOptions | null> {
     return await driveSetupModalStore.promptSetup(handle, existingDrive);
   }
 

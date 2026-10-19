@@ -11,7 +11,7 @@ export class VideoPlayer {
     b: {},
   };
   public activeBank = 'a';
-  public currentEvent: any = null;
+  public currentEvent: TeslaCamEvent = null;
   public currentClipIndex = -1;
   public loopEnabled = false;
   public disableAutoAdvance = false;

@@ -4,9 +4,10 @@
  */
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
+import type { DriveInfo, TeslaCamEvent } from '../types';
 
 class FolderManager {
-  public drives: any[] = [];
+  public drives: DriveInfo[] = [];
   public activeDriveId: string | null = null;
   public DB_NAME = 'TeslaCamViewerDB';
   public DB_STORE = 'drives';
@@ -23,18 +24,18 @@ class FolderManager {
     '#607d8b',
   ];
 
-  private _onDrivesChanged: any = null;
-  private _drivesChangedListeners: ((drives: any[]) => void)[] = [];
+  private _onDrivesChanged: ((drives: DriveInfo[]) => void) | null = null;
+  private _drivesChangedListeners: ((drives: DriveInfo[]) => void)[] = [];
 
-  get onDrivesChanged(): any {
+  get onDrivesChanged(): ((drives: DriveInfo[]) => void) | null {
     return this._onDrivesChanged;
   }
 
-  set onDrivesChanged(fn: any) {
+  set onDrivesChanged(fn: ((drives: DriveInfo[]) => void) | null) {
     this._onDrivesChanged = fn;
   }
 
-  addDrivesChangedListener(listener: (drives: any[]) => void): () => void {
+  addDrivesChangedListener(listener: (drives: DriveInfo[]) => void): () => void {
     this._drivesChangedListeners.push(listener);
     return () => {
       this._drivesChangedListeners = this._drivesChangedListeners.filter(
@@ -71,8 +72,8 @@ class FolderManager {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
 
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db = (event.target as IDBOpenDBRequest).result;
 
         // Create drives store if it doesn't exist
         if (!db.objectStoreNames.contains(this.DB_STORE)) {
@@ -106,7 +107,7 @@ class FolderManager {
       const store = tx.objectStore(this.DB_STORE);
       const request = store.getAll();
 
-      const drives = await new Promise<any[]>((resolve, reject) => {
+      const drives = await new Promise<DriveInfo[]>((resolve, reject) => {
         request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
       });
@@ -131,7 +132,7 @@ class FolderManager {
    * @param {Object} drive
    * @returns {Promise<void>}
    */
-  async saveDrive(drive: any): Promise<void> {
+  async saveDrive(drive: DriveInfo): Promise<void> {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
@@ -204,11 +205,11 @@ class FolderManager {
    * @param {string} options.dateFilter - Date filter preset (e.g., 'all', 'week', 'month', '3months', '6months', 'year')
    * @returns {Promise<Object>} The created drive object
    */
-  async addDrive(handle: any, options: any = {}) {
-    // Support legacy signature: addDrive(handle, label)
-    if (typeof options === 'string') {
-      options = { label: options };
-    }
+  async addDrive(
+    handle: FileSystemDirectoryHandle,
+    options: { label?: string; isArchive?: boolean; dateFilter?: string } | string = {}
+  ): Promise<DriveInfo> {
+    const opts = typeof options === 'string' ? { label: options } : options;
 
     // Check if this drive already exists (by comparing directory handles)
     for (const existingDrive of this.drives) {
@@ -230,15 +231,15 @@ class FolderManager {
     // Assign color based on index
     const colorIndex = this.drives.length % this.driveColors.length;
 
-    const drive = {
+    const drive: DriveInfo = {
       id: uuidv4(),
       handle: handle,
       folderName: handle.name,
-      label: options.label || this.generateLabel(handle.name),
+      label: opts.label || this.generateLabel(handle.name),
       color: this.driveColors[colorIndex],
       addedAt: new Date().toISOString(),
-      isArchive: options.isArchive || false,
-      dateFilter: options.dateFilter || 'all',
+      isArchive: opts.isArchive || false,
+      dateFilter: opts.dateFilter || 'all',
       events: [], // Will be populated by FolderParser
     };
 
@@ -257,10 +258,13 @@ class FolderManager {
    * Add or update a Backblaze B2 Cloud Drive
    * @param {Array} events - Events fetched from B2
    * @param {Object} options - Custom label or color options
-   * @returns {Promise<Object>} The B2 drive
+   * @returns {Promise<DriveInfo>} The B2 drive
    */
-  async addOrUpdateB2Drive(events: any[] = [], options: any = {}) {
-    let b2Drive = this.drives.find((d: any) => d.isB2 || d.id === 'b2');
+  async addOrUpdateB2Drive(
+    events: TeslaCamEvent[] = [],
+    options: { label?: string; color?: string } = {}
+  ): Promise<DriveInfo> {
+    let b2Drive = this.drives.find((d) => d.isB2 || d.id === 'b2');
 
     if (!b2Drive) {
       const colorIndex = this.drives.length % this.driveColors.length;
@@ -291,8 +295,8 @@ class FolderManager {
   /**
    * Get the registered B2 drive if any
    */
-  getB2Drive(): any {
-    return this.drives.find((d: any) => d.isB2 || d.id === 'b2') || null;
+  getB2Drive(): DriveInfo | null {
+    return this.drives.find((d) => d.isB2 || d.id === 'b2') || null;
   }
 
   /**

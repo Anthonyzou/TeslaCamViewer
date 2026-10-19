@@ -111,6 +111,14 @@ import { Folder, Info, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
+import type { DriveInfo } from '../types';
+
+export interface DriveSetupOptions {
+  label?: string;
+  isArchive?: boolean;
+  dateFilter?: string;
+  changeFolder?: boolean;
+}
 
 const { isDriveSetupOpen: isOpen, driveSetupModal } = useModals();
 const { t } = useI18n();
@@ -121,9 +129,12 @@ const dateFilter = ref('all');
 const isArchive = ref(false);
 
 let mouseDownOnOverlay = false;
-let resolver: ((val: any) => void) | null = null;
+let resolver: ((val: DriveSetupOptions | null) => void) | null = null;
 
-function promptSetup(handle: any, existingDrive: any = null): Promise<any> {
+function promptSetup(
+  handle: FileSystemDirectoryHandle | null,
+  existingDrive: DriveInfo | null = null
+): Promise<DriveSetupOptions | null> {
   return new Promise((resolve) => {
     resolver = resolve;
     isEdit.value = !!existingDrive;

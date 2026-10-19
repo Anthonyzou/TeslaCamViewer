@@ -7,7 +7,7 @@ import type { TeslaCamEvent } from '../types';
 /**
  * Compute recording health for an event.
  */
-export function computeRecordingHealth(event: any): {
+export function computeRecordingHealth(event: TeslaCamEvent): {
   status: 'healthy' | 'minor' | 'warning';
   issues: string[];
   icon: string;
@@ -23,29 +23,27 @@ export function computeRecordingHealth(event: any): {
   }
 
   // 1. Missing cameras per clip group.
-  {
-    const expectedCams = event.hasPillarCameras ? 6 : 4;
-    let incompleteGroups = 0;
-    const missingCamsSet = new Set<string>();
-    const standardCams = ['front', 'back', 'left_repeater', 'right_repeater'];
-    const pillarCams = ['left_pillar', 'right_pillar'];
-    const expectedList = event.hasPillarCameras
-      ? [...standardCams, ...pillarCams]
-      : standardCams;
-    for (const g of event.clipGroups) {
-      const clips = g.clips || {};
-      const present = Object.keys(clips).length;
-      if (present < expectedCams) {
-        incompleteGroups++;
-        for (const c of expectedList) if (!clips[c]) missingCamsSet.add(c);
-      }
+  const expectedCams = event.hasPillarCameras ? 6 : 4;
+  let incompleteGroups = 0;
+  const missingCamsSet = new Set<string>();
+  const standardCams = ['front', 'back', 'left_repeater', 'right_repeater'];
+  const pillarCams = ['left_pillar', 'right_pillar'];
+  const expectedList = event.hasPillarCameras
+    ? [...standardCams, ...pillarCams]
+    : standardCams;
+  for (const g of event.clipGroups) {
+    const clips = g.clips || {};
+    const present = Object.keys(clips).length;
+    if (present < expectedCams) {
+      incompleteGroups++;
+      for (const c of expectedList) if (!clips[c]) missingCamsSet.add(c);
     }
-    if (incompleteGroups > 0) {
-      const camList = Array.from(missingCamsSet).join(', ');
-      issues.push(
-        `${incompleteGroups} of ${event.clipGroups.length} clip groups missing ${camList}`
-      );
-    }
+  }
+  if (incompleteGroups > 0) {
+    const camList = Array.from(missingCamsSet).join(', ');
+    issues.push(
+      `${incompleteGroups} of ${event.clipGroups.length} clip groups missing ${camList}`
+    );
   }
 
   // 2. Missing event.json metadata (SavedClips/SentryClips should have one)
@@ -90,7 +88,7 @@ export function computeRecordingHealth(event: any): {
 /**
  * Get time range string from event clips (e.g., "From 7:00-7:59 AM")
  */
-export function getTimeRangeFromClips(event: any): string | null {
+export function getTimeRangeFromClips(event: TeslaCamEvent): string | null {
   if (!event || !event.clipGroups || event.clipGroups.length === 0) {
     return null;
   }
@@ -140,14 +138,14 @@ class EventBrowser {
   public isVueManaged = true;
 
   constructor(
-    public container: any = null,
+    public container: HTMLElement | null = null,
     private onEventSelect: ((event: TeslaCamEvent) => void) | null = null
   ) {}
 
   /**
    * Compute recording health for an event.
    */
-  computeRecordingHealth(event: any) {
+  computeRecordingHealth(event: TeslaCamEvent) {
     return computeRecordingHealth(event);
   }
 
@@ -222,7 +220,7 @@ class EventBrowser {
   /**
    * Get time range string from event clips (e.g., "From 7:00-7:59 AM")
    */
-  _getTimeRangeFromClips(event: any) {
+  _getTimeRangeFromClips(event: TeslaCamEvent) {
     return getTimeRangeFromClips(event);
   }
 
