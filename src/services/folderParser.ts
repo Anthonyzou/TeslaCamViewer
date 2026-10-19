@@ -2,6 +2,7 @@
  * FolderParser - Handles reading and parsing TeslaCam directory structure
  * Parser v3.7.12
  */
+import { openDB, type IDBPDatabase } from 'idb';
 import {
   detectGaps,
   formatGapDuration,
@@ -12,14 +13,14 @@ import {
   parseClipTimestamp,
   parseEventFolderName,
 } from '../utils/teslaCamFormat';
-import type { TeslaCamEvent } from '../types';
+import type { TeslaCamEvent, TeslaCamViewerDBSchema } from '../types';
 
 class FolderParser {
   public rootHandle: FileSystemDirectoryHandle | null = null;
   public events: TeslaCamEvent[] = [];
   private _sig = 'nmccomb';
   public DB_NAME = 'TeslaCamViewerDB';
-  public DB_STORE = 'folderHandles';
+  public DB_STORE = 'folderHandles' as const;
   public DB_KEY = 'lastFolder';
   public DB_VERSION = 3;
 
@@ -72,25 +73,19 @@ class FolderParser {
 
   /**
    * Initialize IndexedDB for storing folder handles
-   * @returns {Promise<IDBDatabase>}
+   * @returns {Promise<IDBPDatabase<TeslaCamViewerDBSchema>>}
    */
-  async openDB(): Promise<IDBDatabase> {
-    return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
+  async openDB(): Promise<IDBPDatabase<TeslaCamViewerDBSchema>> {
+    return openDB<TeslaCamViewerDBSchema>(this.DB_NAME, this.DB_VERSION, {
+      upgrade(db) {
         if (!db.objectStoreNames.contains('drives')) {
           const store = db.createObjectStore('drives', { keyPath: 'id' });
           store.createIndex('label', 'label', { unique: false });
         }
-        if (!db.objectStoreNames.contains(this.DB_STORE)) {
-          db.createObjectStore(this.DB_STORE);
+        if (!db.objectStoreNames.contains('folderHandles')) {
+          db.createObjectStore('folderHandles');
         }
-      };
+      },
     });
   }
 
@@ -109,13 +104,7 @@ class FolderParser {
         );
         return;
       }
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      const store = tx.objectStore(this.DB_STORE);
-      store.put(this.rootHandle, this.DB_KEY);
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
+      await db.put(this.DB_STORE, this.rootHandle, this.DB_KEY);
       console.log('Folder handle saved to IndexedDB');
     } catch (e) {
       console.warn('Failed to save folder handle:', e);
@@ -139,20 +128,16 @@ class FolderParser {
    * Get the stored folder handle without requesting permissions
    * @returns {Promise<FileSystemDirectoryHandle|null>}
    */
-  async getStoredHandle() {
+  async getStoredHandle(): Promise<FileSystemDirectoryHandle | null> {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
         return null;
       }
-      const tx = db.transaction(this.DB_STORE, 'readonly');
-      const store = tx.objectStore(this.DB_STORE);
-      const request = store.get(this.DB_KEY);
-
-      return await new Promise((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
-      });
+      const handle = (await db.get(this.DB_STORE, this.DB_KEY)) as
+        | FileSystemDirectoryHandle
+        | undefined;
+      return handle || null;
     } catch {
       return null;
     }
@@ -164,19 +149,7 @@ class FolderParser {
    */
   async loadSavedFolder() {
     try {
-      const db = await this.openDB();
-      if (!db.objectStoreNames.contains(this.DB_STORE)) {
-        return false;
-      }
-      const tx = db.transaction(this.DB_STORE, 'readonly');
-      const store = tx.objectStore(this.DB_STORE);
-      const request = store.get(this.DB_KEY);
-
-      const handle = await new Promise<any>((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
+      const handle = await this.getStoredHandle();
       if (!handle) {
         console.log('No saved folder handle found');
         return false;
@@ -210,13 +183,7 @@ class FolderParser {
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
         return;
       }
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      const store = tx.objectStore(this.DB_STORE);
-      store.delete(this.DB_KEY);
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
+      await db.delete(this.DB_STORE, this.DB_KEY);
     } catch (e) {
       console.warn('Failed to clear saved folder:', e);
     }

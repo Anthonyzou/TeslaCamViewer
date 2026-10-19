@@ -4,13 +4,15 @@
  * Caches results in IndexedDB for offline access
  */
 
+import { openDB, type IDBPDatabase } from 'idb';
 import { settingsManager } from '../services/settingsManager';
+import type { WeatherDBSchema } from '../types';
 
 class WeatherService {
   private DB_NAME = 'TeslaCamViewer';
-  private STORE_NAME = 'weatherCache';
+  private STORE_NAME = 'weatherCache' as const;
   private DB_VERSION = 2; // Increment if schema changes
-  private db = null;
+  private db: IDBPDatabase<WeatherDBSchema> | null = null;
   // In-memory cache for current session
   private memoryCache = new Map();
 
@@ -21,33 +23,24 @@ class WeatherService {
   /**
    * Initialize IndexedDB
    */
-  async _initDB() {
-    return new Promise((resolve, _reject) => {
-      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-
-      request.onerror = () => {
-        console.warn(
-          '[WeatherService] IndexedDB not available, using memory cache only'
-        );
-        resolve(null);
-      };
-
-      request.onsuccess = (event: any) => {
-        this.db = event?.target?.result;
-        console.log('[WeatherService] IndexedDB ready');
-        resolve(this.db);
-      };
-
-      request.onupgradeneeded = (event: any) => {
-        const db = event?.target?.result;
-
-        // Create weather cache store if it doesn't exist
-        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-          db.createObjectStore(this.STORE_NAME, { keyPath: 'key' });
-          console.log('[WeatherService] Created weatherCache store');
-        }
-      };
-    });
+  async _initDB(): Promise<IDBPDatabase<WeatherDBSchema> | null> {
+    try {
+      this.db = await openDB<WeatherDBSchema>(this.DB_NAME, this.DB_VERSION, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains('weatherCache')) {
+            db.createObjectStore('weatherCache', { keyPath: 'key' });
+            console.log('[WeatherService] Created weatherCache store');
+          }
+        },
+      });
+      console.log('[WeatherService] IndexedDB ready');
+      return this.db;
+    } catch (_e) {
+      console.warn(
+        '[WeatherService] IndexedDB not available, using memory cache only'
+      );
+      return null;
+    }
   }
 
   /**
@@ -276,46 +269,27 @@ class WeatherService {
   /**
    * Get from IndexedDB
    */
-  async _getFromDB(key) {
+  async _getFromDB(key: string) {
     if (!this.db) return null;
-
-    return new Promise((resolve) => {
-      try {
-        const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
-        const store = transaction.objectStore(this.STORE_NAME);
-        const request = store.get(key);
-
-        request.onsuccess = () => {
-          resolve(request.result?.data || null);
-        };
-
-        request.onerror = () => {
-          resolve(null);
-        };
-      } catch (_e) {
-        resolve(null);
-      }
-    });
+    try {
+      const record = await this.db.get(this.STORE_NAME, key);
+      return record?.data || null;
+    } catch (_e) {
+      return null;
+    }
   }
 
   /**
    * Save to IndexedDB
    */
-  async _saveToDB(key, data) {
-    if (!this.db) return;
-
-    return new Promise((resolve) => {
-      try {
-        const transaction = this.db.transaction([this.STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(this.STORE_NAME);
-        store.put({ key, data, cachedAt: Date.now() });
-
-        transaction.oncomplete = () => resolve(true);
-        transaction.onerror = () => resolve(false);
-      } catch (_e) {
-        resolve(false);
-      }
-    });
+  async _saveToDB(key: string, data: unknown) {
+    if (!this.db) return false;
+    try {
+      await this.db.put(this.STORE_NAME, { key, data, cachedAt: Date.now() });
+      return true;
+    } catch (_e) {
+      return false;
+    }
   }
 
   /**

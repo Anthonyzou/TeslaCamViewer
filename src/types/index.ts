@@ -1,3 +1,4 @@
+import type { DBSchema } from 'idb';
 import { ClipGroup } from '../utils/teslaCamFormat';
 
 export interface FilterTypes {
@@ -140,4 +141,42 @@ export interface LayoutConfigSchema {
   cameras?: Record<string, LayoutCameraConfig>;
   created?: string;
   modified?: string;
+}
+
+export interface DriveRecord {
+  id: string;
+  folderName?: string;
+  label?: string;
+  color?: string;
+  addedAt?: string;
+  isArchive: boolean;
+  dateFilter: string;
+  handle: FileSystemDirectoryHandle | null;
+  isB2: boolean;
+  events?: TeslaCamEvent[];
+}
+
+export interface TeslaCamViewerDBSchema extends DBSchema {
+  drives: {
+    key: string;
+    value: DriveRecord;
+    indexes: { label: string };
+  };
+  folderHandles: {
+    key: string;
+    value: FileSystemDirectoryHandle;
+  };
+}
+
+export interface WeatherCacheRecord {
+  key: string;
+  data: unknown;
+  cachedAt: number;
+}
+
+export interface WeatherDBSchema extends DBSchema {
+  weatherCache: {
+    key: string;
+    value: WeatherCacheRecord;
+  };
 }

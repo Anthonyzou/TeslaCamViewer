@@ -28,7 +28,7 @@ export class ScreenshotCapture {
     } = options || {};
 
     // Get all video elements
-    const videos = this.videoPlayer.videos as Record<string, HTMLVideoElement>;
+    const videos = this.videoPlayer.videos;
 
     // Check if any video is loaded
     const hasVideo = Object.values(videos).some((v) => v && v.src);

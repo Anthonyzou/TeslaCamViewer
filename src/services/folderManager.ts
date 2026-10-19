@@ -3,14 +3,20 @@
  * Supports adding, removing, and switching between multiple drives
  */
 import dayjs from 'dayjs';
+import { openDB, type IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
-import type { DriveInfo, TeslaCamEvent } from '../types';
+import type {
+  DriveInfo,
+  DriveRecord,
+  TeslaCamEvent,
+  TeslaCamViewerDBSchema,
+} from '../types';
 
 class FolderManager {
   public drives: DriveInfo[] = [];
   public activeDriveId: string | null = null;
   public DB_NAME = 'TeslaCamViewerDB';
-  public DB_STORE = 'drives';
+  public DB_STORE = 'drives' as const;
   public DB_VERSION = 3;
 
   public driveColors = [
@@ -35,7 +41,9 @@ class FolderManager {
     this._onDrivesChanged = fn;
   }
 
-  addDrivesChangedListener(listener: (drives: DriveInfo[]) => void): () => void {
+  addDrivesChangedListener(
+    listener: (drives: DriveInfo[]) => void
+  ): () => void {
     this._drivesChangedListeners.push(listener);
     return () => {
       this._drivesChangedListeners = this._drivesChangedListeners.filter(
@@ -63,21 +71,14 @@ class FolderManager {
 
   /**
    * Initialize IndexedDB for storing drives
-   * @returns {Promise<IDBDatabase>}
+   * @returns {Promise<IDBPDatabase<TeslaCamViewerDBSchema>>}
    */
-  async openDB(): Promise<IDBDatabase> {
-    return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-
-      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
+  async openDB(): Promise<IDBPDatabase<TeslaCamViewerDBSchema>> {
+    return openDB<TeslaCamViewerDBSchema>(this.DB_NAME, this.DB_VERSION, {
+      upgrade(db) {
         // Create drives store if it doesn't exist
-        if (!db.objectStoreNames.contains(this.DB_STORE)) {
-          const store = db.createObjectStore(this.DB_STORE, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('drives')) {
+          const store = db.createObjectStore('drives', { keyPath: 'id' });
           store.createIndex('label', 'label', { unique: false });
         }
 
@@ -85,7 +86,7 @@ class FolderManager {
         if (!db.objectStoreNames.contains('folderHandles')) {
           db.createObjectStore('folderHandles');
         }
-      };
+      },
     });
   }
 
@@ -103,14 +104,7 @@ class FolderManager {
         this.drives = [];
         return;
       }
-      const tx = db.transaction(this.DB_STORE, 'readonly');
-      const store = tx.objectStore(this.DB_STORE);
-      const request = store.getAll();
-
-      const drives = await new Promise<DriveInfo[]>((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-      });
+      const drives = (await db.getAll(this.DB_STORE)) as DriveInfo[];
 
       for (const d of drives) {
         if (!Array.isArray(d.events)) {
@@ -141,9 +135,7 @@ class FolderManager {
         );
         return;
       }
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      const store = tx.objectStore(this.DB_STORE);
-      const record = {
+      const record: DriveRecord = {
         id: drive.id,
         folderName: drive.folderName,
         label: drive.label,
@@ -154,13 +146,7 @@ class FolderManager {
         handle: drive.handle || null,
         isB2: !!drive.isB2,
       };
-      store.put(record);
-
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-
+      await db.put(this.DB_STORE, record);
       console.log(`Saved drive ${drive.id} to IndexedDB`);
     } catch (e) {
       console.warn('Failed to save drive:', e);
@@ -181,15 +167,7 @@ class FolderManager {
         );
         return;
       }
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      const store = tx.objectStore(this.DB_STORE);
-      store.delete(driveId);
-
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-
+      await db.delete(this.DB_STORE, driveId);
       console.log(`Deleted drive ${driveId} from IndexedDB`);
     } catch (e) {
       console.warn('Failed to delete drive:', e);
@@ -207,7 +185,9 @@ class FolderManager {
    */
   async addDrive(
     handle: FileSystemDirectoryHandle,
-    options: { label?: string; isArchive?: boolean; dateFilter?: string } | string = {}
+    options:
+      | { label?: string; isArchive?: boolean; dateFilter?: string }
+      | string = {}
   ): Promise<DriveInfo> {
     const opts = typeof options === 'string' ? { label: options } : options;
 

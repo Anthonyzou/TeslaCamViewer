@@ -1,15 +1,12 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
+import 'fake-indexeddb/auto';
 import { createJiti } from 'jiti';
 
 globalThis.localStorage = globalThis.localStorage || {
   getItem: () => null,
   setItem: () => {},
   removeItem: () => {},
-};
-
-globalThis.indexedDB = globalThis.indexedDB || {
-  open: () => ({ addEventListener: () => {}, onsuccess: null, onerror: null }),
 };
 
 const jiti = createJiti(process.cwd());
