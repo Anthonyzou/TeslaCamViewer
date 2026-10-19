@@ -1,181 +1,408 @@
-import { statisticsModalStore } from '../composables/useModals';
-
 /**
- * StatisticsManager - Calculates and displays event statistics
- * Shows event breakdowns, recording stats, top locations, trigger analysis,
- * timeline charts, and storage estimates
+ * StatisticsManager - Headless data calculation engine for TeslaCam event statistics
+ * Calculates totals, recording duration, event types, timeline trends, locations,
+ * trigger reasons, and storage estimates without direct DOM manipulation.
  */
-class StatisticsManager {
-  public modal: any = null;
-  public events: any[] = [];
 
-  /**
-   * Get translation helper
-   */
-  t(key) {
-    return window.i18n ? window.i18n.t(key) : key.split('.').pop();
-  }
+import { statisticsModalStore } from '../composables/useModals';
+import type {
+  CameraDistributionStat,
+  DayOfWeekPoint,
+  HourDistributionPoint,
+  LocationStat,
+  StatisticsData,
+  StorageEstimate,
+  TeslaCamEvent,
+  TimelineDataPoint,
+  TrendDataPoint,
+  TriggerReasonStat,
+} from '../types';
+
+export class StatisticsManager {
+  public events: TeslaCamEvent[] = [];
 
   /**
    * Set the events data for analysis
-   * @param {Array} events - Array of parsed events from folderParser
    */
-  setEvents(events) {
+  setEvents(events: TeslaCamEvent[]): void {
     this.events = events || [];
   }
 
   /**
-   * Calculate all statistics from events (synchronous)
-   * Telemetry verification is done separately via verifyTelemetryForEvents()
-   * @returns {Object} Statistics object
+   * Calculate all statistics from events into pure data objects
    */
-  calculateStats() {
+  calculateStats(): StatisticsData | null {
     if (!this.events || this.events.length === 0) {
       return null;
     }
 
-    const stats = {
-      totalEvents: this.events.length,
-      eventsByType: { saved: 0, sentry: 0, recent: 0 },
-      totalRecordingTime: 0,
-      totalClips: 0,
-      averageEventLength: 0,
-      triggerReasons: {},
-      topLocations: [],
-      sentryLocations: [],
-      eventsByMonth: {},
-      eventsByDay: {},
-      sentryByHour: new Array(24).fill(0),
-      earliestEvent: null,
-      latestEvent: null,
-      // New statistics
-      triggeringCamera: {},
-      sentryByDayOfWeek: new Array(7).fill(0),
-      dayVsNight: { day: 0, night: 0 },
-      eventsWithTelemetry: 0,
-      telemetryCheckComplete: false,
-      highGForceEvents: 0,
-      maxGForce: 0,
-      autopilotEvents: 0,
-      totalAutopilotTime: 0,
-      speedStats: { max: 0, total: 0, count: 0 },
-      nearMissCount: 0,
-    };
+    const totalEvents = this.events.length;
+    let totalRecordingTime = 0;
+    let totalClips = 0;
+
+    const rawTypes: Record<string, number> = { saved: 0, sentry: 0, recent: 0 };
+    const triggerReasonsMap: Record<string, number> = {};
+    const topLocationsMap: Record<string, number> = {};
+    const sentryLocationsMap: Record<string, number> = {};
+    const eventsByDay: Record<string, number> = {};
+    const sentryByHour = new Array(24).fill(0);
+    const sentryByDayOfWeek = new Array(7).fill(0);
+    const triggeringCameraMap: Record<string, number> = {};
+    const dayVsNight = { day: 0, night: 0 };
+
+    let earliestEvent: string | null = null;
+    let latestEvent: string | null = null;
 
     for (const event of this.events) {
-      // Count by type (event.type is like 'SavedClips', 'SentryClips', 'RecentClips')
       const type = (event.type || 'RecentClips')
         .toLowerCase()
         .replace('clips', '');
-      if (stats.eventsByType[type] !== undefined) {
-        stats.eventsByType[type]++;
+      if (rawTypes[type] !== undefined) {
+        rawTypes[type]++;
       }
 
-      // Calculate recording time (estimate ~60s per clip)
       const clipCount = event.clipGroups?.length || 0;
-      stats.totalClips += clipCount;
-      const eventDuration = clipCount * 60; // Approximate
-      stats.totalRecordingTime += eventDuration;
+      totalClips += clipCount;
+      const eventDuration = clipCount * 60;
+      totalRecordingTime += eventDuration;
 
-      // Track trigger reasons - data is in event.metadata from event.json
-      const reason = event.metadata?.reason;
-      if (reason) {
-        const normalizedReason = this.normalizeTriggerReason(reason);
-        stats.triggerReasons[normalizedReason] =
-          (stats.triggerReasons[normalizedReason] || 0) + 1;
+      const metadata = event.metadata;
+      if (metadata?.reason) {
+        const normalizedReason = this.normalizeTriggerReason(metadata.reason);
+        triggerReasonsMap[normalizedReason] =
+          (triggerReasonsMap[normalizedReason] || 0) + 1;
       }
 
-      // Track triggering camera for sentry events - camera ID is in metadata
-      const triggeringCamera = event.metadata?.camera;
-      if (type === 'sentry' && triggeringCamera) {
-        const cameraName = this.normalizeCameraName(triggeringCamera);
-        stats.triggeringCamera[cameraName] =
-          (stats.triggeringCamera[cameraName] || 0) + 1;
+      if (type === 'sentry' && metadata?.camera !== undefined) {
+        const cameraName = this.normalizeCameraName(metadata.camera);
+        triggeringCameraMap[cameraName] =
+          (triggeringCameraMap[cameraName] || 0) + 1;
       }
 
-      // Track locations - city is in event.metadata from event.json
-      const city = event.metadata?.city;
+      const city = metadata?.city;
       if (city) {
-        stats.topLocations[city] = (stats.topLocations[city] || 0) + 1;
-
-        // Track sentry-specific locations
+        topLocationsMap[city] = (topLocationsMap[city] || 0) + 1;
         if (type === 'sentry') {
-          stats.sentryLocations[city] = (stats.sentryLocations[city] || 0) + 1;
+          sentryLocationsMap[city] = (sentryLocationsMap[city] || 0) + 1;
         }
       }
 
-      // Track by date and hour
       if (event.timestamp) {
         const date = new Date(event.timestamp);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const dayKey = date.toISOString().split('T')[0];
+        eventsByDay[dayKey] = (eventsByDay[dayKey] || 0) + 1;
 
-        stats.eventsByMonth[monthKey] =
-          (stats.eventsByMonth[monthKey] || 0) + 1;
-        stats.eventsByDay[dayKey] = (stats.eventsByDay[dayKey] || 0) + 1;
-
-        // Track sentry events by hour of day
         const hour = date.getHours();
         if (type === 'sentry') {
-          stats.sentryByHour[hour]++;
-          // Track sentry by day of week (0=Sunday, 6=Saturday)
-          const dayOfWeek = date.getDay();
-          stats.sentryByDayOfWeek[dayOfWeek]++;
+          sentryByHour[hour]++;
+          sentryByDayOfWeek[date.getDay()]++;
         }
 
-        // Day vs Night classification (6am-8pm = day)
         if (hour >= 6 && hour < 20) {
-          stats.dayVsNight.day++;
+          dayVsNight.day++;
         } else {
-          stats.dayVsNight.night++;
+          dayVsNight.night++;
         }
 
-        // Track earliest/latest
-        if (!stats.earliestEvent || date < new Date(stats.earliestEvent)) {
-          stats.earliestEvent = event.timestamp;
+        const timeStr = String(event.timestamp);
+        if (!earliestEvent || date < new Date(earliestEvent)) {
+          earliestEvent = timeStr;
         }
-        if (!stats.latestEvent || date > new Date(stats.latestEvent)) {
-          stats.latestEvent = event.timestamp;
+        if (!latestEvent || date > new Date(latestEvent)) {
+          latestEvent = timeStr;
         }
       }
-
-      // Telemetry detection is done async in verifyTelemetryForEvents()
-      // We'll update eventsWithTelemetry after actual file checks
     }
 
-    // Calculate average
-    stats.averageEventLength = stats.totalRecordingTime / stats.totalEvents;
+    const averageEventLength = totalEvents > 0 ? totalRecordingTime / totalEvents : 0;
+    const storage = this.calculateStorageEstimate(totalClips);
 
-    // Sort locations by count - top 10
-    stats.topLocations = Object.entries(stats.topLocations)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .slice(0, 10);
+    const typeColors: Record<string, string> = {
+      saved: '#4caf50',
+      sentry: '#f44336',
+      recent: '#9e9e9e',
+    };
+    const typeNames: Record<string, string> = {
+      saved: 'Saved',
+      sentry: 'Sentry',
+      recent: 'Recent',
+    };
 
-    // Sort sentry locations - top 10
-    stats.sentryLocations = Object.entries(stats.sentryLocations)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .slice(0, 10);
+    const eventsByType = Object.entries(rawTypes)
+      .filter(([_, count]) => count > 0)
+      .map(([type, count]) => ({
+        type,
+        name: typeNames[type] || type,
+        count,
+        percent: Math.round((count / totalEvents) * 100),
+        color: typeColors[type] || '#4a9eff',
+      }));
 
-    return stats;
+    const triggerReasons: TriggerReasonStat[] = Object.entries(
+      triggerReasonsMap
+    )
+      .sort((a, b) => b[1] - a[1])
+      .map(([reason, count]) => ({
+        reason,
+        count,
+        percent: Math.round((count / totalEvents) * 100),
+      }));
+
+    const topLocations: LocationStat[] = Object.entries(topLocationsMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([location, count]) => ({ location, count }));
+
+    const sentryLocations: LocationStat[] = Object.entries(sentryLocationsMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([location, count]) => ({ location, count }));
+
+    const timelineData = this.generateTimelineData(eventsByDay);
+    const weeklyTrends = this.generateTrendsData(eventsByDay, 'weekly');
+    const monthlyTrends = this.generateTrendsData(eventsByDay, 'monthly');
+    const timeOfDay = this.generateTimeOfDayData(sentryByHour);
+    const dayOfWeek = this.generateDayOfWeekData(sentryByDayOfWeek);
+    const cameraDistribution =
+      this.generateCameraDistributionData(triggeringCameraMap);
+
+    const totalDayNight = dayVsNight.day + dayVsNight.night;
+    const dayPercent =
+      totalDayNight > 0 ? Math.round((dayVsNight.day / totalDayNight) * 100) : 0;
+    const nightPercent = totalDayNight > 0 ? 100 - dayPercent : 0;
+
+    return {
+      totalEvents,
+      totalClips,
+      formattedDuration: this.formatDuration(totalRecordingTime),
+      averageEventLength,
+      storage,
+      earliestEvent,
+      latestEvent,
+      eventsByType,
+      triggerReasons,
+      topLocations,
+      sentryLocations,
+      timelineData,
+      weeklyTrends,
+      monthlyTrends,
+      timeOfDay,
+      dayOfWeek,
+      cameraDistribution,
+      dayVsNight: {
+        ...dayVsNight,
+        dayPercent,
+        nightPercent,
+      },
+    };
   }
 
   /**
-   * Verify telemetry for events by actually checking video files
-   * This is async and slower but gives accurate results
-   * @param {Function} onProgress - Callback with (checked, total, found) for progress updates
-   * @returns {Promise<Object>} { eventsWithTelemetry, eventsChecked }
+   * Calculate storage estimate based on clip count
    */
-  async verifyTelemetryForEvents(_onProgress = null) {
-    return { eventsWithTelemetry: 0, eventsChecked: 0 };
+  calculateStorageEstimate(totalClips: number): StorageEstimate {
+    const estimatedMB = totalClips * 10;
+    const estimatedGB = estimatedMB / 1024;
+    return {
+      mb: Math.round(estimatedMB),
+      gb: estimatedGB.toFixed(2),
+      displayValue:
+        estimatedGB >= 1
+          ? `${estimatedGB.toFixed(1)} GB`
+          : `${Math.round(estimatedMB)} MB`,
+    };
   }
 
   /**
-   * Normalize camera ID to readable name
-   * @param {string|number} camera - Camera ID or name
-   * @returns {string} Normalized camera name
+   * Generate events-over-time data points (last 14 days)
    */
-  normalizeCameraName(camera) {
-    const cameraMap = {
+  generateTimelineData(
+    eventsByDay: Record<string, number>
+  ): TimelineDataPoint[] {
+    const data: TimelineDataPoint[] = [];
+    const today = new Date();
+
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayKey = date.toISOString().split('T')[0];
+      const count = eventsByDay[dayKey] || 0;
+
+      data.push({
+        date: dayKey,
+        label: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        count,
+        percent: 0,
+      });
+    }
+
+    const maxCount = Math.max(...data.map((d) => d.count), 1);
+    data.forEach((d) => {
+      d.percent = (d.count / maxCount) * 100;
+    });
+
+    return data;
+  }
+
+  /**
+   * Generate trends data points (weekly or monthly)
+   */
+  generateTrendsData(
+    eventsByDay: Record<string, number>,
+    mode: 'weekly' | 'monthly' = 'weekly'
+  ): TrendDataPoint[] {
+    const data: TrendDataPoint[] = [];
+    const today = new Date();
+
+    if (mode === 'weekly') {
+      for (let i = 11; i >= 0; i--) {
+        const weekEnd = new Date(today);
+        weekEnd.setDate(weekEnd.getDate() - i * 7);
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekStart.getDate() - 6);
+
+        let count = 0;
+        for (let d = 0; d <= 6; d++) {
+          const date = new Date(weekStart);
+          date.setDate(date.getDate() + d);
+          const dayKey = date.toISOString().split('T')[0];
+          if (eventsByDay[dayKey]) {
+            count += eventsByDay[dayKey];
+          }
+        }
+
+        data.push({
+          label: weekStart.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+          count,
+          percent: 0,
+          start: weekStart,
+          end: weekEnd,
+        });
+      }
+    } else {
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date(
+          today.getFullYear(),
+          today.getMonth() - i,
+          1
+        );
+        const monthKey = monthDate.toISOString().slice(0, 7);
+        const monthName = monthDate.toLocaleDateString('en-US', {
+          month: 'short',
+          year: '2-digit',
+        });
+
+        let count = 0;
+        Object.entries(eventsByDay).forEach(([dayKey, dayCount]) => {
+          if (dayKey.startsWith(monthKey)) {
+            count += dayCount;
+          }
+        });
+
+        data.push({
+          label: monthName,
+          count,
+          percent: 0,
+          month: monthKey,
+        });
+      }
+    }
+
+    const maxCount = Math.max(...data.map((d) => d.count), 1);
+    data.forEach((d) => {
+      d.percent = (d.count / maxCount) * 100;
+    });
+
+    return data;
+  }
+
+  /**
+   * Generate hourly distribution data for sentry events
+   */
+  generateTimeOfDayData(sentryByHour: number[]): HourDistributionPoint[] {
+    const maxCount = Math.max(...sentryByHour, 1);
+    const getHourColor = (hour: number): string => {
+      if (hour >= 0 && hour < 6) return '#1a237e';
+      if (hour >= 6 && hour < 9) return '#ff9800';
+      if (hour >= 9 && hour < 17) return '#ffc107';
+      if (hour >= 17 && hour < 20) return '#ff9800';
+      return '#1a237e';
+    };
+
+    return sentryByHour.map((count, hour) => {
+      const label =
+        hour === 0
+          ? '12am'
+          : hour === 12
+            ? '12pm'
+            : hour > 12
+              ? `${hour - 12}pm`
+              : `${hour}am`;
+
+      return {
+        hour,
+        label,
+        count,
+        percent: (count / maxCount) * 100,
+        color: getHourColor(hour),
+      };
+    });
+  }
+
+  /**
+   * Generate day of week distribution data
+   */
+  generateDayOfWeekData(sentryByDayOfWeek: number[]): DayOfWeekPoint[] {
+    const maxCount = Math.max(...sentryByDayOfWeek, 1);
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return sentryByDayOfWeek.map((count, day) => ({
+      day,
+      label: dayNames[day],
+      count,
+      percent: (count / maxCount) * 100,
+      color: day === 0 || day === 6 ? '#ff9800' : '#4a9eff',
+    }));
+  }
+
+  /**
+   * Generate camera distribution data for sentry triggers
+   */
+  generateCameraDistributionData(
+    triggeringCamera: Record<string, number>
+  ): CameraDistributionStat[] {
+    const entries = Object.entries(triggeringCamera);
+    const total = entries.reduce((sum, [_, count]) => sum + count, 0);
+    const colors: Record<string, string> = {
+      Front: '#4a9eff',
+      Rear: '#ff6b6b',
+      'Left Repeater': '#4caf50',
+      'Right Repeater': '#ff9800',
+      'Left Pillar': '#9c27b0',
+      'Right Pillar': '#00bcd4',
+    };
+
+    return entries
+      .sort((a, b) => b[1] - a[1])
+      .map(([camera, count]) => ({
+        camera,
+        count,
+        percent: total > 0 ? Math.round((count / total) * 100) : 0,
+        color: colors[camera] || '#888',
+      }));
+  }
+
+  /**
+   * Normalize camera ID to readable string
+   */
+  normalizeCameraName(camera: string | number): string {
+    const cameraMap: Record<string, string> = {
       '0': 'Front',
       '1': 'Rear',
       '2': 'Front Left',
@@ -195,619 +422,52 @@ class StatisticsManager {
   }
 
   /**
-   * Calculate storage estimate based on clip count
-   * Tesla dashcam footage is approximately 100MB per 10 minutes of 4-camera recording
-   * @param {number} totalClips - Total number of clips
-   * @returns {Object} Storage estimate
+   * Normalize trigger reason string
    */
-  calculateStorageEstimate(totalClips) {
-    // ~100MB per 10 minutes = ~10MB per minute per 4 cameras
-    // Each clip is ~60 seconds, so ~10MB per clip for all 4 cameras
-    const estimatedMB = totalClips * 10;
-    const estimatedGB = estimatedMB / 1024;
-
-    return {
-      mb: Math.round(estimatedMB),
-      gb: estimatedGB.toFixed(2),
-      displayValue:
-        estimatedGB >= 1
-          ? `${estimatedGB.toFixed(1)} GB`
-          : `${Math.round(estimatedMB)} MB`,
-    };
-  }
-
-  /**
-   * Generate events-over-time data for chart (last 14 days)
-   * @param {Object} eventsByDay - Object with day keys and event counts
-   * @returns {Array} Array of chart data points
-   */
-  generateTimelineData(eventsByDay) {
-    const data = [];
-    const today = new Date();
-
-    // Generate last 14 days
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dayKey = date.toISOString().split('T')[0];
-      const count = eventsByDay[dayKey] || 0;
-
-      data.push({
-        date: dayKey,
-        label: date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        }),
-        count: count,
-      });
+  normalizeTriggerReason(reason?: string): string {
+    if (!reason) return 'Unknown';
+    const lower = reason.toLowerCase();
+    if (lower.includes('user_interaction') || lower.includes('dashcam_launcher')) {
+      return 'Manual Save';
     }
-
-    // Calculate max for percentage
-    const maxCount = Math.max(...data.map((d) => d.count), 1);
-    data.forEach((d) => {
-      d.percent = (d.count / maxCount) * 100;
-    });
-
-    return data;
-  }
-
-  /**
-   * Create timeline bar chart HTML
-   * @param {Array} data - Timeline data array
-   * @returns {string} HTML string
-   */
-  createTimelineChart(data) {
-    if (!data || data.length === 0) {
-      return `<p class="stats-empty">${this.t('statistics.noTimelineData')}</p>`;
+    if (lower.includes('object_detection')) {
+      return 'Object Detected';
     }
-
-    const hasEvents = data.some((d) => d.count > 0);
-    if (!hasEvents) {
-      return `<p class="stats-empty">${this.t('statistics.noEventsLast14Days')}</p>`;
+    if (lower.includes('accel') || lower.includes('bump')) {
+      return 'Vehicle Bump';
     }
-
-    return `
-            <div class="stats-timeline-chart">
-                ${data
-                  .map(
-                    (d) => `
-                    <div class="stats-timeline-bar" title="${d.label}: ${d.count} events">
-                        <div class="stats-timeline-fill" style="height: ${Math.max(d.percent, d.count > 0 ? 5 : 0)}%"></div>
-                        <span class="stats-timeline-count">${d.count || ''}</span>
-                    </div>
-                `
-                  )
-                  .join('')}
-            </div>
-            <div class="stats-timeline-labels">
-                <span>${data[0].label}</span>
-                <span>${data[Math.floor(data.length / 2)].label}</span>
-                <span>${data[data.length - 1].label}</span>
-            </div>
-        `;
-  }
-
-  /**
-   * Create time-of-day chart for sentry events
-   * @param {Array} sentryByHour - Array of 24 hourly counts
-   * @returns {string} HTML string
-   */
-  createTimeOfDayChart(sentryByHour) {
-    const maxCount = Math.max(...sentryByHour, 1);
-    const totalSentry = sentryByHour.reduce((a, b) => a + b, 0);
-
-    if (totalSentry === 0) {
-      return `<p class="stats-empty">${this.t('statistics.noSentryEvents')}</p>`;
+    if (lower.includes('honk')) {
+      return 'Honk';
     }
-
-    // Color gradient from night (dark blue) to day (yellow) to night
-    const getHourColor = (hour) => {
-      // Night: 0-5, 19-23 = dark blue
-      // Morning: 6-11 = orange to yellow
-      // Afternoon: 12-17 = yellow to orange
-      // Evening: 18 = orange
-      if (hour >= 0 && hour < 6) return '#1a237e'; // Night
-      if (hour >= 6 && hour < 9) return '#ff9800'; // Morning
-      if (hour >= 9 && hour < 17) return '#ffc107'; // Day
-      if (hour >= 17 && hour < 20) return '#ff9800'; // Evening
-      return '#1a237e'; // Night
-    };
-
-    const bars = sentryByHour
-      .map((count, hour) => {
-        const percent = (count / maxCount) * 100;
-        const color = getHourColor(hour);
-        const label =
-          hour === 0
-            ? '12am'
-            : hour === 12
-              ? '12pm'
-              : hour > 12
-                ? `${hour - 12}pm`
-                : `${hour}am`;
-        return `
-                <div class="stats-hour-bar" title="${label}: ${count} events">
-                    <div class="stats-hour-fill" style="height: ${Math.max(percent, count > 0 ? 5 : 0)}%; background: ${color}"></div>
-                </div>
-            `;
-      })
-      .join('');
-
-    return `
-            <div class="stats-hour-chart">
-                ${bars}
-            </div>
-            <div class="stats-hour-labels">
-                <span>12am</span>
-                <span>6am</span>
-                <span>12pm</span>
-                <span>6pm</span>
-                <span>12am</span>
-            </div>
-        `;
-  }
-
-  /**
-   * Create triggering camera distribution chart
-   * @param {Object} triggeringCamera - Object with camera names and counts
-   * @returns {string} HTML string
-   */
-  createCameraDistributionChart(triggeringCamera) {
-    const entries = Object.entries(triggeringCamera);
-    if (entries.length === 0) {
-      return `<p class="stats-empty">${this.t('statistics.noTriggeringCameraData')}</p>`;
-    }
-
-    const total = entries.reduce(
-      (sum, [_, count]) => sum + (count as number),
-      0
-    );
-    const colors: Record<string, string> = {
-      Front: '#4a9eff',
-      Rear: '#ff6b6b',
-      'Left Repeater': '#4caf50',
-      'Right Repeater': '#ff9800',
-      'Left Pillar': '#9c27b0',
-      'Right Pillar': '#00bcd4',
-    };
-
-    const sortedEntries = entries.sort(
-      (a, b) => (b[1] as number) - (a[1] as number)
-    );
-
-    return `
-            <div class="stats-camera-distribution">
-                ${sortedEntries
-                  .map(([camera, count]) => {
-                    const percent = Math.round(
-                      ((count as number) / total) * 100
-                    );
-                    const color = colors[camera] || '#888';
-                    return `
-                        <div class="stats-camera-row">
-                            <span class="stats-camera-label" style="color: ${color}">${camera}</span>
-                            <div class="stats-camera-bar-track">
-                                <div class="stats-camera-bar-fill" style="width: ${percent}%; background: ${color}"></div>
-                            </div>
-                            <span class="stats-camera-value">${count} (${percent}%)</span>
-                        </div>
-                    `;
-                  })
-                  .join('')}
-            </div>
-        `;
-  }
-
-  /**
-   * Create sentry by day of week chart
-   * @param {Array} sentryByDayOfWeek - Array of 7 daily counts (0=Sunday)
-   * @returns {string} HTML string
-   */
-  createDayOfWeekChart(sentryByDayOfWeek) {
-    const maxCount = Math.max(...sentryByDayOfWeek, 1);
-    const total = sentryByDayOfWeek.reduce((a, b) => a + b, 0);
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    if (total === 0) {
-      return `<p class="stats-empty">${this.t('statistics.noSentryEvents')}</p>`;
-    }
-
-    const bars = sentryByDayOfWeek
-      .map((count, day) => {
-        const percent = (count / maxCount) * 100;
-        // Weekend vs weekday coloring
-        const color = day === 0 || day === 6 ? '#ff9800' : '#4a9eff';
-        return `
-                <div class="stats-dow-bar" title="${dayNames[day]}: ${count} events">
-                    <div class="stats-dow-fill" style="height: ${Math.max(percent, count > 0 ? 5 : 0)}%; background: ${color}"></div>
-                    <span class="stats-dow-label">${dayNames[day]}</span>
-                </div>
-            `;
-      })
-      .join('');
-
-    return `
-            <div class="stats-dow-chart">
-                ${bars}
-            </div>
-            <div class="stats-dow-legend">
-                <span class="stats-legend-item"><span class="stats-legend-color" style="background: #4a9eff"></span>Weekday</span>
-                <span class="stats-legend-item"><span class="stats-legend-color" style="background: #ff9800"></span>Weekend</span>
-            </div>
-        `;
-  }
-
-  /**
-   * Create day vs night pie chart
-   * @param {Object} dayVsNight - Object with day and night counts
-   * @returns {string} HTML string
-   */
-  createDayNightChart(dayVsNight) {
-    const total = dayVsNight.day + dayVsNight.night;
-    if (total === 0) {
-      return `<p class="stats-empty">${this.t('statistics.noEventData')}</p>`;
-    }
-
-    const dayPercent = Math.round((dayVsNight.day / total) * 100);
-    const nightPercent = 100 - dayPercent;
-
-    return `
-            <div class="stats-day-night">
-                <div class="stats-day-night-visual">
-                    <div class="stats-dn-donut" style="--day-percent: ${dayPercent}">
-                        <div class="stats-dn-center">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="#ffc107">
-                                <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="stats-day-night-legend">
-                    <div class="stats-dn-item">
-                        <span class="stats-dn-color" style="background: #ffc107"></span>
-                        <span class="stats-dn-label">Day (6am-8pm)</span>
-                        <span class="stats-dn-value">${dayVsNight.day} (${dayPercent}%)</span>
-                    </div>
-                    <div class="stats-dn-item">
-                        <span class="stats-dn-color" style="background: #1a237e"></span>
-                        <span class="stats-dn-label">Night (8pm-6am)</span>
-                        <span class="stats-dn-value">${dayVsNight.night} (${nightPercent}%)</span>
-                    </div>
-                </div>
-            </div>
-        `;
-  }
-
-  /**
-   * Generate trends data for weekly or monthly view
-   * @param {Object} eventsByDay - Object with day keys and event counts
-   * @param {string} mode - 'weekly' or 'monthly'
-   * @returns {Array} Array of trend data points
-   */
-  generateTrendsData(eventsByDay, mode = 'weekly') {
-    const data = [];
-    const today = new Date();
-
-    if (mode === 'weekly') {
-      // Last 12 weeks
-      for (let i = 11; i >= 0; i--) {
-        const weekEnd = new Date(today);
-        weekEnd.setDate(weekEnd.getDate() - i * 7);
-        const weekStart = new Date(weekEnd);
-        weekStart.setDate(weekStart.getDate() - 6);
-
-        let count = 0;
-
-        // Count events in this week
-        for (let d = 0; d <= 6; d++) {
-          const date = new Date(weekStart);
-          date.setDate(date.getDate() + d);
-          const dayKey = date.toISOString().split('T')[0];
-
-          if (eventsByDay[dayKey]) {
-            count += eventsByDay[dayKey];
-          }
-        }
-
-        data.push({
-          label: weekStart.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          count: count,
-          start: weekStart,
-          end: weekEnd,
-        });
-      }
-    } else {
-      // Last 6 months
-      for (let i = 5; i >= 0; i--) {
-        const monthDate = new Date(
-          today.getFullYear(),
-          today.getMonth() - i,
-          1
-        );
-        const monthKey = monthDate.toISOString().slice(0, 7); // YYYY-MM
-        const monthName = monthDate.toLocaleDateString('en-US', {
-          month: 'short',
-          year: '2-digit',
-        });
-
-        let count = 0;
-
-        // Count events in this month
-        Object.entries(eventsByDay).forEach(([dayKey, dayCount]) => {
-          if (dayKey.startsWith(monthKey)) {
-            count += dayCount as number;
-          }
-        });
-
-        data.push({
-          label: monthName,
-          count: count,
-          month: monthKey,
-        });
-      }
-    }
-
-    // Calculate max for percentage
-    const maxCount = Math.max(...data.map((d) => d.count), 1);
-    data.forEach((d) => {
-      d.percent = (d.count / maxCount) * 100;
-    });
-
-    return data;
-  }
-
-  /**
-   * Create trends chart HTML with toggle for weekly/monthly
-   * @param {Object} eventsByDay - Object with day keys and event counts
-   * @returns {string} HTML string
-   */
-  createTrendsChart(eventsByDay) {
-    const weeklyData = this.generateTrendsData(eventsByDay, 'weekly');
-    const monthlyData = this.generateTrendsData(eventsByDay, 'monthly');
-
-    const hasWeeklyData = weeklyData.some((d) => d.count > 0);
-    const hasMonthlyData = monthlyData.some((d) => d.count > 0);
-
-    if (!hasWeeklyData && !hasMonthlyData) {
-      return `<p class="stats-empty">${this.t('statistics.noTrendData')}</p>`;
-    }
-
-    const eventsText = this.t('statistics.events');
-    const createBars = (data) =>
-      data
-        .map(
-          (d) => `
-            <div class="stats-trend-bar" title="${d.label}: ${d.count} ${eventsText}">
-                <div class="stats-trend-fill" style="height: ${Math.max(d.percent, d.count > 0 ? 5 : 0)}%"></div>
-                <span class="stats-trend-count">${d.count || ''}</span>
-            </div>
-        `
-        )
-        .join('');
-
-    return `
-            <div class="stats-trends-toggle">
-                <button class="stats-trend-btn active" data-mode="weekly">${this.t('statistics.weekly')}</button>
-                <button class="stats-trend-btn" data-mode="monthly">${this.t('statistics.monthly')}</button>
-            </div>
-            <div class="stats-trends-container">
-                <div class="stats-trends-chart" id="weeklyTrends">
-                    ${createBars(weeklyData)}
-                </div>
-                <div class="stats-trends-chart hidden" id="monthlyTrends">
-                    ${createBars(monthlyData)}
-                </div>
-            </div>
-            <div class="stats-trends-labels" id="weeklyLabels">
-                <span>${weeklyData[0]?.label || ''}</span>
-                <span>${weeklyData[Math.floor(weeklyData.length / 2)]?.label || ''}</span>
-                <span>${weeklyData[weeklyData.length - 1]?.label || ''}</span>
-            </div>
-            <div class="stats-trends-labels hidden" id="monthlyLabels">
-                <span>${monthlyData[0]?.label || ''}</span>
-                <span>${monthlyData[Math.floor(monthlyData.length / 2)]?.label || ''}</span>
-                <span>${monthlyData[monthlyData.length - 1]?.label || ''}</span>
-            </div>
-        `;
-  }
-
-  /**
-   * Normalize trigger reason for display
-   * @param {string} reason - Raw trigger reason from event.json
-   * @returns {string} Normalized reason
-   */
-  normalizeTriggerReason(reason) {
-    if (!reason) return this.t('statistics.unknown');
-
-    const lowerReason = reason.toLowerCase();
-
-    if (
-      lowerReason.includes('user_interaction') ||
-      lowerReason.includes('dashcam_launcher')
-    ) {
-      return this.t('statistics.manualSave');
-    }
-    if (lowerReason.includes('object_detection')) {
-      return this.t('statistics.objectDetected');
-    }
-    if (lowerReason.includes('accel') || lowerReason.includes('bump')) {
-      return this.t('statistics.vehicleBump');
-    }
-    if (lowerReason.includes('honk')) {
-      return this.t('statistics.honk');
-    }
-
-    return this.t('statistics.other');
+    return 'Other';
   }
 
   /**
    * Format duration in seconds to readable string
-   * @param {number} seconds - Duration in seconds
-   * @returns {string} Formatted string like "2h 30m"
    */
-  formatDuration(seconds) {
+  formatDuration(seconds: number): string {
     if (seconds < 60) return `${Math.round(seconds)}s`;
-
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   }
 
   /**
-   * Show statistics modal
+   * Open the statistics modal with computed data
    */
-  showModal() {
-    const stats = this.calculateStats();
-
-    if (!stats) {
-      alert(this.t('statistics.noEvents'));
-      return;
-    }
-
-    // Remove existing modal
-    if (this.modal) {
-      this.modal.remove();
-    }
-
-    // Calculate additional stats
-    const storage = this.calculateStorageEstimate(stats.totalClips);
-    const timelineData = this.generateTimelineData(stats.eventsByDay);
-    const timelineChartHTML = this.createTimelineChart(timelineData);
-    const timeOfDayChartHTML = this.createTimeOfDayChart(stats.sentryByHour);
-    const trendsChartHTML = this.createTrendsChart(stats.eventsByDay);
-
-    // New chart data
-    const cameraDistributionHTML = this.createCameraDistributionChart(
-      stats.triggeringCamera
-    );
-    const dayOfWeekChartHTML = this.createDayOfWeekChart(
-      stats.sentryByDayOfWeek
-    );
-    const dayNightChartHTML = this.createDayNightChart(stats.dayVsNight);
-
-    // Build trigger breakdown HTML
-    const triggerHTML = Object.entries(stats.triggerReasons)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .map(([reason, count]) => {
-        const percent = Math.round(
-          ((count as number) / stats.totalEvents) * 100
-        );
-        return `
-                    <div class="stats-bar-row">
-                        <span class="stats-bar-label">${reason}</span>
-                        <div class="stats-bar-track">
-                            <div class="stats-bar-fill" style="width: ${percent}%"></div>
-                        </div>
-                        <span class="stats-bar-value">${count} (${percent}%)</span>
-                    </div>
-                `;
-      })
-      .join('');
-
-    // Build locations HTML (top 10)
-    const eventsText = this.t('statistics.events');
-    const locationsHTML =
-      stats.topLocations
-        .map(
-          ([location, count], index) => `
-                <div class="stats-location-row">
-                    <span class="stats-location-rank">${index + 1}.</span>
-                    <span class="stats-location-name">${location}</span>
-                    <span class="stats-location-count">${count} ${eventsText}</span>
-                </div>
-            `
-        )
-        .join('') ||
-      `<p class="stats-empty">${this.t('statistics.noLocationData')}</p>`;
-
-    // Build sentry locations HTML
-    const sentryLocationsHTML =
-      stats.sentryLocations.length > 0
-        ? stats.sentryLocations
-            .map(
-              ([location, count], index) => `
-                <div class="stats-location-row">
-                    <span class="stats-location-rank">${index + 1}.</span>
-                    <span class="stats-location-name">${location}</span>
-                    <span class="stats-location-count">${count} ${eventsText}</span>
-                </div>
-            `
-            )
-            .join('')
-        : `<p class="stats-empty">${this.t('statistics.noSentryLocationData')}</p>`;
-
-    // Build event types HTML with icons
-    const typeIcons = {
-      saved:
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="#4caf50"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>',
-      sentry:
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="#f44336"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>',
-      recent:
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="#9e9e9e"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>',
-    };
-    const typeColors = {
-      saved: '#4caf50',
-      sentry: '#f44336',
-      recent: '#9e9e9e',
-    };
-    const typeNames = {
-      saved: this.t('statistics.saved'),
-      sentry: this.t('statistics.sentry'),
-      recent: this.t('statistics.recent'),
-    };
-    const typesHTML = Object.entries(stats.eventsByType)
-      .filter(([_, count]) => count > 0)
-      .map(([type, count]) => {
-        const percent = Math.round((count / stats.totalEvents) * 100);
-        return `
-                    <div class="stats-type-item">
-                        <div class="stats-type-bar" style="width: ${percent}%; background: ${typeColors[type]}"></div>
-                        <span class="stats-type-label">
-                            ${typeIcons[type] || ''}
-                            ${typeNames[type] || type}: ${count}
-                        </span>
-                    </div>
-                `;
-      })
-      .join('');
-
-    statisticsModalStore.open({
-      stats: {
-        ...stats,
-        formattedDuration: this.formatDuration(stats.totalRecordingTime),
-      },
-      storage,
-      charts: {
-        timeline: timelineChartHTML,
-        timeOfDay: timeOfDayChartHTML,
-        trends: trendsChartHTML,
-        cameraDistribution: cameraDistributionHTML,
-        dayOfWeek: dayOfWeekChartHTML,
-        dayNight: dayNightChartHTML,
-      },
-      triggerHTML,
-      locationsHTML,
-      sentryLocationsHTML,
-      typesHTML,
-      manager: this,
-    });
+  showModal(): void {
+    const data = this.calculateStats();
+    if (!data) return;
+    statisticsModalStore.open(data as unknown as Record<string, unknown>);
   }
 
   /**
-   * Hide statistics modal
+   * Close the statistics modal
    */
-  hideModal() {
+  hideModal(): void {
     statisticsModalStore.close();
   }
 }
 
-const statisticsManager = new StatisticsManager();
-export { StatisticsManager, statisticsManager };
+export const statisticsManager = new StatisticsManager();
 export default StatisticsManager;

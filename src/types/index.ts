@@ -180,3 +180,95 @@ export interface WeatherDBSchema extends DBSchema {
     value: WeatherCacheRecord;
   };
 }
+
+export interface EventTypeStat {
+  type: string;
+  name: string;
+  count: number;
+  percent: number;
+  color: string;
+}
+
+export interface TriggerReasonStat {
+  reason: string;
+  count: number;
+  percent: number;
+}
+
+export interface LocationStat {
+  location: string;
+  count: number;
+}
+
+export interface TimelineDataPoint {
+  date: string;
+  label: string;
+  count: number;
+  percent: number;
+}
+
+export interface HourDistributionPoint {
+  hour: number;
+  label: string;
+  count: number;
+  percent: number;
+  color: string;
+}
+
+export interface DayOfWeekPoint {
+  day: number;
+  label: string;
+  count: number;
+  percent: number;
+  color: string;
+}
+
+export interface CameraDistributionStat {
+  camera: string;
+  count: number;
+  percent: number;
+  color: string;
+}
+
+export interface DayVsNightStat {
+  day: number;
+  night: number;
+  dayPercent: number;
+  nightPercent: number;
+}
+
+export interface StorageEstimate {
+  mb: number;
+  gb: string;
+  displayValue: string;
+}
+
+export interface TrendDataPoint {
+  label: string;
+  count: number;
+  percent: number;
+  start?: Date;
+  end?: Date;
+  month?: string;
+}
+
+export interface StatisticsData {
+  totalEvents: number;
+  totalClips: number;
+  formattedDuration: string;
+  averageEventLength: number;
+  storage: StorageEstimate;
+  earliestEvent: string | null;
+  latestEvent: string | null;
+  eventsByType: EventTypeStat[];
+  triggerReasons: TriggerReasonStat[];
+  topLocations: LocationStat[];
+  sentryLocations: LocationStat[];
+  timelineData: TimelineDataPoint[];
+  weeklyTrends: TrendDataPoint[];
+  monthlyTrends: TrendDataPoint[];
+  timeOfDay: HourDistributionPoint[];
+  dayOfWeek: DayOfWeekPoint[];
+  cameraDistribution: CameraDistributionStat[];
+  dayVsNight: DayVsNightStat;
+}
