@@ -1,4 +1,6 @@
-import { TeslaCamEvent } from '../types';
+import type { TeslaCamEvent } from '../types';
+
+export type VideoCameraMap = Record<string, HTMLVideoElement | null>;
 
 /**
  * VideoPlayer - Manages synchronized video playback for 4-6 camera systems
@@ -6,12 +8,12 @@ import { TeslaCamEvent } from '../types';
  * Uses a dual-bank system to preload the next clip and eliminate black flashes.
  */
 export class VideoPlayer {
-  public banks: Record<string, Record<string, HTMLVideoElement>> = {
+  public banks: Record<'a' | 'b', VideoCameraMap> = {
     a: {},
     b: {},
   };
-  public activeBank = 'a';
-  public currentEvent: TeslaCamEvent = null;
+  public activeBank: 'a' | 'b' = 'a';
+  public currentEvent: TeslaCamEvent | null = null;
   public currentClipIndex = -1;
   public loopEnabled = false;
   public disableAutoAdvance = false;
@@ -21,11 +23,11 @@ export class VideoPlayer {
   public _intendedPlaybackRate = 1.0;
   public disablePreload = false;
 
-  public onClipChange: any = null;
-  public onTimeUpdate: any = null;
-  public onEnded: any = null;
-  public onPlayStateChange: any = null;
-  public videoLabels: Record<string, any> = {};
+  public onClipChange: ((clipIndex: number) => void) | null = null;
+  public onTimeUpdate: ((currentTime: number, duration: number) => void) | null = null;
+  public onEnded: (() => void) | null = null;
+  public onPlayStateChange: ((isPlaying: boolean) => void) | null = null;
+  public videoLabels: Record<string, HTMLElement | null> = {};
 
   constructor() {
     this.banks.a = this._resolveVideos('bank-a');
@@ -36,54 +38,62 @@ export class VideoPlayer {
   }
 
   /**
-   * Proxies for the active bank's front camera
+   * Proxies for the active bank's videos
    */
-  get videos(): Record<string, HTMLVideoElement> {
+  get videos(): VideoCameraMap {
     return this.banks[this.activeBank] || {};
   }
-  get currentTime() {
-    return this.videos.front.currentTime;
+
+  get currentTime(): number {
+    return this.videos.front?.currentTime ?? 0;
   }
-  set currentTime(t) {
+
+  set currentTime(t: number) {
     this.seek(t, this._isPlayingIntent);
   }
-  get duration() {
-    return this.videos.front.duration;
+
+  get duration(): number {
+    return this.videos.front?.duration || 0;
   }
-  get paused() {
-    return this.videos.front.paused;
+
+  get paused(): boolean {
+    return this.videos.front?.paused ?? true;
   }
-  get isPlaying() {
+
+  get isPlaying(): boolean {
     return !this.paused;
   }
-  get playbackRate() {
+
+  get playbackRate(): number {
     return this._intendedPlaybackRate;
   }
-  set playbackRate(r) {
+
+  set playbackRate(r: number) {
     this._intendedPlaybackRate = r;
     this._applyPlaybackRateToAll();
   }
 
-  get playbackSpeed() {
+  get playbackSpeed(): number {
     return this.playbackRate;
   }
+
   set playbackSpeed(s: number) {
     this.playbackRate = s;
   }
 
-  get isLooping() {
+  get isLooping(): boolean {
     return this.loopEnabled;
   }
 
-  setPlaybackSpeed(speed: number) {
+  setPlaybackSpeed(speed: number): void {
     this.playbackRate = speed;
   }
 
-  setLoop(enabled: boolean) {
+  setLoop(enabled: boolean): void {
     this.loopEnabled = enabled;
   }
 
-  _applyPlaybackRateToAll() {
+  _applyPlaybackRateToAll(): void {
     for (const v of Object.values(this.banks.a)) {
       if (v) v.playbackRate = this._intendedPlaybackRate;
     }
@@ -95,11 +105,11 @@ export class VideoPlayer {
   /**
    * Absolute time in the event (sum of previous clips + current clip time)
    */
-  get absoluteTime() {
+  get absoluteTime(): number {
     if (!this.currentEvent) return 0;
     let offset = 0;
     for (let i = 0; i < this.currentClipIndex; i++) {
-      offset += this.currentEvent.clipGroups[i].clips.front?.duration || 60;
+      offset += this.currentEvent.clipGroups[i]?.clips?.front?.duration || 60;
     }
     return offset + this.currentTime;
   }
@@ -108,13 +118,13 @@ export class VideoPlayer {
    * Backward compatibility getter for components that still expect an array
    * of clip durations (Telemetry, Export, AI Search Heatmap).
    */
-  get cachedClipDurations() {
+  get cachedClipDurations(): number[] {
     if (!this.currentEvent) return [];
     return this.currentEvent.clipGroups.map((g) => {
       // Prefer front camera for duration source of truth
       if (g.clips.front?.duration) return g.clips.front.duration;
       // Fallback to any other camera that has a probed duration
-      for (const cam of Object.values(g.clips as Record<string, any>)) {
+      for (const cam of Object.values(g.clips || {})) {
         if (cam?.duration) return cam.duration;
       }
       // Default to 60s if no probe data found
@@ -122,7 +132,7 @@ export class VideoPlayer {
     });
   }
 
-  _resolveVideos(className: string): Record<string, HTMLVideoElement> {
+  _resolveVideos(className: string): VideoCameraMap {
     if (typeof document === 'undefined') return {};
     const ids: Record<string, string> = {
       front: 'videoFront',
@@ -132,7 +142,7 @@ export class VideoPlayer {
       left_pillar: 'videoLeftPillar',
       right_pillar: 'videoRightPillar',
     };
-    const out: Record<string, HTMLVideoElement> = {};
+    const out: VideoCameraMap = {};
     for (const [cam, id] of Object.entries(ids)) {
       const el = document.getElementById(id) as HTMLVideoElement | null;
       if (el) {
@@ -154,10 +164,11 @@ export class VideoPlayer {
     return out;
   }
 
-  _createSecondBank(className: string): Record<string, HTMLVideoElement> {
+  _createSecondBank(className: string): VideoCameraMap {
     if (typeof document === 'undefined') return {};
-    const out: Record<string, HTMLVideoElement> = {};
+    const out: VideoCameraMap = {};
     for (const [cam, primary] of Object.entries(this.banks.a)) {
+      if (!primary) continue;
       const el = document.createElement('video');
       el.className = `video-player ${className}`;
       el.crossOrigin = 'anonymous';
@@ -180,22 +191,22 @@ export class VideoPlayer {
     return out;
   }
 
-  _resolveLabels() {
-    const labels = {};
+  _resolveLabels(): Record<string, HTMLElement | null> {
+    const labels: Record<string, HTMLElement | null> = {};
     for (const [cam, video] of Object.entries(this.banks.a)) {
-      labels[cam] = video.parentElement?.querySelector('.video-label');
+      labels[cam] = video?.parentElement?.querySelector('.video-label') as HTMLElement | null;
     }
     return labels;
   }
 
-  setupEventListeners() {
+  setupEventListeners(): void {
     const setupBank = (
-      bank: Record<string, HTMLVideoElement>,
-      bankId: string
+      bank: VideoCameraMap,
+      bankId: 'a' | 'b'
     ) => {
       bank.front?.addEventListener('timeupdate', () => {
         if (this.activeBank === bankId) {
-          if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime);
+          if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime, this.duration);
           this._checkPreloadTrigger();
         }
       });
@@ -208,6 +219,7 @@ export class VideoPlayer {
       };
 
       for (const [camera, video] of Object.entries(bank)) {
+        if (!video) continue;
         video.addEventListener('ended', () => {
           if (this.activeBank === bankId) {
             this.updateVideoLabelState(camera, true);
@@ -244,7 +256,7 @@ export class VideoPlayer {
     setupBank(this.banks.b, 'b');
   }
 
-  _checkPreloadTrigger() {
+  _checkPreloadTrigger(): void {
     if (!this.disablePreload && !this._preloading && this.currentEvent) {
       const nextIndex = this.currentClipIndex + 1;
       if (nextIndex < this.currentEvent.clipGroups.length) {
@@ -253,7 +265,7 @@ export class VideoPlayer {
     }
   }
 
-  async loadEvent(event: TeslaCamEvent) {
+  async loadEvent(event: TeslaCamEvent): Promise<void> {
     this.currentEvent = event;
     this.currentClipIndex = -1;
     this.hasPillarCameras = JSON.stringify(event).includes('_pillar');
@@ -261,7 +273,7 @@ export class VideoPlayer {
     await this.loadClip(0);
   }
 
-  async loadClip(clipIndex, isPreload = false) {
+  async loadClip(clipIndex: number, isPreload = false): Promise<void> {
     if (
       !this.currentEvent ||
       clipIndex < 0 ||
@@ -269,7 +281,7 @@ export class VideoPlayer {
     )
       return;
 
-    const targetBankId = isPreload
+    const targetBankId: 'a' | 'b' = isPreload
       ? this.activeBank === 'a'
         ? 'b'
         : 'a'
@@ -341,7 +353,7 @@ export class VideoPlayer {
     }
   }
 
-  async preloadClip(clipIndex) {
+  async preloadClip(clipIndex: number): Promise<void> {
     if (this.disablePreload || this._preloading) return;
     this._preloading = true;
     try {
@@ -351,9 +363,9 @@ export class VideoPlayer {
     }
   }
 
-  async swapBanks() {
+  async swapBanks(): Promise<void> {
     const oldBankId = this.activeBank;
-    const newBankId = this.activeBank === 'a' ? 'b' : 'a';
+    const newBankId: 'a' | 'b' = this.activeBank === 'a' ? 'b' : 'a';
 
     // Hide old, show new using visibility & opacity so preload is never suspended by Chrome
     for (const v of Object.values(this.banks[oldBankId])) {
@@ -395,32 +407,36 @@ export class VideoPlayer {
     }
   }
 
-  play() {
+  play(): Promise<void[] | undefined> | undefined {
     this._isPlayingIntent = true;
     this._applyPlaybackRateToAll(); // Re-enforce speed before playing
     const activeVideos = Object.values(this.videos).filter(
-      (v) => v.getAttribute('src') || v.src
+      (v): v is HTMLVideoElement => Boolean(v && (v.getAttribute('src') || v.src))
     );
     if (activeVideos.length === 0) return;
     return Promise.all(
       activeVideos.map((v) =>
-        v.play().catch((err) => {
+        v.play().catch((err: unknown) => {
           console.warn('[VideoPlayer] Play error:', err);
         })
       )
     );
   }
 
-  pause() {
+  pause(): void {
     this._isPlayingIntent = false;
-    for (const video of Object.values(this.videos)) video.pause();
+    for (const video of Object.values(this.videos)) {
+      if (video && typeof video.pause === 'function') video.pause();
+    }
   }
 
-  async seek(time, autoPlay = true) {
+  async seek(time: number, autoPlay = true): Promise<void> {
     if (time < 0 && this.currentClipIndex > 0) {
       await this.loadClip(this.currentClipIndex - 1);
       const newTime = Math.max(0, this.duration + time);
-      for (const v of Object.values(this.videos)) v.currentTime = newTime;
+      for (const v of Object.values(this.videos)) {
+        if (v) v.currentTime = newTime;
+      }
       return;
     }
 
@@ -431,11 +447,14 @@ export class VideoPlayer {
     ) {
       await this.loadClip(this.currentClipIndex + 1);
       const overflow = Math.max(0, time - this.duration);
-      for (const v of Object.values(this.videos)) v.currentTime = overflow;
+      for (const v of Object.values(this.videos)) {
+        if (v) v.currentTime = overflow;
+      }
       return;
     }
 
     for (const video of Object.values(this.videos)) {
+      if (!video) continue;
       const maxTime = video.duration
         ? Math.max(0, video.duration - 0.05)
         : time;
@@ -447,7 +466,7 @@ export class VideoPlayer {
     }
   }
 
-  async stepFrame(direction) {
+  async stepFrame(direction: number): Promise<void> {
     this.pause();
     const fps = 30;
     const delta = (1 / fps) * direction;
@@ -458,9 +477,10 @@ export class VideoPlayer {
     await this.seek(target, false);
   }
 
-  async handleVideoEnded() {
-    const activeVideos = Object.values(this.videos).filter((v) =>
-      v.getAttribute('src')
+  async handleVideoEnded(): Promise<void> {
+    if (!this.currentEvent) return;
+    const activeVideos = Object.values(this.videos).filter(
+      (v): v is HTMLVideoElement => Boolean(v && v.getAttribute('src'))
     );
     const allEnded = activeVideos.every((v) => v.ended || v.error);
     if (!allEnded || !this._isPlayingIntent) return;
@@ -477,7 +497,7 @@ export class VideoPlayer {
     }
   }
 
-  async nextClip() {
+  async nextClip(): Promise<void> {
     if (
       this.currentEvent &&
       this.currentClipIndex < this.currentEvent.clipGroups.length - 1
@@ -486,20 +506,20 @@ export class VideoPlayer {
     }
   }
 
-  async previousClip() {
+  async previousClip(): Promise<void> {
     if (this.currentEvent && this.currentClipIndex > 0) {
       await this.loadClip(this.currentClipIndex - 1);
     }
   }
 
-  async getTotalDuration() {
+  async getTotalDuration(): Promise<number> {
     if (!this.currentEvent) return 0;
     return this.currentEvent.clipGroups.reduce((total, group) => {
       return total + (group.clips.front?.duration || 60);
     }, 0);
   }
 
-  async seekToEventTime(eventTime, autoPlay = true) {
+  async seekToEventTime(eventTime: number, autoPlay = true): Promise<void> {
     if (!this.currentEvent) return;
     const totalDuration = await this.getTotalDuration();
     eventTime = Math.max(0, Math.min(eventTime, totalDuration - 0.1));
@@ -510,7 +530,7 @@ export class VideoPlayer {
 
     for (let i = 0; i < this.currentEvent.clipGroups.length; i++) {
       const duration =
-        this.currentEvent.clipGroups[i].clips.front?.duration || 60;
+        this.currentEvent.clipGroups[i]?.clips?.front?.duration || 60;
       if (accumulatedTime + duration >= eventTime) {
         targetClipIndex = i;
         timeInClip = eventTime - accumulatedTime;
@@ -524,27 +544,28 @@ export class VideoPlayer {
     await this.seek(timeInClip, autoPlay);
   }
 
-  updateVideoLabelState(camera, ended) {
+  updateVideoLabelState(camera: string, ended: boolean): void {
     const label = this.videoLabels[camera];
     if (label) label.classList.toggle('ended', ended);
   }
 
-  resetAllVideoLabelStates() {
+  resetAllVideoLabelStates(): void {
     for (const label of Object.values(this.videoLabels)) {
       if (label) label.classList.remove('ended');
     }
   }
 
-  clear() {
+  clear(): void {
     this.pause();
     for (const bank of Object.values(this.banks)) {
-      for (const video of Object.values(bank)) video.src = '';
+      for (const video of Object.values(bank)) {
+        if (video) video.src = '';
+      }
     }
     this.currentEvent = null;
     this.currentClipIndex = -1;
   }
 }
 
-const videoPlayer = new VideoPlayer();
-export { videoPlayer };
+export const videoPlayer = new VideoPlayer();
 export default VideoPlayer;
