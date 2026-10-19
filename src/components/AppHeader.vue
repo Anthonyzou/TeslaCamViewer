@@ -112,169 +112,200 @@ const { t } = useI18n();
 <style scoped>
 /* ==================== HEADER ==================== */
 .app-header {
-    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-    padding: 0.875rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    z-index: 100;
+  background: linear-gradient(
+    180deg,
+    var(--bg-secondary) 0%,
+    var(--bg-primary) 100%
+  );
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 100;
 }
 
 /* Subtle glow line under header */
 .app-header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-            transparent 0%,
-            var(--accent) 20%,
-            var(--accent) 80%,
-            transparent 100%);
-    opacity: 0.3;
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 20%,
+    var(--accent) 80%,
+    transparent 100%
+  );
+  opacity: 0.3;
 }
 
 .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .brand-icon {
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 8px var(--accent-glow));
-    transition: filter 0.3s ease;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  transition: filter 0.3s ease;
 }
 
 .brand-icon:hover {
-    filter: drop-shadow(0 0 12px var(--accent));
+  filter: drop-shadow(0 0 12px var(--accent));
 }
 
 .brand-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .app-header h1 {
-    font-family: var(--font-ui);
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin: 0;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-family: var(--font-ui);
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--accent) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-tagline {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
 }
 
 .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 1;
-    min-width: 0;
-    /* Allow shrinking below content size */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 1;
+  min-width: 0;
+  /* Allow shrinking below content size */
 }
 
 .header-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-btn:hover {
-    color: var(--accent);
-    background-color: var(--bg-elevated);
-    border-color: var(--border-accent);
-    box-shadow: 0 0 15px var(--accent-glow);
+  color: var(--accent);
+  background-color: var(--bg-elevated);
+  border-color: var(--border-accent);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .header-btn svg {
-    width: 20px;
-    height: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Session button - free tier (red) */
 .session-btn {
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
-    color: white !important;
-    border: 1px solid rgba(255, 77, 109, 0.3) !important;
-    border-radius: 20px;
-    font-family: var(--font-ui);
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    transition: all 0.25s ease;
-    cursor: pointer;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+  color: white !important;
+  border: 1px solid rgba(255, 77, 109, 0.3) !important;
+  border-radius: 20px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+  cursor: pointer;
 }
 
 .session-btn:hover {
-    background: linear-gradient(135deg, #ff6b88 0%, #e01b5e 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(201, 24, 74, 0.4);
-    color: white !important;
+  background: linear-gradient(135deg, #ff6b88 0%, #e01b5e 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(201, 24, 74, 0.4);
+  color: white !important;
 }
 
 .session-btn svg {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .primary-btn {
-    background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
-    color: var(--bg-void);
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: var(--font-ui);
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 0 20px var(--accent-glow);
+  background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+  color: var(--bg-void);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .primary-btn:hover {
-    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 30px var(--accent-glow);
+  background: linear-gradient(
+    135deg,
+    var(--accent-hover) 0%,
+    var(--accent) 100%
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 30px var(--accent-glow);
 }
 
 .primary-btn:active {
-    transform: translateY(0);
+  transform: translateY(0);
+}
+
+/* Menu Toggle Button (mobile only) */
+.menu-toggle-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.menu-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent);
 }
 </style>

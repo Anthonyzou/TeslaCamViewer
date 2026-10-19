@@ -78,7 +78,7 @@
     </div>
 
     <!-- Bottom Sheet Controls (Portrait Mode) -->
-    <!-- <BottomSheet
+    <BottomSheet
       @togglePlay="togglePlay"
       @frameBack="frameBack"
       @frameForward="frameForward"
@@ -86,7 +86,7 @@
       @nextClip="nextClip"
       @prevEvent="prevEvent"
       @nextEvent="nextEvent"
-    /> -->
+    />
 
     <!-- Modals -->
     <CommandPalette />
