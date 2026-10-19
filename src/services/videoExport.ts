@@ -9,6 +9,7 @@ import {
   Mp4OutputFormat,
   Output,
 } from 'mediabunny';
+import { exportModalStore } from '../composables/useModals';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { LayoutRenderer } from '../layout/layoutRenderer';
 import type VideoPlayer from './videoPlayer';
@@ -131,7 +132,7 @@ class VideoExport {
         console.error('[VideoExport] Encoding error:', err);
         alert(`Export failed: ${err.message || 'Unknown error'}`);
       }
-      this._hideExportOverlay();
+      exportModalStore.close();
       window.app?.enableControls?.();
     } finally {
       this.isExporting = false;
@@ -210,9 +211,6 @@ class VideoExport {
     // Warm-up seek to initial start time and ensure frames are decoded
     await this._seekVideos(videos, startSec);
 
-    const progressBar = document.getElementById('exportProgressBar');
-    const progressEl = document.getElementById('exportProgress');
-
     for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
       if (this._cancelled) {
         await output.cancel();
@@ -262,22 +260,21 @@ class VideoExport {
         keyFrame: isKeyFrame,
       });
 
-      // Update progress UI
+      // Update progress UI via reactive store
       const percent = Math.min(
         99,
         Math.round(((frameIdx + 1) / totalFrames) * 100)
       );
-      if (progressBar) progressBar.style.width = `${percent}%`;
-      if (progressEl) {
-        progressEl.textContent = `GPU Encoding (mediabunny): ${percent}% (Frame ${frameIdx + 1}/${totalFrames})`;
-      }
+      exportModalStore.updateProgress(
+        percent,
+        `GPU Encoding (mediabunny): ${percent}% (Frame ${frameIdx + 1}/${totalFrames})`
+      );
     }
 
     // Finalize MP4 muxing
     await output.finalize();
 
-    if (progressBar) progressBar.style.width = '100%';
-    if (progressEl) progressEl.textContent = 'Finalizing MP4 container...';
+    exportModalStore.updateProgress(100, 'Finalizing MP4 container...');
 
     const buffer = output.target.buffer;
     if (!buffer) {
@@ -341,57 +338,16 @@ class VideoExport {
   }
 
   private _showExportOverlay(camera: string, durationSec: number) {
-    if (typeof document === 'undefined') return;
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const loadingText = document.getElementById('loadingText');
-    if (!loadingOverlay || !loadingText) return;
-
-    loadingOverlay.classList.remove('hidden');
-    loadingOverlay.style.display = 'flex';
-    loadingOverlay.style.position = 'fixed';
-    loadingOverlay.style.top = '0';
-    loadingOverlay.style.left = '0';
-    loadingOverlay.style.right = '0';
-    loadingOverlay.style.bottom = '0';
-    loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-    loadingOverlay.style.zIndex = '9999';
-
     const title =
       camera === 'all'
         ? 'Exporting Camera Grid (mediabunny GPU)'
         : `Exporting ${camera.toUpperCase()} Camera (mediabunny GPU)`;
 
-    loadingText.innerHTML = `
-      <div style="text-align: center;">
-        <div id="exportTitle" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; color: #ffffff;">
-          ${title}
-        </div>
-        <div id="exportProgress" style="font-size: 0.9rem; color: #a0a0a0;">
-          Preparing hardware encoder (${durationSec.toFixed(1)}s)...
-        </div>
-        <div style="width: 320px; height: 8px; background: #3a3a3a; border-radius: 4px; margin: 1rem auto; overflow: hidden;">
-          <div id="exportProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4a9eff, #6bb1ff); transition: width 0.15s ease;"></div>
-        </div>
-        <button id="cancelExportBtn" style="margin-top: 1rem; padding: 0.5rem 1.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">
-          Cancel
-        </button>
-      </div>
-    `;
-
-    document
-      .getElementById('cancelExportBtn')
-      ?.addEventListener('click', () => {
-        this.cancelExport();
-      });
-  }
-
-  private _hideExportOverlay() {
-    if (typeof document === 'undefined') return;
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-      loadingOverlay.classList.add('hidden');
-      loadingOverlay.style.display = 'none';
-    }
+    exportModalStore.open(
+      title,
+      `Preparing hardware encoder (${durationSec.toFixed(1)}s)...`,
+      () => this.cancelExport()
+    );
   }
 
   private _downloadFile(url: string, filename: string) {
@@ -405,32 +361,13 @@ class VideoExport {
   }
 
   private _showComplete(filename: string, downloadUrl: string) {
-    if (typeof document === 'undefined') return;
-    const loadingText = document.getElementById('loadingText');
-    if (!loadingText) return;
-
-    loadingText.innerHTML = `
-      <div style="text-align: center; color: white;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎉</div>
-        <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem;">Export Complete!</div>
-        <div style="color: #a0a0a0; font-size: 0.9rem; margin-bottom: 1.5rem;">${filename} has been saved directly from your GPU.</div>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-          <a href="${downloadUrl}" download="${filename}" style="background: #4a9eff; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Download Again</a>
-          <button id="exportDoneBtn" style="background: #333; color: white; border: 1px solid #555; padding: 10px 24px; border-radius: 6px; cursor: pointer;">Close</button>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('exportDoneBtn')?.addEventListener('click', () => {
-      this._hideExportOverlay();
-      window.app?.enableControls?.();
-    });
+    exportModalStore.showComplete(filename, downloadUrl);
   }
 
   async cancelExport() {
     this._cancelled = true;
     this.isExporting = false;
-    this._hideExportOverlay();
+    exportModalStore.close();
     if (typeof window !== 'undefined') {
       window.app?.enableControls?.();
     }

@@ -14,6 +14,7 @@ const {
   driveManagementModalStore,
   driveSetupModalStore,
   commandPaletteModalStore,
+  exportModalStore,
 } = jiti('./src/composables/useModals.ts');
 
 test('useMapView - manages map instance reactively', () => {
@@ -178,4 +179,32 @@ test('modalStore.commandPalette - registers and clears commands', () => {
   assert.strictEqual(commandPaletteModalStore.isOpen, true);
   commandPaletteModalStore.close();
   assert.strictEqual(commandPaletteModalStore.isOpen, false);
+});
+
+test('modalStore.export - manages export progress and completion state', () => {
+  let cancelled = false;
+  assert.strictEqual(exportModalStore.isOpen, false);
+
+  exportModalStore.open('Exporting Front Camera', 'Preparing encoder...', () => {
+    cancelled = true;
+  });
+  assert.strictEqual(exportModalStore.isOpen, true);
+  assert.strictEqual(exportModalStore.isComplete, false);
+  assert.strictEqual(exportModalStore.title, 'Exporting Front Camera');
+  assert.strictEqual(exportModalStore.statusText, 'Preparing encoder...');
+  assert.strictEqual(exportModalStore.progress, 0);
+
+  exportModalStore.updateProgress(45, 'Encoding frame 45/100');
+  assert.strictEqual(exportModalStore.progress, 45);
+  assert.strictEqual(exportModalStore.statusText, 'Encoding frame 45/100');
+
+  exportModalStore.showComplete('clip.mp4', 'blob:http://localhost/123');
+  assert.strictEqual(exportModalStore.isComplete, true);
+  assert.strictEqual(exportModalStore.filename, 'clip.mp4');
+  assert.strictEqual(exportModalStore.downloadUrl, 'blob:http://localhost/123');
+  assert.strictEqual(exportModalStore.progress, 100);
+
+  exportModalStore.cancel();
+  assert.strictEqual(cancelled, true);
+  assert.strictEqual(exportModalStore.isOpen, false);
 });

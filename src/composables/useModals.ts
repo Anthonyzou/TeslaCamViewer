@@ -188,6 +188,71 @@ export const commandPaletteModalStore = {
   },
 };
 
+// Export Modal
+const isExportOpen: Ref<boolean> = ref(false);
+const isExportComplete: Ref<boolean> = ref(false);
+const exportTitle: Ref<string> = ref('');
+const exportStatusText: Ref<string> = ref('');
+const exportProgress: Ref<number> = ref(0);
+const exportFilename: Ref<string> = ref('');
+const exportDownloadUrl: Ref<string> = ref('');
+let exportCancelHandler: (() => void) | null = null;
+
+export const exportModalStore = {
+  get isOpen(): boolean {
+    return isExportOpen.value;
+  },
+  get isComplete(): boolean {
+    return isExportComplete.value;
+  },
+  get title(): string {
+    return exportTitle.value;
+  },
+  get statusText(): string {
+    return exportStatusText.value;
+  },
+  get progress(): number {
+    return exportProgress.value;
+  },
+  get filename(): string {
+    return exportFilename.value;
+  },
+  get downloadUrl(): string {
+    return exportDownloadUrl.value;
+  },
+  open(title: string, statusText = '', onCancel?: () => void): void {
+    exportTitle.value = title;
+    exportStatusText.value = statusText;
+    exportProgress.value = 0;
+    isExportComplete.value = false;
+    exportFilename.value = '';
+    exportDownloadUrl.value = '';
+    exportCancelHandler = onCancel || null;
+    isExportOpen.value = true;
+  },
+  updateProgress(percent: number, statusText?: string): void {
+    exportProgress.value = percent;
+    if (statusText !== undefined) {
+      exportStatusText.value = statusText;
+    }
+  },
+  showComplete(filename: string, downloadUrl: string): void {
+    exportFilename.value = filename;
+    exportDownloadUrl.value = downloadUrl;
+    exportProgress.value = 100;
+    isExportComplete.value = true;
+  },
+  cancel(): void {
+    exportCancelHandler?.();
+    this.close();
+  },
+  close(): void {
+    isExportOpen.value = false;
+    isExportComplete.value = false;
+    exportCancelHandler = null;
+  },
+};
+
 export const modalStore = {
   settings: settingsModalStore,
   help: helpModalStore,
@@ -195,6 +260,7 @@ export const modalStore = {
   driveManagement: driveManagementModalStore,
   driveSetup: driveSetupModalStore,
   commandPalette: commandPaletteModalStore,
+  export: exportModalStore,
 };
 
 export function useModals() {
@@ -225,6 +291,16 @@ export function useModals() {
     isCommandPaletteOpen,
     commandPaletteCommands: commandPaletteList,
     commandPaletteModal: commandPaletteModalStore,
+
+    // Export Modal
+    isExportOpen,
+    isExportComplete,
+    exportTitle,
+    exportStatusText,
+    exportProgress,
+    exportFilename,
+    exportDownloadUrl,
+    exportModal: exportModalStore,
 
     modalStore,
   };

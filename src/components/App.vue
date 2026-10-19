@@ -95,6 +95,7 @@
     <StatisticsModal />
     <DriveManagementModal />
     <DriveSetupModal />
+    <ExportModal />
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
@@ -115,6 +116,7 @@ import CommandPalette from './CommandPalette.vue';
 import DriveManagementModal from './DriveManagementModal.vue';
 import DriveSetupModal from './DriveSetupModal.vue';
 import EventInfoBar from './EventInfoBar.vue';
+import ExportModal from './ExportModal.vue';
 import HelpModal from './HelpModal.vue';
 import PlaybackControls from './PlaybackControls.vue';
 import SettingsModal from './SettingsModal.vue';
