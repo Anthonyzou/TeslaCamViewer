@@ -289,3 +289,105 @@ defineExpose({
   isOpen,
 });
 </script>
+
+<style scoped>
+/* Drive management modal */
+.drive-management-modal {
+    max-width: 500px;
+}
+
+.drive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.drive-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.drive-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.drive-color-picker {
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.drive-color-input {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.drive-color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.drive-color-picker:hover .drive-color-preview {
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.drive-label-input {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 0.375rem 0.5rem;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+}
+
+.drive-label-input:hover {
+    border-color: var(--border);
+}
+
+.drive-label-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.drive-event-count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.drive-remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.drive-remove-btn:hover {
+    color: #ff5252;
+    background: rgba(255, 82, 82, 0.1);
+}
+</style>

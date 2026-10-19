@@ -57,3 +57,85 @@ watch(
   }
 );
 </script>
+
+<style scoped>
+/* Event List */
+.event-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+    scroll-behavior: smooth;
+}
+
+.event-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.event-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.event-list::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.event-list::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-muted);
+}
+
+.empty-state .hint {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Welcome screen language selector */
+.welcome-language-selector {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.welcome-language-selector label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.welcome-language-select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    font-family: var(--font-ui);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.welcome-language-select:hover {
+    border-color: var(--accent);
+}
+
+.welcome-language-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+.welcome-language-select option {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+</style>

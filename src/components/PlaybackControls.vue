@@ -530,3 +530,773 @@ function onExportVideoClick(): void {
   emit('exportVideo');
 }
 </script>
+
+<style scoped>
+/* ==================== CONTROLS ==================== */
+.controls {
+    background: var(--bg-secondary);
+    padding: 0.375rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.control-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.control-btn:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    border-color: var(--accent);
+    color: var(--accent);
+    /* Removed box-shadow blur — 15px blur repaint was saturating main thread
+     * during rapid mouse movement and starving video decode. Border-color
+     * change reads visually nearly identical and is essentially free. */
+}
+
+.control-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.control-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.control-btn.active {
+    background: var(--accent-subtle);
+    border-color: var(--accent);
+    color: var(--accent);
+    /* Tight glow — active buttons (e.g. Play while playing) would otherwise
+     * hold a 15px blur shadow indefinitely, continuously paid on every paint. */
+    box-shadow: 0 0 4px var(--accent-glow);
+}
+
+.control-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Control Groups */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.control-group .control-btn {
+    border: none;
+    background: transparent;
+    width: 32px;
+    height: 32px;
+}
+
+.control-group .control-btn:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    box-shadow: none;
+}
+
+.control-group-playback {
+    flex-shrink: 0;
+}
+
+.control-group-export {
+    flex-shrink: 0;
+}
+
+.control-group-view {
+    flex-shrink: 0;
+}
+
+.control-group-overlays {
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    padding-left: 0.5rem;
+    margin-left: 0.25rem;
+}
+
+.overlay-toggle-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px;
+    padding: 0;
+    border-radius: 6px;
+    position: relative;
+}
+
+.overlay-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.overlay-toggle-btn.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.overlay-toggle-btn.active:hover:not(:disabled) {
+    background: var(--accent);
+    filter: brightness(1.1);
+}
+
+/* Hidden controls (kept for keyboard shortcuts) */
+.hidden-control {
+    display: none !important;
+}
+
+/* Timeline Zoom Controls - vertical stack on right side of timeline row */
+.timeline-zoom-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 0.125rem;
+    background: var(--bg-tertiary);
+    border-left: 1px solid var(--border);
+}
+
+.timeline-zoom-controls .control-btn.zoom-btn {
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.timeline-zoom-controls .control-btn.zoom-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.timeline-zoom-controls .zoom-btn:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    border-color: var(--accent);
+}
+
+.timeline-zoom-controls .zoom-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Export dropdown enhancements */
+.export-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.5rem 0;
+}
+
+.export-option svg {
+    flex-shrink: 0;
+}
+
+.export-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Loop button active state */
+#loopBtn.active {
+    color: var(--accent);
+    background: var(--accent-subtle);
+}
+
+.event-nav-separator {
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(180deg, transparent 0%, var(--border) 50%, transparent 100%);
+    margin: 0 0.375rem;
+}
+
+/* Export Dropdown */
+.export-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.export-dropdown-container .dropdown-toggle {
+    padding: 0.375rem;
+    min-width: 28px;
+    margin-left: -1px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.export-dropdown-container #exportBtn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.export-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    min-width: 260px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    margin-bottom: 10px;
+}
+
+.export-dropdown.hidden {
+    display: none;
+}
+
+.export-dropdown-header {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0.625rem 0.875rem 0.375rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.export-option {
+    display: block;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.export-option:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
+
+/* Export format row */
+.export-format-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: default;
+}
+
+.export-format-row:hover {
+    background: transparent;
+    color: inherit;
+}
+
+.export-format-row label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.export-format-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.export-format-select:hover {
+    border-color: var(--accent);
+}
+
+.export-format-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Export action buttons (Screenshot, Export Video, Insurance Report) */
+.export-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: calc(100% - 0.75rem);
+    margin: 0.25rem 0.375rem;
+    padding: 0.6rem 0.75rem;
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.08), rgba(74, 158, 255, 0.02));
+    border: none;
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.export-action-btn:hover {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.15), rgba(74, 158, 255, 0.05));
+}
+
+.export-action-btn svg {
+    color: var(--accent);
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* Export Video + Format group */
+.export-video-group {
+    display: flex;
+    align-items: stretch;
+    margin: 0.25rem 0.375rem;
+    width: calc(100% - 0.75rem);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.export-video-group .export-action-btn {
+    flex: 1;
+    margin: 0;
+    width: auto;
+    border-radius: 0;
+}
+
+.export-video-group .export-format-select {
+    background: var(--bg-tertiary);
+    border: none;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    color: var(--text-secondary);
+    padding: 0 0.625rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.export-video-group .export-format-select:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
+
+.export-video-group .export-format-select:focus {
+    outline: none;
+    background: var(--accent-subtle);
+}
+
+/* Style select dropdown options for dark theme */
+select,
+.export-format-select,
+.setting-select,
+.drive-select,
+.speed-select,
+.layout-select,
+.mobile-layout-select {
+    color-scheme: dark;
+    accent-color: #00d4ff;
+}
+
+select option,
+.export-format-select option,
+.setting-select option,
+.drive-select option,
+.speed-select option,
+.layout-select option,
+.mobile-layout-select option {
+    background-color: #161a24 !important;
+    color: #e8eaed !important;
+    padding: 0.5rem;
+}
+
+/* Override browser's native selection highlight for checked options */
+select option:checked,
+select option:active,
+.export-format-select option:checked,
+.export-format-select option:active,
+.setting-select option:checked,
+.setting-select option:active {
+    background: #0d4a5a !important;
+    background-color: #0d4a5a !important;
+    color: #00d4ff !important;
+    -webkit-text-fill-color: #00d4ff !important;
+    font-weight: 500;
+    box-shadow: 0 0 10px 100px #0d4a5a inset !important;
+}
+
+select option:hover,
+.export-format-select option:hover,
+.setting-select option:hover {
+    background-color: rgba(0, 212, 255, 0.2) !important;
+    color: #00d4ff !important;
+}
+
+/* GIF export warning message */
+.gif-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0.25rem 0.5rem;
+    padding: 0.375rem 0.5rem;
+    background: rgba(255, 184, 0, 0.15);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--warning);
+}
+
+.gif-warning.hidden {
+    display: none;
+}
+
+.gif-warning-icon {
+    font-size: 0.85rem;
+}
+
+/* Export settings section */
+.export-settings-header {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0.4rem 0.75rem 0.2rem;
+    margin-top: 0.125rem;
+}
+
+/* Export checkbox options */
+.export-checkbox-option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: calc(100% - 0.75rem);
+    margin: 0.25rem 0.375rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.export-checkbox-option:hover {
+    background: var(--accent-subtle);
+}
+
+.export-checkbox-option input[type="checkbox"] {
+    display: none;
+}
+
+.export-checkbox-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+}
+
+.export-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.export-checkbox-label::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--text-muted);
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.export-checkbox-option input:checked+.export-checkbox-label::before {
+    background: var(--accent);
+    border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+    background-size: 10px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.export-checkbox-option:hover .export-checkbox-label::before {
+    border-color: var(--accent);
+}
+
+.export-option-hint {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+    white-space: nowrap;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* Privacy mode checkbox option (legacy - keep for compatibility) */
+.privacy-mode-option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.625rem 0.875rem;
+    cursor: pointer;
+    border-bottom: none !important;
+}
+
+.privacy-mode-option input[type="checkbox"] {
+    display: none;
+}
+
+.privacy-mode-option>span:first-of-type {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.privacy-mode-option>span:first-of-type::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--text-muted);
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.privacy-mode-option input:checked+span::before {
+    background: var(--accent);
+    border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+    background-size: 12px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.privacy-mode-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: 24px;
+}
+
+.privacy-mode-option:hover {
+    background: var(--accent-subtle);
+}
+
+.privacy-mode-option:hover>span:first-of-type::before {
+    border-color: var(--accent);
+}
+
+/* Layout name on second line in export dropdown */
+.export-option .layout-name-line {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.125rem;
+}
+
+/* Speed & Layout Controls */
+.speed-control,
+.layout-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 0.75rem;
+    flex-shrink: 0;
+}
+
+.speed-label,
+.layout-label {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.speed-select,
+.layout-select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.speed-select:hover:not(:disabled),
+.layout-select:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    border-color: var(--border-accent);
+}
+
+.speed-select:focus,
+.layout-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.speed-select:disabled,
+.layout-select:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.loop-control {
+    display: flex;
+    align-items: center;
+    margin-left: 0.75rem;
+    flex-shrink: 0;
+}
+
+.loop-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.loop-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.loop-label input[type="checkbox"]:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.loop-label:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.sync-status {
+    margin-left: auto;
+    position: relative;
+}
+
+.sync-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--text-muted);
+    cursor: help;
+    transition: all 0.3s ease;
+}
+
+.sync-indicator.synced {
+    background-color: var(--success);
+    box-shadow: 0 0 12px var(--success-glow);
+    animation: pulse-success 2s ease-in-out infinite;
+}
+
+.sync-indicator.drifted {
+    background-color: var(--warning);
+    box-shadow: 0 0 12px var(--warning-glow);
+    animation: pulse-warning 1s ease-in-out infinite;
+}
+
+/* Watchdog recovery state — cyan/blue so it's visually distinct from the
+   amber "drifted" state. Fires briefly when a micro-seek unsticks a camera
+   from GPU overlay starvation. */
+.sync-indicator.recovering {
+    background-color: #06b6d4;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.55);
+    animation: pulse-recovering 0.6s ease-in-out infinite;
+}
+
+@keyframes pulse-success {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px var(--success-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 16px var(--success);
+    }
+}
+
+@keyframes pulse-warning {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px var(--warning-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 16px var(--warning);
+    }
+}
+
+@keyframes pulse-recovering {
+
+    0%,
+    100% {
+        box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 18px rgba(6, 182, 212, 0.9);
+    }
+}
+
+.sync-status::before {
+    content: 'Sync: ' attr(data-status);
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    padding: 0.5rem 0.875rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+}
+
+.sync-status:hover::before {
+    opacity: 1;
+}
+</style>

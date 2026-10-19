@@ -158,3 +158,485 @@ onUnmounted(() => {
   window.removeEventListener('touchend', onTimelineTouchEnd);
 });
 </script>
+
+<style scoped>
+/* ==================== TIMELINE ==================== */
+/* Timeline row wrapper - contains timeline, zoom controls */
+.timeline-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+}
+
+.timeline-container {
+    flex: 1;
+    padding: 0.25rem 0.75rem;
+    overflow: visible;
+}
+
+.timeline {
+    position: relative;
+    height: 36px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    overflow: visible;
+    /* Allow markers to extend outside */
+}
+
+/* Timeline gradient overlay */
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    border-radius: 6px;
+}
+
+.timeline-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-subtle) 0%, var(--accent) 100%);
+    border-radius: 6px 0 0 6px;
+    width: 0%;
+    transition: width 0.15s ease-out;
+    pointer-events: none;
+}
+
+.timeline-scrubber {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    border: 2px solid var(--text-primary);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    pointer-events: none;
+    z-index: 10;
+    /* Tight glow (was 15px blur) — scrubber animates every frame of playback,
+     * so the repaint cost for its shadow is paid ~30 times per second.
+     * Reducing blur radius by ~4x cuts per-frame paint work significantly. */
+    box-shadow: 0 0 4px var(--accent-glow);
+    transition: left 0.1s ease-out, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.timeline-scrubber.dragging {
+    cursor: grabbing;
+    transform: translate(-50%, -50%) scale(1.3);
+    box-shadow: 0 0 8px var(--accent);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+    /* Disable left transition while dragging */
+}
+
+/* Disable transitions during seeking for responsive feel */
+.timeline.seeking .timeline-progress,
+.timeline.seeking .timeline-scrubber {
+    transition: none !important;
+}
+
+.timeline-clips {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    /* Allow markers to extend outside */
+    transition: transform 0.15s ease-out;
+}
+
+/* Timeline Mini-map */
+.timeline-minimap {
+    position: relative;
+    height: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.timeline-minimap.hidden {
+    display: none;
+}
+
+.minimap-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-subtle) 0%, rgba(0, 212, 255, 0.3) 100%);
+    pointer-events: none;
+    border-radius: 4px 0 0 4px;
+    transition: width 0.15s ease-out;
+}
+
+.minimap-viewport {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(0, 212, 255, 0.2);
+    border: 2px solid var(--accent);
+    border-radius: 3px;
+    cursor: grab;
+    transition: background 0.15s ease, left 0.15s ease-out, width 0.15s ease-out;
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.minimap-viewport:hover {
+    background: rgba(0, 212, 255, 0.3);
+}
+
+.minimap-viewport.dragging {
+    cursor: grabbing;
+    background: rgba(0, 212, 255, 0.4);
+}
+
+.minimap-position {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: var(--text-primary);
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+    transition: left 0.1s ease-out;
+}
+
+/* Minimap markers container */
+.minimap-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.minimap-markers .minimap-clip-marker {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.minimap-markers .minimap-sentry-marker {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--danger);
+    box-shadow: 0 0 4px var(--danger-glow);
+}
+
+.zoom-indicator {
+    position: absolute;
+    top: -20px;
+    right: 0;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    pointer-events: none;
+    border: 1px solid var(--border-accent);
+}
+
+.clip-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.mark-in-marker {
+    position: absolute;
+    top: -8px;
+    height: calc(100% + 16px);
+    width: 3px;
+    background-color: #4caf50;
+    z-index: 15;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+.mark-in-marker .marker-label {
+    position: absolute;
+    top: -18px;
+    left: -10px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #4caf50;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #4caf50;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.mark-out-marker {
+    position: absolute;
+    top: -8px;
+    height: calc(100% + 16px);
+    width: 3px;
+    background-color: #f44336;
+    z-index: 15;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+}
+
+.mark-out-marker .marker-label {
+    position: absolute;
+    top: -18px;
+    left: -14px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #f44336;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #f44336;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.clip-marker {
+    position: absolute;
+    top: -6px;
+    height: calc(100% + 12px);
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+}
+
+.sentry-trigger-marker {
+    position: absolute;
+    top: -10px;
+    height: calc(100% + 20px);
+    width: 4px;
+    background: var(--danger);
+    z-index: 10;
+    cursor: pointer;
+    box-shadow: 0 0 12px var(--danger-glow), 0 0 20px var(--danger-glow);
+    pointer-events: auto;
+}
+
+.sentry-trigger-marker::before {
+    content: '!';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    background: var(--danger);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 8px var(--danger-glow);
+}
+
+.sentry-trigger-marker::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--danger);
+}
+
+/* Gap markers - indicate missing footage */
+.gap-marker {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    height: auto;
+    width: 10px;
+    background: repeating-linear-gradient(45deg,
+            var(--warning),
+            var(--warning) 2px,
+            transparent 2px,
+            transparent 4px);
+    z-index: 4;
+    cursor: help;
+    border-radius: 2px;
+    opacity: 0.85;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.gap-marker:hover {
+    opacity: 1;
+    transform: scaleX(1.3);
+}
+
+.gap-marker::after {
+    content: attr(data-duration);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-elevated);
+    color: var(--warning);
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    border: 1px solid var(--warning);
+    margin-bottom: 4px;
+}
+
+.gap-marker:hover::after {
+    opacity: 1;
+}
+
+/* Near-miss markers - indicate potential incident detection */
+.near-miss-marker {
+    position: absolute;
+    top: -8px;
+    height: calc(100% + 16px);
+    width: 4px;
+    z-index: 9;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+    pointer-events: auto;
+}
+
+.near-miss-marker.severity-info {
+    background: #ffc107;
+    box-shadow: 0 0 6px rgba(255, 193, 7, 0.5);
+}
+
+.near-miss-marker.severity-warning {
+    background: #ff9100;
+    box-shadow: 0 0 8px rgba(255, 145, 0, 0.6);
+}
+
+.near-miss-marker.severity-critical {
+    background: var(--danger);
+    box-shadow: 0 0 12px var(--danger-glow), 0 0 20px var(--danger-glow);
+}
+
+.near-miss-marker:hover {
+    transform: scaleX(1.5);
+}
+
+.near-miss-marker.severity-info:hover {
+    background: #ffd54f;
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+}
+
+.near-miss-marker.severity-warning:hover {
+    background: #ffab40;
+    box-shadow: 0 0 15px rgba(255, 145, 0, 0.8);
+}
+
+.near-miss-marker.severity-critical:hover {
+    background: #ff5252;
+    box-shadow: 0 0 20px var(--danger);
+}
+
+/* Near-miss marker icon */
+.near-miss-marker::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    background: inherit;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.near-miss-marker.severity-critical::before {
+    box-shadow: 0 0 8px var(--danger-glow);
+}
+
+/* Near-miss minimap markers */
+.minimap-markers .minimap-near-miss-marker {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 2px;
+}
+
+.minimap-markers .minimap-near-miss-marker.severity-info {
+    background: #ffc107;
+}
+
+.minimap-markers .minimap-near-miss-marker.severity-warning {
+    background: #ff9100;
+    box-shadow: 0 0 3px rgba(255, 145, 0, 0.5);
+}
+
+.minimap-markers .minimap-near-miss-marker.severity-critical {
+    background: var(--danger);
+    box-shadow: 0 0 4px var(--danger-glow);
+}
+
+/* ==================== AI Search Timeline Heatmap ==================== */
+.timeline-ai-heatmap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* visual only — clicks fall through to the timeline */
+    z-index: 1;
+    /* NOTE: no mix-blend-mode — it forces software compositing for the whole
+       stacking context, which starves the hardware video overlay slots on
+       Intel integrated GPUs (2-slot limit). We use straight alpha instead. */
+}
+
+/* Autopilot timeline layer — thin colored strip at bottom of the scrub bar */
+.timeline-autopilot-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    z-index: 2;
+    /* above heatmap, below scrubber */
+    cursor: default;
+}
+</style>

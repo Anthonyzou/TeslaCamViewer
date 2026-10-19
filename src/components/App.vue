@@ -202,3 +202,61 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.player-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-void);
+  min-width: 0;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 12, 18, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 1000;
+}
+
+.loading-overlay.hidden {
+  display: none;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

@@ -287,3 +287,182 @@ defineExpose({
   clearAllFilters,
 });
 </script>
+
+<style scoped>
+/* ==================== FILTER PANEL ==================== */
+.filter-panel {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-header {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.filter-header:hover {
+    background: var(--bg-tertiary);
+}
+
+.filter-header-content {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--accent);
+    color: var(--bg-void);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.collapse-icon {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    transition: transform 0.3s ease;
+}
+
+.filter-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.filter-content.expanded {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.filter-group {
+    padding: 0.875rem 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.filter-label {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.625rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.filter-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.filter-checkbox-label:hover {
+    color: var(--text-primary);
+}
+
+.filter-checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+}
+
+.filter-select,
+.search-input,
+.date-input {
+    width: 100%;
+    padding: 0.625rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.filter-select:focus,
+.search-input:focus,
+.date-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.date-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-input {
+    flex: 1;
+    font-size: 0.8rem;
+}
+
+.date-separator {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.clear-dates-btn,
+.clear-all-filters-btn {
+    margin-top: 0.625rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-dates-btn:hover,
+.clear-all-filters-btn:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-color: var(--border-accent);
+}
+
+.clear-all-filters-btn {
+    width: 100%;
+    color: var(--accent);
+    font-weight: 600;
+}
+</style>

@@ -26,7 +26,7 @@ const jsConfig = {
   minify: isProduction,
   target: ['es2022'],
   logLevel: 'info',
-  plugins: [vuePlugin()],
+  plugins: [vuePlugin({ isProduction, sourceMap: false })],
   loader: { '.png': 'dataurl' },
   define: {
     'process.env.NODE_ENV': JSON.stringify(
@@ -38,16 +38,6 @@ const jsConfig = {
   },
 };
 
-const cssConfig = {
-  entryPoints: ['src/index.css'],
-  bundle: true,
-  outfile: 'dist/app.css',
-  loader: { '.png': 'dataurl' },
-  sourcemap: true,
-  minify: isProduction,
-  logLevel: 'info',
-};
-
 async function runBuild() {
   const startTime = performance.now();
   console.log(
@@ -57,14 +47,12 @@ async function runBuild() {
   try {
     if (isWatch) {
       const jsCtx = await esbuild.context(jsConfig);
-      const cssCtx = await esbuild.context(cssConfig);
-
-      await Promise.all([jsCtx.watch(), cssCtx.watch()]);
+      await jsCtx.watch();
       console.log(
-        '[esbuild] Watching for changes in js/, styles/, and src/ (press Ctrl+C to stop)...'
+        '[esbuild] Watching for changes in src/ and styles/ (press Ctrl+C to stop)...'
       );
     } else {
-      await Promise.all([esbuild.build(jsConfig), esbuild.build(cssConfig)]);
+      await esbuild.build(jsConfig);
 
       const jsSize = existsSync('dist/app.js')
         ? formatBytes(statSync('dist/app.js').size)
