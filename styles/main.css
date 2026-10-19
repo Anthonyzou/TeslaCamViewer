@@ -4125,7 +4125,6 @@ select option:hover,
 .heatmap-control,
 .struggle-zones-control,
 .incident-control,
-.dark-mode-control,
 .scan-all-control {
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
@@ -4136,7 +4135,6 @@ select option:hover,
 .heatmap-toggle-btn,
 .struggle-zones-toggle-btn,
 .incident-toggle-btn,
-.dark-mode-toggle-btn,
 .scan-all-btn {
     color: #666666 !important;
 }
@@ -4144,76 +4142,15 @@ select option:hover,
 .heatmap-toggle-btn:hover,
 .struggle-zones-toggle-btn:hover,
 .incident-toggle-btn:hover,
-.dark-mode-toggle-btn:hover,
 .scan-all-btn:hover {
     background: #f0f0f0 !important;
     color: #0066cc !important;
 }
 
-/* ========== Map Dark Mode (when map tiles are dark) ========== */
-.map-dark-mode .leaflet-control-zoom {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-}
-
-.map-dark-mode .leaflet-control-zoom a,
-.map-dark-mode .leaflet-control-zoom a:hover {
-    background: #2d2d2d !important;
-    color: #aaaaaa !important;
-    border-bottom: 1px solid #3a3a3a !important;
-}
-
-.map-dark-mode .leaflet-control-zoom a:hover {
-    background: #3a3a3a !important;
-    color: #4a9eff !important;
-}
-
-.map-dark-mode .leaflet-control-attribution {
-    background: rgba(45, 45, 45, 0.8) !important;
-    color: #666666 !important;
-}
-
-.map-dark-mode .leaflet-control-attribution a {
-    color: #aaaaaa !important;
-}
-
-.map-dark-mode .heatmap-control,
-.map-dark-mode .struggle-zones-control,
-.map-dark-mode .incident-control,
-.map-dark-mode .dark-mode-control,
-.map-dark-mode .scan-all-control {
-    background: #2d2d2d !important;
-    border: 1px solid #3a3a3a !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.map-dark-mode .heatmap-toggle-btn,
-.map-dark-mode .struggle-zones-toggle-btn,
-.map-dark-mode .incident-toggle-btn,
-.map-dark-mode .dark-mode-toggle-btn,
-.map-dark-mode .scan-all-btn {
-    color: #aaaaaa !important;
-}
-
-.map-dark-mode .heatmap-toggle-btn:hover,
-.map-dark-mode .struggle-zones-toggle-btn:hover,
-.map-dark-mode .incident-toggle-btn:hover,
-.map-dark-mode .dark-mode-toggle-btn:hover,
-.map-dark-mode .scan-all-btn:hover {
-    background: #3a3a3a !important;
-    color: #4a9eff !important;
-}
-
-/* NOTE: removed duplicate "Legacy Map Control Buttons structure" block here.
- * It re-specified border/box-shadow with dark-theme values that silently
- * stomped the Light Mode Base block above, leaving light-mode controls
- * with a dark border. The .map-dark-mode variant below handles dark mode
- * via ancestor scope, so this legacy block was dead weight. */
-
 /* Override Leaflet default focus/active states for custom controls */
 .leaflet-bar a.heatmap-toggle-btn,
 .leaflet-bar a.struggle-zones-toggle-btn,
 .leaflet-bar a.incident-toggle-btn,
-.leaflet-bar a.dark-mode-toggle-btn,
 .leaflet-bar a.scan-all-btn {
     background: transparent !important;
 }
@@ -4221,7 +4158,6 @@ select option:hover,
 .leaflet-bar a.heatmap-toggle-btn:focus,
 .leaflet-bar a.struggle-zones-toggle-btn:focus,
 .leaflet-bar a.incident-toggle-btn:focus,
-.leaflet-bar a.dark-mode-toggle-btn:focus,
 .leaflet-bar a.scan-all-btn:focus {
     background: var(--bg-tertiary, #3a3a3a) !important;
     outline: none;
@@ -4245,13 +4181,6 @@ select option:hover,
 .leaflet-bar a.incident-toggle-btn.active:focus,
 .leaflet-bar a.incident-toggle-btn.active:hover {
     background: #f44336 !important;
-    color: white !important;
-}
-
-.leaflet-bar a.dark-mode-toggle-btn.active,
-.leaflet-bar a.dark-mode-toggle-btn.active:focus,
-.leaflet-bar a.dark-mode-toggle-btn.active:hover {
-    background: #5c6bc0 !important;
     color: white !important;
 }
 
@@ -4393,41 +4322,6 @@ select option:hover,
 
 .struggle-zones-toggle-btn.loading svg {
     animation: spin 1s linear infinite;
-}
-
-/* Dark Mode Toggle Control */
-.dark-mode-control {
-    margin-top: 10px;
-}
-
-.dark-mode-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    color: var(--text-secondary, #aaa);
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border-radius: 5px;
-}
-
-.dark-mode-toggle-btn:hover {
-    background: var(--bg-tertiary, #3a3a3a);
-    color: #ffc107;
-}
-
-.dark-mode-toggle-btn.active {
-    background: #424242;
-    color: #ffc107;
-}
-
-.dark-mode-toggle-btn.active:hover {
-    background: #333;
-}
-
-.dark-mode-toggle-btn svg {
-    pointer-events: none;
 }
 
 /* Struggle Zone Icons */

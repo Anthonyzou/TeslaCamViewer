@@ -732,24 +732,9 @@ export class TeslaCamApp {
       if (!result?.events) throw new Error('No events found in B2 bucket');
 
       const events = result.events;
-      let b2Drive = folderManager.drives.find((d: any) => d.id === 'b2');
-      if (!b2Drive) {
-        b2Drive = {
-          id: 'b2',
-          label: 'Backblaze B2',
-          color: '#003399',
-          isArchive: false,
-          dateFilter: null,
-          events: events,
-          handle: null,
-          isB2: true,
-        };
-        folderManager.drives.push(b2Drive);
-      } else {
-        b2Drive.events = events;
-      }
+      const b2Drive = await folderManager.addOrUpdateB2Drive(events);
 
-      folderManager.activeDriveId = 'b2';
+      folderManager.activeDriveId = b2Drive.id;
       this.allEvents = folderManager.getAllEvents();
       this.statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
@@ -767,7 +752,7 @@ export class TeslaCamApp {
 
   public async refreshDrives(): Promise<void> {
     const activeDrive = folderManager?.getActiveDrive();
-    if (activeDrive?.id === 'b2' || (!activeDrive && this.b2Client)) {
+    if (folderManager.isB2Drive(activeDrive?.id) || (!activeDrive && this.b2Client)) {
       await this.loadFromB2(true);
       return;
     }

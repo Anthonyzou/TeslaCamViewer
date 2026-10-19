@@ -217,15 +217,6 @@ class SettingsManager {
     if (theme !== 'dark') {
       body?.classList?.add(`theme-${theme}`);
     }
-
-    // Sync map mode with theme: light theme = light map, all others = dark map
-    const mapView = typeof window !== 'undefined' ? window.app?.mapView : null;
-    if (mapView && mapView.map) {
-      const mapShouldBeDark = theme !== 'light';
-      if (mapView.isDarkMode !== mapShouldBeDark) {
-        mapView.setTileLayer(mapShouldBeDark ? 'dark' : 'light');
-      }
-    }
   }
 }
 

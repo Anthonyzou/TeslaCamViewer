@@ -131,3 +131,24 @@ test('useDrives - reacts to drive changes and communicates with folderManager an
   assert.strictEqual(folderManager.activeDriveId, null);
   assert.strictEqual(appChangedDriveTo, null);
 });
+
+test('FolderManager - addOrUpdateB2Drive manages B2 cloud drive natively', async () => {
+  const fm = new FolderManager();
+  fm.saveDrive = async () => {}; // mock persistence
+
+  assert.strictEqual(fm.isB2Drive('b2'), false);
+
+  const b2Events = [{ name: '2026-10-15_12-00-00', timestamp: '2026-10-15T12:00:00Z' }];
+  const drive = await fm.addOrUpdateB2Drive(b2Events, { label: 'Cloud Vault' });
+
+  assert.strictEqual(drive.id, 'b2');
+  assert.strictEqual(drive.label, 'Cloud Vault');
+  assert.strictEqual(drive.isB2, true);
+  assert.strictEqual(fm.isB2Drive('b2'), true);
+  assert.strictEqual(fm.getB2Drive()?.label, 'Cloud Vault');
+
+  // Updating existing B2 drive
+  const updatedEvents = [...b2Events, { name: '2026-10-15_13-00-00', timestamp: '2026-10-15T13:00:00Z' }];
+  await fm.addOrUpdateB2Drive(updatedEvents);
+  assert.strictEqual(fm.getB2Drive()?.events.length, 2);
+});

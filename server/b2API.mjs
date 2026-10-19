@@ -1,5 +1,10 @@
 import axios from 'axios';
 import B2 from 'backblaze-b2';
+import {
+  groupClips,
+  parseClipFilename,
+  parseEventFolderName,
+} from '../src/utils/teslaCamFormat.ts';
 
 const CACHE_TTL = 3600 * 1000; // 1 hour
 
@@ -99,12 +104,8 @@ export async function organizeB2Events(
     const eventKey = `${type}/${eventFolderName}`;
 
     if (!eventsMap.has(eventKey)) {
-      const tsMatch = eventFolderName.match(
-        /^(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})$/
-      );
-      const timestamp = tsMatch
-        ? `${tsMatch[1]}T${tsMatch[2].replace(/-/g, ':')}`
-        : eventFolderName;
+      const folderInfo = parseEventFolderName(eventFolderName);
+      const timestamp = folderInfo ? folderInfo.timestamp : eventFolderName;
 
       eventsMap.set(eventKey, {
         name: eventFolderName,
@@ -137,13 +138,11 @@ export async function organizeB2Events(
     } else if (fileName === 'event.mp4') {
       event.eventVideoUrl = fileUrl;
     } else if (fileName.endsWith('.mp4')) {
-      const clipMatch = fileName.match(
-        /^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})-(front|back|left_repeater|right_repeater|left_pillar|right_pillar)\.mp4$/
-      );
-      if (clipMatch) {
+      const parsed = parseClipFilename(fileName);
+      if (parsed) {
         event.clips.push({
-          timestamp: clipMatch[1],
-          camera: clipMatch[2],
+          timestamp: parsed.timestamp,
+          camera: parsed.camera,
           fileName: fileName,
           url: fileUrl,
         });
@@ -161,19 +160,7 @@ export async function organizeB2Events(
   );
 
   for (const event of finalEvents) {
-    const groups = new Map();
-    for (const clip of event.clips) {
-      if (!groups.has(clip.timestamp)) {
-        groups.set(clip.timestamp, {
-          timestamp: clip.timestamp,
-          clips: {},
-        });
-      }
-      groups.get(clip.timestamp).clips[clip.camera] = clip;
-    }
-
-    event.clipGroups = Array.from(groups.values());
-    event.clipGroups.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    event.clipGroups = groupClips(event.clips);
     event.isEmpty = event.clipGroups.length === 0;
     event.hasPillarCameras = event.clips.some(
       (c) => c.camera === 'left_pillar' || c.camera === 'right_pillar'

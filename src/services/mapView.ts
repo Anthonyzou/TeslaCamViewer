@@ -16,32 +16,19 @@ class MapView {
 
   // Tile layer management
   private currentTileLayer: L.TileLayer | null = null;
-  public isDarkMode = false;
-  private _darkModeButton: HTMLElement | null = null;
-  private darkModeControl: any = null;
+  public readonly isDarkMode = false;
   private tileProvider = 'osm';
 
-  // Tile provider configurations
+  // Tile provider configurations (OpenStreetMap default)
   private TILE_PROVIDERS: Record<string, any> = {
     osm: {
       name: 'OpenStreetMap',
-      light: {
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: '',
-      },
-      dark: {
-        // OSM doesn't have dark mode, use Stadia dark
-        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution:
-          '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: '',
-      },
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: '',
     },
   };
-
-  private DARK_MODE_KEY = 'teslacam_map_dark_mode';
 
   constructor(
     containerElement: HTMLElement,
@@ -75,11 +62,7 @@ class MapView {
         defaultZoom
       );
 
-      this.isDarkMode =
-        (typeof localStorage !== 'undefined'
-          ? localStorage.getItem(this.DARK_MODE_KEY)
-          : null) === 'true';
-      this.setTileLayer(this.isDarkMode ? 'dark' : 'light');
+      this.setTileLayer();
 
       // Initialize marker cluster group
       this.markerCluster = (L as any).markerClusterGroup({
@@ -90,9 +73,6 @@ class MapView {
       });
 
       this.map.addLayer(this.markerCluster);
-
-      // Add dark mode toggle control
-      this.addDarkModeControl();
 
       this.initialized = true;
       console.log('[MapView] Map initialized successfully');
@@ -326,103 +306,31 @@ class MapView {
   }
 
   /**
-   * Set the tile layer (light or dark mode)
+   * Set the tile layer (OpenStreetMap default)
    */
-  setTileLayer(mode: 'light' | 'dark'): void {
+  setTileLayer(_mode?: 'light' | 'dark'): void {
     if (!this.map) return;
 
     const provider =
       this.TILE_PROVIDERS[this.tileProvider] || this.TILE_PROVIDERS.osm;
-    const layerConfig = provider[mode];
-
-    if (!layerConfig) {
-      console.warn(`[MapView] Unknown tile layer mode: ${mode}`);
-      return;
-    }
 
     if (this.currentTileLayer) {
       this.map.removeLayer(this.currentTileLayer);
     }
 
     const tileOptions = {
-      attribution: layerConfig.attribution,
+      attribution: provider.attribution,
       maxZoom: 19,
-      tileOptions: layerConfig.subdomains,
+      subdomains: provider.subdomains,
     };
 
-    this.currentTileLayer = L.tileLayer(layerConfig.url, tileOptions);
+    this.currentTileLayer = L.tileLayer(provider.url, tileOptions);
     this.currentTileLayer.on('tileerror', (e: any) => {
       console.warn('[MapView] Tile load error:', e.tile?.src);
     });
 
     this.currentTileLayer.addTo(this.map);
-    this.isDarkMode = mode === 'dark';
-
-    if (this.container) {
-      this.container.classList.toggle('map-dark-mode', this.isDarkMode);
-    }
-
-    console.log(`[MapView] Tile layer set to: ${provider.name} (${mode})`);
-  }
-
-  /**
-   * Toggle between light and dark map tiles
-   */
-  toggleDarkMode(): void {
-    const newMode = this.isDarkMode ? 'light' : 'dark';
-    this.setTileLayer(newMode);
-
-    try {
-      localStorage.setItem(this.DARK_MODE_KEY, this.isDarkMode.toString());
-    } catch (e) {
-      console.warn('[MapView] Failed to save dark mode preference:', e);
-    }
-
-    if (this._darkModeButton) {
-      this._darkModeButton.classList.toggle('active', this.isDarkMode);
-    }
-  }
-
-  /**
-   * Add dark mode toggle control to the map
-   */
-  addDarkModeControl(): void {
-    if (!this.map) return;
-
-    const DarkModeControl = L.Control.extend({
-      options: { position: 'topright' },
-
-      onAdd: () => {
-        const container = L.DomUtil.create(
-          'div',
-          'leaflet-bar leaflet-control dark-mode-control'
-        );
-        const button = L.DomUtil.create('a', 'dark-mode-toggle-btn', container);
-        button.href = '#';
-        button.title = this.t('map.toggleDarkMode') || 'Toggle Dark Mode Map';
-        button.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
-          </svg>
-        `;
-
-        this._darkModeButton = button;
-
-        if (this.isDarkMode) {
-          button.classList.add('active');
-        }
-
-        L.DomEvent.on(button, 'click', (e) => {
-          L.DomEvent.preventDefault(e);
-          this.toggleDarkMode();
-        });
-
-        return container;
-      },
-    });
-
-    this.darkModeControl = new DarkModeControl();
-    this.map.addControl(this.darkModeControl);
+    console.log(`[MapView] Tile layer set to: ${provider.name}`);
   }
 
   /**

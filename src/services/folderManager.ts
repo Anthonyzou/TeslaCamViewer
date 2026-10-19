@@ -254,6 +254,56 @@ class FolderManager {
   }
 
   /**
+   * Add or update a Backblaze B2 Cloud Drive
+   * @param {Array} events - Events fetched from B2
+   * @param {Object} options - Custom label or color options
+   * @returns {Promise<Object>} The B2 drive
+   */
+  async addOrUpdateB2Drive(events: any[] = [], options: any = {}) {
+    let b2Drive = this.drives.find((d: any) => d.isB2 || d.id === 'b2');
+
+    if (!b2Drive) {
+      const colorIndex = this.drives.length % this.driveColors.length;
+      b2Drive = {
+        id: 'b2',
+        label: options.label || 'Backblaze B2',
+        folderName: 'Backblaze B2',
+        color: options.color || '#003399' || this.driveColors[colorIndex],
+        addedAt: new Date().toISOString(),
+        isArchive: false,
+        isB2: true,
+        handle: null,
+        dateFilter: 'all',
+        events: events,
+      };
+      this.drives.push(b2Drive);
+    } else {
+      b2Drive.events = events;
+      if (options.label) b2Drive.label = options.label;
+      if (options.color) b2Drive.color = options.color;
+    }
+
+    await this.saveDrive(b2Drive);
+    this.notifyDrivesChanged();
+    return b2Drive;
+  }
+
+  /**
+   * Get the registered B2 drive if any
+   */
+  getB2Drive(): any {
+    return this.drives.find((d: any) => d.isB2 || d.id === 'b2') || null;
+  }
+
+  /**
+   * Check if a drive ID is a B2 cloud drive
+   */
+  isB2Drive(driveId: string): boolean {
+    const drive = this.getDrive(driveId);
+    return !!(drive?.isB2 || drive?.id === 'b2');
+  }
+
+  /**
    * Generate a human-readable label from folder name
    * @param {string} folderName
    * @returns {string}
