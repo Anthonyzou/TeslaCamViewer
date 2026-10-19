@@ -4,7 +4,11 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import registerB2Routes, {
+  VIDEO_CACHE_DIR,
+  clearVideoCache,
+  ensureVideoCached,
   getCachedB2Data,
+  getVideoCacheStatus,
   organizeB2Events,
   performB2Parse,
   setCachedB2Data,
@@ -76,7 +80,11 @@ if (isEntryFile()) {
 
 export {
   app,
+  VIDEO_CACHE_DIR,
+  clearVideoCache,
+  ensureVideoCached,
   getCachedB2Data,
+  getVideoCacheStatus,
   organizeB2Events,
   performB2Parse,
   setCachedB2Data,

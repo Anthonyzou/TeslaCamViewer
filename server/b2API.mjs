@@ -1,5 +1,9 @@
 import axios from 'axios';
 import B2 from 'backblaze-b2';
+import fs from 'node:fs';
+import path from 'node:path';
+import stream from 'node:stream';
+import { promisify } from 'node:util';
 import {
   groupClips,
   parseClipFilename,
@@ -7,9 +11,25 @@ import {
 } from '../src/utils/teslaCamFormat.ts';
 
 const CACHE_TTL = 3600 * 1000; // 1 hour
+const rootDir = path.resolve(import.meta.dirname, '..');
+
+export const VIDEO_CACHE_DIR =
+  process.env.VIDEO_CACHE_DIR || path.resolve(rootDir, '.cache', 'videos');
+export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_BYTES
+  ? parseInt(process.env.VIDEO_CACHE_MAX_BYTES, 10)
+  : 5 * 1024 * 1024 * 1024; // 5 GB default
 
 export let cachedB2Data = null;
 export let lastParseTime = 0;
+export let activeB2Auth = {
+  bucketName: null,
+  downloadUrl: null,
+  downloadToken: null,
+  keyId: null,
+  appKey: null,
+};
+
+const inFlightDownloads = new Map();
 
 export function setCachedB2Data(data, time = Date.now()) {
   cachedB2Data = data;
@@ -69,6 +89,14 @@ export async function performB2Parse(keyId, appKey, bucketName) {
   const downloadToken = downloadAuthResp.data.authorizationToken;
   const downloadUrl = b2.downloadUrl;
 
+  activeB2Auth = {
+    bucketName,
+    downloadUrl,
+    downloadToken,
+    keyId,
+    appKey,
+  };
+
   // 4. Parse files into structured events
   return await organizeB2Events(
     allFiles,
@@ -121,6 +149,7 @@ export async function organizeB2Events(
     const event = eventsMap.get(eventKey);
     const fileName = pathParts[pathParts.length - 1];
     const fileUrl = `${downloadUrl}/file/${bucketName}/${file.fileName}?Authorization=${encodeURIComponent(downloadToken)}`;
+    const proxyVideoUrl = `/api/b2/video?file=${encodeURIComponent(file.fileName)}&url=${encodeURIComponent(fileUrl)}`;
 
     if (fileName === 'event.json') {
       metadataFetches.push(
@@ -136,7 +165,7 @@ export async function organizeB2Events(
     } else if (fileName === 'thumb.png') {
       event.thumbnailUrl = fileUrl;
     } else if (fileName === 'event.mp4') {
-      event.eventVideoUrl = fileUrl;
+      event.eventVideoUrl = proxyVideoUrl;
     } else if (fileName.endsWith('.mp4')) {
       const parsed = parseClipFilename(fileName);
       if (parsed) {
@@ -144,7 +173,7 @@ export async function organizeB2Events(
           timestamp: parsed.timestamp,
           camera: parsed.camera,
           fileName: fileName,
-          url: fileUrl,
+          url: proxyVideoUrl,
         });
       }
     }
@@ -180,9 +209,188 @@ export async function organizeB2Events(
   };
 }
 
+/**
+ * Prune video cache when disk usage exceeds threshold
+ */
+export async function pruneVideoCache(
+  targetDir = VIDEO_CACHE_DIR,
+  maxBytes = MAX_CACHE_BYTES
+) {
+  try {
+    if (!fs.existsSync(targetDir)) return;
+    const files = [];
+
+    async function walk(dir) {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+        } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
+          const stats = await fs.promises.stat(fullPath);
+          files.push({
+            path: fullPath,
+            size: stats.size,
+            atime: stats.atimeMs || stats.mtimeMs,
+          });
+        }
+      }
+    }
+
+    await walk(targetDir);
+
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalSize <= maxBytes) return;
+
+    // Sort by atime ascending (oldest first)
+    files.sort((a, b) => a.atime - b.atime);
+
+    let currentSize = totalSize;
+    const targetSize = maxBytes * 0.8; // Evict down to 80%
+    for (const file of files) {
+      if (currentSize <= targetSize) break;
+      try {
+        await fs.promises.unlink(file.path);
+        currentSize -= file.size;
+      } catch (_e) {
+        // Ignore unlink error if already deleted
+      }
+    }
+  } catch (err) {
+    console.warn('[B2 Video Cache] Eviction error:', err.message);
+  }
+}
+
+/**
+ * Retrieve current video cache stats
+ */
+export async function getVideoCacheStatus() {
+  let totalFiles = 0;
+  let totalBytes = 0;
+
+  async function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
+        const stats = await fs.promises.stat(fullPath);
+        totalFiles++;
+        totalBytes += stats.size;
+      }
+    }
+  }
+
+  await walk(VIDEO_CACHE_DIR);
+  return {
+    enabled: true,
+    cacheDir: VIDEO_CACHE_DIR,
+    totalFiles,
+    totalBytes,
+    maxBytes: MAX_CACHE_BYTES,
+  };
+}
+
+/**
+ * Clear the video disk cache directory
+ */
+export async function clearVideoCache() {
+  if (fs.existsSync(VIDEO_CACHE_DIR)) {
+    await fs.promises.rm(VIDEO_CACHE_DIR, { recursive: true, force: true });
+    await fs.promises.mkdir(VIDEO_CACHE_DIR, { recursive: true });
+  }
+}
+
+function resolveSourceUrl(fileParam, sourceUrl) {
+  let resolved = sourceUrl;
+  if (!resolved && activeB2Auth.downloadUrl && activeB2Auth.bucketName) {
+    resolved = `${activeB2Auth.downloadUrl}/file/${activeB2Auth.bucketName}/${fileParam}${
+      activeB2Auth.downloadToken
+        ? `?Authorization=${encodeURIComponent(activeB2Auth.downloadToken)}`
+        : ''
+    }`;
+  }
+  return resolved;
+}
+
+/**
+ * Ensure video file is cached locally, downloading if necessary (background helper)
+ */
+export async function ensureVideoCached(fileParam, sourceUrl) {
+  const safeRelative = path
+    .normalize(fileParam || '')
+    .replace(/^(\.\.[\/\\])+/, '')
+    .replace(/^[/\\]+/, '');
+
+  if (!safeRelative) {
+    throw new Error('Invalid file parameter');
+  }
+
+  const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
+
+  if (fs.existsSync(cacheFilePath)) {
+    return cacheFilePath;
+  }
+
+  if (inFlightDownloads.has(cacheFilePath)) {
+    return await inFlightDownloads.get(cacheFilePath);
+  }
+
+  const downloadPromise = (async () => {
+    try {
+      const resolvedSource = resolveSourceUrl(safeRelative, sourceUrl);
+      if (!resolvedSource) {
+        throw new Error('No source URL available to download video');
+      }
+
+      await fs.promises.mkdir(path.dirname(cacheFilePath), { recursive: true });
+      const tempFilePath = `${cacheFilePath}.tmp.${Date.now()}`;
+
+      const response = await axios({
+        method: 'get',
+        url: resolvedSource,
+        responseType: 'stream',
+        timeout: 30000,
+      });
+
+      const writer = fs.createWriteStream(tempFilePath);
+      await promisify(stream.pipeline)(response.data, writer);
+
+      await fs.promises.rename(tempFilePath, cacheFilePath);
+
+      pruneVideoCache().catch((err) =>
+        console.warn('[B2 Video Cache] Pruning warning:', err.message)
+      );
+
+      return cacheFilePath;
+    } catch (err) {
+      try {
+        if (fs.existsSync(path.dirname(cacheFilePath))) {
+          const tempFiles = (
+            await fs.promises.readdir(path.dirname(cacheFilePath))
+          ).filter((f) => f.startsWith(`${path.basename(cacheFilePath)}.tmp.`));
+          for (const tf of tempFiles) {
+            await fs.promises
+              .unlink(path.join(path.dirname(cacheFilePath), tf))
+              .catch(() => {});
+          }
+        }
+      } catch (_e) {}
+      throw err;
+    } finally {
+      inFlightDownloads.delete(cacheFilePath);
+    }
+  })();
+
+  inFlightDownloads.set(cacheFilePath, downloadPromise);
+  return await downloadPromise;
+}
+
 export default function registerB2Routes(app) {
   // 1. Server-Side B2 Status/Config Route
-  app.get('/api/b2/config', (req, res) => {
+  app.get('/api/b2/config', (_req, res) => {
     res.json({
       isConfigured: !!(
         process.env.B2_KEY_ID &&
@@ -194,7 +402,204 @@ export default function registerB2Routes(app) {
     });
   });
 
-  // 2. Server-Side B2 Parsing Route
+  // 2. Server-Side B2 Video Cache Status
+  app.get('/api/b2/cache/status', async (_req, res) => {
+    try {
+      const status = await getVideoCacheStatus();
+      res.json(status);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 3. Clear Server-Side Video Cache
+  app.post('/api/b2/cache/clear', async (_req, res) => {
+    try {
+      await clearVideoCache();
+      res.json({ success: true, message: 'Video cache cleared' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 4. Video Streaming Proxy with Concurrent Streaming & Local Disk Caching
+  app.get('/api/b2/video', async (req, res) => {
+    const fileParam = req.query.file;
+    const urlParam = req.query.url;
+
+    if (!fileParam && !urlParam) {
+      return res
+        .status(400)
+        .json({ error: 'Missing file or url query parameter' });
+    }
+
+    const resolvedFile =
+      fileParam ||
+      (urlParam ? path.basename(new URL(urlParam).pathname) : null);
+
+    const safeRelative = path
+      .normalize(resolvedFile || '')
+      .replace(/^(\.\.[\/\\])+/, '')
+      .replace(/^[/\\]+/, '');
+
+    if (!safeRelative) {
+      return res.status(400).json({ error: 'Invalid file parameter' });
+    }
+
+    const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
+
+    // Fast path: If already cached on disk, serve instantly via res.sendFile with full Range support
+    if (fs.existsSync(cacheFilePath)) {
+      return res.sendFile(cacheFilePath, {
+        acceptRanges: true,
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      });
+    }
+
+    // If already downloading via another concurrent request, await completion then sendFile
+    if (inFlightDownloads.has(cacheFilePath)) {
+      try {
+        await inFlightDownloads.get(cacheFilePath);
+        return res.sendFile(cacheFilePath, {
+          acceptRanges: true,
+          headers: {
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      } catch (err) {
+        return res
+          .status(502)
+          .json({ error: `Failed to retrieve video: ${err.message}` });
+      }
+    }
+
+    const resolvedSource = resolveSourceUrl(safeRelative, urlParam);
+    if (!resolvedSource) {
+      return res
+        .status(400)
+        .json({ error: 'No source URL configured for this video' });
+    }
+
+    const rangeHeader = req.headers.range;
+    const isBeginningRange =
+      !rangeHeader ||
+      rangeHeader.startsWith('bytes=0-') ||
+      rangeHeader === 'bytes=0-';
+
+    try {
+      // If client requests from the beginning (or no range header),
+      // we concurrently stream to the browser AND write to disk cache!
+      if (isBeginningRange) {
+        const response = await axios({
+          method: 'get',
+          url: resolvedSource,
+          responseType: 'stream',
+          timeout: 30000,
+        });
+
+        const totalLength = response.headers['content-length'];
+        const contentType = response.headers['content-type'] || 'video/mp4';
+
+        const clientHeaders = {
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        };
+
+        if (rangeHeader && totalLength) {
+          const totalNum = parseInt(totalLength, 10);
+          clientHeaders['Content-Range'] = `bytes 0-${totalNum - 1}/${totalLength}`;
+          clientHeaders['Content-Length'] = totalLength;
+          res.writeHead(206, clientHeaders);
+        } else {
+          if (totalLength) {
+            clientHeaders['Content-Length'] = totalLength;
+          }
+          res.writeHead(200, clientHeaders);
+        }
+
+        await fs.promises.mkdir(path.dirname(cacheFilePath), {
+          recursive: true,
+        });
+        const tempFilePath = `${cacheFilePath}.tmp.${Date.now()}`;
+        const diskWriter = fs.createWriteStream(tempFilePath);
+
+        let resolveInFlight;
+        let rejectInFlight;
+        const inFlightPromise = new Promise((resolve, reject) => {
+          resolveInFlight = resolve;
+          rejectInFlight = reject;
+        });
+        inFlightDownloads.set(cacheFilePath, inFlightPromise);
+
+        // Tee stream: Send to client response immediately for instant playback
+        response.data.pipe(res);
+
+        // Tee stream: Send to disk cache simultaneously
+        response.data.pipe(diskWriter);
+
+        diskWriter.on('finish', async () => {
+          try {
+            await fs.promises.rename(tempFilePath, cacheFilePath);
+            pruneVideoCache().catch((err) =>
+              console.warn('[B2 Video Cache] Pruning warning:', err.message)
+            );
+            resolveInFlight(cacheFilePath);
+          } catch (err) {
+            rejectInFlight(err);
+          } finally {
+            inFlightDownloads.delete(cacheFilePath);
+          }
+        });
+
+        const cleanupError = (err) => {
+          rejectInFlight(err);
+          inFlightDownloads.delete(cacheFilePath);
+          fs.promises.unlink(tempFilePath).catch(() => {});
+        };
+
+        diskWriter.on('error', cleanupError);
+        response.data.on('error', cleanupError);
+      } else {
+        // Seeking into an uncached file: Proxy the requested range slice directly
+        // to the client for zero latency, while triggering a full background cache download.
+        const response = await axios({
+          method: 'get',
+          url: resolvedSource,
+          headers: { Range: rangeHeader },
+          responseType: 'stream',
+          timeout: 30000,
+          validateStatus: (status) => status >= 200 && status < 300,
+        });
+
+        res.writeHead(response.status, {
+          'Content-Type': response.headers['content-type'] || 'video/mp4',
+          'Content-Range': response.headers['content-range'],
+          'Content-Length': response.headers['content-length'],
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        });
+
+        response.data.pipe(res);
+
+        // Trigger background download so subsequent scrubs are cached locally
+        ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
+          console.warn('[B2 Video Cache] Background caching warning:', err.message)
+        );
+      }
+    } catch (err) {
+      console.error('[B2 Video Proxy] Failed to stream video:', err.message);
+      if (!res.headersSent) {
+        res
+          .status(502)
+          .json({ error: `Failed to retrieve video: ${err.message}` });
+      }
+    }
+  });
+
+  // 5. Server-Side B2 Parsing Route
   app.post('/api/b2/parse', async (req, res) => {
     const keyId = req.body.keyId || process.env.B2_KEY_ID;
     const appKey = req.body.appKey || process.env.B2_APP_KEY;
