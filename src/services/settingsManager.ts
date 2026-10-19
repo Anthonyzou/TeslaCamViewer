@@ -73,12 +73,6 @@ class SettingsManager {
   constructor() {
     this.loadSettings();
   }
-  /**
-   * Get translation helper
-   */
-  t(key) {
-    return window.i18n ? window.i18n.t(key) : key.split('.').pop();
-  }
 
   /**
    * Load settings from localStorage
@@ -170,32 +164,12 @@ class SettingsManager {
    * Apply settings to the application
    */
   applySettings(app: any) {
-    // Apply default speed
-    const speedSelect = document.getElementById(
-      'speedSelect'
-    ) as HTMLSelectElement | null;
-    if (speedSelect && !app.videoPlayer?.isPlaying) {
-      speedSelect.value = this.get('defaultSpeed');
-    }
-
     // Apply default layout
-    if (app.layoutManager) {
+    if (app?.layoutManager) {
       const savedLayout = this.get('defaultLayout');
       if (savedLayout) {
         app.layoutManager.setLayout(savedLayout);
-        const layoutSelect = document.getElementById(
-          'layoutSelect'
-        ) as HTMLSelectElement | null;
-        if (layoutSelect) layoutSelect.value = savedLayout;
       }
-    }
-
-    // Apply loop setting
-    const loopCheckbox = document.getElementById(
-      'loopCheckbox'
-    ) as HTMLInputElement | null;
-    if (loopCheckbox) {
-      loopCheckbox.checked = this.get('loopByDefault');
     }
 
     // Apply accessibility settings

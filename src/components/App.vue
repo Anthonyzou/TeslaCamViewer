@@ -190,9 +190,6 @@ import { TeslaCamApp } from '../services/teslaCamApp';
 
 onMounted(async () => {
   if (typeof window !== 'undefined') {
-    if (window.i18n) {
-      await window.i18n.init();
-    }
     const app = new TeslaCamApp();
     window.app = app;
     await app.tryRestoreLastFolder();

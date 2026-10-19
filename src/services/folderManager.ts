@@ -8,11 +8,11 @@ import { v4 as uuidv4 } from 'uuid';
 class FolderManager {
   public drives: any[] = [];
   public activeDriveId: string | null = null;
-  public DB_NAME: string = 'TeslaCamViewerDB';
-  public DB_STORE: string = 'drives';
-  public DB_VERSION: number = 3;
+  public DB_NAME = 'TeslaCamViewerDB';
+  public DB_STORE = 'drives';
+  public DB_VERSION = 3;
 
-  public driveColors: string[] = [
+  public driveColors = [
     '#4a9eff',
     '#4caf50',
     '#ff9800',
@@ -96,7 +96,9 @@ class FolderManager {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
-        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        console.warn(
+          `Object store ${this.DB_STORE} not found in ${this.DB_NAME}`
+        );
         this.drives = [];
         return;
       }
@@ -133,7 +135,9 @@ class FolderManager {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
-        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        console.warn(
+          `Object store ${this.DB_STORE} not found in ${this.DB_NAME}`
+        );
         return;
       }
       const tx = db.transaction(this.DB_STORE, 'readwrite');
@@ -171,7 +175,9 @@ class FolderManager {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
-        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        console.warn(
+          `Object store ${this.DB_STORE} not found in ${this.DB_NAME}`
+        );
         return;
       }
       const tx = db.transaction(this.DB_STORE, 'readwrite');

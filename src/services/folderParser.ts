@@ -16,11 +16,11 @@ import {
 class FolderParser {
   public rootHandle: any = null;
   public events: any[] = [];
-  private _sig: string = 'nmccomb';
-  public DB_NAME: string = 'TeslaCamViewerDB';
-  public DB_STORE: string = 'folderHandles';
-  public DB_KEY: string = 'lastFolder';
-  public DB_VERSION: number = 3;
+  private _sig = 'nmccomb';
+  public DB_NAME = 'TeslaCamViewerDB';
+  public DB_STORE = 'folderHandles';
+  public DB_KEY = 'lastFolder';
+  public DB_VERSION = 3;
 
   public currentDriveId: string | null = null;
   public currentDriveLabel: string | null = null;
@@ -103,7 +103,9 @@ class FolderParser {
     try {
       const db = await this.openDB();
       if (!db.objectStoreNames.contains(this.DB_STORE)) {
-        console.warn(`Object store ${this.DB_STORE} not found in ${this.DB_NAME}`);
+        console.warn(
+          `Object store ${this.DB_STORE} not found in ${this.DB_NAME}`
+        );
         return;
       }
       const tx = db.transaction(this.DB_STORE, 'readwrite');

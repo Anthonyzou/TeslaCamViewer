@@ -1,23 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert';
+import { test } from 'node:test';
 import { createJiti } from 'jiti';
-
-function createMockElement(tagName = 'div') {
-  return {
-    tagName: tagName.toUpperCase(),
-    innerHTML: '',
-    children: [],
-    dataset: {},
-    className: '',
-    appendChild(child) {
-      this.children.push(child);
-    },
-    querySelector: () => null,
-    querySelectorAll: () => [],
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  };
-}
 
 globalThis.localStorage = globalThis.localStorage || {
   getItem: () => null,
@@ -29,23 +12,20 @@ globalThis.indexedDB = globalThis.indexedDB || {
   open: () => ({ addEventListener: () => {}, onsuccess: null, onerror: null }),
 };
 
-globalThis.document = globalThis.document || {
-  createElement: (tag) => createMockElement(tag),
-  createDocumentFragment: () => createMockElement('fragment'),
-  getElementById: () => null,
-};
-
 globalThis.window = globalThis.window || {
   dispatchEvent: () => {},
 };
+
+globalThis.URL = globalThis.URL || {};
+globalThis.URL.createObjectURL = () => 'blob:test/thumbnail-blob-url';
+globalThis.URL.revokeObjectURL = () => {};
 
 const jiti = createJiti(process.cwd());
 const EventBrowserModule = jiti('./src/services/eventBrowser.ts');
 const EventBrowser = EventBrowserModule.EventBrowser || EventBrowserModule.default;
 
-test('EventBrowser - renders native img with loading="lazy" when thumbnailUrl is present', () => {
-  const container = createMockElement('div');
-  const browser = new EventBrowser(container, () => {});
+test('EventBrowser - preserves existing thumbnailUrl (e.g. from B2) during loadEvents', async () => {
+  const browser = new EventBrowser(null, () => {});
 
   const b2Event = {
     name: '2026-10-10_12-00-00',
@@ -55,36 +35,41 @@ test('EventBrowser - renders native img with loading="lazy" when thumbnailUrl is
     thumbnailUrl: 'https://b2.test/thumb.png',
   };
 
-  const element = browser.createEventElementSync(b2Event);
-  assert.ok(element.innerHTML.includes('loading="lazy"'));
-  assert.ok(element.innerHTML.includes('src="https://b2.test/thumb.png"'));
-  assert.ok(element.innerHTML.includes('class="event-thumbnail"'));
+  await browser.loadEvents([b2Event]);
+  assert.strictEqual(b2Event.thumbnailUrl, 'https://b2.test/thumb.png');
 });
 
-test('EventBrowser - renders placeholder when no thumbnail is present', () => {
-  const container = createMockElement('div');
-  const browser = new EventBrowser(container, () => {});
+test('EventBrowser - caches generated blob URLs in thumbnailCache', async () => {
+  const browser = new EventBrowser(null, () => {});
 
-  const emptyThumbEvent = {
-    name: '2026-10-10_13-00-00',
-    type: 'RecentClips',
-    timestamp: '2026-10-10T13:00:00Z',
-    clipGroups: [],
+  let createCalls = 0;
+  globalThis.URL.createObjectURL = () => {
+    createCalls++;
+    return `blob:test/thumb-${createCalls}`;
   };
 
-  const element = browser.createEventElementSync(emptyThumbEvent);
-  assert.ok(element.innerHTML.includes('event-thumbnail-placeholder'));
-  assert.ok(element.innerHTML.includes('0 Clips'));
-  assert.ok(!element.innerHTML.includes('<img loading="lazy"'));
+  const localEvent = {
+    name: '2026-10-10_13-00-00',
+    type: 'SavedClips',
+    timestamp: '2026-10-10T13:00:00Z',
+    clipGroups: [],
+    thumbnailFile: {
+      getFile: async () => ({ size: 5000 }),
+    },
+  };
+
+  const url1 = await browser.getThumbnail(localEvent);
+  const url2 = await browser.getThumbnail(localEvent);
+
+  assert.strictEqual(url1, 'blob:test/thumb-1');
+  assert.strictEqual(url2, 'blob:test/thumb-1');
+  assert.strictEqual(createCalls, 1, 'Should return cached thumbnail without recreating blob URL');
 });
 
 test('EventBrowser - loadEvents pre-resolves local thumbnail files for native lazy loading', async () => {
-  const container = createMockElement('div');
-  const browser = new EventBrowser(container, () => {});
+  const browser = new EventBrowser(null, () => {});
 
-  globalThis.URL = globalThis.URL || {};
   globalThis.URL.createObjectURL = () => 'blob:test/thumbnail-blob-url';
-  globalThis.URL.revokeObjectURL = () => {};
 
   const localEvent = {
     name: '2026-10-10_14-00-00',
