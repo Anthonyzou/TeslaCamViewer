@@ -2,6 +2,16 @@
  * FolderParser - Handles reading and parsing TeslaCam directory structure
  * Parser v3.7.12
  */
+import {
+  detectGaps,
+  formatGapDuration,
+  formatHourlyRange,
+  formatReason,
+  groupClips,
+  parseClipFilename,
+  parseClipTimestamp,
+  parseEventFolderName,
+} from '../utils/teslaCamFormat';
 
 class FolderParser {
   public rootHandle: any = null;
@@ -443,14 +453,11 @@ class FolderParser {
             this._debugStats.filesFound++;
             this._debugStats.videoFilesFound++;
           }
-          const clipMatch = entry.name.match(
-            /^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})-(front|back|left_repeater|right_repeater|left_pillar|right_pillar)\.mp4$/
-          );
-          if (clipMatch) {
-            const [_, clipTimestamp, camera] = clipMatch;
+          const parsed = parseClipFilename(entry.name);
+          if (parsed) {
             clips.push({
-              timestamp: clipTimestamp,
-              camera: camera,
+              timestamp: parsed.timestamp,
+              camera: parsed.camera,
               fileName: entry.name,
               fileHandle: entry,
             });
@@ -509,10 +516,7 @@ class FolderParser {
       const timestamp = `${datePart}T${timePart.replace(/-/g, ':')}`;
 
       // Format the hour for display (convert 24h to 12h format)
-      const hourNum = parseInt(group.hour, 10);
-      const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
-      const ampm = hourNum >= 12 ? 'PM' : 'AM';
-      const hourRange = `${hour12}:00-${hour12}:59 ${ampm}`;
+      const hourRange = formatHourlyRange(group.hour);
 
       // Format date for display
       const date = new Date(group.datePart);
@@ -574,20 +578,15 @@ class FolderParser {
     const eventName = eventHandle.name;
 
     // Extract timestamp from folder name (YYYY-MM-DD_HH-MM-SS)
-    const timestampMatch = eventName.match(
-      /^(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})$/
-    );
-    if (!timestampMatch) {
+    const folderInfo = parseEventFolderName(eventName);
+    if (!folderInfo) {
       return null;
     }
-
-    const [_, datePart, timePart] = timestampMatch;
-    const timestamp = `${datePart}T${timePart.replace(/-/g, ':')}`;
 
     const event: any = {
       name: eventName,
       type: folderType,
-      timestamp: timestamp,
+      timestamp: folderInfo.timestamp,
       folderHandle: eventHandle,
       clips: [],
       metadata: null,
@@ -653,14 +652,11 @@ class FolderParser {
           this._debugStats.videoFilesFound++;
         }
         // Parse video clip filename
-        const clipMatch = fileName.match(
-          /^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})-(front|back|left_repeater|right_repeater|left_pillar|right_pillar)\.mp4$/
-        );
-        if (clipMatch) {
-          const [_, clipTimestamp, camera] = clipMatch;
+        const parsed = parseClipFilename(fileName);
+        if (parsed) {
           event.clips.push({
-            timestamp: clipTimestamp,
-            camera: camera,
+            timestamp: parsed.timestamp,
+            camera: parsed.camera,
             fileName: fileName,
             fileHandle: fileHandle,
           });
@@ -699,19 +695,7 @@ class FolderParser {
    * @returns {Array} Clip groups
    */
   groupClips(clips) {
-    const groups = new Map();
-
-    for (const clip of clips) {
-      if (!groups.has(clip.timestamp)) {
-        groups.set(clip.timestamp, {
-          timestamp: clip.timestamp,
-          clips: {},
-        });
-      }
-      groups.get(clip.timestamp).clips[clip.camera] = clip;
-    }
-
-    return Array.from(groups.values());
+    return groupClips(clips);
   }
 
   /**
@@ -720,43 +704,7 @@ class FolderParser {
    * @returns {Array} Array of gap objects { startTime, endTime, duration, afterClipIndex }
    */
   detectGaps(clipGroups) {
-    const gaps = [];
-    const EXPECTED_CLIP_DURATION = 60; // seconds
-    // Increased threshold to 30 seconds to reduce false positives from clip duration variance
-    // Tesla clips may vary slightly from 60 seconds, so only flag significant gaps
-    const GAP_THRESHOLD = 30; // seconds - gaps smaller than this are ignored
-
-    for (let i = 0; i < clipGroups.length - 1; i++) {
-      const currentClip = clipGroups[i];
-      const nextClip = clipGroups[i + 1];
-
-      // Parse timestamps
-      const currentTime = this.parseClipTimestamp(currentClip.timestamp);
-      const nextTime = this.parseClipTimestamp(nextClip.timestamp);
-
-      if (!currentTime || !nextTime) continue;
-
-      // Calculate expected next clip time (current + 60 seconds)
-      const expectedNextTime = new Date(
-        currentTime.getTime() + EXPECTED_CLIP_DURATION * 1000
-      );
-
-      // Calculate the gap
-      const gapDuration =
-        (nextTime.getTime() - expectedNextTime.getTime()) / 1000; // in seconds
-
-      if (gapDuration > GAP_THRESHOLD) {
-        gaps.push({
-          startTime: expectedNextTime,
-          endTime: nextTime,
-          duration: gapDuration,
-          afterClipIndex: i,
-          formattedDuration: this.formatGapDuration(gapDuration),
-        });
-      }
-    }
-
-    return gaps;
+    return detectGaps(clipGroups);
   }
 
   /**
@@ -765,20 +713,7 @@ class FolderParser {
    * @returns {Date|null}
    */
   parseClipTimestamp(timestamp) {
-    const match = timestamp.match(
-      /^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})$/
-    );
-    if (!match) return null;
-
-    const [_, year, month, day, hour, minute, second] = match;
-    return new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(hour),
-      parseInt(minute),
-      parseInt(second)
-    );
+    return parseClipTimestamp(timestamp);
   }
 
   /**
@@ -787,17 +722,7 @@ class FolderParser {
    * @returns {string}
    */
   formatGapDuration(seconds) {
-    if (seconds < 60) {
-      return `${Math.round(seconds)}s`;
-    } else if (seconds < 3600) {
-      const mins = Math.floor(seconds / 60);
-      const secs = Math.round(seconds % 60);
-      return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-    } else {
-      const hours = Math.floor(seconds / 3600);
-      const mins = Math.floor((seconds % 3600) / 60);
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
+    return formatGapDuration(seconds);
   }
 
   /**
@@ -843,30 +768,7 @@ class FolderParser {
    * @returns {string}
    */
   static formatReason(reason) {
-    if (!reason) return 'Unknown';
-
-    const reasonMap = {
-      user_interaction_dashcam_launcher_action_tapped: 'Manual Save',
-      sentry_aware_object_detection: 'Sentry: Object Detected',
-      sentry_aware_accel: 'Sentry: Vehicle Bumped',
-    };
-
-    // Check for partial matches
-    for (const [key, value] of Object.entries(reasonMap)) {
-      if (reason.includes(key)) {
-        // For accel, include the value
-        if (key === 'sentry_aware_accel') {
-          const accelMatch = reason.match(/sentry_aware_accel_([\d.]+)/);
-          if (accelMatch) {
-            return `${value} (${accelMatch[1]}g)`;
-          }
-        }
-        return value;
-      }
-    }
-
-    // Return cleaned up version
-    return reason.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    return formatReason(reason);
   }
 }
 

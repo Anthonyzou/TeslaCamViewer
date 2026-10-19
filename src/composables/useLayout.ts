@@ -24,36 +24,61 @@ export function useLayout() {
     }
   }
 
-  let syncTimer: ReturnType<typeof setInterval> | null = null;
+  function attachLayoutHooks(): void {
+    const lm = typeof window !== 'undefined' ? window.app?.layoutManager : null;
+    if (!lm) return;
+    const origChange = lm.onLayoutChange;
+    lm.onLayoutChange = (l: string) => {
+      layout.value = l;
+      syncLayout();
+      if (typeof origChange === 'function') origChange(l);
+    };
+    syncLayout();
+  }
 
   onMounted(() => {
     syncLayout();
-    syncTimer = setInterval(syncLayout, 500);
+    if (typeof window !== 'undefined') {
+      if (window.app?.layoutManager) {
+        attachLayoutHooks();
+      } else {
+        window.addEventListener('teslacam-ready', attachLayoutHooks, {
+          once: true,
+        });
+      }
+    }
   });
 
   onUnmounted(() => {
-    if (syncTimer) clearInterval(syncTimer);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('teslacam-ready', attachLayoutHooks);
+    }
   });
 
   function changeLayout(val: string): void {
     layout.value = val;
     window.app?.layoutManager?.setLayout(val);
+    syncLayout();
   }
 
   function changeFocusCamera(cam: string): void {
     window.app?.layoutManager?.setFocusCamera(cam);
+    syncLayout();
   }
 
   function resetLayout(): void {
     window.app?.layoutManager?.resetLayout();
+    syncLayout();
   }
 
   function toggleCameraHide(cam: string): void {
     window.app?.toggleCameraVisibility(cam);
+    syncLayout();
   }
 
   function unhideCamera(cam: string): void {
     window.app?.showCamera(cam);
+    syncLayout();
   }
 
   function toggleSidebar(): void {

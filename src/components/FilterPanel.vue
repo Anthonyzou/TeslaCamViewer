@@ -133,7 +133,8 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
 import { onMounted, onUnmounted, reactive, ref } from 'vue';
-import { filterPanelStore, useFilterPanel } from '../composables/useFilterPanel';
+import { useFilterPanel, filterPanelStore } from '../composables/useFilterPanel';
+import { useI18n } from '../composables/useI18n';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{
@@ -146,7 +147,7 @@ function getFilter(): EventFilterLike | null {
 }
 
 const { isExpanded, filterCount } = useFilterPanel();
-const localeTick = ref(0);
+const { t } = useI18n();
 const searchQuery = ref('');
 
 const filters = reactive({
@@ -161,11 +162,6 @@ const filters = reactive({
     end: '',
   },
 });
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
 
 function updateBadge(): void {
   const ef = getFilter();
@@ -266,14 +262,9 @@ function clearAllFilters(): void {
   notifyFilterChange();
 }
 
-function onLocaleChange(): void {
-  localeTick.value++;
-}
-
 onMounted(() => {
   syncFromEventFilter();
   updateBadge();
-  window.addEventListener('localeChanged', onLocaleChange);
   filterPanelStore.registerHandlers({
     updateBadge,
     syncFromEventFilter,
@@ -284,7 +275,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
-  window.removeEventListener('localeChanged', onLocaleChange);
   filterPanelStore.unregisterHandlers();
 });
 

@@ -442,7 +442,8 @@
 
 <script setup lang="ts">
 import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 import { settingsManager } from '../services/settingsManager';
 
@@ -451,8 +452,7 @@ const {
   settingsActiveTab: activeTab,
   settingsModal,
 } = useModals();
-const localeTick = ref(0);
-const currentLocale = ref(window.i18n ? window.i18n.getLocale() : 'en');
+const { t, currentLocale, setLocale } = useI18n();
 let mouseDownOnOverlay = false;
 
 // Reactive state mirroring settings
@@ -463,14 +463,6 @@ function syncFromManager(): void {
   if (mgr && mgr.settings) {
     Object.assign(settings, mgr.settings);
   }
-  if (window.i18n) {
-    currentLocale.value = window.i18n.getLocale();
-  }
-}
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
 }
 
 const currentSectionTitle = computed<string>(() => {
@@ -509,9 +501,7 @@ function save(key: string, val: any): void {
 
 function onLanguageChange(e: Event): void {
   const newLocale = (e.target as HTMLSelectElement).value;
-  if (window.i18n) {
-    window.i18n.setLocale(newLocale);
-  }
+  setLocale(newLocale);
 }
 
 function handleReset(): void {
@@ -524,21 +514,12 @@ function handleReset(): void {
   }
 }
 
-function onLocaleChanged(): void {
-  localeTick.value++;
-  if (window.i18n) {
-    currentLocale.value = window.i18n.getLocale();
-  }
-}
-
 onMounted(() => {
   syncFromManager();
-  window.addEventListener('localeChanged', onLocaleChanged);
   settingsModal.registerSyncHandler(syncFromManager);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
   settingsModal.unregisterSyncHandler();
 });
 

@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import type { TeslaCamEvent } from '../types';
 import EventCard from './EventCard.vue';
 
@@ -37,10 +38,7 @@ const emit = defineEmits<{
 }>();
 
 const listContainerRef = ref<HTMLElement | null>(null);
-
-function t(key: string): string {
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
+const { t } = useI18n();
 
 function onSelectEvent(event: TeslaCamEvent): void {
   emit('selectEvent', event);

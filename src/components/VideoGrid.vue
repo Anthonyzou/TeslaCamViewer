@@ -185,8 +185,7 @@
 
 <script setup lang="ts">
 import { Eye, Maximize, Minimize, Play } from 'lucide-vue-next';
-import { onMounted, onUnmounted, ref } from 'vue';
-import i18n from '../utils/i18n';
+import { useI18n } from '../composables/useI18n';
 
 const props = withDefaults(
   defineProps<{
@@ -209,25 +208,9 @@ const emit = defineEmits<{
   (e: 'exitFullscreen'): void;
 }>();
 
-const localeTick = ref(0);
-
-function t(key: string): string {
-  return i18n.t ? window.i18n.t(key) : key.split('.').pop() || '';
-}
+const { t } = useI18n();
 
 function isHidden(cam: string): boolean {
   return props.hiddenCameras ? props.hiddenCameras.includes(cam) : false;
 }
-
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
-onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
-});
 </script>

@@ -479,7 +479,8 @@ import {
   Video,
   X,
 } from 'lucide-vue-next';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { ref } from 'vue';
+import { useI18n } from '../composables/useI18n';
 
 const props = defineProps<{
   hasEvent: boolean;
@@ -517,12 +518,7 @@ const isExportDropdownOpen = ref(false);
 const isMobileMoreOpen = ref(false);
 const privacyMode = ref(false);
 
-const localeTick = ref(0);
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
+const { t } = useI18n();
 
 function onScreenshotClick(): void {
   isExportDropdownOpen.value = false;
@@ -533,16 +529,4 @@ function onExportVideoClick(): void {
   isExportDropdownOpen.value = false;
   emit('exportVideo');
 }
-
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
-onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
-});
 </script>

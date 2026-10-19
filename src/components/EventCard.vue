@@ -67,9 +67,9 @@ import {
   computeRecordingHealth,
   getTimeRangeFromClips,
 } from '../services/eventBrowser';
-import { FolderParser } from '../services/folderParser';
 import { settingsManager } from '../services/settingsManager';
 import type { TeslaCamEvent } from '../types';
+import { formatReason } from '../utils/teslaCamFormat';
 import weatherService from '../utils/weatherService';
 
 const props = defineProps<{
@@ -147,7 +147,7 @@ const gpsText = computed(() => {
 
 const reason = computed(() => {
   if (!props.event.metadata?.reason) return '';
-  return FolderParser.formatReason(props.event.metadata.reason);
+  return formatReason(props.event.metadata.reason);
 });
 
 async function loadWeather(): Promise<void> {

@@ -164,6 +164,7 @@
 <script setup lang="ts">
 import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import EventList from './EventList.vue';
 import FilterPanel from './FilterPanel.vue';
@@ -330,24 +331,13 @@ watch(
   }
 );
 
-const localeTick = ref(0);
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
-
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
+const { t } = useI18n();
 
 onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
   window.addEventListener('resize', onWindowResize);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
   window.removeEventListener('resize', onWindowResize);
   window.removeEventListener('mousemove', onMouseMove);
   window.removeEventListener('mouseup', onMouseUp);

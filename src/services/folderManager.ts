@@ -23,7 +23,42 @@ class FolderManager {
     '#607d8b',
   ];
 
-  public onDrivesChanged: any = null;
+  private _onDrivesChanged: any = null;
+  private _drivesChangedListeners: ((drives: any[]) => void)[] = [];
+
+  get onDrivesChanged(): any {
+    return this._onDrivesChanged;
+  }
+
+  set onDrivesChanged(fn: any) {
+    this._onDrivesChanged = fn;
+  }
+
+  addDrivesChangedListener(listener: (drives: any[]) => void): () => void {
+    this._drivesChangedListeners.push(listener);
+    return () => {
+      this._drivesChangedListeners = this._drivesChangedListeners.filter(
+        (cb) => cb !== listener
+      );
+    };
+  }
+
+  notifyDrivesChanged(): void {
+    if (typeof this._onDrivesChanged === 'function') {
+      try {
+        this._onDrivesChanged(this.drives);
+      } catch (e) {
+        console.error('Error in onDrivesChanged callback:', e);
+      }
+    }
+    this._drivesChangedListeners.forEach((listener) => {
+      try {
+        listener(this.drives);
+      } catch (e) {
+        console.error('Error in drives changed listener:', e);
+      }
+    });
+  }
 
   /**
    * Initialize IndexedDB for storing drives
@@ -81,9 +116,7 @@ class FolderManager {
       }
 
       this.drives = drives;
-      if (this.onDrivesChanged) {
-        this.onDrivesChanged(this.drives);
-      }
+      this.notifyDrivesChanged();
       console.log(`Loaded ${drives.length} drives from IndexedDB`);
     } catch (e) {
       console.warn('Failed to load drives:', e);
@@ -206,9 +239,7 @@ class FolderManager {
     this.drives.push(drive);
     await this.saveDrive(drive);
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
 
     console.log(
       `Added drive: ${drive.label} (${drive.id})${drive.isArchive ? ' [ARCHIVE]' : ''}`
@@ -258,9 +289,7 @@ class FolderManager {
       this.activeDriveId = null;
     }
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
 
     console.log(`Removed drive: ${driveId}`);
     return true;
@@ -281,9 +310,7 @@ class FolderManager {
     drive.label = newLabel;
     await this.saveDrive(drive);
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
 
     return true;
   }
@@ -303,9 +330,7 @@ class FolderManager {
     drive.color = newColor;
     await this.saveDrive(drive);
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
 
     return true;
   }
@@ -337,9 +362,7 @@ class FolderManager {
 
     await this.saveDrive(drive);
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
 
     return true;
   }
@@ -396,9 +419,7 @@ class FolderManager {
   setActiveDrive(driveId: string | null) {
     this.activeDriveId = driveId;
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
   }
 
   switchDrive(driveId: string | null) {
@@ -663,9 +684,7 @@ class FolderManager {
     this.drives = [];
     this.activeDriveId = null;
 
-    if (this.onDrivesChanged) {
-      this.onDrivesChanged(this.drives);
-    }
+    this.notifyDrivesChanged();
   }
 
   /**

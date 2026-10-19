@@ -109,23 +109,19 @@
 <script setup lang="ts">
 import { Folder, Info, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 
 const { isDriveSetupOpen: isOpen, driveSetupModal } = useModals();
+const { t } = useI18n();
 const isEdit = ref(false);
 const folderName = ref('');
 const label = ref('');
 const dateFilter = ref('all');
 const isArchive = ref(false);
 
-const localeTick = ref(0);
 let mouseDownOnOverlay = false;
 let resolver: ((val: any) => void) | null = null;
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
 
 function promptSetup(handle: any, existingDrive: any = null): Promise<any> {
   return new Promise((resolve) => {
@@ -187,17 +183,11 @@ function onOverlayClick(e: MouseEvent): void {
   }
 }
 
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
 onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
   driveSetupModal.registerPromptHandler(promptSetup);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
   driveSetupModal.unregisterPromptHandler();
 });
 

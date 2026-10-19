@@ -33,47 +33,50 @@ export function usePlayback() {
     }
   }
 
-  let hookTimer: ReturnType<typeof setInterval> | null = null;
+  function attachVideoHooks(): void {
+    const vp = typeof window !== 'undefined' ? window.app?.videoPlayer : null;
+    if (!vp) return;
+
+    // Direct callback hooks on VideoPlayer
+    const origPlayState = vp.onPlayStateChange;
+    vp.onPlayStateChange = (playing: boolean) => {
+      isPlaying.value = playing;
+      if (typeof origPlayState === 'function') origPlayState(playing);
+    };
+
+    const origClipChange = vp.onClipChange;
+    vp.onClipChange = (clipIdx: number) => {
+      currentClipIndex.value = clipIdx;
+      if (typeof origClipChange === 'function') origClipChange(clipIdx);
+    };
+
+    const origTimeUpdate = vp.onTimeUpdate;
+    vp.onTimeUpdate = (time: number, dur: number) => {
+      currentTime.value = time;
+      duration.value = dur;
+      if (typeof origTimeUpdate === 'function') origTimeUpdate(time, dur);
+    };
+
+    syncPlayback();
+  }
 
   onMounted(() => {
     syncPlayback();
-
-    hookTimer = setInterval(() => {
-      const app = window.app;
-      const vp = app?.videoPlayer;
-      if (vp) {
-        if (hookTimer) {
-          clearInterval(hookTimer);
-          hookTimer = null;
-        }
-
-        // Direct callback hooks on VideoPlayer
-        const origPlayState = vp.onPlayStateChange;
-        vp.onPlayStateChange = (playing: boolean) => {
-          isPlaying.value = playing;
-          if (typeof origPlayState === 'function') origPlayState(playing);
-        };
-
-        const origClipChange = vp.onClipChange;
-        vp.onClipChange = (clipIdx: number) => {
-          currentClipIndex.value = clipIdx;
-          if (typeof origClipChange === 'function') origClipChange(clipIdx);
-        };
-
-        const origTimeUpdate = vp.onTimeUpdate;
-        vp.onTimeUpdate = (time: number, dur: number) => {
-          currentTime.value = time;
-          duration.value = dur;
-          if (typeof origTimeUpdate === 'function') origTimeUpdate(time, dur);
-        };
-
-        syncPlayback();
+    if (typeof window !== 'undefined') {
+      if (window.app?.videoPlayer) {
+        attachVideoHooks();
+      } else {
+        window.addEventListener('teslacam-ready', attachVideoHooks, {
+          once: true,
+        });
       }
-    }, 100);
+    }
   });
 
   onUnmounted(() => {
-    if (hookTimer) clearInterval(hookTimer);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('teslacam-ready', attachVideoHooks);
+    }
   });
 
   function play(): void {

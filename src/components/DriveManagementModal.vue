@@ -142,18 +142,14 @@
 <script setup lang="ts">
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 import { folderManager } from '../services/folderManager';
 
 const { isDriveManagementOpen: isOpen, driveManagementModal } = useModals();
+const { t } = useI18n();
 const drivesList = ref<any[]>([]);
-const localeTick = ref(0);
 let mouseDownOnOverlay = false;
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
 
 function refreshDrives(): void {
   drivesList.value = folderManager.getDrives() || [];
@@ -277,17 +273,11 @@ async function handleAddDrive(): Promise<void> {
   }
 }
 
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
 onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
   driveManagementModal.registerRefreshHandler(refreshDrives);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
   driveManagementModal.unregisterRefreshHandler();
 });
 

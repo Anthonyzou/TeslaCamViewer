@@ -23,20 +23,18 @@ function syncDrives(): void {
 export function useDrives() {
   syncDrives();
 
-  folderManager.onDrivesChanged = () => {
-    syncDrives();
-  };
-
   if (getCurrentInstance()) {
-    let syncTimer: ReturnType<typeof setInterval> | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     onMounted(() => {
       syncDrives();
-      syncTimer = setInterval(syncDrives, 1000);
+      unsubscribe = folderManager.addDrivesChangedListener(() => {
+        syncDrives();
+      });
     });
 
     onUnmounted(() => {
-      if (syncTimer) clearInterval(syncTimer);
+      if (unsubscribe) unsubscribe();
     });
   }
 

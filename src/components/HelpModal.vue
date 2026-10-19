@@ -201,17 +201,12 @@
 
 <script setup lang="ts">
 import { X } from 'lucide-vue-next';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 
 const { isHelpOpen: isOpen, helpModal } = useModals();
-const localeTick = ref(0);
+const { t } = useI18n();
 let mouseDownOnOverlay = false;
-
-function t(key: string): string {
-  void localeTick.value;
-  return window.i18n ? window.i18n.t(key) : key.split('.').pop() || '';
-}
 
 function open(): void {
   helpModal.open();
@@ -239,18 +234,6 @@ function onOverlayClick(e: MouseEvent): void {
     close();
   }
 }
-
-function onLocaleChanged(): void {
-  localeTick.value++;
-}
-
-onMounted(() => {
-  window.addEventListener('localeChanged', onLocaleChanged);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('localeChanged', onLocaleChanged);
-});
 
 defineExpose({
   open,

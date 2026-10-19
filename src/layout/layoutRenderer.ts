@@ -3,6 +3,11 @@
  * Single source of truth for both DOM preview and canvas export
  */
 import { LayoutConfig } from './layoutConfig';
+import {
+  calculateContainSize,
+  calculateDrawParams,
+  calculateExportConfig,
+} from './layoutMath';
 
 export class LayoutRenderer {
   [key: string]: any;
@@ -24,66 +29,8 @@ export class LayoutRenderer {
    * @param {Object} camConfig - Camera configuration { x, y, w, h, crop, objectFit }
    * @returns {Object} { sx, sy, sw, sh, dx, dy, dw, dh } - Source and destination rectangles
    */
-  static calculateDrawParams(video, camConfig) {
-    const crop = camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 };
-    // Accept both HTMLVideoElement (videoWidth/Height) and ImageBitmap
-    // (width/height) — the export pipeline passes ImageBitmaps from
-    // WebCodecs decoding and we want the same crop/fit math applied.
-    const vw = video.videoWidth || video.width || 1280;
-    const vh = video.videoHeight || video.height || 960;
-
-    // Calculate source rectangle (after crop)
-    let sx = vw * (crop.left / 100);
-    let sy = vh * (crop.top / 100);
-    let sw = vw * (1 - crop.left / 100 - crop.right / 100);
-    let sh = vh * (1 - crop.top / 100 - crop.bottom / 100);
-
-    // Calculate destination rectangle
-    let dx = camConfig.x;
-    let dy = camConfig.y;
-    let dw = camConfig.w;
-    let dh = camConfig.h;
-
-    const objectFit = camConfig.objectFit || 'fill';
-
-    if (objectFit === 'contain') {
-      // Contain: Maintain aspect ratio, fit within bounds (letterbox/pillarbox)
-      const sourceAR = sw / sh;
-      const destAR = dw / dh;
-
-      if (sourceAR > destAR) {
-        // Source is wider, letterbox top/bottom
-        const newH = dw / sourceAR;
-        dy += (dh - newH) / 2;
-        dh = newH;
-      } else {
-        // Source is taller, pillarbox left/right
-        const newW = dh * sourceAR;
-        dx += (dw - newW) / 2;
-        dw = newW;
-      }
-    } else if (objectFit === 'cover') {
-      // Cover: Maintain aspect ratio, crop source to fill destination
-      const sourceAR = sw / sh;
-      const destAR = dw / dh;
-
-      if (sourceAR > destAR) {
-        // Source is wider - crop sides
-        const newSW = sh * destAR;
-        const cropX = (sw - newSW) / 2;
-        sx += cropX;
-        sw = newSW;
-      } else {
-        // Source is taller - crop top/bottom
-        const newSH = sw / destAR;
-        const cropY = (sh - newSH) / 2;
-        sy += cropY;
-        sh = newSH;
-      }
-    }
-    // 'fill' stretches to fit (default drawImage behavior) - no adjustments needed
-
-    return { sx, sy, sw, sh, dx, dy, dw, dh };
+  static calculateDrawParams(video: any, camConfig: any) {
+    return calculateDrawParams(video, camConfig);
   }
 
   /**
@@ -92,23 +39,12 @@ export class LayoutRenderer {
    * @param {number} aspectRatio - Width/height ratio (e.g., 1.333 for 4:3)
    * @returns {{ width: number, height: number }}
    */
-  calculateContainSize(container, aspectRatio) {
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    const containerAR = containerWidth / containerHeight;
-
-    let width, height;
-    if (containerAR > aspectRatio) {
-      // Container is wider than layout - height constrained
-      height = containerHeight;
-      width = height * aspectRatio;
-    } else {
-      // Container is taller than layout - width constrained
-      width = containerWidth;
-      height = width / aspectRatio;
-    }
-
-    return { width: Math.floor(width), height: Math.floor(height) };
+  calculateContainSize(container: any, aspectRatio: number) {
+    return calculateContainSize(
+      container.clientWidth,
+      container.clientHeight,
+      aspectRatio
+    );
   }
 
   /**
@@ -540,68 +476,17 @@ export class LayoutRenderer {
     videoHeight: number,
     options: any = {}
   ) {
-    const visibleCameras = options.visibleCameras || null;
-    const aspectRatio = config.canvas?.aspectRatio || '4:3';
-    const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatio] || {
-      width: 4,
-      height: 3,
-    };
-
-    // Calculate canvas size based on video dimensions and layout aspect ratio
-    // Use video dimensions as base, scale to match layout aspect ratio
-    const layoutAR = arParts.width / arParts.height;
-
-    let canvasWidth, canvasHeight;
-
-    // Scale based on layout needs
-    if (aspectRatio === '4:3') {
-      canvasWidth = videoWidth * 2;
-      canvasHeight = videoHeight * 2;
-    } else if (aspectRatio === '6:3' || aspectRatio === '16:9') {
-      canvasWidth = Math.round(videoWidth * 3);
-      canvasHeight = Math.round((videoWidth * 3) / layoutAR);
-    } else if (aspectRatio === '8:3') {
-      canvasWidth = videoWidth * 2;
-      canvasHeight = Math.round((videoWidth * 2) / layoutAR);
-    } else if (aspectRatio === '12:3') {
-      canvasWidth = videoWidth * 3;
-      canvasHeight = Math.round((videoWidth * 3) / layoutAR);
-    } else if (aspectRatio === '21:9') {
-      canvasWidth = Math.round(videoWidth * 2.5);
-      canvasHeight = Math.round((videoWidth * 2.5) / layoutAR);
-    } else {
-      // Default fallback
-      canvasWidth = videoWidth * 2;
-      canvasHeight = Math.round(canvasWidth / layoutAR);
-    }
-
-    // Build camera configs with pixel positions
-    const cameras = {};
-    for (const camName of LayoutConfig.CAMERAS) {
-      const camConfig = config.cameras?.[camName];
-      if (!camConfig) continue;
-
-      const pos = camConfig.position;
-      // User's hide toggle overrides the layout config's enabled flag,
-      // so hidden cameras don't appear in exports.
-      const userHidden = visibleCameras && visibleCameras[camName] === false;
-      cameras[camName] = {
-        x: Math.round(canvasWidth * (pos.x / 100)),
-        y: Math.round(canvasHeight * (pos.y / 100)),
-        w: Math.round(canvasWidth * (pos.width / 100)),
-        h: Math.round(canvasHeight * (pos.height / 100)),
-        visible: camConfig.enabled && !userHidden,
-        zIndex: camConfig.zIndex || 1,
-        objectFit: camConfig.objectFit || 'contain',
-        crop: camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 },
-      };
-    }
-
+    const result = calculateExportConfig(
+      config,
+      videoWidth,
+      videoHeight,
+      options
+    );
     return {
-      canvasWidth: Math.round(canvasWidth),
-      canvasHeight: Math.round(canvasHeight),
-      aspectRatio,
-      cameras,
+      canvasWidth: result.width,
+      canvasHeight: result.height,
+      aspectRatio: result.aspectRatio,
+      cameras: result.cameras,
     };
   }
 

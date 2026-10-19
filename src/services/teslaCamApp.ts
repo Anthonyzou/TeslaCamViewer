@@ -70,7 +70,10 @@ export class TeslaCamApp {
     this._registerCommandPaletteCommands();
 
     // Set global reference for backward compatibility
-    window.app = this;
+    if (typeof window !== 'undefined') {
+      window.app = this;
+      window.dispatchEvent(new CustomEvent('teslacam-ready', { detail: this }));
+    }
 
     this.b2Client.getConfig().then((config: any) => {
       if (config?.isConfigured && config?.isPreloaded) {

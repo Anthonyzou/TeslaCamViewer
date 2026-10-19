@@ -124,9 +124,14 @@ class I18n {
     this.translatePage();
 
     // Dispatch event for components to update
-    window.dispatchEvent(
-      new CustomEvent('localeChanged', { detail: { locale } })
-    );
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.dispatchEvent === 'function'
+    ) {
+      window.dispatchEvent(
+        new CustomEvent('localeChanged', { detail: { locale } })
+      );
+    }
   }
 
   /**
@@ -213,6 +218,8 @@ class I18n {
    * Translate all elements with data-i18n attributes
    */
   translatePage() {
+    if (typeof document === 'undefined') return;
+
     // Translate text content: data-i18n="key"
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
@@ -276,14 +283,18 @@ class I18n {
 const i18n = new I18n();
 
 // Expose to window for global access
-window.i18n = i18n;
+if (typeof window !== 'undefined') {
+  window.i18n = i18n;
+}
 
 // Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => i18n.init());
-} else {
-  // DOM already loaded, init immediately
-  i18n.init();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => i18n.init());
+  } else {
+    // DOM already loaded, init immediately
+    i18n.init();
+  }
 }
 
 export { I18n, i18n };
