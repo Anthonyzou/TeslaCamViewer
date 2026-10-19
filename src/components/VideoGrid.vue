@@ -389,98 +389,87 @@ function getCameraObjectFit(cameraName: string): 'contain' | 'cover' | 'fill' {
 </script>
 
 <style scoped>
-/* ==================== PLAYER AREA ==================== */
-.player-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-void);
-    min-height: 0;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-    /* Keep below sidebar (z-index: 200) on mobile */
-}
-
 /* Scan-line overlay for video area */
 .video-grid-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(0deg,
-            transparent,
-            transparent 2px,
-            rgba(0, 0, 0, 0.03) 2px,
-            rgba(0, 0, 0, 0.03) 4px);
-    pointer-events: none;
-    z-index: 10;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
 }
 
 .video-grid-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-void);
-    min-height: 0;
-    min-width: 0;
-    overflow: hidden;
-    position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-void);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .video-grid-container:has(.video-grid:not(.grid-2x2)),
 .video-grid-container:has(.video-grid.layout-custom-config) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-grid-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-void);
-    z-index: 1000;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-void);
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .video-grid-placeholder.hidden {
-    display: none;
+  display: none;
 }
 
 .placeholder-content {
-    text-align: center;
-    color: var(--text-muted);
+  text-align: center;
+  color: var(--text-muted);
 }
 
 /* Video Grid */
 .video-grid {
-    position: relative;
-    background: var(--bg-void);
-    overflow: hidden;
-    margin: auto;
-    transition: all 0.3s ease;
-    /* Isolate the video region from layout/paint cascades in unrelated parts
+  position: relative;
+  background: var(--bg-void);
+  overflow: hidden;
+  margin: auto;
+  transition: all 0.3s ease;
+  /* Isolate the video region from layout/paint cascades in unrelated parts
      * of the UI (timeline hover, transport-button :hover shadow animations).
      * Without this, mouse movement over buttons can stall video decode. */
-    contain: layout paint;
+  contain: layout paint;
 }
 
 /* Promote every video element to its own GPU compositor layer. Prevents
  * button/timeline hover repaints from cascading into video decode and
  * causing the "Buffering: X" stutter bug. */
 .video-grid video {
-    will-change: transform;
-    transform: translateZ(0);
-    backface-visibility: hidden;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Systemic root-cause fix for the mouse-hover buffering bug:
@@ -495,19 +484,19 @@ button svg,
 button svg *,
 .control-btn svg,
 .control-btn svg * {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .video-grid.grid-2x2 {
-    display: grid;
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: 100%;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    aspect-ratio: 4 / 3;
-    /* No gap - videos touch edge-to-edge, all dead space goes to outer edges */
+  display: grid;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 4 / 3;
+  /* No gap - videos touch edge-to-edge, all dead space goes to outer edges */
 }
 
 /* Absolute positioned layouts - sizing handled by JavaScript for proper contain behavior */
@@ -519,407 +508,407 @@ button svg *,
 .video-grid.layout-front-repeaters,
 .video-grid.layout-focus,
 .video-grid.layout-custom-config {
-    /* JavaScript sets width/height to fit container while maintaining aspect ratio */
-    max-width: 100%;
-    max-height: 100%;
+  /* JavaScript sets width/height to fit container while maintaining aspect ratio */
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* Layout: 6:3 */
 .video-grid.layout-6-3 {
-    aspect-ratio: 6 / 3;
+  aspect-ratio: 6 / 3;
 }
 
 .video-grid.layout-6-3 .video-container {
-    position: absolute;
+  position: absolute;
 }
 
 .video-grid.layout-6-3 .video-container:nth-child(1) {
-    left: 20%;
-    top: 0%;
-    width: 60%;
-    height: 55%;
-    z-index: 15;
+  left: 20%;
+  top: 0%;
+  width: 60%;
+  height: 55%;
+  z-index: 15;
 }
 
 .video-grid.layout-6-3 .video-container:nth-child(2) {
-    left: 24%;
-    top: 55%;
-    width: 52%;
-    height: 45%;
-    z-index: 20;
+  left: 24%;
+  top: 55%;
+  width: 52%;
+  height: 45%;
+  z-index: 20;
 }
 
 .video-grid.layout-6-3 .video-container:nth-child(3) {
-    left: 54%;
-    top: 51%;
-    width: 46%;
-    height: 49%;
-    z-index: 10;
+  left: 54%;
+  top: 51%;
+  width: 46%;
+  height: 49%;
+  z-index: 10;
 }
 
 .video-grid.layout-6-3 .video-container:nth-child(4) {
-    left: 0%;
-    top: 51%;
-    width: 46%;
-    height: 49%;
-    z-index: 10;
+  left: 0%;
+  top: 51%;
+  width: 46%;
+  height: 49%;
+  z-index: 10;
 }
 
 /* Layout: 4:3 */
 .video-grid.layout-4-3 {
-    aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 3;
 }
 
 .video-grid.layout-4-3 .video-container {
-    position: absolute;
+  position: absolute;
 }
 
 .video-grid.layout-4-3 .video-container:nth-child(1) {
-    left: 18%;
-    top: 1%;
-    width: 64%;
-    height: 68%;
-    z-index: 10;
+  left: 18%;
+  top: 1%;
+  width: 64%;
+  height: 68%;
+  z-index: 10;
 }
 
 .video-grid.layout-4-3 .video-container:nth-child(2) {
-    left: 39%;
-    top: 0%;
-    width: 22%;
-    height: 25%;
-    z-index: 20;
+  left: 39%;
+  top: 0%;
+  width: 22%;
+  height: 25%;
+  z-index: 20;
 }
 
 .video-grid.layout-4-3 .video-container:nth-child(3) {
-    left: 55%;
-    top: 55%;
-    width: 45%;
-    height: 45%;
-    z-index: 5;
+  left: 55%;
+  top: 55%;
+  width: 45%;
+  height: 45%;
+  z-index: 5;
 }
 
 .video-grid.layout-4-3 .video-container:nth-child(4) {
-    left: 0%;
-    top: 55%;
-    width: 45%;
-    height: 45%;
-    z-index: 5;
+  left: 0%;
+  top: 55%;
+  width: 45%;
+  height: 45%;
+  z-index: 5;
 }
 
 /* Layout: All 16:9 */
 .video-grid.layout-all-16-9 {
-    aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 9;
 }
 
 .video-grid.layout-all-16-9 .video-container {
-    position: absolute;
+  position: absolute;
 }
 
 .video-grid.layout-all-16-9 .video-container:nth-child(1) {
-    left: 20%;
-    top: 0%;
-    width: 60%;
-    height: 50%;
-    z-index: 15;
+  left: 20%;
+  top: 0%;
+  width: 60%;
+  height: 50%;
+  z-index: 15;
 }
 
 .video-grid.layout-all-16-9 .video-container:nth-child(2) {
-    left: 28%;
-    top: 56%;
-    width: 44%;
-    height: 44%;
-    z-index: 10;
+  left: 28%;
+  top: 56%;
+  width: 44%;
+  height: 44%;
+  z-index: 10;
 }
 
 .video-grid.layout-all-16-9 .video-container:nth-child(3) {
-    left: 58%;
-    top: 56%;
-    width: 42%;
-    height: 44%;
-    z-index: 15;
+  left: 58%;
+  top: 56%;
+  width: 42%;
+  height: 44%;
+  z-index: 15;
 }
 
 .video-grid.layout-all-16-9 .video-container:nth-child(4) {
-    left: 0%;
-    top: 56%;
-    width: 42%;
-    height: 44%;
-    z-index: 15;
+  left: 0%;
+  top: 56%;
+  width: 42%;
+  height: 44%;
+  z-index: 15;
 }
 
 /* Layout: Front & Left 8:3 */
 .video-grid.layout-front-left {
-    aspect-ratio: 8 / 3;
+  aspect-ratio: 8 / 3;
 }
 
 .video-grid.layout-front-left .video-container {
-    position: absolute;
-    top: 0%;
-    height: 100%;
+  position: absolute;
+  top: 0%;
+  height: 100%;
 }
 
 .video-grid.layout-front-left .video-container:nth-child(1) {
-    left: 50%;
-    width: 50%;
-    z-index: 10;
+  left: 50%;
+  width: 50%;
+  z-index: 10;
 }
 
 .video-grid.layout-front-left .video-container:nth-child(2) {
-    display: none;
+  display: none;
 }
 
 .video-grid.layout-front-left .video-container:nth-child(3) {
-    left: 0%;
-    width: 50%;
-    z-index: 10;
+  left: 0%;
+  width: 50%;
+  z-index: 10;
 }
 
 .video-grid.layout-front-left .video-container:nth-child(4) {
-    display: none;
+  display: none;
 }
 
 /* Layout: Front & Right 8:3 */
 .video-grid.layout-front-right {
-    aspect-ratio: 8 / 3;
+  aspect-ratio: 8 / 3;
 }
 
 .video-grid.layout-front-right .video-container {
-    position: absolute;
-    top: 0%;
-    height: 100%;
+  position: absolute;
+  top: 0%;
+  height: 100%;
 }
 
 .video-grid.layout-front-right .video-container:nth-child(1) {
-    left: 0%;
-    width: 50%;
-    z-index: 10;
+  left: 0%;
+  width: 50%;
+  z-index: 10;
 }
 
 .video-grid.layout-front-right .video-container:nth-child(2) {
-    display: none;
+  display: none;
 }
 
 .video-grid.layout-front-right .video-container:nth-child(3) {
-    display: none;
+  display: none;
 }
 
 .video-grid.layout-front-right .video-container:nth-child(4) {
-    left: 50%;
-    width: 50%;
-    z-index: 10;
+  left: 50%;
+  width: 50%;
+  z-index: 10;
 }
 
 /* Layout: Front & Repeaters 12:3 */
 .video-grid.layout-front-repeaters {
-    aspect-ratio: 12 / 3;
+  aspect-ratio: 12 / 3;
 }
 
 .video-grid.layout-front-repeaters .video-container {
-    position: absolute;
-    top: 0%;
-    height: 100%;
+  position: absolute;
+  top: 0%;
+  height: 100%;
 }
 
 .video-grid.layout-front-repeaters .video-container:nth-child(1) {
-    left: 33.33%;
-    width: 33.34%;
-    z-index: 10;
+  left: 33.33%;
+  width: 33.34%;
+  z-index: 10;
 }
 
 .video-grid.layout-front-repeaters .video-container:nth-child(2) {
-    display: none;
+  display: none;
 }
 
 .video-grid.layout-front-repeaters .video-container:nth-child(3) {
-    left: 0%;
-    width: 33.33%;
-    z-index: 10;
+  left: 0%;
+  width: 33.33%;
+  z-index: 10;
 }
 
 .video-grid.layout-front-repeaters .video-container:nth-child(4) {
-    left: 66.67%;
-    width: 33.33%;
-    z-index: 10;
+  left: 66.67%;
+  width: 33.33%;
+  z-index: 10;
 }
 
 /* Layout: Focus Mode */
 .video-grid.layout-focus {
-    aspect-ratio: 4 / 3;
-    width: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    position: relative;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  position: relative;
 }
 
 .video-grid.layout-focus .video-container {
-    display: none;
+  display: none;
 }
 
 .video-grid.layout-focus .video-container.camera-focused {
-    display: block;
-    position: absolute;
-    left: 0%;
-    top: 0%;
-    width: 100%;
-    height: 100%;
-    z-index: 100;
+  display: block;
+  position: absolute;
+  left: 0%;
+  top: 0%;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
 }
 
 .video-container {
-    position: relative;
-    background: var(--bg-void);
-    min-height: 0;
-    min-width: 0;
-    overflow: hidden;
-    transition: opacity 0.3s ease;
+  position: relative;
+  background: var(--bg-void);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
 }
 
 .video-container.camera-hidden {
-    display: none;
+  display: none;
 }
 
 /* Drag & Drop states */
 .video-container.dragging {
-    opacity: 0.5;
-    cursor: grabbing;
+  opacity: 0.5;
+  cursor: grabbing;
 }
 
 .video-container.drag-over {
-    outline: 3px dashed var(--accent);
-    outline-offset: -3px;
-    background: rgba(0, 212, 255, 0.1);
+  outline: 3px dashed var(--accent);
+  outline-offset: -3px;
+  background: rgba(0, 212, 255, 0.1);
 }
 
-.video-container[draggable="true"] {
-    cursor: grab;
+.video-container[draggable='true'] {
+  cursor: grab;
 }
 
-.video-container[draggable="true"]:active {
-    cursor: grabbing;
+.video-container[draggable='true']:active {
+  cursor: grabbing;
 }
 
 .video-player {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .video-label {
-    z-index: 100;
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: var(--glass);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: var(--text-primary);
-    padding: 0.3rem 0.75rem;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-    border: 1px solid var(--glass-border);
-    text-transform: uppercase;
+  z-index: 100;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  border: 1px solid var(--glass-border);
+  text-transform: uppercase;
 }
 
 .video-label.ended {
-    background: rgba(255, 59, 59, 0.85);
-    border-color: var(--danger);
-    box-shadow: 0 0 10px var(--danger-glow);
+  background: rgba(255, 59, 59, 0.85);
+  border-color: var(--danger);
+  box-shadow: 0 0 10px var(--danger-glow);
 }
 
 /* Camera Hide Button */
 .camera-hide-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--glass);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--glass-border);
-    color: var(--text-secondary);
-    padding: 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.2s ease;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-container:hover .camera-hide-btn {
-    opacity: 1;
+  opacity: 1;
 }
 
 .camera-hide-btn:hover {
-    background: var(--bg-elevated);
-    color: var(--danger);
-    border-color: var(--danger);
+  background: var(--bg-elevated);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 /* Hidden Cameras Panel */
 .hidden-cameras-panel {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--glass);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    z-index: 100;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
 }
 
 .hidden-cameras-panel.hidden {
-    display: none;
+  display: none;
 }
 
 .hidden-label {
-    font-family: var(--font-ui);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .hidden-cameras-list {
-    display: flex;
-    gap: 6px;
+  display: flex;
+  gap: 6px;
 }
 
 .hidden-camera-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .hidden-camera-btn:hover {
-    background: var(--accent-subtle);
-    border-color: var(--accent);
-    color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .hidden-camera-btn svg {
-    width: 14px;
-    height: 14px;
+  width: 14px;
+  height: 14px;
 }
 </style>

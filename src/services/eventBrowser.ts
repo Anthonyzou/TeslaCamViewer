@@ -2,6 +2,7 @@
  * EventBrowser - Headless event loading, thumbnail pre-resolution, and event selection service.
  * DOM rendering is declaratively managed by EventList.vue and EventCard.vue.
  */
+import { syncEvents } from '../composables/useEvents';
 import type { TeslaCamEvent } from '../types';
 
 /**
@@ -164,6 +165,8 @@ class EventBrowser {
         }
       })
     );
+
+    syncEvents();
 
     // Notify AI Search + other listeners that a new library loaded
     if (

@@ -610,7 +610,10 @@ class FolderParser {
             this._debugStats.errors.push(errMsg);
           }
         }
-      } else if (fileName === 'thumb.png') {
+      } else if (
+        fileName.toLowerCase() === 'thumb.png' ||
+        fileName.toLowerCase() === 'thumb.jpg'
+      ) {
         event.thumbnailFile = fileHandle;
         if (this._debugStats) {
           this._debugStats.thumbnailsFound++;

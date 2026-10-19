@@ -78,7 +78,7 @@
     </div>
 
     <!-- Bottom Sheet Controls (Portrait Mode) -->
-    <BottomSheet
+    <!-- <BottomSheet
       @togglePlay="togglePlay"
       @frameBack="frameBack"
       @frameForward="frameForward"
@@ -86,7 +86,7 @@
       @nextClip="nextClip"
       @prevEvent="prevEvent"
       @nextEvent="nextEvent"
-    />
+    /> -->
 
     <!-- Modals -->
     <CommandPalette />
@@ -111,7 +111,6 @@
 import { useTeslaCam } from '../composables/useTeslaCam';
 import AppHeader from './AppHeader.vue';
 import AppSidebar from './AppSidebar.vue';
-import BottomSheet from './BottomSheet.vue';
 import CommandPalette from './CommandPalette.vue';
 import DriveManagementModal from './DriveManagementModal.vue';
 import DriveSetupModal from './DriveSetupModal.vue';
@@ -258,5 +257,18 @@ onMounted(async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ==================== PLAYER AREA ==================== */
+.player-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-void);
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  /* Keep below sidebar (z-index: 200) on mobile */
 }
 </style>

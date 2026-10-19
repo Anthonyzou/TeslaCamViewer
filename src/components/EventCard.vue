@@ -13,9 +13,9 @@
   >
     <!-- Thumbnail or Placeholder -->
     <img
-      v-if="event.thumbnailUrl"
+      v-if="thumbnailUrl"
       loading="lazy"
-      :src="event.thumbnailUrl"
+      :src="thumbnailUrl"
       alt="Event thumbnail"
       class="event-thumbnail"
     />
@@ -82,6 +82,31 @@ const emit = defineEmits<{
 }>();
 
 const weatherText = ref('');
+const thumbnailUrl = ref(props.event.thumbnailUrl || '');
+
+async function resolveThumbnail(): Promise<void> {
+  if (props.event.thumbnailUrl) {
+    thumbnailUrl.value = props.event.thumbnailUrl;
+    return;
+  }
+  if (props.event.thumbnailFile) {
+    try {
+      const file = await props.event.thumbnailFile.getFile();
+      const url = URL.createObjectURL(file);
+      thumbnailUrl.value = url;
+    } catch (e) {
+      console.warn('[EventCard] Failed to load thumbnail:', e);
+    }
+  }
+}
+
+watch(
+  [() => props.event.thumbnailUrl, () => props.event.thumbnailFile],
+  () => {
+    resolveThumbnail();
+  },
+  { immediate: true }
+);
 
 const typeClass = computed(() => {
   return (props.event.type || '').toLowerCase().replace('clips', '');

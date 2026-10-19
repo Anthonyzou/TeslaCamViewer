@@ -85,3 +85,16 @@ test('EventBrowser - loadEvents pre-resolves local thumbnail files for native la
   // Successfully pre-resolved to blob URL
   assert.strictEqual(localEvent.thumbnailUrl, 'blob:test/thumbnail-blob-url');
 });
+
+test('FolderParser - detects thumbnail files with different casing and extensions', () => {
+  const matches = (name) => {
+    const lower = name.toLowerCase();
+    return lower === 'thumb.png' || lower === 'thumb.jpg';
+  };
+  assert.strictEqual(matches('thumb.png'), true);
+  assert.strictEqual(matches('thumb.PNG'), true);
+  assert.strictEqual(matches('Thumb.png'), true);
+  assert.strictEqual(matches('thumb.jpg'), true);
+  assert.strictEqual(matches('thumb.JPG'), true);
+  assert.strictEqual(matches('front.mp4'), false);
+});

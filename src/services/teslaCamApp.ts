@@ -656,7 +656,9 @@ export class TeslaCamApp {
     this.filteredEvents = filteredEvents;
     syncEvents();
 
-    this.eventBrowser?.loadEvents(filteredEvents);
+    this.eventBrowser?.loadEvents(filteredEvents).then(() => {
+      syncEvents();
+    });
     this.mapView?.loadEvents(filteredEvents);
     this.filterPanel?.updateFilterBadge();
   }
