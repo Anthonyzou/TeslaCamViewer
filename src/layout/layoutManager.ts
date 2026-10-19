@@ -9,56 +9,54 @@ import { LayoutConfig } from './layoutConfig';
 import { LayoutRenderer } from './layoutRenderer';
 
 export class LayoutManager {
-  [key: string]: any;
+  private _ver = 20250115; // layout version date
+  public currentLayout = 'grid-2x2'; // Default layout (can be preset name or custom id)
+  public currentConfig: any = null; // Active LayoutConfig object (for custom layouts)
+  public visibleCameras = {
+    front: true,
+    back: true,
+    left_repeater: true,
+    right_repeater: true,
+    left_pillar: true,
+    right_pillar: true,
+  };
+  public focusCamera: any = null; // For focus mode
 
+  // 6-camera (pillar) support
+  private hasPillarCameras = false; // Set when loading event with pillar cameras
+
+  // Camera order for drag & drop reordering
+  private cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
+  private cameraOrderWithPillars = [
+    'front',
+    'back',
+    'left_repeater',
+    'right_repeater',
+    'left_pillar',
+    'right_pillar',
+  ];
+  private videoGrid = document.querySelector('.video-grid') as HTMLVideoElement;
+  private videoContainers = {
+    front: document.getElementById('videoFront')?.parentElement,
+    back: document.getElementById('videoBack')?.parentElement,
+    left_repeater: document.getElementById('videoLeft')?.parentElement,
+    right_repeater: document.getElementById('videoRight')?.parentElement,
+    left_pillar: document.getElementById('videoLeftPillar')?.parentElement,
+    right_pillar: document.getElementById('videoRightPillar')?.parentElement,
+  };
+
+  // Drag & drop state
+  private draggedCamera = null;
+  private dragOverCamera = null;
+
+  // Unified renderer for custom layouts
+  public renderer = new LayoutRenderer();
+
+  // Callback for layout changes (used by telemetry overlay for position persistence)
+  public onLayoutChange: any = null;
+
+  private _configModified = false;
   constructor() {
-    this._ver = 20250115; // layout version date
-    this.currentLayout = 'grid-2x2'; // Default layout (can be preset name or custom id)
-    this.currentConfig = null; // Active LayoutConfig object (for custom layouts)
-    this.visibleCameras = {
-      front: true,
-      back: true,
-      left_repeater: true,
-      right_repeater: true,
-      left_pillar: true,
-      right_pillar: true,
-    };
-    this.focusCamera = null; // For focus mode
-
-    // 6-camera (pillar) support
-    this.hasPillarCameras = false; // Set when loading event with pillar cameras
-
-    // Camera order for drag & drop reordering
-    this.cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
-    this.cameraOrderWithPillars = [
-      'front',
-      'back',
-      'left_repeater',
-      'right_repeater',
-      'left_pillar',
-      'right_pillar',
-    ];
-
-    this.videoGrid = document.querySelector('.video-grid');
-    this.videoContainers = {
-      front: document.getElementById('videoFront')?.parentElement,
-      back: document.getElementById('videoBack')?.parentElement,
-      left_repeater: document.getElementById('videoLeft')?.parentElement,
-      right_repeater: document.getElementById('videoRight')?.parentElement,
-      left_pillar: document.getElementById('videoLeftPillar')?.parentElement,
-      right_pillar: document.getElementById('videoRightPillar')?.parentElement,
-    };
-
-    // Drag & drop state
-    this.draggedCamera = null;
-    this.dragOverCamera = null;
-
-    // Unified renderer for custom layouts
-    this.renderer = new LayoutRenderer();
-
-    // Callback for layout changes (used by telemetry overlay for position persistence)
-    this.onLayoutChange = null;
-
     // Load saved preferences
     this.loadPreferences();
 
@@ -85,6 +83,13 @@ export class LayoutManager {
   }
 
   /**
+   * Alias for getCurrentConfig for backwards compatibility
+   */
+  getCurrentLayoutConfig() {
+    return this.getCurrentConfig();
+  }
+
+  /**
    * Update layout dropdown with custom layouts
    */
   updateLayoutDropdown() {
@@ -92,7 +97,9 @@ export class LayoutManager {
     if (!select) return;
 
     // Find the option group for custom layouts or create one
-    const customGroup = select.querySelector('optgroup[label="Custom Layouts"]');
+    const customGroup = select.querySelector(
+      'optgroup[label="Custom Layouts"]'
+    );
     const editOption = select.querySelector('option[value="edit-layouts"]');
 
     // Remove existing custom group and edit option
@@ -632,6 +639,13 @@ export class LayoutManager {
     this.resetCameraOrder();
     this.applyLayout(this.currentLayout);
     this.savePreferences();
+  }
+
+  /**
+   * Reset layout alias for resetToDefault
+   */
+  resetLayout() {
+    this.resetToDefault();
   }
 
   /**

@@ -1,7 +1,6 @@
 import cors from 'cors';
 import 'dotenv/config';
 import express from 'express';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import registerB2Routes, {
@@ -10,7 +9,6 @@ import registerB2Routes, {
   performB2Parse,
   setCachedB2Data,
 } from './b2API.mjs';
-import registerFfmpegRoutes, { exportJobs } from './ffmpegAPI.mjs';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -22,7 +20,6 @@ app.use(express.json());
 
 // API Routes FIRST
 registerB2Routes(app);
-registerFfmpegRoutes(app);
 
 // 4. Static File Server
 app.use(express.static(rootDir));
@@ -48,22 +45,6 @@ function isEntryFile() {
 }
 
 if (isEntryFile()) {
-  // Periodic cleanup of completed/failed export jobs older than 1 hour
-  // Check if this is an entry file to prevent test imports from hanging
-  setInterval(() => {
-    const oneHourAgo = Date.now() - 3600 * 1000;
-    for (const [jobId, job] of exportJobs.entries()) {
-      if (job.createdAt < oneHourAgo) {
-        if (job.outputPath && fs.existsSync(job.outputPath)) {
-          try {
-            fs.unlinkSync(job.outputPath);
-          } catch (_e) {}
-        }
-        exportJobs.delete(jobId);
-      }
-    }
-  }, 600 * 1000);
-
   app.listen(PORT, async () => {
     console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
 
@@ -95,7 +76,6 @@ if (isEntryFile()) {
 
 export {
   app,
-  exportJobs,
   getCachedB2Data,
   organizeB2Events,
   performB2Parse,
