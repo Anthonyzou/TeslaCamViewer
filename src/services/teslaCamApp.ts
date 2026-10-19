@@ -248,14 +248,13 @@ export class TeslaCamApp {
 
       this.showLoading('Preparing video URLs...');
       await this.prepareEventURLs(event);
-      await this.videoPlayer.loadEvent(event);
 
       const hasPillars = JSON.stringify(event).includes('_pillar');
       this.layoutManager?.setHasPillarCameras?.(hasPillars);
       this.updatePillarLayoutOptions(hasPillars);
 
-      // Get total duration and initialize timeline
-      const totalDuration = await this.videoPlayer.getTotalDuration();
+      // Get total duration and initialize timeline before loading videos
+      const totalDuration = this.videoPlayer.calculateTotalDuration(event);
       this.timeline?.setDuration(totalDuration);
       this.timeline?.setClipMarkers(event.clipGroups);
 
@@ -269,6 +268,22 @@ export class TeslaCamApp {
           this.timeline?.setGapMarkers(gaps, event.clipGroups);
         }
       }
+
+      const isSentryEvent =
+        event.type === 'SentryClips' ||
+        event.metadata?.reason?.toLowerCase().includes('sentry');
+
+      let startTime = 0;
+      if (isSentryEvent) {
+        startTime = Math.max(0, totalDuration - 64);
+        const triggerTime = Math.max(0, totalDuration - 60);
+        this.timeline?.setSentryTriggerMarker(triggerTime);
+      } else {
+        this.timeline?.setSentryTriggerMarker(0);
+      }
+
+      // Load event directly at incident startTime (avoids loading clip 0 and canceling requests on Sentry events)
+      await this.videoPlayer.loadEvent(event, startTime);
 
       this.updateEventInfo(event);
 
@@ -292,19 +307,6 @@ export class TeslaCamApp {
       }
 
       this.hideLoading();
-
-      const isSentryEvent =
-        event.type === 'SentryClips' ||
-        event.metadata?.reason?.toLowerCase().includes('sentry');
-
-      if (isSentryEvent) {
-        const startTime = Math.max(0, totalDuration - 64);
-        await this.videoPlayer.seekToEventTime(startTime);
-        const triggerTime = Math.max(0, totalDuration - 60);
-        this.timeline?.setSentryTriggerMarker(triggerTime);
-      } else {
-        this.timeline?.setSentryTriggerMarker(0);
-      }
 
       if (
         settingsManager?.get('autoPlayNextEvent') ||

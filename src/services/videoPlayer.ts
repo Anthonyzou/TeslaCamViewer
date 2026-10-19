@@ -8,11 +8,7 @@ export type VideoCameraMap = Record<string, HTMLVideoElement | null>;
  * Uses a dual-bank system to preload the next clip and eliminate black flashes.
  */
 export class VideoPlayer {
-  public banks: Record<'a' | 'b', VideoCameraMap> = {
-    a: {},
-    b: {},
-  };
-  public activeBank: 'a' | 'b' = 'a';
+  public videos: VideoCameraMap = {};
   public currentEvent: TeslaCamEvent | null = null;
   public currentClipIndex = -1;
   public loopEnabled = false;
@@ -22,6 +18,7 @@ export class VideoPlayer {
   public _preloading = false;
   public _intendedPlaybackRate = 1.0;
   public disablePreload = false;
+  public _lastPreloadedClipIndex = -1;
 
   public onClipChange: ((clipIndex: number) => void) | null = null;
   public onTimeUpdate: ((currentTime: number, duration: number) => void) | null = null;
@@ -29,19 +26,26 @@ export class VideoPlayer {
   public onPlayStateChange: ((isPlaying: boolean) => void) | null = null;
   public videoLabels: Record<string, HTMLElement | null> = {};
 
-  constructor() {
-    this.banks.a = this._resolveVideos('bank-a');
-    this.banks.b = this._createSecondBank('bank-b');
-
-    this.videoLabels = this._resolveLabels();
-    this.setupEventListeners();
+  // Backward compatibility getters
+  public get banks(): Record<'a' | 'b', VideoCameraMap> {
+    return { a: this.videos, b: this.videos };
+  }
+  public set banks(val: Record<'a' | 'b', VideoCameraMap>) {
+    if (val.a) {
+      this.videos = val.a;
+    }
+  }
+  public get activeBank(): 'a' | 'b' {
+    return 'a';
+  }
+  public set activeBank(_val: 'a' | 'b') {
+    // Single bank architecture
   }
 
-  /**
-   * Proxies for the active bank's videos
-   */
-  get videos(): VideoCameraMap {
-    return this.banks[this.activeBank] || {};
+  constructor() {
+    this.videos = this._resolveVideos();
+    this.videoLabels = this._resolveLabels();
+    this.setupEventListeners();
   }
 
   get currentTime(): number {
@@ -53,7 +57,15 @@ export class VideoPlayer {
   }
 
   get duration(): number {
-    return this.videos.front?.duration || 0;
+    const d = this.videos.front?.duration;
+    if (d && !isNaN(d) && d > 0) return d;
+    if (this.currentEvent && this.currentClipIndex >= 0) {
+      return (
+        this.currentEvent.clipGroups[this.currentClipIndex]?.clips?.front
+          ?.duration || 60
+      );
+    }
+    return 60;
   }
 
   get paused(): boolean {
@@ -94,10 +106,7 @@ export class VideoPlayer {
   }
 
   _applyPlaybackRateToAll(): void {
-    for (const v of Object.values(this.banks.a)) {
-      if (v) v.playbackRate = this._intendedPlaybackRate;
-    }
-    for (const v of Object.values(this.banks.b)) {
+    for (const v of Object.values(this.videos)) {
       if (v) v.playbackRate = this._intendedPlaybackRate;
     }
   }
@@ -132,7 +141,7 @@ export class VideoPlayer {
     });
   }
 
-  _resolveVideos(className: string): VideoCameraMap {
+  _resolveVideos(): VideoCameraMap {
     if (typeof document === 'undefined') return {};
     const ids: Record<string, string> = {
       front: 'videoFront',
@@ -148,7 +157,6 @@ export class VideoPlayer {
       if (el) {
         el.crossOrigin = 'anonymous';
         el.preload = 'auto';
-        el.classList.add(className);
         el.style.position = 'absolute';
         el.style.top = '0';
         el.style.left = '0';
@@ -164,116 +172,85 @@ export class VideoPlayer {
     return out;
   }
 
-  _createSecondBank(className: string): VideoCameraMap {
-    if (typeof document === 'undefined') return {};
-    const out: VideoCameraMap = {};
-    for (const [cam, primary] of Object.entries(this.banks.a)) {
-      if (!primary) continue;
-      const el = document.createElement('video');
-      el.className = `video-player ${className}`;
-      el.crossOrigin = 'anonymous';
-      el.preload = 'auto';
-      el.style.position = 'absolute';
-      el.style.top = '0';
-      el.style.left = '0';
-      el.style.width = '100%';
-      el.style.height = '100%';
-      el.style.objectFit = 'inherit';
-      el.style.visibility = 'hidden';
-      el.style.opacity = '0';
-      el.style.zIndex = '0';
-      el.style.pointerEvents = 'none';
-      el.muted = true;
-      el.playsInline = true;
-      primary.parentElement?.appendChild(el);
-      out[cam] = el;
-    }
-    return out;
-  }
-
   _resolveLabels(): Record<string, HTMLElement | null> {
     const labels: Record<string, HTMLElement | null> = {};
-    for (const [cam, video] of Object.entries(this.banks.a)) {
+    for (const [cam, video] of Object.entries(this.videos)) {
       labels[cam] = video?.parentElement?.querySelector('.video-label') as HTMLElement | null;
     }
     return labels;
   }
 
   setupEventListeners(): void {
-    const setupBank = (
-      bank: VideoCameraMap,
-      bankId: 'a' | 'b'
-    ) => {
-      bank.front?.addEventListener('timeupdate', () => {
-        if (this.activeBank === bankId) {
-          if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime, this.duration);
-          this._checkPreloadTrigger();
-        }
-      });
+    this.videos.front?.addEventListener('timeupdate', () => {
+      if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime, this.duration);
+      this._checkPreloadTrigger();
+    });
 
-      const onPlayStateToggle = () => {
-        if (this.activeBank === bankId) {
-          if (this.onPlayStateChange)
-            this.onPlayStateChange(this._isPlayingIntent);
-        }
-      };
-
-      for (const [camera, video] of Object.entries(bank)) {
-        if (!video) continue;
-        video.addEventListener('ended', () => {
-          if (this.activeBank === bankId) {
-            this.updateVideoLabelState(camera, true);
-            this.handleVideoEnded();
-          }
-        });
-
-        video.addEventListener('playing', () => {
-          if (this.activeBank === bankId) {
-            this.updateVideoLabelState(camera, false);
-            onPlayStateToggle();
-          }
-        });
-
-        video.addEventListener('pause', onPlayStateToggle);
-
-        video.controls = false;
-        video.muted = true;
-        video.volume = 0;
-
-        video.parentElement?.addEventListener('dblclick', () => {
-          if (this.activeBank === bankId) {
-            if (!document.fullscreenElement) {
-              video.parentElement?.requestFullscreen().catch(console.error);
-            } else {
-              document.exitFullscreen();
-            }
-          }
-        });
+    const onPlayStateToggle = () => {
+      if (this.onPlayStateChange) {
+        this.onPlayStateChange(this._isPlayingIntent);
       }
     };
 
-    setupBank(this.banks.a, 'a');
-    setupBank(this.banks.b, 'b');
+    for (const [camera, video] of Object.entries(this.videos)) {
+      if (!video) continue;
+      video.addEventListener('ended', () => {
+        this.updateVideoLabelState(camera, true);
+        this.handleVideoEnded();
+      });
+
+      video.addEventListener('playing', () => {
+        this.updateVideoLabelState(camera, false);
+        onPlayStateToggle();
+      });
+
+      video.addEventListener('pause', onPlayStateToggle);
+
+      video.controls = false;
+      video.muted = true;
+      video.volume = 0;
+
+      video.parentElement?.addEventListener('dblclick', () => {
+        if (!document.fullscreenElement) {
+          video.parentElement?.requestFullscreen().catch(console.error);
+        } else {
+          document.exitFullscreen();
+        }
+      });
+    }
   }
 
   _checkPreloadTrigger(): void {
     if (!this.disablePreload && !this._preloading && this.currentEvent) {
       const nextIndex = this.currentClipIndex + 1;
-      if (nextIndex < this.currentEvent.clipGroups.length) {
+      if (
+        nextIndex < this.currentEvent.clipGroups.length &&
+        this._lastPreloadedClipIndex !== nextIndex
+      ) {
+        this._lastPreloadedClipIndex = nextIndex;
         this.preloadClip(nextIndex);
       }
     }
   }
 
-  async loadEvent(event: TeslaCamEvent): Promise<void> {
+  async loadEvent(event: TeslaCamEvent, initialTime = 0): Promise<void> {
     this.currentEvent = event;
     this.currentClipIndex = -1;
+    this._lastPreloadedClipIndex = -1;
     this.hasPillarCameras = JSON.stringify(event).includes('_pillar');
 
-    await this.loadClip(0);
+    if (initialTime > 0) {
+      await this.seekToEventTime(initialTime, false);
+    } else {
+      await this.loadClip(0);
+    }
   }
 
-  async loadClip(clipIndex: number, isPreload = false): Promise<void> {
+  async loadClip(
+    clipIndex: number,
+    _isPreload = false,
+    startTimeInClip = 0
+  ): Promise<void> {
     if (
       !this.currentEvent ||
       clipIndex < 0 ||
@@ -281,37 +258,41 @@ export class VideoPlayer {
     )
       return;
 
-    const targetBankId: 'a' | 'b' = isPreload
-      ? this.activeBank === 'a'
-        ? 'b'
-        : 'a'
-      : this.activeBank;
-    const videos = this.banks[targetBankId];
     const clipGroup = this.currentEvent.clipGroups[clipIndex];
 
-    if (!isPreload) {
-      // Hardware pause only, preserve user intent
-      for (const v of Object.values(this.videos)) {
-        if (v && typeof v.pause === 'function') v.pause();
-      }
-      this.currentClipIndex = clipIndex;
-      this.resetAllVideoLabelStates();
+    // Hardware pause only, preserve user intent
+    for (const v of Object.values(this.videos)) {
+      if (v && typeof v.pause === 'function') v.pause();
     }
+    this.currentClipIndex = clipIndex;
+    this.resetAllVideoLabelStates();
 
     const cameras = ['front', 'back', 'left_repeater', 'right_repeater'];
     if (this.hasPillarCameras) cameras.push('left_pillar', 'right_pillar');
 
     const loadPromises = cameras.map((camera) => {
       const clip = clipGroup?.clips?.[camera];
-      const video = videos?.[camera];
+      const video = this.videos?.[camera];
       const url = clip?.url || '';
 
       if (!video) return Promise.resolve();
-      if (video.getAttribute('src') === url) return Promise.resolve();
+      if (video.getAttribute('src') === url) {
+        if (startTimeInClip > 0) {
+          try {
+            video.currentTime = startTimeInClip;
+          } catch (_e) {}
+        }
+        return Promise.resolve();
+      }
 
       return new Promise<void>((resolve) => {
         const timeout = setTimeout(() => resolve(), 4000);
         video.onloadedmetadata = () => {
+          if (startTimeInClip > 0) {
+            try {
+              video.currentTime = startTimeInClip;
+            } catch (_e) {}
+          }
           clearTimeout(timeout);
           resolve();
         };
@@ -333,77 +314,85 @@ export class VideoPlayer {
 
     await Promise.all(loadPromises);
 
+    // Ensure currentTime is applied once metadata is ready
+    if (startTimeInClip > 0) {
+      for (const v of Object.values(this.videos)) {
+        if (v && Math.abs(v.currentTime - startTimeInClip) > 0.5) {
+          try {
+            v.currentTime = startTimeInClip;
+          } catch (_e) {}
+        }
+      }
+    }
+
     // Re-apply playback rate because browsers often reset it when src changes
     this._applyPlaybackRateToAll();
 
-    if (!isPreload) {
-      if (this.onClipChange) this.onClipChange(clipIndex);
-      if (this._isPlayingIntent) this.play();
-      this._preloading = false;
-
-      // Preload next clip immediately into the idle bank
-      const nextIndex = clipIndex + 1;
-      if (
-        !this.disablePreload &&
-        this.currentEvent &&
-        nextIndex < this.currentEvent.clipGroups.length
-      ) {
-        this.preloadClip(nextIndex);
-      }
-    }
-  }
-
-  async preloadClip(clipIndex: number): Promise<void> {
-    if (this.disablePreload || this._preloading) return;
-    this._preloading = true;
-    try {
-      await this.loadClip(clipIndex, true);
-    } finally {
-      this._preloading = false;
-    }
-  }
-
-  async swapBanks(): Promise<void> {
-    const oldBankId = this.activeBank;
-    const newBankId: 'a' | 'b' = this.activeBank === 'a' ? 'b' : 'a';
-
-    // Hide old, show new using visibility & opacity so preload is never suspended by Chrome
-    for (const v of Object.values(this.banks[oldBankId])) {
-      if (v) {
-        if (v.style) {
-          v.style.visibility = 'hidden';
-          v.style.opacity = '0';
-          v.style.zIndex = '0';
-          v.style.pointerEvents = 'none';
-        }
-        if (typeof v.pause === 'function') v.pause();
-      }
-    }
-    for (const v of Object.values(this.banks[newBankId])) {
-      if (v && v.style) {
-        v.style.visibility = 'visible';
-        v.style.opacity = '1';
-        v.style.zIndex = '1';
-        v.style.pointerEvents = 'auto';
-      }
-    }
-
-    this.activeBank = newBankId;
-    this.currentClipIndex++;
-    this._preloading = false;
-    this.resetAllVideoLabelStates();
-
-    if (this.onClipChange) this.onClipChange(this.currentClipIndex);
+    if (this.onClipChange) this.onClipChange(clipIndex);
     if (this._isPlayingIntent) this.play();
+    this._preloading = false;
 
-    // Preload next clip immediately into the newly idle bank
-    const nextIndex = this.currentClipIndex + 1;
+    // Trigger server-side background cache warming for the next clip
+    const nextIndex = clipIndex + 1;
     if (
       !this.disablePreload &&
       this.currentEvent &&
       nextIndex < this.currentEvent.clipGroups.length
     ) {
       this.preloadClip(nextIndex);
+    }
+  }
+
+  async preloadClip(clipIndex: number): Promise<void> {
+    if (this.disablePreload || this._preloading || !this.currentEvent) return;
+    if (clipIndex < 0 || clipIndex >= this.currentEvent.clipGroups.length) return;
+
+    this._preloading = true;
+    try {
+      const clipGroup = this.currentEvent.clipGroups[clipIndex];
+      if (!clipGroup) return;
+
+      const items: Array<{ file?: string; url?: string }> = [];
+      const cameras = ['front', 'back', 'left_repeater', 'right_repeater'];
+      if (this.hasPillarCameras) cameras.push('left_pillar', 'right_pillar');
+
+      for (const cam of cameras) {
+        const clip = clipGroup.clips?.[cam];
+        if (clip) {
+          items.push({
+            file: clip.fileName || (clip as any).file,
+            url: clip.url,
+          });
+        }
+      }
+
+      // If items have remote B2 URLs or files, notify server to pre-warm its disk cache
+      if (items.length > 0 && typeof window !== 'undefined') {
+        const hasServerItems = items.some(
+          (it) => it.url?.includes('/api/b2/video') || it.url?.startsWith('http') || it.file
+        );
+        if (hasServerItems) {
+          fetch('/api/b2/cache/preload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items }),
+          }).catch((err) => {
+            console.warn('[VideoPlayer] Server cache preload error:', err);
+          });
+        }
+      }
+    } finally {
+      this._preloading = false;
+    }
+  }
+
+  async swapBanks(): Promise<void> {
+    // Single bank architecture: advancing clip directly
+    if (
+      this.currentEvent &&
+      this.currentClipIndex < this.currentEvent.clipGroups.length - 1
+    ) {
+      await this.loadClip(this.currentClipIndex + 1);
     }
   }
 
@@ -430,8 +419,10 @@ export class VideoPlayer {
     }
   }
 
-  async seek(time: number, autoPlay = true): Promise<void> {
-    if (time < 0 && this.currentClipIndex > 0) {
+  async seek(time: number, autoPlay = true, allowClipAdvance = true): Promise<void> {
+    const clipDur = this.duration;
+
+    if (allowClipAdvance && time < 0 && this.currentClipIndex > 0) {
       await this.loadClip(this.currentClipIndex - 1);
       const newTime = Math.max(0, this.duration + time);
       for (const v of Object.values(this.videos)) {
@@ -441,12 +432,13 @@ export class VideoPlayer {
     }
 
     if (
-      time >= this.duration &&
+      allowClipAdvance &&
+      time >= clipDur &&
       this.currentEvent &&
       this.currentClipIndex < this.currentEvent.clipGroups.length - 1
     ) {
       await this.loadClip(this.currentClipIndex + 1);
-      const overflow = Math.max(0, time - this.duration);
+      const overflow = Math.max(0, time - clipDur);
       for (const v of Object.values(this.videos)) {
         if (v) v.currentTime = overflow;
       }
@@ -455,9 +447,10 @@ export class VideoPlayer {
 
     for (const video of Object.values(this.videos)) {
       if (!video) continue;
-      const maxTime = video.duration
-        ? Math.max(0, video.duration - 0.05)
-        : time;
+      const maxTime =
+        video.duration && !isNaN(video.duration) && video.duration > 0
+          ? Math.max(0, video.duration - 0.05)
+          : Math.max(0, clipDur - 0.05);
       video.currentTime = Math.max(0, Math.min(time, maxTime));
     }
 
@@ -482,13 +475,17 @@ export class VideoPlayer {
     const activeVideos = Object.values(this.videos).filter(
       (v): v is HTMLVideoElement => Boolean(v && v.getAttribute('src'))
     );
-    const allEnded = activeVideos.every((v) => v.ended || v.error);
-    if (!allEnded || !this._isPlayingIntent) return;
+    if (activeVideos.length === 0) return;
+
+    // Only advance if the player actually reached near the end of the clip (within 1 second)
+    const isNearEnd = this.currentTime >= Math.max(0, this.duration - 1.0);
+    const allEnded = activeVideos.every((v) => v.ended || (isNearEnd && v.error));
+    if (!allEnded || !this._isPlayingIntent || !isNearEnd) return;
 
     if (this.disableAutoAdvance) return;
 
     if (this.currentClipIndex < this.currentEvent.clipGroups.length - 1) {
-      await this.swapBanks();
+      await this.loadClip(this.currentClipIndex + 1);
     } else if (this.loopEnabled) {
       await this.loadClip(0);
     } else {
@@ -512,16 +509,20 @@ export class VideoPlayer {
     }
   }
 
-  async getTotalDuration(): Promise<number> {
-    if (!this.currentEvent) return 0;
-    return this.currentEvent.clipGroups.reduce((total, group) => {
+  calculateTotalDuration(event: TeslaCamEvent | null = this.currentEvent): number {
+    if (!event) return 0;
+    return event.clipGroups.reduce((total, group) => {
       return total + (group.clips.front?.duration || 60);
     }, 0);
   }
 
+  async getTotalDuration(): Promise<number> {
+    return this.calculateTotalDuration(this.currentEvent);
+  }
+
   async seekToEventTime(eventTime: number, autoPlay = true): Promise<void> {
     if (!this.currentEvent) return;
-    const totalDuration = await this.getTotalDuration();
+    const totalDuration = this.calculateTotalDuration(this.currentEvent);
     eventTime = Math.max(0, Math.min(eventTime, totalDuration - 0.1));
 
     let accumulatedTime = 0;
@@ -531,17 +532,24 @@ export class VideoPlayer {
     for (let i = 0; i < this.currentEvent.clipGroups.length; i++) {
       const duration =
         this.currentEvent.clipGroups[i]?.clips?.front?.duration || 60;
-      if (accumulatedTime + duration >= eventTime) {
+      if (
+        accumulatedTime + duration > eventTime ||
+        i === this.currentEvent.clipGroups.length - 1
+      ) {
         targetClipIndex = i;
-        timeInClip = eventTime - accumulatedTime;
+        timeInClip = Math.min(
+          duration - 0.05,
+          Math.max(0, eventTime - accumulatedTime)
+        );
         break;
       }
       accumulatedTime += duration;
     }
 
-    if (targetClipIndex !== this.currentClipIndex)
-      await this.loadClip(targetClipIndex);
-    await this.seek(timeInClip, autoPlay);
+    if (targetClipIndex !== this.currentClipIndex) {
+      await this.loadClip(targetClipIndex, false, timeInClip);
+    }
+    await this.seek(timeInClip, autoPlay, false);
   }
 
   updateVideoLabelState(camera: string, ended: boolean): void {
@@ -557,13 +565,12 @@ export class VideoPlayer {
 
   clear(): void {
     this.pause();
-    for (const bank of Object.values(this.banks)) {
-      for (const video of Object.values(bank)) {
-        if (video) video.src = '';
-      }
+    for (const video of Object.values(this.videos)) {
+      if (video) video.src = '';
     }
     this.currentEvent = null;
     this.currentClipIndex = -1;
+    this._lastPreloadedClipIndex = -1;
   }
 }
 

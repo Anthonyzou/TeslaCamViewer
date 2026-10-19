@@ -8,6 +8,11 @@ import {
   organizeB2Events,
   VIDEO_CACHE_DIR,
   clearVideoCache,
+  getVideoCacheStatus,
+  pruneVideoCache,
+  httpAgent,
+  httpsAgent,
+  touchCacheFile,
 } from '../server/index.mjs';
 
 test('organizeB2Events - groups files into chronological events and detects cameras', async () => {
@@ -272,6 +277,275 @@ test('API GET /api/b2/video concurrently streams to client and saves to disk cac
     assert.strictEqual(originHits, 1, 'Origin server should NOT be hit a second time');
   } finally {
     await clearVideoCache();
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('API GET /api/b2/video rejects invalid url query parameter with 400 Bad Request', async () => {
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/b2/video?url=not-a-valid-url`);
+    assert.strictEqual(res.status, 400);
+    const data = await res.json();
+    assert.strictEqual(data.error, 'Invalid url query parameter');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('API GET /api/b2/video handles origin stream failures gracefully without crashing', async () => {
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': '100000',
+      'Accept-Ranges': 'bytes',
+    });
+    res.write(Buffer.alloc(1000, 'x'));
+    setTimeout(() => {
+      req.socket.destroy();
+    }, 30);
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originPort = mockOriginServer.address().port;
+  const originUrl = `http://127.0.0.1:${originPort}/broken-clip.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  try {
+    await clearVideoCache();
+    const res = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=broken-clip.mp4&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=0-' } }
+    );
+    assert.strictEqual(res.status, 206);
+    try {
+      const reader = res.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+    } catch (_expectedError) {
+      // Stream truncation/reset is expected from the broken origin
+    }
+
+    // Verify the server remains responsive to subsequent requests
+    const pingRes = await fetch(`http://127.0.0.1:${serverPort}/api/b2/config`);
+    assert.strictEqual(pingRes.status, 200);
+  } finally {
+    await clearVideoCache();
+    mockOriginServer.closeAllConnections?.();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('API GET /api/b2/video handles client aborts gracefully during streaming', async () => {
+  let interval;
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': '100000',
+      'Accept-Ranges': 'bytes',
+    });
+    interval = setInterval(() => {
+      try {
+        res.write(Buffer.alloc(1000, 'x'));
+      } catch (_e) {
+        clearInterval(interval);
+      }
+    }, 20);
+    interval.unref();
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originPort = mockOriginServer.address().port;
+  const originUrl = `http://127.0.0.1:${originPort}/slow-clip.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  try {
+    await clearVideoCache();
+    const controller = new AbortController();
+    const fetchPromise = fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=abort-clip.mp4&url=${encodeURIComponent(originUrl)}`,
+      {
+        headers: { Range: 'bytes=0-' },
+        signal: controller.signal,
+      }
+    );
+
+    setTimeout(() => {
+      controller.abort();
+    }, 40);
+
+    try {
+      const res = await fetchPromise;
+      const reader = res.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+    } catch (_expectedAbort) {
+      // Abort is expected
+    }
+
+    // Give server a moment to settle
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Verify the server is still healthy
+    const pingRes = await fetch(`http://127.0.0.1:${serverPort}/api/b2/config`);
+    assert.strictEqual(pingRes.status, 200);
+  } finally {
+    if (interval) clearInterval(interval);
+    await clearVideoCache();
+    mockOriginServer.closeAllConnections?.();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('HTTP and HTTPS keep-alive agents configure persistent connection pooling', () => {
+  assert.ok(httpAgent);
+  assert.ok(httpsAgent);
+  assert.strictEqual(httpAgent.keepAlive, true);
+  assert.strictEqual(httpsAgent.keepAlive, true);
+  assert.strictEqual(httpAgent.maxSockets, 100);
+  assert.strictEqual(httpsAgent.maxSockets, 100);
+  assert.strictEqual(httpAgent.maxFreeSockets, 20);
+  assert.strictEqual(httpsAgent.maxFreeSockets, 20);
+});
+
+test('touchCacheFile updates file timestamps for noatime SSD support', async () => {
+  const testFileRel = 'TouchTest/sample.mp4';
+  const testFileAbs = path.join(VIDEO_CACHE_DIR, testFileRel);
+  try {
+    await fs.promises.mkdir(path.dirname(testFileAbs), { recursive: true });
+    await fs.promises.writeFile(testFileAbs, Buffer.from('abc'));
+
+    // Set file time to 1 hour in the past
+    const pastTime = new Date(Date.now() - 3600 * 1000);
+    await fs.promises.utimes(testFileAbs, pastTime, pastTime);
+
+    const initialStat = await fs.promises.stat(testFileAbs);
+    assert.ok(Math.abs(initialStat.mtimeMs - pastTime.getTime()) < 2000);
+
+    // Call touchCacheFile and verify timestamp is bumped to near now
+    touchCacheFile(testFileAbs);
+    await new Promise((r) => setTimeout(r, 50));
+
+    const updatedStat = await fs.promises.stat(testFileAbs);
+    assert.ok(updatedStat.mtimeMs > initialStat.mtimeMs);
+    assert.ok(Date.now() - updatedStat.mtimeMs < 2000);
+  } finally {
+    await clearVideoCache();
+  }
+});
+
+test('parallel async cache traversal scans and prunes cache accurately', async () => {
+  try {
+    await clearVideoCache();
+    // Create multiple folders and files in cache to test parallel traversal
+    for (let i = 0; i < 5; i++) {
+      const folder = path.join(VIDEO_CACHE_DIR, `Folder_${i}`);
+      await fs.promises.mkdir(folder, { recursive: true });
+      await fs.promises.writeFile(
+        path.join(folder, `clip_${i}.mp4`),
+        Buffer.alloc(100, 'x')
+      );
+    }
+
+    const status = await getVideoCacheStatus();
+    assert.strictEqual(status.totalFiles, 5);
+    assert.strictEqual(status.totalBytes, 500);
+
+    // Prune down to 250 bytes
+    await pruneVideoCache(VIDEO_CACHE_DIR, 250);
+    const postPruneStatus = await getVideoCacheStatus();
+    assert.ok(postPruneStatus.totalBytes <= 250);
+  } finally {
+    await clearVideoCache();
+  }
+});
+
+test('API POST /api/b2/cache/preload validates and schedules server-side video preloading', async () => {
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': '50',
+    });
+    res.end(Buffer.alloc(50, 'y'));
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originPort = mockOriginServer.address().port;
+  const originUrl = `http://127.0.0.1:${originPort}/prewarm_clip.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  try {
+    await clearVideoCache();
+
+    // 1. Rejects missing/empty items
+    const badRes = await fetch(`http://127.0.0.1:${serverPort}/api/b2/cache/preload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [] }),
+    });
+    assert.strictEqual(badRes.status, 400);
+
+    // 2. Schedules valid items
+    const goodRes = await fetch(`http://127.0.0.1:${serverPort}/api/b2/cache/preload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ file: 'prewarm_clip.mp4', url: originUrl }],
+      }),
+    });
+    assert.strictEqual(goodRes.status, 200);
+    const data = await goodRes.json();
+    assert.strictEqual(data.success, true);
+    assert.strictEqual(data.count, 1);
+
+    // Wait a brief moment for background caching to finish
+    await new Promise((r) => setTimeout(r, 200));
+
+    // Verify file is now in cache
+    const cachedFilePath = path.join(VIDEO_CACHE_DIR, 'prewarm_clip.mp4');
+    assert.strictEqual(fs.existsSync(cachedFilePath), true);
+
+    // 3. Unpacks proxy URLs (/api/b2/video?file=...&url=...) and saves under full event path
+    const fullProxyUrl = `/api/b2/video?file=SentryClips%2F2026-10-18_12-30-00%2Ffront.mp4&url=${encodeURIComponent(originUrl)}`;
+    const proxyRes = await fetch(`http://127.0.0.1:${serverPort}/api/b2/cache/preload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ file: 'front.mp4', url: fullProxyUrl }],
+      }),
+    });
+    assert.strictEqual(proxyRes.status, 200);
+    const proxyData = await proxyRes.json();
+    assert.strictEqual(proxyData.files[0], 'SentryClips/2026-10-18_12-30-00/front.mp4');
+
+    await new Promise((r) => setTimeout(r, 200));
+    const fullCachedPath = path.join(VIDEO_CACHE_DIR, 'SentryClips/2026-10-18_12-30-00/front.mp4');
+    assert.strictEqual(fs.existsSync(fullCachedPath), true);
+  } finally {
+    await clearVideoCache();
+    mockOriginServer.closeAllConnections?.();
+    server.closeAllConnections?.();
     await new Promise((resolve) => server.close(resolve));
     await new Promise((resolve) => mockOriginServer.close(resolve));
   }

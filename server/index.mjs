@@ -11,7 +11,11 @@ import registerB2Routes, {
   getVideoCacheStatus,
   organizeB2Events,
   performB2Parse,
+  pruneVideoCache,
   setCachedB2Data,
+  httpAgent,
+  httpsAgent,
+  touchCacheFile,
 } from './b2API.mjs';
 
 const app = express();
@@ -29,8 +33,26 @@ registerB2Routes(app);
 app.use(express.static(rootDir));
 
 // Default to index.html for unknown routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(rootDir, 'index.html'));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(rootDir, 'index.html'), (err) => {
+    if (
+      err &&
+      !res.headersSent &&
+      err.code !== 'ECONNABORTED' &&
+      err.code !== 'ECANCELED'
+    ) {
+      res.status(404).end();
+    }
+  });
+});
+
+// Express global error handler middleware (must have 4 arguments)
+app.use((err, _req, res, next) => {
+  console.error('[Server Error]', err.message || err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
 function isEntryFile() {
@@ -49,7 +71,15 @@ function isEntryFile() {
 }
 
 if (isEntryFile()) {
-  app.listen(PORT, async () => {
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Process] Unhandled Promise Rejection:', reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Process] Uncaught Exception:', err);
+  });
+
+  const server = app.listen(PORT, async () => {
     console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
 
     // Preload if env variables are set
@@ -76,6 +106,10 @@ if (isEntryFile()) {
       }
     }
   });
+
+  // Optimize browser-to-server HTTP keep-alive timeouts for video scrubbing
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
 }
 
 export {
@@ -87,6 +121,10 @@ export {
   getVideoCacheStatus,
   organizeB2Events,
   performB2Parse,
+  pruneVideoCache,
   setCachedB2Data,
+  httpAgent,
+  httpsAgent,
+  touchCacheFile,
 };
 export default app;
