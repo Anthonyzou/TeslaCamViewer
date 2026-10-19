@@ -294,6 +294,7 @@ body::before {
     bottom: 0;
     width: 8px;
     cursor: ew-resize;
+    touch-action: none;
     z-index: 100;
     background: transparent;
     transition: background 0.15s ease;

@@ -1,7 +1,9 @@
 /**
- * LayoutRenderer - Unified rendering engine for camera layouts
- * Single source of truth for both DOM preview and canvas export
+ * LayoutRenderer - Unified canvas rendering engine for camera layouts
+ * Single source of truth for canvas export and screenshot generation.
+ * DOM rendering is declaratively managed by VideoGrid.vue.
  */
+import type { LayoutConfigSchema } from '../types';
 import { LayoutConfig } from './layoutConfig';
 import {
   calculateContainSize,
@@ -10,18 +12,11 @@ import {
   type CameraConfigLike,
   type VideoDimensions,
 } from './layoutMath';
-import type { LayoutConfigSchema } from '../types';
 
 export class LayoutRenderer {
   [key: string]: any;
 
-  constructor() {
-    // Camera order for DOM rendering (matches video container order)
-    this.cameraOrder = ['front', 'back', 'left_repeater', 'right_repeater'];
-    this.resizeObserver = null;
-    this.currentGrid = null;
-    this.currentAspectRatio = null;
-  }
+  constructor() {}
 
   /**
    * Calculate draw parameters for rendering a video to canvas
@@ -32,7 +27,10 @@ export class LayoutRenderer {
    * @param {Object} camConfig - Camera configuration { x, y, w, h, crop, objectFit }
    * @returns {Object} { sx, sy, sw, sh, dx, dy, dw, dh } - Source and destination rectangles
    */
-  static calculateDrawParams(video: VideoDimensions, camConfig: CameraConfigLike) {
+  static calculateDrawParams(
+    video: VideoDimensions,
+    camConfig: CameraConfigLike
+  ) {
     return calculateDrawParams(video, camConfig);
   }
 
@@ -51,420 +49,18 @@ export class LayoutRenderer {
   }
 
   /**
-   * Update grid size based on container dimensions
+   * Apply layout config to DOM (now handled declaratively by VideoGrid.vue)
    */
-  updateGridSize() {
-    if (!this.currentGrid || !this.currentAspectRatio) return;
-
-    const container = this.currentGrid.parentElement;
-    if (!container) return;
-
-    const size = this.calculateContainSize(container, this.currentAspectRatio);
-    this.currentGrid.style.width = `${size.width}px`;
-    this.currentGrid.style.height = `${size.height}px`;
-
-    // Reposition labels after resize
-    this.repositionAllLabels();
-  }
+  applyToDOM(
+    _videoGrid?: HTMLElement | null,
+    _config?: any,
+    _options: any = {}
+  ) {}
 
   /**
-   * Reposition all visible labels
+   * Reset DOM layout styles (now handled declaratively by VideoGrid.vue)
    */
-  repositionAllLabels() {
-    if (!this.currentGrid || !this.currentConfig) return;
-
-    const containers = this.currentGrid.querySelectorAll('.video-container');
-    containers.forEach((container) => {
-      const label = container.querySelector('.video-label');
-      const cameraName = container.dataset.camera;
-      if (label && cameraName && this.currentConfig.cameras?.[cameraName]) {
-        this.positionLabel(
-          label,
-          container,
-          this.currentConfig.cameras[cameraName],
-          this.currentConfig
-        );
-      }
-    });
-  }
-
-  /**
-   * Set up resize observer for container
-   */
-  setupResizeObserver(videoGrid) {
-    // Clean up previous observer
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
-
-    const container = videoGrid.parentElement;
-    if (!container) return;
-
-    this.resizeObserver = new ResizeObserver(() => {
-      this.updateGridSize();
-    });
-    this.resizeObserver.observe(container);
-
-    // Initial sizing
-    this.updateGridSize();
-  }
-
-  /**
-   * Apply a layout config to the video grid DOM
-   * @param {HTMLElement} videoGrid - The .video-grid container
-   * @param {Object} config - LayoutConfig object
-   * @param {Object} options - { cameraOrder: [...], focusCamera: string }
-   */
-  applyToDOM(videoGrid: HTMLElement, config: any, options: any = {}) {
-    if (!videoGrid || !config) return;
-
-    const focusCamera = options.focusCamera || null;
-    // User-hidden cameras (via the hide toggle) must stay hidden regardless
-    // of the layout config's enabled flag. Without this, inline style.display
-    // set below overrides the .camera-hidden CSS class on every re-render.
-    const visibleCameras = options.visibleCameras || null;
-
-    // Remove preset CSS classes (we're using inline styles now)
-    const presetClasses = LayoutConfig.getPresetNames();
-    presetClasses.forEach((cls) => videoGrid.classList.remove(cls));
-
-    // Add a marker class for custom config rendering
-    videoGrid.classList.add('layout-custom-config');
-
-    // Get aspect ratio
-    const aspectRatioStr = config.canvas?.aspectRatio || '4:3';
-    const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatioStr];
-    const aspectRatio = arParts ? arParts.width / arParts.height : 4 / 3;
-
-    // Store for resize observer and label repositioning
-    this.currentGrid = videoGrid;
-    this.currentAspectRatio = aspectRatio;
-    this.currentConfig = config;
-
-    // Reset grid display properties for absolute positioning
-    videoGrid.style.display = 'block';
-    videoGrid.style.position = 'relative';
-    videoGrid.style.maxWidth = '100%';
-    videoGrid.style.maxHeight = '100%';
-    videoGrid.style.backgroundColor =
-      config.canvas?.backgroundColor || '#000000';
-
-    // Set up resize observer for responsive sizing
-    this.setupResizeObserver(videoGrid);
-
-    // Map video IDs to camera names
-    const videoIdToCamera: Record<string, string> = {
-      videoFront: 'front',
-      videoBack: 'back',
-      videoLeft: 'left_repeater',
-      videoRight: 'right_repeater',
-    };
-
-    // Get video containers
-    const containers = Array.from(
-      videoGrid.querySelectorAll('.video-container')
-    ) as HTMLElement[];
-
-    // Apply styles to each container based on its camera identity
-    containers.forEach((container) => {
-      // Identify the camera by video-or-canvas element ID or data
-      // attribute. Canvas branch covers the WebCodecs-backed player,
-      // which replaces <video> with a <canvas> of matching id/class
-      // (see VideoPlayer._resolveVideos). Without this, object-fit
-      // and other per-camera inline styles were never applied.
-      const videos = Array.from(
-        container.querySelectorAll('video, canvas.video-player')
-      ) as HTMLElement[];
-      const firstVideo = videos[0];
-      let cameraName = container.dataset.camera;
-
-      if (!cameraName && firstVideo) {
-        cameraName = videoIdToCamera[firstVideo.id];
-      }
-
-      if (!cameraName) return;
-
-      const camConfig = config.cameras?.[cameraName];
-      if (!camConfig) return;
-
-      // Handle focus mode
-      const isFocused = focusCamera && focusCamera === cameraName;
-      // Respect user's hide toggle: if visibleCameras explicitly marks this
-      // camera as hidden, override the config's enabled flag.
-      const userHidden = visibleCameras && visibleCameras[cameraName] === false;
-      const shouldShow =
-        !userHidden && (focusCamera ? isFocused : camConfig.enabled);
-
-      // Position and size
-      container.style.position = 'absolute';
-
-      if (shouldShow) {
-        const pos =
-          focusCamera && isFocused
-            ? { x: 0, y: 0, width: 100, height: 100 }
-            : camConfig.position;
-
-        container.style.left = `${pos.x}%`;
-        container.style.top = `${pos.y}%`;
-        container.style.width = `${pos.width}%`;
-        container.style.height = `${pos.height}%`;
-        container.style.display = 'block';
-        container.style.zIndex = String(camConfig.zIndex || 1);
-      } else {
-        container.style.display = 'none';
-      }
-
-      // Apply cropping via clip-path
-      const crop = camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 };
-      if (crop.top > 0 || crop.right > 0 || crop.bottom > 0 || crop.left > 0) {
-        container.style.clipPath = `inset(${crop.top}% ${crop.right}% ${crop.bottom}% ${crop.left}%)`;
-      } else {
-        container.style.clipPath = 'none';
-      }
-
-      // Apply object-fit to all video elements in the container (Bank A and Bank B)
-      videos.forEach((v) => {
-        v.style.objectFit = camConfig.objectFit || 'contain';
-      });
-
-      // Position label to avoid being cut off
-      const label = container.querySelector('.video-label');
-      if (label && shouldShow) {
-        this.positionLabel(label, container, camConfig, config);
-      }
-    });
-  }
-
-  /**
-   * Position label smartly within container, avoiding occlusion by higher z-index cameras
-   * @param {HTMLElement} label - The label element
-   * @param {HTMLElement} container - The video container
-   * @param {Object} camConfig - Camera configuration
-   * @param {Object} fullConfig - Full layout configuration
-   */
-  positionLabel(label, container, camConfig, fullConfig) {
-    const padding = 6; // pixels from edge
-    const myZIndex = camConfig.zIndex || 1;
-
-    // Reset styles first
-    label.style.top = '';
-    label.style.left = '';
-    label.style.right = '';
-    label.style.bottom = '';
-    label.style.fontSize = '';
-    label.style.padding = '';
-    label.style.display = '';
-
-    // Use requestAnimationFrame to get accurate measurements after layout
-    requestAnimationFrame(() => {
-      const containerRect = container.getBoundingClientRect();
-      const gridRect = this.currentGrid?.getBoundingClientRect();
-
-      // If container is too small to show label at all, hide it
-      if (containerRect.width < 80 || containerRect.height < 60) {
-        label.style.display = 'none';
-        return;
-      }
-
-      // Adjust font size for small containers
-      if (containerRect.width < 200 || containerRect.height < 150) {
-        label.style.fontSize = '0.6rem';
-        label.style.padding = '0.2rem 0.4rem';
-      } else if (containerRect.width < 300 || containerRect.height < 200) {
-        label.style.fontSize = '0.65rem';
-        label.style.padding = '0.25rem 0.5rem';
-      }
-
-      // Get label dimensions (need to measure after font size change)
-      const labelRect = label.getBoundingClientRect();
-      const labelWidth = labelRect.width;
-      const labelHeight = labelRect.height;
-
-      // Collect rects of higher z-index cameras for occlusion checking
-      const higherCameraRects = [];
-      if (fullConfig?.cameras && gridRect) {
-        for (const [camName, cam] of Object.entries(
-          fullConfig.cameras as Record<string, any>
-        )) {
-          if (!cam.enabled || (cam.zIndex || 1) <= myZIndex) continue;
-
-          // Get the container for this camera
-          const otherContainer = this.currentGrid?.querySelector(
-            `[data-camera="${camName}"]`
-          );
-          if (otherContainer) {
-            higherCameraRects.push(otherContainer.getBoundingClientRect());
-          }
-        }
-      }
-
-      // Define possible positions: top-left, top-right, bottom-left, bottom-right
-      const positions = [
-        { top: padding, left: padding, right: null, bottom: null },
-        { top: padding, left: null, right: padding, bottom: null },
-        { top: null, left: padding, right: null, bottom: padding },
-        { top: null, left: null, right: padding, bottom: padding },
-      ];
-
-      // Check if a label position would be occluded by higher z-index cameras
-      const isOccluded = (labelScreenX, labelScreenY) => {
-        for (const camRect of higherCameraRects) {
-          // Check if label overlaps with higher z-index camera
-          if (
-            labelScreenX < camRect.right &&
-            labelScreenX + labelWidth > camRect.left &&
-            labelScreenY < camRect.bottom &&
-            labelScreenY + labelHeight > camRect.top
-          ) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      // Check if label position is within the visible grid bounds
-      const isWithinGrid = (labelScreenX, labelScreenY) => {
-        if (!gridRect) return true;
-        return (
-          labelScreenX >= gridRect.left &&
-          labelScreenX + labelWidth <= gridRect.right &&
-          labelScreenY >= gridRect.top &&
-          labelScreenY + labelHeight <= gridRect.bottom
-        );
-      };
-
-      // Calculate the VISIBLE portion of the container (clamped to grid)
-      const visibleLeft = gridRect
-        ? Math.max(containerRect.left, gridRect.left)
-        : containerRect.left;
-      const visibleTop = gridRect
-        ? Math.max(containerRect.top, gridRect.top)
-        : containerRect.top;
-      const visibleRight = gridRect
-        ? Math.min(containerRect.right, gridRect.right)
-        : containerRect.right;
-      const visibleBottom = gridRect
-        ? Math.min(containerRect.bottom, gridRect.bottom)
-        : containerRect.bottom;
-
-      // If container has no visible area within grid, hide label
-      if (
-        visibleRight - visibleLeft < labelWidth + padding * 2 ||
-        visibleBottom - visibleTop < labelHeight + padding * 2
-      ) {
-        label.style.display = 'none';
-        return;
-      }
-
-      // Find first non-occluded position that's within the grid
-      let bestPosition = positions[0];
-      let foundValidPosition = false;
-      for (const pos of positions) {
-        // Calculate screen position of label with this setting
-        let labelScreenX, labelScreenY;
-
-        if (pos.left !== null) {
-          labelScreenX = containerRect.left + pos.left;
-        } else {
-          labelScreenX = containerRect.right - padding - labelWidth;
-        }
-
-        if (pos.top !== null) {
-          labelScreenY = containerRect.top + pos.top;
-        } else {
-          labelScreenY = containerRect.bottom - padding - labelHeight;
-        }
-
-        // Position must be both non-occluded AND within grid bounds
-        if (
-          !isOccluded(labelScreenX, labelScreenY) &&
-          isWithinGrid(labelScreenX, labelScreenY)
-        ) {
-          bestPosition = pos;
-          foundValidPosition = true;
-          break;
-        }
-      }
-
-      // If no valid position found, calculate position within visible area
-      if (!foundValidPosition) {
-        // Use top-left of the VISIBLE portion of the container
-        const relativeLeft = visibleLeft - containerRect.left + padding;
-        const relativeTop = visibleTop - containerRect.top + padding;
-        bestPosition = {
-          top: relativeTop,
-          left: relativeLeft,
-          right: null,
-          bottom: null,
-        };
-      }
-
-      // Apply the best position (use 'auto' to override CSS defaults, not empty string)
-      label.style.top =
-        bestPosition.top !== null ? `${bestPosition.top}px` : 'auto';
-      label.style.left =
-        bestPosition.left !== null ? `${bestPosition.left}px` : 'auto';
-      label.style.right =
-        bestPosition.right !== null ? `${bestPosition.right}px` : 'auto';
-      label.style.bottom =
-        bestPosition.bottom !== null ? `${bestPosition.bottom}px` : 'auto';
-    });
-  }
-
-  /**
-   * Reset DOM to default state (remove inline styles)
-   */
-  resetDOM(videoGrid) {
-    if (!videoGrid) return;
-
-    // Clean up resize observer
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-    this.currentGrid = null;
-    this.currentAspectRatio = null;
-    this.currentConfig = null;
-
-    videoGrid.classList.remove('layout-custom-config');
-    videoGrid.style.aspectRatio = '';
-    videoGrid.style.display = '';
-    videoGrid.style.position = '';
-    videoGrid.style.width = '';
-    videoGrid.style.height = '';
-    videoGrid.style.maxWidth = '';
-    videoGrid.style.maxHeight = '';
-    videoGrid.style.backgroundColor = '';
-
-    const containers = videoGrid.querySelectorAll('.video-container');
-    containers.forEach((container) => {
-      container.style.position = '';
-      container.style.left = '';
-      container.style.top = '';
-      container.style.width = '';
-      container.style.height = '';
-      container.style.display = '';
-      container.style.zIndex = '';
-      container.style.clipPath = '';
-
-      const video = container.querySelector('video, canvas.video-player');
-      if (video) {
-        video.style.objectFit = '';
-      }
-
-      // Reset label styles
-      const label = container.querySelector('.video-label');
-      if (label) {
-        label.style.top = '';
-        label.style.left = '';
-        label.style.right = '';
-        label.style.bottom = '';
-        label.style.fontSize = '';
-        label.style.padding = '';
-        label.style.display = '';
-      }
-    });
-  }
+  resetDOM(_videoGrid?: HTMLElement | null) {}
 
   /**
    * Calculate pixel positions for canvas rendering
@@ -502,7 +98,13 @@ export class LayoutRenderer {
    */
   renderToCanvas(
     ctx: CanvasRenderingContext2D,
-    exportConfig: { canvasWidth: number; canvasHeight: number; cameras: Record<string, CameraConfigLike> } | any,
+    exportConfig:
+      | {
+          canvasWidth: number;
+          canvasHeight: number;
+          cameras: Record<string, CameraConfigLike>;
+        }
+      | any,
     videos: Record<string, HTMLVideoElement>,
     options: { fillEnded?: boolean } = {}
   ) {
@@ -647,7 +249,6 @@ export class LayoutRenderer {
       if (visibleW <= 0 || visibleH <= 0) continue;
 
       // Try positions: top-left, top-right, bottom-left, bottom-right
-      // Use VISIBLE bounds, not camera config bounds
       const positions = [
         { x: visibleX + offset, y: visibleY + offset, name: 'top-left' },
         {
@@ -668,15 +269,12 @@ export class LayoutRenderer {
       ];
 
       // Find the lowest point of higher z-index cameras that overlap this camera
-      // This determines where the "visible" (non-occluded) portion of this camera starts
-      let occlusionBottom = visibleY; // Start with camera top
+      let occlusionBottom = visibleY;
       for (const cam of cameraRects) {
         if (cam.name === camName) continue;
         if ((cam.zIndex || 1) <= myZIndex) continue;
 
-        // Check if this higher camera overlaps horizontally with our camera
         if (cam.x < visibleRight && cam.x + cam.w > visibleX) {
-          // This camera overlaps horizontally - check where it ends vertically
           const camBottom = cam.y + cam.h;
           if (camBottom > occlusionBottom && cam.y < visibleBottom) {
             occlusionBottom = Math.min(camBottom, visibleBottom);
@@ -688,21 +286,17 @@ export class LayoutRenderer {
       const nonOccludedTop = Math.max(visibleY, occlusionBottom);
       const nonOccludedHeight = visibleBottom - nonOccludedTop;
 
-      // If there's enough space below the occluding cameras, position label there
-      // This matches the live view behavior where labels appear below overlapping cameras
       let bestPos;
       if (
         nonOccludedHeight >= labelHeight + offset * 2 &&
         nonOccludedTop > visibleY
       ) {
-        // Use top-left of the non-occluded area (below higher z-index cameras)
         bestPos = {
           x: visibleX + offset,
           y: nonOccludedTop + offset,
           name: 'non-occluded-top-left',
         };
       } else {
-        // Try standard positions: top-left, top-right, bottom-left, bottom-right
         bestPos = positions[0];
         for (const pos of positions) {
           const labelRect = {
@@ -712,13 +306,11 @@ export class LayoutRenderer {
             h: labelHeight,
           };
 
-          // Check if this position is covered by a higher z-index camera
           let isOccluded = false;
           for (const cam of cameraRects) {
             if (cam.name === camName) continue;
             if ((cam.zIndex || 1) <= myZIndex) continue;
 
-            // Check rectangle overlap
             if (
               labelRect.x < cam.x + cam.w &&
               labelRect.x + labelRect.w > cam.x &&
@@ -744,12 +336,9 @@ export class LayoutRenderer {
       ctx.beginPath();
       ctx.roundRect(bgX, bgY, labelWidth, labelHeight, borderRadius);
 
-      // Fill with CSS-matching colors
       if (isEnded) {
-        // Ended state: rgba(255, 59, 59, 0.85) from CSS .video-label.ended
         ctx.fillStyle = 'rgba(255, 59, 59, 0.85)';
       } else {
-        // Normal state: rgba(15, 18, 24, 0.85) from CSS --glass
         ctx.fillStyle = 'rgba(15, 18, 24, 0.85)';
       }
       ctx.fill();
@@ -775,13 +364,14 @@ export class LayoutRenderer {
 
   /**
    * Draw text with letter spacing (canvas doesn't support letter-spacing natively)
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {string} text
-   * @param {number} x
-   * @param {number} y
-   * @param {number} spacing
    */
-  drawTextWithLetterSpacing(ctx, text: string, x, y, spacing) {
+  drawTextWithLetterSpacing(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    spacing: number
+  ) {
     let currentX = x;
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
@@ -793,12 +383,8 @@ export class LayoutRenderer {
 
   /**
    * Create a preview element for the layout editor
-   * @param {Object} config - LayoutConfig object
-   * @param {number} width - Preview container width
-   * @param {number} height - Preview container height
-   * @returns {HTMLElement}
    */
-  createPreviewElement(config, width = 400, _height = 300) {
+  createPreviewElement(config: any, width = 400, _height = 300) {
     const container = document.createElement('div');
     container.className = 'layout-preview';
     container.style.cssText = `
@@ -810,7 +396,6 @@ export class LayoutRenderer {
             overflow: hidden;
         `;
 
-    // Set aspect ratio
     const aspectRatio = config.canvas?.aspectRatio || '4:3';
     const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatio] || {
       width: 4,
@@ -818,7 +403,6 @@ export class LayoutRenderer {
     };
     container.style.aspectRatio = `${arParts.width} / ${arParts.height}`;
 
-    // Create camera placeholders
     for (const camName of LayoutConfig.CAMERAS) {
       const camConfig = config.cameras?.[camName];
       if (!camConfig || !camConfig.enabled) continue;
@@ -847,7 +431,6 @@ export class LayoutRenderer {
                 box-sizing: border-box;
             `;
 
-      // Apply cropping visualization
       const crop = camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 };
       if (crop.top > 0 || crop.right > 0 || crop.bottom > 0 || crop.left > 0) {
         placeholder.style.clipPath = `inset(${crop.top}% ${crop.right}% ${crop.bottom}% ${crop.left}%)`;
@@ -883,5 +466,4 @@ export class LayoutRenderer {
   }
 }
 
-// Export default
 export default LayoutRenderer;

@@ -37,6 +37,9 @@
       <main class="player-area">
         <VideoGrid
           :hasEvent="hasEvent"
+          :layout="layout"
+          :focusCamera="focusCamera"
+          :hasPillarCameras="currentEvent?.hasPillarCameras"
           :hiddenCameras="hiddenCameras"
           @toggleCameraHide="toggleCameraHide"
           @unhideCamera="unhideCamera"
@@ -127,6 +130,7 @@ const {
   speed,
   isLooping,
   layout,
+  focusCamera,
   drives,
   hiddenCameras,
   hasEvent,

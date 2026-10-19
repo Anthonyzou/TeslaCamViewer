@@ -4,13 +4,20 @@
       id="videoGrid"
       class="video-grid"
       :class="[layout, { 'has-pillars': hasPillarCameras }]"
+      :style="gridStyle"
     >
-      <div class="video-container" :class="{ hidden: isHidden('front') }">
+      <div
+        class="video-container"
+        data-camera="front"
+        :class="{ hidden: isHidden('front') }"
+        :style="getCameraContainerStyle('front')"
+      >
         <video
           id="videoFront"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('front') }"
         ></video>
         <div class="video-label" data-i18n="cameras.front">
           {{ t('cameras.front') }}
@@ -24,12 +31,19 @@
           <Eye :size="16" />
         </button>
       </div>
-      <div class="video-container" :class="{ hidden: isHidden('back') }">
+
+      <div
+        class="video-container"
+        data-camera="back"
+        :class="{ hidden: isHidden('back') }"
+        :style="getCameraContainerStyle('back')"
+      >
         <video
           id="videoBack"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('back') }"
         ></video>
         <div class="video-label" data-i18n="cameras.back">
           {{ t('cameras.back') }}
@@ -43,15 +57,19 @@
           <Eye :size="16" />
         </button>
       </div>
+
       <div
         class="video-container"
+        data-camera="left_repeater"
         :class="{ hidden: isHidden('left_repeater') }"
+        :style="getCameraContainerStyle('left_repeater')"
       >
         <video
           id="videoLeft"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('left_repeater') }"
         ></video>
         <div class="video-label" data-i18n="cameras.left">
           {{ t('cameras.left') }}
@@ -65,15 +83,19 @@
           <Eye :size="16" />
         </button>
       </div>
+
       <div
         class="video-container"
+        data-camera="right_repeater"
         :class="{ hidden: isHidden('right_repeater') }"
+        :style="getCameraContainerStyle('right_repeater')"
       >
         <video
           id="videoRight"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('right_repeater') }"
         ></video>
         <div class="video-label" data-i18n="cameras.right">
           {{ t('cameras.right') }}
@@ -87,15 +109,19 @@
           <Eye :size="16" />
         </button>
       </div>
+
       <div
         class="video-container pillar-camera"
+        data-camera="left_pillar"
         :class="{ hidden: isHidden('left_pillar') }"
+        :style="getCameraContainerStyle('left_pillar')"
       >
         <video
           id="videoLeftPillar"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('left_pillar') }"
         ></video>
         <div class="video-label" data-i18n="cameras.leftPillar">
           {{ t('cameras.leftPillar') }}
@@ -109,15 +135,19 @@
           <Eye :size="16" />
         </button>
       </div>
+
       <div
         class="video-container pillar-camera"
+        data-camera="right_pillar"
         :class="{ hidden: isHidden('right_pillar') }"
+        :style="getCameraContainerStyle('right_pillar')"
       >
         <video
           id="videoRightPillar"
           class="video-player"
           crossorigin="anonymous"
           preload="auto"
+          :style="{ objectFit: getCameraObjectFit('right_pillar') }"
         ></video>
         <div class="video-label" data-i18n="cameras.rightPillar">
           {{ t('cameras.rightPillar') }}
@@ -132,6 +162,7 @@
         </button>
       </div>
     </div>
+
     <!-- Hidden Cameras Panel -->
     <div
       id="hiddenCamerasPanel"
@@ -152,6 +183,7 @@
         </button>
       </div>
     </div>
+
     <!-- Mobile Fullscreen Button -->
     <button
       id="mobileFullscreenBtn"
@@ -184,17 +216,22 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Eye, Maximize, Minimize, Play } from 'lucide-vue-next';
 import { useI18n } from '../composables/useI18n';
+import { LayoutConfig } from '../layout/layoutConfig';
+import type { LayoutConfigSchema } from '../types';
 
 const props = withDefaults(
   defineProps<{
     layout?: string;
+    focusCamera?: string | null;
     hasPillarCameras?: boolean;
     hiddenCameras?: string[];
   }>(),
   {
     layout: 'layout-6-3',
+    focusCamera: null,
     hasPillarCameras: false,
     hiddenCameras: () => [],
   }
@@ -210,7 +247,81 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const activeConfig = computed<LayoutConfigSchema | any>(() => {
+  const lm = typeof window !== 'undefined' ? window.app?.layoutManager : null;
+  if (lm?.currentConfig) {
+    return lm.currentConfig;
+  }
+  return (
+    LayoutConfig.presetToConfig(props.layout) ||
+    LayoutConfig.presetToConfig('layout-6-3')
+  );
+});
+
+const gridStyle = computed(() => {
+  const cfg = activeConfig.value;
+  const aspectRatioStr = cfg?.canvas?.aspectRatio || '4:3';
+  const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatioStr] || {
+    width: 4,
+    height: 3,
+  };
+  return {
+    aspectRatio: `${arParts.width} / ${arParts.height}`,
+    backgroundColor: cfg?.canvas?.backgroundColor || '#000000',
+    position: 'relative' as const,
+  };
+});
+
 function isHidden(cam: string): boolean {
   return props.hiddenCameras ? props.hiddenCameras.includes(cam) : false;
+}
+
+function getCameraContainerStyle(
+  cameraName: string
+): Record<string, string | number> {
+  const isPillar = cameraName === 'left_pillar' || cameraName === 'right_pillar';
+  if (isPillar && !props.hasPillarCameras) {
+    return { display: 'none' };
+  }
+
+  const isUserHidden = isHidden(cameraName);
+  const cfg = activeConfig.value;
+  const cam = cfg?.cameras?.[cameraName];
+
+  if (!cam || !cam.enabled || isUserHidden) {
+    return { display: 'none' };
+  }
+
+  const isFocused = props.focusCamera === cameraName;
+  const pos = isFocused
+    ? { x: 0, y: 0, width: 100, height: 100 }
+    : cam.position;
+
+  const crop = cam.crop || { top: 0, right: 0, bottom: 0, left: 0 };
+  const hasCrop =
+    (crop.top ?? 0) > 0 ||
+    (crop.right ?? 0) > 0 ||
+    (crop.bottom ?? 0) > 0 ||
+    (crop.left ?? 0) > 0;
+
+  const clipPath = hasCrop
+    ? `inset(${crop.top ?? 0}% ${crop.right ?? 0}% ${crop.bottom ?? 0}% ${crop.left ?? 0}%)`
+    : 'none';
+
+  return {
+    position: 'absolute',
+    left: `${pos.x}%`,
+    top: `${pos.y}%`,
+    width: `${pos.width}%`,
+    height: `${pos.height}%`,
+    zIndex: isFocused ? 99 : (cam.zIndex || 1),
+    clipPath,
+    display: 'block',
+  };
+}
+
+function getCameraObjectFit(cameraName: string): 'contain' | 'cover' | 'fill' {
+  const cfg = activeConfig.value;
+  return cfg?.cameras?.[cameraName]?.objectFit || 'contain';
 }
 </script>

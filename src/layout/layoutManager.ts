@@ -358,18 +358,20 @@ export class LayoutManager {
    */
   applyLayout(layout) {
     // Always reset DOM and remove all layout classes first
-    this.renderer.resetDOM(this.videoGrid);
-    this.videoGrid.classList.remove(
-      'grid-2x2',
-      'layout-6-3',
-      'layout-4-3',
-      'layout-all-16-9',
-      'layout-front-left',
-      'layout-front-right',
-      'layout-front-repeaters',
-      'layout-focus',
-      'layout-custom-config'
-    );
+    if (this.videoGrid) {
+      this.renderer.resetDOM(this.videoGrid);
+      this.videoGrid.classList.remove(
+        'grid-2x2',
+        'layout-6-3',
+        'layout-4-3',
+        'layout-all-16-9',
+        'layout-front-left',
+        'layout-front-right',
+        'layout-front-repeaters',
+        'layout-focus',
+        'layout-custom-config'
+      );
+    }
 
     // Check if we have a config (custom layout)
     if (this.currentConfig) {
@@ -422,7 +424,7 @@ export class LayoutManager {
     }
 
     // Fallback to CSS class for grid-2x2 and layout-focus
-    this.videoGrid.classList.add(layout);
+    this.videoGrid?.classList.add(layout);
 
     // Show/hide focus camera selector
     const focusCameraControl = document.getElementById('focusCameraControl');

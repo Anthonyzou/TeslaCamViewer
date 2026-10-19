@@ -104,6 +104,7 @@ export function useTeslaCam() {
 
     // Layout
     layout: layout.layout,
+    focusCamera: layout.focusCamera,
     hiddenCameras: layout.hiddenCameras,
     changeLayout: layout.changeLayout,
     changeFocusCamera: layout.changeFocusCamera,

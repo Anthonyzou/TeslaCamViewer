@@ -5,6 +5,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
  */
 export function useLayout() {
   const layout = ref('layout-6-3');
+  const focusCamera = ref<string | null>(null);
   const hiddenCameras = ref<string[]>([]);
 
   function syncLayout(): void {
@@ -14,6 +15,11 @@ export function useLayout() {
     const currentLayout = app.layoutManager?.currentLayout;
     if (currentLayout && layout.value !== currentLayout) {
       layout.value = currentLayout;
+    }
+
+    const currentFocus = app.layoutManager?.focusCamera || null;
+    if (focusCamera.value !== currentFocus) {
+      focusCamera.value = currentFocus;
     }
 
     const hidden = Object.entries(app.layoutManager?.visibleCameras || {})
@@ -91,6 +97,7 @@ export function useLayout() {
 
   return {
     layout,
+    focusCamera,
     hiddenCameras,
     changeLayout,
     changeFocusCamera,

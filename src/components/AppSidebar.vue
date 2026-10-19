@@ -5,8 +5,10 @@
       id="sidebarResizeHandle"
       :class="{ resizing: isResizing }"
       title="Drag to resize"
-      @mousedown="onMouseDown"
-      @touchstart="onTouchStart"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
       @dblclick="resetWidth"
     ></div>
 
@@ -201,6 +203,9 @@ function getSavedWidth(): number {
     if (saved) {
       const parsed = parseInt(saved, 10);
       if (parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) return parsed;
+    } else {
+      resetWidth();
+      return DEFAULT_WIDTH;
     }
   } catch (e) {
     console.warn('[SidebarResize] Failed to restore width:', e);
@@ -236,87 +241,40 @@ function saveWidth(w: number): void {
 function resetWidth(): void {
   sidebarWidth.value = DEFAULT_WIDTH;
   saveWidth(DEFAULT_WIDTH);
-  window.dispatchEvent(new Event('resize'));
-  setTimeout(() => {
-    window.app?.mapView?.map?.invalidateSize();
-  }, 100);
 }
 
-function startResize(clientX: number): void {
-  if (isMobile.value) return;
+function onPointerDown(e: PointerEvent): void {
+  if (isMobile.value || e.button !== 0) return;
+  const target = e.currentTarget as HTMLElement | null;
+  if (!target) return;
+
+  target.setPointerCapture(e.pointerId);
   isResizing.value = true;
-  startX = clientX;
+  startX = e.clientX;
   startWidth = sidebarWidth.value;
-
   document.body.classList.add('sidebar-resizing');
-
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
-  window.addEventListener('touchmove', onTouchMove, { passive: false });
-  window.addEventListener('touchend', onTouchEnd);
 }
 
-function doResize(clientX: number): void {
-  const deltaX = clientX - startX;
-  const newWidth = Math.max(
+function onPointerMove(e: PointerEvent): void {
+  if (!isResizing.value) return;
+  const deltaX = e.clientX - startX;
+  sidebarWidth.value = Math.max(
     MIN_WIDTH,
     Math.min(MAX_WIDTH, startWidth + deltaX)
   );
-  sidebarWidth.value = newWidth;
 }
 
-function endResize(): void {
+function onPointerUp(e: PointerEvent): void {
   if (!isResizing.value) return;
+  const target = e.currentTarget as HTMLElement | null;
+  if (target) {
+    try {
+      target.releasePointerCapture(e.pointerId);
+    } catch (_e) {}
+  }
   isResizing.value = false;
   document.body.classList.remove('sidebar-resizing');
-
   saveWidth(sidebarWidth.value);
-  window.dispatchEvent(new Event('resize'));
-  setTimeout(() => {
-    window.app?.mapView?.map?.invalidateSize();
-  }, 100);
-
-  window.removeEventListener('mousemove', onMouseMove);
-  window.removeEventListener('mouseup', onMouseUp);
-  window.removeEventListener('touchmove', onTouchMove);
-  window.removeEventListener('touchend', onTouchEnd);
-}
-
-function onMouseDown(e: MouseEvent): void {
-  e.preventDefault();
-  startResize(e.clientX);
-}
-
-function onMouseMove(e: MouseEvent): void {
-  if (isResizing.value) {
-    doResize(e.clientX);
-  }
-}
-
-function onMouseUp(): void {
-  endResize();
-}
-
-function onTouchStart(e: TouchEvent): void {
-  if (e.touches.length === 1) {
-    e.preventDefault();
-    startResize(e.touches[0].clientX);
-  }
-}
-
-function onTouchMove(e: TouchEvent): void {
-  if (isResizing.value && e.touches.length === 1) {
-    e.preventDefault();
-    doResize(e.touches[0].clientX);
-  }
-}
-
-function onTouchEnd(): void {
-  endResize();
-}
-
-function onWindowResize(): void {
-  isMobile.value = window.innerWidth <= 768;
 }
 
 const activeTab = ref<'events' | 'map'>('events');
@@ -333,16 +291,27 @@ watch(
 
 const { t } = useI18n();
 
+let mediaQuery: MediaQueryList | null = null;
+let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
+
 onMounted(() => {
-  window.addEventListener('resize', onWindowResize);
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+  ) {
+    mediaQuery = window.matchMedia('(max-width: 768px)');
+    isMobile.value = mediaQuery.matches;
+    mediaListener = (e: MediaQueryListEvent) => {
+      isMobile.value = e.matches;
+    };
+    mediaQuery.addEventListener('change', mediaListener);
+  }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', onWindowResize);
-  window.removeEventListener('mousemove', onMouseMove);
-  window.removeEventListener('mouseup', onMouseUp);
-  window.removeEventListener('touchmove', onTouchMove);
-  window.removeEventListener('touchend', onTouchEnd);
+  if (mediaQuery && mediaListener) {
+    mediaQuery.removeEventListener('change', mediaListener);
+  }
   document.body.classList.remove('sidebar-resizing');
 });
 </script>
