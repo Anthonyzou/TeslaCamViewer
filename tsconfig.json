@@ -5,6 +5,8 @@
     "moduleResolution": "bundler",
     "allowJs": true,
     "checkJs": false,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "strict": false,
     "noImplicitAny": false,
     "esModuleInterop": true,
@@ -17,7 +19,8 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "server/**/*.ts"
   ],
   "exclude": [
     "node_modules",

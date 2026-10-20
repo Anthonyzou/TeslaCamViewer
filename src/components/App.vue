@@ -77,17 +77,6 @@
       </main>
     </div>
 
-    <!-- Bottom Sheet Controls (Portrait Mode) -->
-    <BottomSheet
-      @togglePlay="togglePlay"
-      @frameBack="frameBack"
-      @frameForward="frameForward"
-      @prevClip="prevClip"
-      @nextClip="nextClip"
-      @prevEvent="prevEvent"
-      @nextEvent="nextEvent"
-    />
-
     <!-- Modals -->
     <CommandPalette />
     <SettingsModal />

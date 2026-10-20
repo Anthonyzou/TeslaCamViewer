@@ -8,7 +8,7 @@
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
     "prestart": "npm run build",
-    "start": "node server/index.mjs",
+    "start": "node server/index.ts",
     "test": "node --test",
     "lint": "eslint",
     "docker": "docker build -t anthonyzou/teslacamviewer .  --platform linux/arm64",
@@ -34,6 +34,8 @@
     "vue": "3.5.44"
   },
   "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
     "@types/node": "26.6.5",
     "esbuild": "0.28.2",
     "eslint": "10.13.0",

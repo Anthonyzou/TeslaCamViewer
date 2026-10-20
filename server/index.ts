@@ -1,24 +1,30 @@
-import cors from 'cors';
 import 'dotenv/config';
-import express from 'express';
+
+import cors from 'cors';
+import express, {
+  type Application,
+  type NextFunction,
+  type Request,
+  type Response,
+} from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import registerB2Routes, {
-  VIDEO_CACHE_DIR,
   clearVideoCache,
   ensureVideoCached,
   getCachedB2Data,
   getVideoCacheStatus,
+  httpAgent,
+  httpsAgent,
   organizeB2Events,
   performB2Parse,
   pruneVideoCache,
   setCachedB2Data,
-  httpAgent,
-  httpsAgent,
   touchCacheFile,
-} from './b2API.mjs';
+  VIDEO_CACHE_DIR,
+} from './b2API.ts';
 
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 8000;
 const rootDir = path.resolve(import.meta.dirname, '..');
 
@@ -33,8 +39,8 @@ registerB2Routes(app);
 app.use(express.static(rootDir));
 
 // Default to index.html for unknown routes
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'index.html'), (err) => {
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(rootDir, 'index.html'), (err?: any) => {
     if (
       err &&
       !res.headersSent &&
@@ -47,7 +53,7 @@ app.get('*', (_req, res) => {
 });
 
 // Express global error handler middleware (must have 4 arguments)
-app.use((err, _req, res, next) => {
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
   console.error('[Server Error]', err.message || err);
   if (res.headersSent) {
     return next(err);
@@ -55,7 +61,7 @@ app.use((err, _req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
-function isEntryFile() {
+function isEntryFile(): boolean {
   if (!process.argv[1]) return false;
   try {
     const currentFile = fileURLToPath(import.meta.url);
@@ -63,6 +69,7 @@ function isEntryFile() {
     return (
       invokedFile === currentFile ||
       invokedFile === path.dirname(currentFile) ||
+      invokedFile === path.join(path.dirname(currentFile), 'index.ts') ||
       invokedFile === path.join(path.dirname(currentFile), 'index.mjs')
     );
   } catch (_e) {
@@ -101,7 +108,7 @@ if (isEntryFile()) {
         console.log(
           `[B2 Server Parser] Preload complete: ${cachedData.events.length} events found.`
         );
-      } catch (e) {
+      } catch (e: any) {
         console.error('[B2 Server Parser] Preload failed:', e.message);
       }
     }
@@ -114,17 +121,17 @@ if (isEntryFile()) {
 
 export {
   app,
-  VIDEO_CACHE_DIR,
   clearVideoCache,
   ensureVideoCached,
   getCachedB2Data,
   getVideoCacheStatus,
+  httpAgent,
+  httpsAgent,
   organizeB2Events,
   performB2Parse,
   pruneVideoCache,
   setCachedB2Data,
-  httpAgent,
-  httpsAgent,
   touchCacheFile,
+  VIDEO_CACHE_DIR,
 };
 export default app;

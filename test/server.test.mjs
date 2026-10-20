@@ -13,7 +13,7 @@ import {
   httpAgent,
   httpsAgent,
   touchCacheFile,
-} from '../server/index.mjs';
+} from '../server/index.ts';
 
 test('organizeB2Events - groups files into chronological events and detects cameras', async () => {
   const mockFiles = [

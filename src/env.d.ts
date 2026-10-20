@@ -4,6 +4,8 @@ declare module '*.vue' {
   export default component;
 }
 
+declare module '*.css';
+
 declare global {
   interface FileSystemHandlePermissionDescriptor {
     mode?: 'read' | 'readwrite';

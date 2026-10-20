@@ -387,7 +387,6 @@ const selectedSpeed = ref(props.speed || '1');
 const selectedLayout = ref(props.layout || 'layout-6-3');
 const focusCamera = ref('front');
 const isExportDropdownOpen = ref(false);
-const isMobileMoreOpen = ref(false);
 const privacyMode = ref(false);
 
 const { t } = useI18n();

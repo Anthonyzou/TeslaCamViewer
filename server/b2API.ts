@@ -1,16 +1,25 @@
 import axios from 'axios';
 import B2 from 'backblaze-b2';
+import type { Application, Request, Response } from 'express';
 import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import stream from 'node:stream';
 import { promisify } from 'node:util';
+import type { TeslaCamEvent } from '../src/types/index.ts';
 import {
   groupClips,
   parseClipFilename,
   parseEventFolderName,
 } from '../src/utils/teslaCamFormat.ts';
+import type {
+  ActiveB2Auth,
+  B2ParseResult,
+  B2RawFile,
+  PreloadItem,
+  VideoCacheStatus,
+} from './types.ts';
 
 // Connection pooling with Keep-Alive to reuse sockets across video chunks and camera streams
 export const httpsAgent = new https.Agent({
@@ -41,9 +50,9 @@ export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_BYTES
   ? parseInt(process.env.VIDEO_CACHE_MAX_BYTES, 10)
   : 5 * 1024 * 1024 * 1024; // 5 GB default
 
-export let cachedB2Data = null;
+export let cachedB2Data: B2ParseResult | null = null;
 export let lastParseTime = 0;
-export let activeB2Auth = {
+export let activeB2Auth: ActiveB2Auth = {
   bucketName: null,
   downloadUrl: null,
   downloadToken: null,
@@ -51,21 +60,31 @@ export let activeB2Auth = {
   appKey: null,
 };
 
-const inFlightDownloads = new Map();
+const inFlightDownloads = new Map<string, Promise<string>>();
 
-export function setCachedB2Data(data, time = Date.now()) {
+export function setCachedB2Data(
+  data: B2ParseResult | null,
+  time = Date.now()
+): void {
   cachedB2Data = data;
   lastParseTime = time;
 }
 
-export function getCachedB2Data() {
+export function getCachedB2Data(): {
+  cachedB2Data: B2ParseResult | null;
+  lastParseTime: number;
+} {
   return { cachedB2Data, lastParseTime };
 }
 
 /**
  * Perform the B2 parsing logic using the backblaze-b2 SDK
  */
-export async function performB2Parse(keyId, appKey, bucketName) {
+export async function performB2Parse(
+  keyId: string,
+  appKey: string,
+  bucketName: string
+): Promise<B2ParseResult> {
   console.log(`[B2 Server Parser] Starting parse for bucket: ${bucketName}`);
 
   const b2 = new B2({
@@ -88,8 +107,8 @@ export async function performB2Parse(keyId, appKey, bucketName) {
   const bucketId = bucket.bucketId;
 
   // 2. List all files (with pagination)
-  let allFiles = [];
-  let startFileName = null;
+  let allFiles: B2RawFile[] = [];
+  let startFileName: string | null = null;
   while (true) {
     const listResp = await b2.listFileNames({
       bucketId,
@@ -136,13 +155,13 @@ export async function performB2Parse(keyId, appKey, bucketName) {
  * Group raw B2 files into TeslaCam events and clip groups
  */
 export async function organizeB2Events(
-  allFiles,
-  bucketName,
-  downloadUrl,
-  downloadToken
-) {
-  const eventsMap = new Map();
-  const metadataFetches = [];
+  allFiles: B2RawFile[],
+  bucketName: string,
+  downloadUrl: string,
+  downloadToken: string
+): Promise<B2ParseResult> {
+  const eventsMap = new Map<string, any>();
+  const metadataFetches: Promise<void>[] = [];
 
   for (const file of allFiles) {
     const pathParts = file.fileName.split('/');
@@ -172,7 +191,7 @@ export async function organizeB2Events(
       });
     }
 
-    const event = eventsMap.get(eventKey);
+    const event = eventsMap.get(eventKey)!;
     const fileName = pathParts[pathParts.length - 1];
     const fileUrl = `${downloadUrl}/file/${bucketName}/${file.fileName}?Authorization=${encodeURIComponent(downloadToken)}`;
     const proxyVideoUrl = `/api/b2/video?file=${encodeURIComponent(file.fileName)}&url=${encodeURIComponent(fileUrl)}`;
@@ -211,14 +230,14 @@ export async function organizeB2Events(
     await Promise.all(metadataFetches);
   }
 
-  const finalEvents = Array.from(eventsMap.values()).filter(
+  const finalEvents: TeslaCamEvent[] = Array.from(eventsMap.values()).filter(
     (e) => e.clips.length > 0
   );
 
   for (const event of finalEvents) {
-    event.clipGroups = groupClips(event.clips);
+    event.clipGroups = groupClips(event.clips || []);
     event.isEmpty = event.clipGroups.length === 0;
-    event.hasPillarCameras = event.clips.some(
+    event.hasPillarCameras = (event.clips || []).some(
       (c) => c.camera === 'left_pillar' || c.camera === 'right_pillar'
     );
 
@@ -228,7 +247,9 @@ export async function organizeB2Events(
     event.compoundKey = `b2:${event.name}`;
   }
 
-  finalEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  finalEvents.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   return {
     events: finalEvents,
@@ -240,7 +261,7 @@ export async function organizeB2Events(
  * Update file access time in userspace to preserve accurate LRU cache eviction
  * even on SSD filesystems mounted with `noatime`
  */
-export function touchCacheFile(filePath) {
+export function touchCacheFile(filePath: string): void {
   const now = new Date();
   fs.promises.utimes(filePath, now, now).catch(() => {});
 }
@@ -250,17 +271,17 @@ let prunning = false;
  * Prune video cache when disk usage exceeds threshold
  */
 export async function pruneVideoCache(
-  targetDir = VIDEO_CACHE_DIR,
-  maxBytes = MAX_CACHE_BYTES
-) {
+  targetDir: string = VIDEO_CACHE_DIR,
+  maxBytes: number = MAX_CACHE_BYTES
+): Promise<void> {
   if (prunning) return;
   prunning = true;
   try {
     if (!fs.existsSync(targetDir)) return;
-    const files = [];
+    const files: Array<{ path: string; size: number; atime: number }> = [];
 
     // Parallel asynchronous walk optimized for SSD concurrent queue depths
-    async function walk(dir) {
+    async function walk(dir: string): Promise<void> {
       const entries = await fs.promises.readdir(dir, { withFileTypes: true });
       await Promise.all(
         entries.map(async (entry) => {
@@ -298,7 +319,7 @@ export async function pruneVideoCache(
         // Ignore unlink error if already deleted
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[B2 Video Cache] Eviction error:', err.message);
   } finally {
     prunning = false;
@@ -308,11 +329,11 @@ export async function pruneVideoCache(
 /**
  * Retrieve current video cache stats (parallel async traversal for SSDs)
  */
-export async function getVideoCacheStatus() {
+export async function getVideoCacheStatus(): Promise<VideoCacheStatus> {
   let totalFiles = 0;
   let totalBytes = 0;
 
-  async function walk(dir) {
+  async function walk(dir: string): Promise<void> {
     if (!fs.existsSync(dir)) return;
     const entries = await fs.promises.readdir(dir, { withFileTypes: true });
     await Promise.all(
@@ -342,15 +363,18 @@ export async function getVideoCacheStatus() {
 /**
  * Clear the video disk cache directory
  */
-export async function clearVideoCache() {
+export async function clearVideoCache(): Promise<void> {
   if (fs.existsSync(VIDEO_CACHE_DIR)) {
     await fs.promises.rm(VIDEO_CACHE_DIR, { recursive: true, force: true });
     await fs.promises.mkdir(VIDEO_CACHE_DIR, { recursive: true });
   }
 }
 
-function resolveSourceUrl(fileParam, sourceUrl) {
-  let resolved = sourceUrl;
+function resolveSourceUrl(
+  fileParam: string,
+  sourceUrl?: string | null
+): string | null {
+  let resolved = sourceUrl || null;
   if (!resolved && activeB2Auth.downloadUrl && activeB2Auth.bucketName) {
     resolved = `${activeB2Auth.downloadUrl}/file/${activeB2Auth.bucketName}/${fileParam}${
       activeB2Auth.downloadToken
@@ -364,7 +388,10 @@ function resolveSourceUrl(fileParam, sourceUrl) {
 /**
  * Ensure video file is cached locally, downloading if necessary (background helper)
  */
-export async function ensureVideoCached(fileParam, sourceUrl) {
+export async function ensureVideoCached(
+  fileParam: string,
+  sourceUrl?: string | null
+): Promise<string> {
   const safeRelative = path
     .normalize(fileParam || '')
     .replace(/^(\.\.[\/\\])+/, '')
@@ -381,7 +408,7 @@ export async function ensureVideoCached(fileParam, sourceUrl) {
   }
 
   if (inFlightDownloads.has(cacheFilePath)) {
-    return await inFlightDownloads.get(cacheFilePath);
+    return await inFlightDownloads.get(cacheFilePath)!;
   }
 
   const downloadPromise = (async () => {
@@ -408,7 +435,7 @@ export async function ensureVideoCached(fileParam, sourceUrl) {
 
       await fs.promises.rename(tempFilePath, cacheFilePath);
 
-      pruneVideoCache().catch((err) =>
+      pruneVideoCache().catch((err: any) =>
         console.warn('[B2 Video Cache] Pruning warning:', err.message)
       );
 
@@ -437,9 +464,9 @@ export async function ensureVideoCached(fileParam, sourceUrl) {
   return await downloadPromise;
 }
 
-export default function registerB2Routes(app) {
+export default function registerB2Routes(app: Application): void {
   // 1. Server-Side B2 Status/Config Route
-  app.get('/api/b2/config', (_req, res) => {
+  app.get('/api/b2/config', (_req: Request, res: Response) => {
     res.json({
       isConfigured: !!(
         process.env.B2_KEY_ID &&
@@ -452,34 +479,34 @@ export default function registerB2Routes(app) {
   });
 
   // 2. Server-Side B2 Video Cache Status
-  app.get('/api/b2/cache/status', async (_req, res) => {
+  app.get('/api/b2/cache/status', async (_req: Request, res: Response) => {
     try {
       const status = await getVideoCacheStatus();
       res.json(status);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // 3. Clear Server-Side Video Cache
-  app.post('/api/b2/cache/clear', async (_req, res) => {
+  app.post('/api/b2/cache/clear', async (_req: Request, res: Response) => {
     try {
       await clearVideoCache();
       res.json({ success: true, message: 'Video cache cleared' });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // 3b. Server-Side Video Cache Preload / Warming Route
-  app.post('/api/b2/cache/preload', async (req, res) => {
+  app.post('/api/b2/cache/preload', async (req: Request, res: Response) => {
     try {
-      const items = req.body?.items || [];
+      const items: PreloadItem[] = req.body?.items || [];
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'Missing or empty items array' });
       }
 
-      const scheduled = [];
+      const scheduled: string[] = [];
       for (const item of items) {
         let fileParam = item.file || item.fileName;
         let urlParam = item.url;
@@ -501,7 +528,7 @@ export default function registerB2Routes(app) {
           } catch (_e) {}
         }
 
-        let parsedFromUrl = null;
+        let parsedFromUrl: string | null = null;
         if (urlParam) {
           try {
             parsedFromUrl = path.basename(new URL(urlParam).pathname);
@@ -522,23 +549,23 @@ export default function registerB2Routes(app) {
         if (resolvedSource) {
           scheduled.push(safeRelative);
           // Trigger background caching to warm the disk cache
-          ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
+          ensureVideoCached(safeRelative, resolvedSource).catch((err: any) =>
             console.warn('[B2 Video Cache] Preload warning:', err.message)
           );
         }
       }
 
       res.json({ success: true, count: scheduled.length, files: scheduled });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
   // 4. Video Streaming Proxy with Concurrent Streaming & Local Disk Caching
-  app.get('/api/b2/video', async (req, res) => {
+  app.get('/api/b2/video', async (req: Request, res: Response) => {
     try {
-      const fileParam = req.query.file;
-      const urlParam = req.query.url;
+      const fileParam = req.query.file as string | undefined;
+      const urlParam = req.query.url as string | undefined;
 
       if (!fileParam && !urlParam) {
         return res
@@ -546,7 +573,7 @@ export default function registerB2Routes(app) {
           .json({ error: 'Missing file or url query parameter' });
       }
 
-      let parsedFromUrl = null;
+      let parsedFromUrl: string | null = null;
       if (urlParam) {
         try {
           parsedFromUrl = path.basename(new URL(urlParam).pathname);
@@ -568,7 +595,7 @@ export default function registerB2Routes(app) {
 
       const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
 
-      const sendFileCallback = (err) => {
+      const sendFileCallback = (err?: any) => {
         if (
           err &&
           !res.headersSent &&
@@ -617,10 +644,15 @@ export default function registerB2Routes(app) {
           timeout: 30000,
         });
 
-        const totalLength = response.headers['content-length'];
-        const contentType = response.headers['content-type'] || 'video/mp4';
+        const totalLength =
+          response.headers['content-length'] != null
+            ? String(response.headers['content-length'])
+            : undefined;
+        const contentType = String(
+          response.headers['content-type'] || 'video/mp4'
+        );
 
-        const clientHeaders = {
+        const clientHeaders: Record<string, string> = {
           'Content-Type': contentType,
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=31536000, immutable',
@@ -647,9 +679,9 @@ export default function registerB2Routes(app) {
           highWaterMark: 2 * 1024 * 1024,
         });
 
-        let resolveInFlight;
-        let rejectInFlight;
-        const inFlightPromise = new Promise((resolve, reject) => {
+        let resolveInFlight!: (path: string) => void;
+        let rejectInFlight!: (err: any) => void;
+        const inFlightPromise = new Promise<string>((resolve, reject) => {
           resolveInFlight = resolve;
           rejectInFlight = reject;
         });
@@ -675,7 +707,7 @@ export default function registerB2Routes(app) {
         req.on('close', onClientClose);
         res.on('close', onClientClose);
 
-        const onResError = (_err) => {
+        const onResError = (_err: any) => {
           try {
             response.data.unpipe(res);
           } catch (_e) {}
@@ -693,18 +725,18 @@ export default function registerB2Routes(app) {
           isDone = true;
           try {
             await fs.promises.rename(tempFilePath, cacheFilePath);
-            pruneVideoCache().catch((err) =>
+            pruneVideoCache().catch((err: any) =>
               console.warn('[B2 Video Cache] Pruning warning:', err.message)
             );
             resolveInFlight(cacheFilePath);
-          } catch (err) {
+          } catch (err: any) {
             rejectInFlight(err);
           } finally {
             inFlightDownloads.delete(cacheFilePath);
           }
         });
 
-        const cleanupError = (err) => {
+        const cleanupError = (err: any) => {
           if (isDone) return;
           isDone = true;
           rejectInFlight(err);
@@ -718,6 +750,7 @@ export default function registerB2Routes(app) {
             diskWriter.destroy();
           } catch (_e) {}
           fs.promises.unlink(tempFilePath).catch(() => {});
+
           if (!res.headersSent) {
             res.status(502).json({ error: `Stream failed: ${err.message}` });
           } else if (!res.writableEnded && !isClientClosed) {
@@ -731,7 +764,7 @@ export default function registerB2Routes(app) {
         // Seeking into an uncached file OR an in-flight download is already active:
         // Proxy the requested range slice directly to the client with HTTP 206 for zero-latency seeking,
         // without waiting for the full background download to finish.
-        const requestHeaders = {};
+        const requestHeaders: Record<string, string> = {};
         if (rangeHeader) {
           requestHeaders.Range = rangeHeader;
         }
@@ -745,16 +778,16 @@ export default function registerB2Routes(app) {
           validateStatus: (status) => status >= 200 && status < 300,
         });
 
-        const clientHeaders = {
-          'Content-Type': response.headers['content-type'] || 'video/mp4',
+        const clientHeaders: Record<string, string> = {
+          'Content-Type': String(response.headers['content-type'] || 'video/mp4'),
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=31536000, immutable',
         };
         if (response.headers['content-range']) {
-          clientHeaders['Content-Range'] = response.headers['content-range'];
+          clientHeaders['Content-Range'] = String(response.headers['content-range']);
         }
         if (response.headers['content-length']) {
-          clientHeaders['Content-Length'] = response.headers['content-length'];
+          clientHeaders['Content-Length'] = String(response.headers['content-length']);
         }
 
         res.writeHead(response.status, clientHeaders);
@@ -767,13 +800,13 @@ export default function registerB2Routes(app) {
         req.on('close', onClientClose);
         res.on('close', onClientClose);
 
-        res.on('error', (_err) => {
+        res.on('error', (_err: any) => {
           try {
             response.data.destroy();
           } catch (_e) {}
         });
 
-        response.data.on('error', (err) => {
+        response.data.on('error', (err: any) => {
           console.error('[B2 Video Proxy] Range stream error:', err.message);
           try {
             if (!res.headersSent) {
@@ -790,7 +823,7 @@ export default function registerB2Routes(app) {
 
         // If not already being cached to disk in background, trigger background caching
         if (!inFlightDownloads.has(cacheFilePath)) {
-          ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
+          ensureVideoCached(safeRelative, resolvedSource).catch((err: any) =>
             console.warn(
               '[B2 Video Cache] Background caching warning:',
               err.message
@@ -798,7 +831,7 @@ export default function registerB2Routes(app) {
           );
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[B2 Video Proxy] Failed to stream video:', err.message);
       if (!res.headersSent) {
         res
@@ -811,7 +844,7 @@ export default function registerB2Routes(app) {
   });
 
   // 5. Server-Side B2 Parsing Route
-  app.post('/api/b2/parse', async (req, res) => {
+  app.post('/api/b2/parse', async (req: Request, res: Response) => {
     try {
       const keyId = req.body?.keyId || process.env.B2_KEY_ID;
       const appKey = req.body?.appKey || process.env.B2_APP_KEY;
@@ -852,7 +885,7 @@ export default function registerB2Routes(app) {
       }
 
       res.json(result);
-    } catch (e) {
+    } catch (e: any) {
       console.error('[B2 Server Parser] Error:', e.response?.data || e.message);
       if (!res.headersSent) {
         res.status(500).json({ error: e.message });
