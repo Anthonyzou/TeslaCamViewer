@@ -332,144 +332,16 @@
         <span id="syncStatus" class="sync-indicator"></span>
       </div>
     </div>
-
-    <!-- Mobile More Menu -->
-    <div class="control-group control-group-mobile-more">
-      <div class="mobile-more-container">
-        <button
-          id="mobileMoreBtn"
-          class="control-btn"
-          title="More Options"
-          @click="isMobileMoreOpen = !isMobileMoreOpen"
-        >
-          <MoreVertical :size="20" />
-        </button>
-        <div
-          id="mobileMoreMenu"
-          class="mobile-more-menu"
-          :class="{ hidden: !isMobileMoreOpen }"
-        >
-          <div class="mobile-more-section">
-            <div class="mobile-more-label">View</div>
-            <button
-              class="mobile-more-option"
-              data-action="enhance"
-              @click="emit('toggleEnhance')"
-            >
-              <Sun :size="18" style="margin-right: 8px" />
-              <span>Enhancement</span>
-            </button>
-            <div class="mobile-more-option mobile-layout-selector">
-              <LayoutGrid :size="18" style="margin-right: 8px" />
-              <span>Layout</span>
-              <select
-                id="mobileLayoutSelect"
-                class="mobile-layout-select"
-                v-model="selectedLayout"
-                @change="emit('changeLayout', selectedLayout)"
-              >
-                <option value="grid-2x2">2x2 Grid</option>
-                <option value="layout-6-3">6:3 Centered</option>
-                <option value="layout-4-3">4:3 Main</option>
-                <option value="layout-focus">Focus</option>
-              </select>
-            </div>
-          </div>
-          <div class="mobile-more-divider"></div>
-          <div class="mobile-more-section">
-            <div class="mobile-more-label">Export</div>
-            <button
-              class="mobile-more-option"
-              data-action="screenshot"
-              @click="emit('captureScreenshot')"
-            >
-              <Camera :size="18" style="margin-right: 8px" />
-              <span>Screenshot</span>
-            </button>
-            <button
-              class="mobile-more-option"
-              data-action="export-video"
-              @click="emit('exportVideo')"
-            >
-              <Video :size="18" style="margin-right: 8px" />
-              <span>Export Video</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hidden buttons kept for keyboard shortcuts / compatibility -->
-    <button
-      id="frameBackBtn"
-      class="control-btn hidden-control"
-      disabled
-      :title="t('controls.previousFrame')"
-      @click="emit('frameBack')"
-    >
-      <ChevronLeft :size="20" />
-    </button>
-    <button
-      id="frameForwardBtn"
-      class="control-btn hidden-control"
-      disabled
-      :title="t('controls.nextFrame')"
-      @click="emit('frameForward')"
-    >
-      <ChevronRight :size="20" />
-    </button>
-    <button
-      id="prevEventBtn"
-      class="control-btn hidden-control"
-      disabled
-      :title="t('controls.previousEvent')"
-      @click="emit('prevEvent')"
-    >
-      <ArrowLeft :size="20" />
-    </button>
-    <button
-      id="nextEventBtn"
-      class="control-btn hidden-control"
-      disabled
-      :title="t('controls.nextEvent')"
-      @click="emit('nextEvent')"
-    >
-      <ArrowRight :size="20" />
-    </button>
-    <button
-      id="screenshotBtn"
-      class="control-btn hidden-control"
-      disabled
-      :title="t('controls.screenshot')"
-      @click="emit('captureScreenshot')"
-    >
-      <Camera :size="20" />
-    </button>
-    <button
-      id="pipBtn"
-      class="control-btn hidden-control"
-      disabled
-      style="display: none"
-    >
-      <PictureInPicture2 :size="20" />
-    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
-  ArrowLeft,
-  ArrowRight,
   Bookmark,
   Camera,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Download,
-  LayoutGrid,
-  MoreVertical,
   Pause,
-  PictureInPicture2,
   Play,
   Repeat,
   RotateCcw,
@@ -654,11 +526,6 @@ function onExportVideoClick(): void {
 .overlay-toggle-btn.active:hover:not(:disabled) {
   background: var(--accent);
   filter: brightness(1.1);
-}
-
-/* Hidden controls (kept for keyboard shortcuts) */
-.hidden-control {
-  display: none !important;
 }
 
 /* Export dropdown enhancements */

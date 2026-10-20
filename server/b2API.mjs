@@ -245,6 +245,7 @@ export function touchCacheFile(filePath) {
   fs.promises.utimes(filePath, now, now).catch(() => {});
 }
 
+let prunning = false;
 /**
  * Prune video cache when disk usage exceeds threshold
  */
@@ -252,6 +253,8 @@ export async function pruneVideoCache(
   targetDir = VIDEO_CACHE_DIR,
   maxBytes = MAX_CACHE_BYTES
 ) {
+  if (prunning) return;
+  prunning = true;
   try {
     if (!fs.existsSync(targetDir)) return;
     const files = [];
@@ -297,6 +300,8 @@ export async function pruneVideoCache(
     }
   } catch (err) {
     console.warn('[B2 Video Cache] Eviction error:', err.message);
+  } finally {
+    prunning = false;
   }
 }
 
@@ -623,7 +628,8 @@ export default function registerB2Routes(app) {
 
         if (rangeHeader && totalLength) {
           const totalNum = parseInt(totalLength, 10);
-          clientHeaders['Content-Range'] = `bytes 0-${totalNum - 1}/${totalLength}`;
+          clientHeaders['Content-Range'] =
+            `bytes 0-${totalNum - 1}/${totalLength}`;
           clientHeaders['Content-Length'] = totalLength;
           res.writeHead(206, clientHeaders);
         } else {
@@ -785,7 +791,10 @@ export default function registerB2Routes(app) {
         // If not already being cached to disk in background, trigger background caching
         if (!inFlightDownloads.has(cacheFilePath)) {
           ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
-            console.warn('[B2 Video Cache] Background caching warning:', err.message)
+            console.warn(
+              '[B2 Video Cache] Background caching warning:',
+              err.message
+            )
           );
         }
       }
