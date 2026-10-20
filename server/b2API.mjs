@@ -589,28 +589,6 @@ export default function registerB2Routes(app) {
         );
       }
 
-      // If already downloading via another concurrent request, await completion then sendFile
-      if (inFlightDownloads.has(cacheFilePath)) {
-        try {
-          await inFlightDownloads.get(cacheFilePath);
-          touchCacheFile(cacheFilePath);
-          return res.sendFile(
-            cacheFilePath,
-            {
-              acceptRanges: true,
-              headers: {
-                'Cache-Control': 'public, max-age=31536000, immutable',
-              },
-            },
-            sendFileCallback
-          );
-        } catch (err) {
-          return res
-            .status(502)
-            .json({ error: `Failed to retrieve video: ${err.message}` });
-        }
-      }
-
       const resolvedSource = resolveSourceUrl(safeRelative, urlParam);
       if (!resolvedSource) {
         return res
@@ -624,9 +602,9 @@ export default function registerB2Routes(app) {
         rangeHeader.startsWith('bytes=0-') ||
         rangeHeader === 'bytes=0-';
 
-      // If client requests from the beginning (or no range header),
-      // we concurrently stream to the browser AND write to disk cache!
-      if (isBeginningRange) {
+      // If client requests from the beginning AND no download is already writing to disk,
+      // concurrently stream to the browser for instant playback AND save to disk cache.
+      if (isBeginningRange && !inFlightDownloads.has(cacheFilePath)) {
         const response = await axios({
           method: 'get',
           url: resolvedSource,
@@ -682,8 +660,11 @@ export default function registerB2Routes(app) {
             response.data.unpipe(res);
           } catch (_e) {}
           if (!res.writableEnded) {
-            cleanupError(new Error('Client aborted request'));
+            try {
+              res.end();
+            } catch (_e) {}
           }
+          // Note: diskWriter continues streaming to tempFilePath in background
         };
         req.on('close', onClientClose);
         res.on('close', onClientClose);
@@ -741,24 +722,36 @@ export default function registerB2Routes(app) {
         diskWriter.on('error', cleanupError);
         response.data.on('error', cleanupError);
       } else {
-        // Seeking into an uncached file: Proxy the requested range slice directly
-        // to the client for zero latency, while triggering a full background cache download.
+        // Seeking into an uncached file OR an in-flight download is already active:
+        // Proxy the requested range slice directly to the client with HTTP 206 for zero-latency seeking,
+        // without waiting for the full background download to finish.
+        const requestHeaders = {};
+        if (rangeHeader) {
+          requestHeaders.Range = rangeHeader;
+        }
+
         const response = await axios({
           method: 'get',
           url: resolvedSource,
-          headers: { Range: rangeHeader },
+          headers: requestHeaders,
           responseType: 'stream',
           timeout: 30000,
           validateStatus: (status) => status >= 200 && status < 300,
         });
 
-        res.writeHead(response.status, {
+        const clientHeaders = {
           'Content-Type': response.headers['content-type'] || 'video/mp4',
-          'Content-Range': response.headers['content-range'],
-          'Content-Length': response.headers['content-length'],
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=31536000, immutable',
-        });
+        };
+        if (response.headers['content-range']) {
+          clientHeaders['Content-Range'] = response.headers['content-range'];
+        }
+        if (response.headers['content-length']) {
+          clientHeaders['Content-Length'] = response.headers['content-length'];
+        }
+
+        res.writeHead(response.status, clientHeaders);
 
         const onClientClose = () => {
           try {
@@ -789,10 +782,12 @@ export default function registerB2Routes(app) {
 
         response.data.pipe(res);
 
-        // Trigger background download so subsequent scrubs are cached locally
-        ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
-          console.warn('[B2 Video Cache] Background caching warning:', err.message)
-        );
+        // If not already being cached to disk in background, trigger background caching
+        if (!inFlightDownloads.has(cacheFilePath)) {
+          ensureVideoCached(safeRelative, resolvedSource).catch((err) =>
+            console.warn('[B2 Video Cache] Background caching warning:', err.message)
+          );
+        }
       }
     } catch (err) {
       console.error('[B2 Video Proxy] Failed to stream video:', err.message);

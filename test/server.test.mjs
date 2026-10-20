@@ -282,6 +282,88 @@ test('API GET /api/b2/video concurrently streams to client and saves to disk cac
   }
 });
 
+test('API GET /api/b2/video serves range seek requests immediately without blocking on in-flight cache download', async () => {
+  const fullPayload = Buffer.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+  const mockOriginServer = http.createServer((req, res) => {
+    const range = req.headers.range;
+    if (range && range !== 'bytes=0-') {
+      // Seek request: immediately return 206 Partial Content
+      const matches = range.match(/bytes=(\d+)-(\d+)?/);
+      const start = parseInt(matches[1], 10);
+      const end = matches[2] ? parseInt(matches[2], 10) : fullPayload.length - 1;
+      const slice = fullPayload.subarray(start, end + 1);
+      res.writeHead(206, {
+        'Content-Type': 'video/mp4',
+        'Content-Range': `bytes ${start}-${end}/${fullPayload.length}`,
+        'Content-Length': String(slice.length),
+        'Accept-Ranges': 'bytes',
+      });
+      res.end(slice);
+    } else {
+      // Initial stream: stream slowly to keep download in-flight
+      res.writeHead(200, {
+        'Content-Type': 'video/mp4',
+        'Content-Length': String(fullPayload.length),
+        'Accept-Ranges': 'bytes',
+      });
+      res.write(fullPayload.subarray(0, 10));
+      setTimeout(() => {
+        try {
+          res.end(fullPayload.subarray(10));
+        } catch (_e) {}
+      }, 150);
+    }
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originPort = mockOriginServer.address().port;
+  const originUrl = `http://127.0.0.1:${originPort}/slow-stream.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const testFileRel = 'ConcurrentSeek/clip-seek.mp4';
+
+  try {
+    await clearVideoCache();
+
+    // 1. Start initial stream download (bytes=0-)
+    const streamPromise = fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=0-' } }
+    );
+
+    // Give server 20ms so in-flight download is actively registered
+    await new Promise((r) => setTimeout(r, 20));
+
+    // 2. Client seeks into video (Range: bytes=10-19) while download is still in-flight
+    const seekStartTime = performance.now();
+    const seekRes = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=10-19' } }
+    );
+    const seekDuration = performance.now() - seekStartTime;
+
+    assert.strictEqual(seekRes.status, 206);
+    assert.strictEqual(seekRes.headers.get('content-range'), 'bytes 10-19/36');
+    const seekText = await seekRes.text();
+    assert.strictEqual(seekText, 'ABCDEFGHIJ');
+    // Seeking must NOT be blocked waiting for the 150ms slow stream to finish
+    assert.ok(seekDuration < 100, `Seek request took ${seekDuration}ms, should be <100ms`);
+
+    // Clean up initial stream
+    const initRes = await streamPromise;
+    await initRes.text();
+  } finally {
+    await clearVideoCache();
+    mockOriginServer.closeAllConnections?.();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
 test('API GET /api/b2/video rejects invalid url query parameter with 400 Bad Request', async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));

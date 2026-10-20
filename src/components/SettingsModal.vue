@@ -260,23 +260,7 @@
 
               <div class="settings-section">
                 <h3>{{ t('settings.sections.timeline') }}</h3>
-                <div class="setting-row">
-                  <label for="setting-enableTimelineZoom">{{
-                    t('settings.timeline.enableZoom')
-                  }}</label>
-                  <input
-                    type="checkbox"
-                    id="setting-enableTimelineZoom"
-                    class="setting-checkbox"
-                    v-model="settings.enableTimelineZoom"
-                    @change="
-                      save('enableTimelineZoom', settings.enableTimelineZoom)
-                    "
-                  />
-                  <span class="setting-hint">{{
-                    t('settings.timeline.zoomHint')
-                  }}</span>
-                </div>
+
                 <div class="setting-row">
                   <label for="setting-showClipMarkers">{{
                     t('settings.timeline.showClipMarkers')
@@ -569,7 +553,9 @@ defineExpose({
   max-height: 600px;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg), 0 0 60px rgba(0, 212, 255, 0.1);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 60px rgba(0, 212, 255, 0.1);
   overflow: hidden;
 }
 
@@ -880,7 +866,11 @@ defineExpose({
 }
 
 .settings-btn.primary:hover {
-  background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-hover) 0%,
+    var(--accent) 100%
+  );
   box-shadow: 0 0 25px var(--accent-glow);
 }
 
@@ -895,7 +885,7 @@ defineExpose({
   border-color: var(--text-muted);
 }
 
-@media (max-width: 768px) {
+@media only screen and (max-width: 768px) {
   .settings-panel {
     width: 100%;
     max-width: 100%;

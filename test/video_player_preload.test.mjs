@@ -318,3 +318,192 @@ test('VideoPlayer - handleVideoEnded does not advance clip if not near end', asy
   assert.strictEqual(advanced, false);
   assert.strictEqual(player.currentClipIndex, 0);
 });
+
+test('VideoPlayer - seek barrier pauses active videos and waits for all active feeds before playing', async () => {
+  const player = new VideoPlayer();
+  const listenersA = new Map();
+  const listenersB = new Map();
+
+  function makeVideo(listeners) {
+    let paused = true;
+    let playCalls = 0;
+    return {
+      seeking: false,
+      readyState: 4,
+      currentTime: 0,
+      duration: 60,
+      playbackRate: 1.0,
+      src: 'https://test/clip.mp4',
+      getAttribute: (k) => (k === 'src' ? 'https://test/clip.mp4' : null),
+      get paused() {
+        return paused;
+      },
+      get playCalls() {
+        return playCalls;
+      },
+      pause: () => {
+        paused = true;
+      },
+      play: async () => {
+        paused = false;
+        playCalls++;
+      },
+      addEventListener: (ev, fn) => {
+        if (!listeners.has(ev)) listeners.set(ev, []);
+        listeners.get(ev).push(fn);
+      },
+      removeEventListener: (ev, fn) => {
+        const arr = listeners.get(ev) || [];
+        listeners.set(ev, arr.filter((f) => f !== fn));
+      },
+      fire: (ev) => {
+        const arr = (listeners.get(ev) || []).slice();
+        for (const f of arr) f();
+      },
+    };
+  }
+
+  const vFront = makeVideo(listenersA);
+  const vBack = makeVideo(listenersB);
+
+  player.videos = { front: vFront, back: vBack };
+  player._isPlayingIntent = true;
+
+  // Simulate in-progress seeking state on both videos
+  vFront.seeking = true;
+  vBack.seeking = true;
+
+  const seekPromise = player.seek(25, true);
+
+  // While seeking, both videos should be paused and play() should not have been called yet
+  assert.strictEqual(vFront.paused, true);
+  assert.strictEqual(vBack.paused, true);
+  assert.strictEqual(vFront.currentTime, 25);
+  assert.strictEqual(vBack.currentTime, 25);
+  assert.strictEqual(vFront.playCalls, 0);
+
+  // Front camera finishes seeking
+  vFront.seeking = false;
+  vFront.fire('seeked');
+
+  // Back camera is still seeking, so play() must still be waiting
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(vFront.playCalls, 0);
+
+  // Back camera finishes seeking
+  vBack.seeking = false;
+  vBack.fire('seeked');
+
+  await seekPromise;
+
+  // Now both cameras have finished seeking and play() is called in sync!
+  assert.strictEqual(vFront.playCalls, 1);
+  assert.strictEqual(vBack.playCalls, 1);
+  assert.strictEqual(player._isSeeking, false);
+});
+
+test('VideoPlayer - buffering lockstep pauses other cameras when one camera stalls and resumes when ready', () => {
+  const player = new VideoPlayer();
+  const listenersA = new Map();
+  const listenersB = new Map();
+
+  function makeVideo(listeners) {
+    let paused = false;
+    let playCalled = false;
+    let pauseCalled = false;
+    return {
+      src: 'https://test/clip.mp4',
+      getAttribute: (k) => (k === 'src' ? 'https://test/clip.mp4' : null),
+      get paused() {
+        return paused;
+      },
+      get playCalled() {
+        return playCalled;
+      },
+      get pauseCalled() {
+        return pauseCalled;
+      },
+      pause: () => {
+        paused = true;
+        pauseCalled = true;
+      },
+      play: async () => {
+        paused = false;
+        playCalled = true;
+      },
+      addEventListener: (ev, fn) => {
+        if (!listeners.has(ev)) listeners.set(ev, []);
+        listeners.get(ev).push(fn);
+      },
+      fire: (ev) => {
+        const arr = (listeners.get(ev) || []).slice();
+        for (const f of arr) f();
+      },
+    };
+  }
+
+  const vFront = makeVideo(listenersA);
+  const vBack = makeVideo(listenersB);
+
+  player.videos = { front: vFront, back: vBack };
+  player.setupEventListeners();
+  player._isPlayingIntent = true;
+
+  // Back camera starts buffering (waiting event)
+  vBack.fire('waiting');
+
+  assert.strictEqual(player._bufferingCameras.has('back'), true);
+  // Front camera should be paused to prevent drifting ahead
+  assert.strictEqual(vFront.pauseCalled, true);
+
+  // Back camera finishes buffering (canplay event)
+  vBack.fire('canplay');
+  assert.strictEqual(player._bufferingCameras.size, 0);
+  // Playback resumes
+  assert.strictEqual(vFront.playCalled, true);
+});
+
+test('VideoPlayer - syncCameras adjusts playbackRate for slight drift and snaps currentTime for large drift', () => {
+  const player = new VideoPlayer();
+
+  function makeVideo(currentTime, playbackRate = 1.0) {
+    let _paused = false;
+    return {
+      src: 'https://test/clip.mp4',
+      seeking: false,
+      currentTime,
+      playbackRate,
+      get paused() {
+        return _paused;
+      },
+      getAttribute: (k) => (k === 'src' ? 'https://test/clip.mp4' : null),
+    };
+  }
+
+  const vFront = makeVideo(10.0, 1.0); // Master video at 10.0s
+  const vSlightAhead = makeVideo(10.15, 1.0); // +150ms ahead
+  const vSlightBehind = makeVideo(9.85, 1.0); // -150ms behind
+  const vSevereDrift = makeVideo(8.5, 1.0); // 1.5s behind (> 400ms)
+
+  player.videos = {
+    front: vFront,
+    back: vSlightAhead,
+    left_repeater: vSlightBehind,
+    right_repeater: vSevereDrift,
+  };
+  player._intendedPlaybackRate = 1.0;
+
+  player.syncCameras();
+
+  // Ahead video should be slightly slowed down (0.92x)
+  assert.ok(vSlightAhead.playbackRate < 1.0);
+  assert.strictEqual(vSlightAhead.playbackRate, 0.92);
+
+  // Behind video should be slightly sped up (1.08x)
+  assert.ok(vSlightBehind.playbackRate > 1.0);
+  assert.strictEqual(vSlightBehind.playbackRate, 1.08);
+
+  // Severe drift video should be hard-aligned to master currentTime (10.0s)
+  assert.strictEqual(vSevereDrift.currentTime, 10.0);
+  assert.strictEqual(vSevereDrift.playbackRate, 1.0);
+});

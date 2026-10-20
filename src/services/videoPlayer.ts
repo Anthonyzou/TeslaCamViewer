@@ -19,6 +19,9 @@ export class VideoPlayer {
   public _intendedPlaybackRate = 1.0;
   public disablePreload = false;
   public _lastPreloadedClipIndex = -1;
+  public _bufferingCameras = new Set<string>();
+  public _isSeeking = false;
+  private _seekGeneration = 0;
 
   public onClipChange: ((clipIndex: number) => void) | null = null;
   public onTimeUpdate: ((currentTime: number, duration: number) => void) | null = null;
@@ -48,8 +51,101 @@ export class VideoPlayer {
     this.setupEventListeners();
   }
 
+  getActiveVideos(): HTMLVideoElement[] {
+    return Object.values(this.videos).filter(
+      (v): v is HTMLVideoElement => Boolean(v && (v.getAttribute('src') || v.src))
+    );
+  }
+
+  getMasterVideo(): HTMLVideoElement | null {
+    if (this.videos.front) {
+      return this.videos.front;
+    }
+    const active = this.getActiveVideos();
+    return active.length > 0 ? active[0] : null;
+  }
+
+  getMasterCamera(): string {
+    if (this.videos.front) {
+      return 'front';
+    }
+    for (const [cam, vid] of Object.entries(this.videos)) {
+      if (vid && (vid.getAttribute('src') || vid.src)) return cam;
+    }
+    return 'front';
+  }
+
+  _waitForVideoSeeked(video: HTMLVideoElement): Promise<void> {
+    if (!video) return Promise.resolve();
+    if (typeof video.addEventListener !== 'function') {
+      return Promise.resolve();
+    }
+    if (
+      !video.seeking &&
+      typeof video.readyState === 'number' &&
+      video.readyState >= 2
+    ) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        video.removeEventListener('seeked', finish);
+        video.removeEventListener('error', finish);
+        resolve();
+      };
+      video.addEventListener('seeked', finish, { once: true });
+      video.addEventListener('error', finish, { once: true });
+      setTimeout(finish, 2500);
+    });
+  }
+
+  async _waitForAllSeeked(): Promise<void> {
+    const active = this.getActiveVideos();
+    if (active.length === 0) return;
+    await Promise.all(active.map((v) => this._waitForVideoSeeked(v)));
+  }
+
+  syncCameras(): void {
+    if (this._isSeeking || !this.isPlaying || this._bufferingCameras.size > 0) {
+      return;
+    }
+
+    const master = this.getMasterVideo();
+    if (!master || master.paused || master.seeking) return;
+
+    const masterTime = master.currentTime;
+    const activeVideos = this.getActiveVideos();
+
+    for (const video of activeVideos) {
+      if (video === master || video.seeking || video.paused) continue;
+
+      const diff = video.currentTime - masterTime;
+      const absDiff = Math.abs(diff);
+
+      if (absDiff > 0.4) {
+        // Severe drift (> 400ms): hard-sync currentTime
+        try {
+          video.currentTime = masterTime;
+        } catch (_e) {}
+        video.playbackRate = this._intendedPlaybackRate;
+      } else if (absDiff > 0.05) {
+        // Minor drift (50ms - 400ms): smooth rate nudging without audio/video jump
+        const rateAdjustment = diff > 0 ? 0.92 : 1.08;
+        video.playbackRate = this._intendedPlaybackRate * rateAdjustment;
+      } else {
+        // Synchronized (< 50ms): reset to standard rate
+        if (video.playbackRate !== this._intendedPlaybackRate) {
+          video.playbackRate = this._intendedPlaybackRate;
+        }
+      }
+    }
+  }
+
   get currentTime(): number {
-    return this.videos.front?.currentTime ?? 0;
+    return this.getMasterVideo()?.currentTime ?? 0;
   }
 
   set currentTime(t: number) {
@@ -57,7 +153,7 @@ export class VideoPlayer {
   }
 
   get duration(): number {
-    const d = this.videos.front?.duration;
+    const d = this.getMasterVideo()?.duration;
     if (d && !isNaN(d) && d > 0) return d;
     if (this.currentEvent && this.currentClipIndex >= 0) {
       return (
@@ -69,7 +165,7 @@ export class VideoPlayer {
   }
 
   get paused(): boolean {
-    return this.videos.front?.paused ?? true;
+    return this.getMasterVideo()?.paused ?? true;
   }
 
   get isPlaying(): boolean {
@@ -181,11 +277,6 @@ export class VideoPlayer {
   }
 
   setupEventListeners(): void {
-    this.videos.front?.addEventListener('timeupdate', () => {
-      if (this.onTimeUpdate) this.onTimeUpdate(this.currentTime, this.duration);
-      this._checkPreloadTrigger();
-    });
-
     const onPlayStateToggle = () => {
       if (this.onPlayStateChange) {
         this.onPlayStateChange(this._isPlayingIntent);
@@ -193,14 +284,56 @@ export class VideoPlayer {
     };
 
     for (const [camera, video] of Object.entries(this.videos)) {
-      if (!video) continue;
+      if (!video || typeof video.addEventListener !== 'function') continue;
+
+      video.addEventListener('timeupdate', () => {
+        const isMaster =
+          camera === 'front' ||
+          (!this.videos.front && camera === this.getMasterCamera());
+        if (isMaster) {
+          if (this.onTimeUpdate) {
+            this.onTimeUpdate(this.currentTime, this.duration);
+          }
+          this._checkPreloadTrigger();
+        }
+        this.syncCameras();
+      });
+
       video.addEventListener('ended', () => {
         this.updateVideoLabelState(camera, true);
         this.handleVideoEnded();
       });
 
+      video.addEventListener('waiting', () => {
+        if (!this._isPlayingIntent || this._isSeeking) return;
+        this._bufferingCameras.add(camera);
+        // Pause other active videos so they do not drift ahead while this camera buffers
+        for (const [otherCam, otherVid] of Object.entries(this.videos)) {
+          if (otherVid && otherCam !== camera && !otherVid.paused) {
+            try {
+              otherVid.pause();
+            } catch (_e) {}
+          }
+        }
+      });
+
+      const onCameraReady = () => {
+        this._bufferingCameras.delete(camera);
+        // If all cameras have finished buffering and user intended to play, resume playback
+        if (
+          this._isPlayingIntent &&
+          !this._isSeeking &&
+          this._bufferingCameras.size === 0
+        ) {
+          this.play();
+        }
+      };
+
+      video.addEventListener('canplay', onCameraReady);
+
       video.addEventListener('playing', () => {
         this.updateVideoLabelState(camera, false);
+        onCameraReady();
         onPlayStateToggle();
       });
 
@@ -323,6 +456,8 @@ export class VideoPlayer {
           } catch (_e) {}
         }
       }
+      // Wait for seek barrier so newly loaded clip starts synchronized
+      await this._waitForAllSeeked();
     }
 
     // Re-apply playback rate because browsers often reset it when src changes
@@ -399,9 +534,7 @@ export class VideoPlayer {
   play(): Promise<void[] | undefined> | undefined {
     this._isPlayingIntent = true;
     this._applyPlaybackRateToAll(); // Re-enforce speed before playing
-    const activeVideos = Object.values(this.videos).filter(
-      (v): v is HTMLVideoElement => Boolean(v && (v.getAttribute('src') || v.src))
-    );
+    const activeVideos = this.getActiveVideos();
     if (activeVideos.length === 0) return;
     return Promise.all(
       activeVideos.map((v) =>
@@ -414,6 +547,7 @@ export class VideoPlayer {
 
   pause(): void {
     this._isPlayingIntent = false;
+    this._bufferingCameras.clear();
     for (const video of Object.values(this.videos)) {
       if (video && typeof video.pause === 'function') video.pause();
     }
@@ -445,14 +579,42 @@ export class VideoPlayer {
       return;
     }
 
+    const currentGen = ++this._seekGeneration;
+    this._isSeeking = true;
+
+    // Pause active videos during seek to prevent audio/video desync while frames buffer
+    const activeVideos = this.getActiveVideos();
+    for (const v of activeVideos) {
+      if (typeof v.pause === 'function') {
+        try {
+          v.pause();
+        } catch (_e) {}
+      }
+    }
+
     for (const video of Object.values(this.videos)) {
       if (!video) continue;
       const maxTime =
         video.duration && !isNaN(video.duration) && video.duration > 0
           ? Math.max(0, video.duration - 0.05)
           : Math.max(0, clipDur - 0.05);
-      video.currentTime = Math.max(0, Math.min(time, maxTime));
+      const targetTime = Math.max(0, Math.min(time, maxTime));
+      try {
+        video.currentTime = targetTime;
+      } catch (_e) {}
     }
+
+    // Await seek barrier: ensure all active cameras decode their target frame
+    await this._waitForAllSeeked();
+
+    // If another seek was initiated in the meantime, don't resume playback for this stale seek
+    if (this._seekGeneration !== currentGen) {
+      return;
+    }
+
+    this._isSeeking = false;
+    this._bufferingCameras.clear();
+    this._applyPlaybackRateToAll();
 
     if (autoPlay) {
       this.play();
@@ -565,6 +727,8 @@ export class VideoPlayer {
 
   clear(): void {
     this.pause();
+    this._bufferingCameras.clear();
+    this._isSeeking = false;
     for (const video of Object.values(this.videos)) {
       if (video) video.src = '';
     }

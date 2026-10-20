@@ -381,6 +381,13 @@ onUnmounted(() => {
   position: relative;
 }
 
+@media only screen and (max-width: 514px) {
+  .sidebar {
+    display: none !important;
+    background: red;
+  }
+}
+
 /* Sidebar resize handle — split across sidebar edge:
    2px inside sidebar (sits on scrollbar track's non-clickable outer edge)
    6px outside (into video grid gutter). Keeps scrollbar usable while giving

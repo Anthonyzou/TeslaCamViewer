@@ -130,17 +130,6 @@
           </div>
         </div>
 
-        <!-- Timeline Zoom -->
-        <div class="help-section">
-          <h3>{{ t('help.sections.timelineZoom') }}</h3>
-          <div class="shortcut-grid">
-            <div class="shortcut-row">
-              <kbd>Scroll on timeline</kbd>
-              <span>{{ t('help.shortcuts.zoomTimeline') }}</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Speed Control -->
         <div class="help-section">
           <h3>{{ t('help.sections.speedControl') }}</h3>
@@ -280,7 +269,9 @@ defineExpose({
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg), 0 0 60px rgba(0, 212, 255, 0.1);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 60px rgba(0, 212, 255, 0.1);
 }
 
 .help-header {
@@ -433,7 +424,7 @@ defineExpose({
   font-size: 0.85rem;
 }
 
-@media (max-width: 768px) {
+@media only screen and (max-width: 768px) {
   .help-panel {
     width: 95%;
     max-height: 90vh;

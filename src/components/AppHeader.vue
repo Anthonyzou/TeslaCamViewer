@@ -44,13 +44,12 @@
         <circle cx="44" cy="27" r="2" fill="#ff3b3b" />
         <rect x="30" y="20" width="4" height="4" rx="1" fill="#161a24" />
       </svg>
-      <div class="brand-text">
+      <!-- <div class="brand-text">
         <h1>TeslaCamViewer.com</h1>
-        <span class="brand-tagline"></span>
-      </div>
+      </div> -->
     </div>
     <div class="header-actions">
-      <a
+      <!-- <a
         href="https://github.com/NateMccomb/TeslaCamViewer"
         target="_blank"
         rel="noopener noreferrer"
@@ -63,7 +62,7 @@
           />
         </svg>
         <span data-i18n="header.github">{{ t('header.github') }}</span>
-      </a>
+      </a> -->
       <button
         id="statsBtn"
         class="header-btn"
@@ -187,15 +186,6 @@ const { t } = useI18n();
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.brand-tagline {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
 }
 
 .header-actions {
