@@ -24,7 +24,9 @@ export class VideoPlayer {
   private _seekGeneration = 0;
 
   public onClipChange: ((clipIndex: number) => void) | null = null;
-  public onTimeUpdate: ((currentTime: number, duration: number) => void) | null = null;
+  public onTimeUpdate:
+    | ((currentTime: number, duration: number) => void)
+    | null = null;
   public onEnded: (() => void) | null = null;
   public onPlayStateChange: ((isPlaying: boolean) => void) | null = null;
   public videoLabels: Record<string, HTMLElement | null> = {};
@@ -52,8 +54,8 @@ export class VideoPlayer {
   }
 
   getActiveVideos(): HTMLVideoElement[] {
-    return Object.values(this.videos).filter(
-      (v): v is HTMLVideoElement => Boolean(v && (v.getAttribute('src') || v.src))
+    return Object.values(this.videos).filter((v): v is HTMLVideoElement =>
+      Boolean(v && (v.getAttribute('src') || v.src))
     );
   }
 
@@ -271,7 +273,9 @@ export class VideoPlayer {
   _resolveLabels(): Record<string, HTMLElement | null> {
     const labels: Record<string, HTMLElement | null> = {};
     for (const [cam, video] of Object.entries(this.videos)) {
-      labels[cam] = video?.parentElement?.querySelector('.video-label') as HTMLElement | null;
+      labels[cam] = video?.parentElement?.querySelector(
+        '.video-label'
+      ) as HTMLElement | null;
     }
     return labels;
   }
@@ -330,6 +334,7 @@ export class VideoPlayer {
       };
 
       video.addEventListener('canplay', onCameraReady);
+      video.addEventListener('loadstart', () => this._checkPreloadTrigger());
 
       video.addEventListener('playing', () => {
         this.updateVideoLabelState(camera, false);
@@ -480,7 +485,8 @@ export class VideoPlayer {
 
   async preloadClip(clipIndex: number): Promise<void> {
     if (this.disablePreload || this._preloading || !this.currentEvent) return;
-    if (clipIndex < 0 || clipIndex >= this.currentEvent.clipGroups.length) return;
+    if (clipIndex < 0 || clipIndex >= this.currentEvent.clipGroups.length)
+      return;
 
     this._preloading = true;
     try {
@@ -504,7 +510,10 @@ export class VideoPlayer {
       // If items have remote B2 URLs or files, notify server to pre-warm its disk cache
       if (items.length > 0 && typeof window !== 'undefined') {
         const hasServerItems = items.some(
-          (it) => it.url?.includes('/api/b2/video') || it.url?.startsWith('http') || it.file
+          (it) =>
+            it.url?.includes('/api/b2/video') ||
+            it.url?.startsWith('http') ||
+            it.file
         );
         if (hasServerItems) {
           fetch('/api/b2/cache/preload', {
@@ -553,7 +562,11 @@ export class VideoPlayer {
     }
   }
 
-  async seek(time: number, autoPlay = true, allowClipAdvance = true): Promise<void> {
+  async seek(
+    time: number,
+    autoPlay = true,
+    allowClipAdvance = true
+  ): Promise<void> {
     const clipDur = this.duration;
 
     if (allowClipAdvance && time < 0 && this.currentClipIndex > 0) {
@@ -641,7 +654,9 @@ export class VideoPlayer {
 
     // Only advance if the player actually reached near the end of the clip (within 1 second)
     const isNearEnd = this.currentTime >= Math.max(0, this.duration - 1.0);
-    const allEnded = activeVideos.every((v) => v.ended || (isNearEnd && v.error));
+    const allEnded = activeVideos.every(
+      (v) => v.ended || (isNearEnd && v.error)
+    );
     if (!allEnded || !this._isPlayingIntent || !isNearEnd) return;
 
     if (this.disableAutoAdvance) return;
@@ -671,7 +686,9 @@ export class VideoPlayer {
     }
   }
 
-  calculateTotalDuration(event: TeslaCamEvent | null = this.currentEvent): number {
+  calculateTotalDuration(
+    event: TeslaCamEvent | null = this.currentEvent
+  ): number {
     if (!event) return 0;
     return event.clipGroups.reduce((total, group) => {
       return total + (group.clips.front?.duration || 60);
