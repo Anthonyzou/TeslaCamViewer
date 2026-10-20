@@ -606,14 +606,13 @@ export default function registerB2Routes(app: Application): void {
         }
       };
 
-      // Fast path: If already cached on disk, serve full file with 200 OK (acceptRanges: false)
-      // to ensure browsers fully buffer the clip into memory, eliminating multi-camera HTTP range thrashing at 5x speed
+      // Fast path: If already cached on disk, serve instantly via res.sendFile with full Range support
       if (fs.existsSync(cacheFilePath)) {
         touchCacheFile(cacheFilePath);
         return res.sendFile(
           cacheFilePath,
           {
-            acceptRanges: false,
+            acceptRanges: true,
             headers: {
               'Cache-Control': 'public, max-age=31536000, immutable',
             },

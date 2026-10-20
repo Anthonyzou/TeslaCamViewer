@@ -121,24 +121,32 @@ export class VideoPlayer {
     const masterTime = master.currentTime;
     const activeVideos = this.getActiveVideos();
 
+    // Scale drift thresholds with playback speed so high speeds (e.g. 5x) do not thrash seeks
+    const rate = Math.max(1, this._intendedPlaybackRate);
+    const minorDriftThreshold = 0.05 * rate;
+    const severeDriftThreshold = 0.4 * rate;
+
     for (const video of activeVideos) {
       if (video === master || video.seeking || video.paused) continue;
+
+      // Do not snap playing videos back to 0 if master is transiently buffering or recovering
+      if (masterTime < 0.5 && video.currentTime > 1.5) continue;
 
       const diff = video.currentTime - masterTime;
       const absDiff = Math.abs(diff);
 
-      if (absDiff > 0.4) {
-        // Severe drift (> 400ms): hard-sync currentTime
+      if (absDiff > severeDriftThreshold) {
+        // Severe drift: hard-sync currentTime
         try {
           video.currentTime = masterTime;
         } catch (_e) {}
         video.playbackRate = this._intendedPlaybackRate;
-      } else if (absDiff > 0.05) {
-        // Minor drift (50ms - 400ms): smooth rate nudging without audio/video jump
+      } else if (absDiff > minorDriftThreshold) {
+        // Minor drift: smooth rate nudging without audio/video jump
         const rateAdjustment = diff > 0 ? 0.92 : 1.08;
         video.playbackRate = this._intendedPlaybackRate * rateAdjustment;
       } else {
-        // Synchronized (< 50ms): reset to standard rate
+        // Synchronized: reset to standard rate
         if (video.playbackRate !== this._intendedPlaybackRate) {
           video.playbackRate = this._intendedPlaybackRate;
         }
@@ -299,8 +307,8 @@ export class VideoPlayer {
             this.onTimeUpdate(this.currentTime, this.duration);
           }
           this._checkPreloadTrigger();
+          this.syncCameras();
         }
-        this.syncCameras();
       });
 
       video.addEventListener('ended', () => {
@@ -423,6 +431,10 @@ export class VideoPlayer {
         return Promise.resolve();
       }
 
+      if (!url) {
+        return Promise.resolve();
+      }
+
       return new Promise<void>((resolve) => {
         const timeout = setTimeout(() => resolve(), 4000);
         video.onloadedmetadata = () => {
@@ -440,13 +452,6 @@ export class VideoPlayer {
         };
         video.preload = 'auto';
         video.src = url;
-        if (typeof video.load === 'function') {
-          video.load();
-        }
-        if (!url) {
-          clearTimeout(timeout);
-          resolve();
-        }
       });
     });
 
@@ -509,12 +514,7 @@ export class VideoPlayer {
 
       // If items have remote B2 URLs or files, notify server to pre-warm its disk cache
       if (items.length > 0 && typeof window !== 'undefined') {
-        const hasServerItems = items.some(
-          (it) =>
-            it.url?.includes('/api/b2/video') ||
-            it.url?.startsWith('http') ||
-            it.file
-        );
+        const hasServerItems = items.some((it) => it.url?.includes('/api/'));
         if (hasServerItems) {
           fetch('/api/b2/cache/preload', {
             method: 'POST',
@@ -727,8 +727,10 @@ export class VideoPlayer {
 
     if (targetClipIndex !== this.currentClipIndex) {
       await this.loadClip(targetClipIndex, false, timeInClip);
+    } else {
+      await this.seek(timeInClip, autoPlay, false);
     }
-    await this.seek(timeInClip, autoPlay, false);
+    this.play();
   }
 
   updateVideoLabelState(camera: string, ended: boolean): void {

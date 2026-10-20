@@ -167,7 +167,7 @@ test('API GET /api/b2/video rejects requests with missing parameters', async () 
   }
 });
 
-test('API GET /api/b2/video serves cached video as full 200 OK without range fragmentation to prevent 5x jitter', async () => {
+test('API GET /api/b2/video streams cached video with HTTP 206 Range support', async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
@@ -186,24 +186,23 @@ test('API GET /api/b2/video serves cached video as full 200 OK without range fra
       `http://127.0.0.1:${port}/api/b2/video?file=${encodeURIComponent(testFileRel)}`
     );
     assert.strictEqual(fullRes.status, 200);
-    assert.strictEqual(fullRes.headers.get('accept-ranges'), null);
+    assert.strictEqual(fullRes.headers.get('accept-ranges'), 'bytes');
     assert.ok(fullRes.headers.get('content-type')?.includes('video/mp4'));
     assert.strictEqual(fullRes.headers.get('cache-control'), 'public, max-age=31536000, immutable');
     const fullBody = await fullRes.arrayBuffer();
     assert.strictEqual(fullBody.byteLength, 1024);
 
-    // 2. HTTP Byte Range request should be ignored for cached files and return full 200 OK
-    // so that the browser buffers the whole clip in memory without socket contention
+    // 2. HTTP Byte Range request (typical video player scrub request)
     const rangeRes = await fetch(
       `http://127.0.0.1:${port}/api/b2/video?file=${encodeURIComponent(testFileRel)}`,
       {
         headers: { Range: 'bytes=0-127' },
       }
     );
-    assert.strictEqual(rangeRes.status, 200, 'Should return 200 OK with full file to buffer into memory');
-    assert.strictEqual(rangeRes.headers.get('content-range'), null);
+    assert.strictEqual(rangeRes.status, 206, 'Should return 206 Partial Content');
+    assert.strictEqual(rangeRes.headers.get('content-range'), 'bytes 0-127/1024');
     const rangeBody = await rangeRes.arrayBuffer();
-    assert.strictEqual(rangeBody.byteLength, 1024);
+    assert.strictEqual(rangeBody.byteLength, 128);
 
     // 3. Clear cache route test
     const clearRes = await fetch(`http://127.0.0.1:${port}/api/b2/cache/clear`, {
