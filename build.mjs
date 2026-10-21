@@ -38,6 +38,22 @@ const jsConfig = {
   },
 };
 
+const workerConfig = {
+  entryPoints: ['src/workers/videoExportWorker.ts'],
+  bundle: true,
+  outfile: 'dist/videoExportWorker.js',
+  format: 'iife',
+  sourcemap: true,
+  minify: isProduction,
+  target: ['es2022'],
+  logLevel: 'info',
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(
+      isProduction ? 'production' : 'development'
+    ),
+  },
+};
+
 async function runBuild() {
   const startTime = performance.now();
   console.log(
@@ -47,12 +63,13 @@ async function runBuild() {
   try {
     if (isWatch) {
       const jsCtx = await esbuild.context(jsConfig);
-      await jsCtx.watch();
+      const workerCtx = await esbuild.context(workerConfig);
+      await Promise.all([jsCtx.watch(), workerCtx.watch()]);
       console.log(
         '[esbuild] Watching for changes in src/ and styles/ (press Ctrl+C to stop)...'
       );
     } else {
-      await esbuild.build(jsConfig);
+      await Promise.all([esbuild.build(jsConfig), esbuild.build(workerConfig)]);
 
       const jsSize = existsSync('dist/app.js')
         ? formatBytes(statSync('dist/app.js').size)
@@ -60,11 +77,15 @@ async function runBuild() {
       const cssSize = existsSync('dist/app.css')
         ? formatBytes(statSync('dist/app.css').size)
         : 'N/A';
+      const workerSize = existsSync('dist/videoExportWorker.js')
+        ? formatBytes(statSync('dist/videoExportWorker.js').size)
+        : 'N/A';
       const duration = (performance.now() - startTime).toFixed(1);
 
       console.log(`[esbuild] Build finished in ${duration}ms:`);
-      console.log(`  - dist/app.js  (${jsSize})`);
-      console.log(`  - dist/app.css (${cssSize})`);
+      console.log(`  - dist/app.js               (${jsSize})`);
+      console.log(`  - dist/app.css              (${cssSize})`);
+      console.log(`  - dist/videoExportWorker.js (${workerSize})`);
     }
   } catch (error) {
     console.error('[esbuild] Build failed:', error);

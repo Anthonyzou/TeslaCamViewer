@@ -30,6 +30,21 @@ declare global {
     ): Promise<PermissionState>;
   }
 
+  interface FileSystemSyncAccessHandle {
+    close(): void;
+    flush(): void;
+    getSize(): number;
+    read(buffer: ArrayBufferView, options?: { at?: number }): number;
+    truncate(newSize: number): void;
+    write(buffer: ArrayBufferView, options?: { at?: number }): number;
+  }
+
+  interface FileSystemFileHandle extends FileSystemHandle {
+    createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle>;
+    createWritable(options?: any): Promise<WritableStream>;
+    getFile(): Promise<File>;
+  }
+
   interface Window {
     app?: import('./services/teslaCamApp').TeslaCamApp;
     i18n?: import('./utils/i18n').I18n;

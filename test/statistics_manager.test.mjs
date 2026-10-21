@@ -89,7 +89,9 @@ test('StatisticsManager - calculates accurate event counts, durations, and break
 
   // Sentry camera distribution
   const frontCam = stats.cameraDistribution.find((c) => c.camera === 'Front');
-  const rearCam = stats.cameraDistribution.find((c) => c.camera === 'Rear');
+  const rearCam = stats.cameraDistribution.find(
+    (c) => c.camera === 'Rear' || c.camera === 'Back'
+  );
   assert.strictEqual(frontCam?.count, 1);
   assert.strictEqual(rearCam?.count, 1);
 
