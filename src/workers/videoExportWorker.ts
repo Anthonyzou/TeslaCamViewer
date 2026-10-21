@@ -23,10 +23,8 @@ import {
   type StreamTargetChunk,
   type VideoSample,
 } from 'mediabunny';
-import {
-  calculateDrawParams,
-  type CameraConfigLike,
-} from '../layout/layoutMath';
+import { LayoutRenderer } from '../layout/layoutRenderer';
+import type { CameraConfigLike } from '../layout/layoutMath';
 
 export interface ExportWorkerStartPayload {
   clipInputs: Record<string, File | Blob | string>;
@@ -291,6 +289,8 @@ async function runExport(payload: ExportWorkerStartPayload) {
     iterators[cam] = sink.samplesAtTimestamps(timestamps)[Symbol.asyncIterator]();
   }
 
+  const renderer = new LayoutRenderer();
+
   // 7. Frame compositing loop
   for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
     if (isCancelled) {
@@ -300,69 +300,39 @@ async function runExport(payload: ExportWorkerStartPayload) {
 
     // Retrieve sample for each camera
     const frameSamples: Record<string, VideoSample | null> = {};
+    const frameSources: Record<string, any> = {};
     for (const [cam, iter] of Object.entries(iterators)) {
       try {
         const next = await iter.next();
         frameSamples[cam] = next.done ? null : next.value;
+        if (frameSamples[cam]) {
+          frameSources[cam] = frameSamples[cam]!.toCanvasImageSource();
+        }
       } catch {
         frameSamples[cam] = null;
       }
     }
 
-    // Fill background black
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
     if (camera === 'all' && exportConfig?.cameras) {
-      const sortedCameras = Object.entries(exportConfig.cameras)
-        .filter(([_, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0)
-        .sort((a: any, b: any) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
-
-      for (const [camName, camConfig] of sortedCameras as [string, any][]) {
-        const sample = frameSamples[camName];
-        if (!sample) continue;
-
-        const drawParams = calculateDrawParams(
-          {
-            width: sample.displayWidth,
-            height: sample.displayHeight,
-          },
-          camConfig
-        );
-
-        try {
-          ctx.drawImage(
-            sample.toCanvasImageSource(),
-            drawParams.sx,
-            drawParams.sy,
-            drawParams.sw,
-            drawParams.sh,
-            drawParams.dx,
-            drawParams.dy,
-            drawParams.dw,
-            drawParams.dh
-          );
-        } catch {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(camConfig.x, camConfig.y, camConfig.w, camConfig.h);
-        }
-      }
+      renderer.renderToCanvas(ctx, exportConfig, frameSources);
 
       if (cameraLabels) {
-        drawCameraLabels(ctx, exportConfig.cameras, canvasWidth, canvasHeight);
+        const labelScale = canvasWidth / 1920;
+        const scaledFontSize = Math.round(18 * labelScale);
+        renderer.addLabelsToCanvas(ctx, exportConfig, {
+          fontSize: scaledFontSize,
+          videos: frameSources,
+        });
       }
     } else {
       // Single camera view
-      const sample = frameSamples[camera] || Object.values(frameSamples)[0];
-      if (sample) {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      const source =
+        frameSources[camera] || Object.values(frameSources)[0];
+      if (source) {
         try {
-          ctx.drawImage(
-            sample.toCanvasImageSource(),
-            0,
-            0,
-            canvasWidth,
-            canvasHeight
-          );
+          ctx.drawImage(source, 0, 0, canvasWidth, canvasHeight);
         } catch {
           ctx.fillStyle = '#1a1a1a';
           ctx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -421,80 +391,4 @@ async function runExport(payload: ExportWorkerStartPayload) {
     file: completedFile,
     filename,
   } as WorkerOutMessage);
-}
-
-/**
- * Draw camera labels on OffscreenCanvas
- */
-function drawCameraLabels(
-  ctx: OffscreenCanvasRenderingContext2D,
-  cameras: Record<string, CameraConfigLike>,
-  canvasWidth: number,
-  canvasHeight: number
-) {
-  const fontSize = Math.max(12, Math.round(canvasWidth * 0.012));
-  const paddingX = Math.round(fontSize * 0.85);
-  const paddingY = Math.round(fontSize * 0.35);
-  const offset = 10;
-  const borderRadius = 4;
-
-  ctx.font = `600 ${fontSize}px monospace`;
-  ctx.textBaseline = 'top';
-
-  const labelMap: Record<string, string> = {
-    front: 'FRONT',
-    back: 'BACK',
-    left_repeater: 'LEFT',
-    right_repeater: 'RIGHT',
-    left_pillar: 'LEFT PILLAR',
-    right_pillar: 'RIGHT PILLAR',
-  };
-
-  const sorted = Object.entries(cameras)
-    .filter(([_, cam]: [string, any]) => cam.visible && cam.w > 0 && cam.h > 0)
-    .sort((a: any, b: any) => (a[1].zIndex || 1) - (b[1].zIndex || 1));
-
-  for (const [camName, camConfig] of sorted) {
-    const label = labelMap[camName] || camName.toUpperCase();
-    const metrics = ctx.measureText(label);
-    const labelWidth = metrics.width + paddingX * 2;
-    const labelHeight = fontSize + paddingY * 2;
-
-    const visibleLeft = Math.max(0, camConfig.x);
-    const visibleTop = Math.max(0, camConfig.y);
-    const visibleRight = Math.min(canvasWidth, camConfig.x + camConfig.w);
-    const visibleBottom = Math.min(canvasHeight, camConfig.y + camConfig.h);
-
-    if (visibleRight - visibleLeft < labelWidth || visibleBottom - visibleTop < labelHeight) {
-      continue;
-    }
-
-    const lx = visibleLeft + offset;
-    const ly = visibleTop + offset;
-
-    // Background pill
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    if (typeof ctx.roundRect === 'function') {
-      ctx.beginPath();
-      ctx.roundRect(lx, ly, labelWidth, labelHeight, borderRadius);
-      ctx.fill();
-    } else {
-      ctx.fillRect(lx, ly, labelWidth, labelHeight);
-    }
-
-    // Border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 1;
-    if (typeof ctx.roundRect === 'function') {
-      ctx.beginPath();
-      ctx.roundRect(lx, ly, labelWidth, labelHeight, borderRadius);
-      ctx.stroke();
-    } else {
-      ctx.strokeRect(lx, ly, labelWidth, labelHeight);
-    }
-
-    // Text
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(label, lx + paddingX, ly + paddingY);
-  }
 }

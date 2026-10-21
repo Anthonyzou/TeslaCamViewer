@@ -91,13 +91,13 @@ export class LayoutRenderer {
 
   /**
    * Render videos to canvas using layout config
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} exportConfig - Result from calculateExportConfig
-   * @param {Object} videos - { front: HTMLVideoElement, back: ..., etc }
+   * @param {Object} videos - { front: HTMLVideoElement|CanvasImageSource, back: ..., etc }
    * @param {Object} options - { fillEnded: boolean }
    */
   renderToCanvas(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     exportConfig:
       | {
           canvasWidth: number;
@@ -105,7 +105,7 @@ export class LayoutRenderer {
           cameras: Record<string, CameraConfigLike>;
         }
       | any,
-    videos: Record<string, HTMLVideoElement>,
+    videos: Record<string, any>,
     options: { fillEnded?: boolean } = {}
   ) {
     const { canvasWidth, canvasHeight, cameras } = exportConfig;
@@ -128,8 +128,11 @@ export class LayoutRenderer {
 
       // Check if video has ended
       const hasEnded =
-        video.ended ||
-        (video.paused && video.currentTime >= video.duration - 0.1);
+        Boolean(video.ended) ||
+        (typeof video.currentTime === 'number' &&
+          video.duration &&
+          video.paused &&
+          video.currentTime >= video.duration - 0.1);
 
       if (hasEnded && options.fillEnded) {
         // Draw black rectangle for ended video
@@ -154,12 +157,12 @@ export class LayoutRenderer {
 
   /**
    * Add camera labels to canvas with smart positioning to avoid occlusion
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} exportConfig - Export configuration with cameras
    * @param {Object} options - Options: fontSize, cameraMapping, videos
    */
   addLabelsToCanvas(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     exportConfig: any,
     options: any = {}
   ) {
@@ -188,7 +191,7 @@ export class LayoutRenderer {
             ? cameraMapping[name] || name
             : name;
           const video = videos[actualCamera];
-          return video && video.src;
+          return Boolean(video);
         }
         return true;
       })
@@ -366,7 +369,7 @@ export class LayoutRenderer {
    * Draw text with letter spacing (canvas doesn't support letter-spacing natively)
    */
   drawTextWithLetterSpacing(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     text: string,
     x: number,
     y: number,

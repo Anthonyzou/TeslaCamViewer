@@ -20,6 +20,8 @@ export interface DrawParams {
 export interface VideoDimensions {
   videoWidth?: number;
   videoHeight?: number;
+  displayWidth?: number;
+  displayHeight?: number;
   width?: number;
   height?: number;
 }
@@ -51,8 +53,10 @@ export function calculateDrawParams(
   camConfig: CameraConfigLike
 ): DrawParams {
   const crop = camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 };
-  const vw = video.videoWidth || video.width || 1280;
-  const vh = video.videoHeight || video.height || 960;
+  const vw =
+    video.videoWidth || video.displayWidth || video.width || 1280;
+  const vh =
+    video.videoHeight || video.displayHeight || video.height || 960;
 
   // Calculate source rectangle (after crop)
   const cropLeft = crop.left ?? 0;

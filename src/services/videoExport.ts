@@ -1,15 +1,8 @@
 /**
- * VideoExport - Hardware-Accelerated Video Exporter powered by mediabunny & WebCodecs.
- * Offloads multi-camera video export directly to the client's GPU (e.g. Apple Silicon M1 media engine),
- * with graceful fallback to server-side FFmpeg for older browsers.
+ * VideoExport - Hardware-Accelerated Video Exporter powered by mediabunny Web Worker & WebCodecs.
+ * Offloads multi-camera video decoding, layout compositing, and MP4 encoding directly to
+ * a background Web Worker utilizing Origin Private File System (OPFS) and GPU hardware.
  */
-import {
-  CanvasSource,
-  Mp4OutputFormat,
-  Output,
-  Quality,
-  StreamTarget,
-} from 'mediabunny';
 import { exportModalStore } from '../composables/useModals';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { LayoutRenderer } from '../layout/layoutRenderer';
@@ -109,9 +102,13 @@ class VideoExport {
 
     const exportDuration = Math.max(0.5, endSec - startSec);
 
-    if (typeof (window as any).VideoEncoder !== 'function') {
+    if (
+      typeof (window as any).VideoEncoder !== 'function' ||
+      typeof Worker === 'undefined' ||
+      typeof navigator?.storage?.getDirectory !== 'function'
+    ) {
       alert(
-        'Your browser does not support the WebCodecs API (VideoEncoder). Please update to a modern browser (Chrome, Safari 16.4+, Firefox 130+, Edge) for hardware-accelerated export.'
+        'Your browser does not support the required WebCodecs or OPFS APIs. Please update to a modern browser (Chrome, Safari 16.4+, Firefox 130+, Edge).'
       );
       return;
     }
@@ -152,6 +149,10 @@ class VideoExport {
         }
       }
 
+      if (Object.keys(clipInputs).length === 0) {
+        throw new Error('No video sources available to export');
+      }
+
       // Determine Layout and Canvas Output Resolution
       const layoutManager = window.app?.layoutManager;
       const renderer = layoutManager?.renderer || new LayoutRenderer();
@@ -182,47 +183,17 @@ class VideoExport {
         canvasHeight = Math.floor(vh / 2) * 2;
       }
 
-      let workerSuccess = false;
-      const canUseWorker =
-        typeof Worker !== 'undefined' &&
-        Object.keys(clipInputs).length > 0 &&
-        typeof navigator?.storage?.getDirectory === 'function';
-
-      if (canUseWorker) {
-        try {
-          await this._exportWithWorker({
-            clipInputs,
-            camera,
-            filename,
-            startSec,
-            endSec,
-            exportDuration,
-            canvasWidth,
-            canvasHeight,
-            exportConfig,
-          });
-          workerSuccess = true;
-        } catch (workerErr: any) {
-          if (this._cancelled) {
-            return;
-          }
-          console.warn(
-            '[VideoExport] Headless worker export not available or failed, falling back to main-thread export:',
-            workerErr
-          );
-        }
-      }
-
-      if (!workerSuccess && !this._cancelled) {
-        // High-speed client-side GPU hardware encoding via mediabunny on main thread
-        await this._renderAndEncodeWithMediaBunny({
-          camera,
-          filename,
-          startSec,
-          endSec,
-          exportDuration,
-        });
-      }
+      await this._exportWithWorker({
+        clipInputs,
+        camera,
+        filename,
+        startSec,
+        endSec,
+        exportDuration,
+        canvasWidth,
+        canvasHeight,
+        exportConfig,
+      });
     } catch (err: any) {
       if (this._cancelled) {
         console.log('[VideoExport] Export cancelled by user');
@@ -331,219 +302,11 @@ class VideoExport {
     });
   }
 
-  private async _renderAndEncodeWithMediaBunny(params: {
-    camera: string;
-    filename: string;
-    startSec: number;
-    endSec: number;
-    exportDuration: number;
-  }) {
-    const { camera, filename, startSec, exportDuration } = params;
-    const videos = this.videoPlayer?.videos || {};
-    const layoutManager = window.app?.layoutManager;
-    const renderer = layoutManager?.renderer || new LayoutRenderer();
-
-    // Determine Canvas Output Resolution (must be even numbers for H.264 macroblock alignment)
-    let canvasWidth = 1920;
-    let canvasHeight = 1080;
-    let exportConfig: any = null;
-
-    if (camera === 'all') {
-      const activeLayoutConfig =
-        layoutManager?.getCurrentConfig?.() ||
-        layoutManager?.getCurrentLayoutConfig?.() ||
-        LayoutConfig.presetToConfig('layout-6-3');
-
-      exportConfig = renderer.calculateExportConfig(
-        activeLayoutConfig,
-        1280,
-        960,
-        { visibleCameras: layoutManager?.visibleCameras }
-      );
-      canvasWidth = Math.floor((exportConfig.canvasWidth || 1920) / 2) * 2;
-      canvasHeight = Math.floor((exportConfig.canvasHeight || 1080) / 2) * 2;
-    } else {
-      // Single camera view
-      const activeVideo = videos[camera] || videos.front;
-      const vw = activeVideo?.videoWidth || 1280;
-      const vh = activeVideo?.videoHeight || 960;
-      canvasWidth = Math.floor(vw / 2) * 2;
-      canvasHeight = Math.floor(vh / 2) * 2;
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) throw new Error('Could not create 2D canvas context');
-    const root = await navigator.storage.getDirectory();
-    const fileHandle = await root.getFileHandle('export_temp.mp4', {
-      create: true,
-    });
-    const writableFileStream = await fileHandle.createWritable();
-
-    // Initialize mediabunny Output with in-memory fast-start MP4 format
-    const output = new Output({
-      format: new Mp4OutputFormat({ fastStart: false }),
-      target: new StreamTarget(writableFileStream),
-    });
-
-    const fps = 30;
-    const frameIntervalSec = 1 / fps;
-    const totalFrames = Math.max(1, Math.round(exportDuration * fps));
-
-    // Connect CanvasSource with WebCodecs hardware encoder (H.264/AVC)
-    const videoSource = new CanvasSource(canvas, {
-      codec: 'avc',
-      bitrate: new Quality({
-        quality: 'medium',
-      }),
-      hardwareAcceleration: 'prefer-hardware', // ⚡ Explicitly
-      latencyMode: 'realtime',
-      keyFrameInterval: 2,
-    });
-
-    output.addVideoTrack(videoSource);
-    await output.start();
-
-    // Pause player during offline export
-    this.videoPlayer?.pause();
-
-    // Warm-up seek to initial start time and ensure frames are decoded
-    await this._seekVideos(videos, startSec);
-
-    for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
-      if (this._cancelled) {
-        await output.cancel();
-        return;
-      }
-
-      const currentTime = startSec + frameIdx * frameIntervalSec;
-
-      // Synchronously seek active video elements
-      await this._seekVideos(videos, currentTime);
-
-      // Render frame onto canvas
-      if (camera === 'all' && exportConfig) {
-        renderer.renderToCanvas(ctx, exportConfig, videos, {
-          fillEnded: false,
-        });
-
-        // Add camera labels matching live view
-        const labelScale = canvas.width / 1920;
-        const scaledFontSize = Math.round(18 * labelScale);
-        renderer.addLabelsToCanvas(ctx, exportConfig, {
-          fontSize: scaledFontSize,
-          videos,
-        });
-      } else {
-        // Single camera view
-        const video = videos[camera] || videos.front;
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        if (video && video.readyState >= 2) {
-          const { sx, sy, sw, sh, dx, dy, dw, dh } =
-            LayoutRenderer.calculateDrawParams(video, {
-              x: 0,
-              y: 0,
-              w: canvasWidth,
-              h: canvasHeight,
-              objectFit: 'contain',
-            });
-          ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-        }
-      }
-
-      // Add encoded sample via mediabunny
-      const timestampSec = frameIdx * frameIntervalSec;
-      const isKeyFrame = frameIdx % (fps * 2) === 0;
-      await videoSource.add(timestampSec, frameIntervalSec, {
-        keyFrame: isKeyFrame,
-      });
-
-      // Update progress UI via reactive store
-      const percent = Math.min(
-        99,
-        Math.round(((frameIdx + 1) / totalFrames) * 100)
-      );
-      exportModalStore.updateProgress(
-        percent,
-        `GPU Encoding (mediabunny): ${percent}% (Frame ${frameIdx + 1}/${totalFrames})`
-      );
-    }
-
-    // Finalize MP4 muxing
-    await output.finalize();
-
-    exportModalStore.updateProgress(100, 'Finalizing MP4 container...');
-
-    const completedFile = await fileHandle.getFile();
-    if (!completedFile || completedFile.size === 0) {
-      throw new Error('Export produced an empty output file');
-    }
-
-    // You now have a clean File/Blob handle ready for download:
-    const downloadUrl = URL.createObjectURL(completedFile);
-
-    this._downloadFile(downloadUrl, filename);
-    this._showComplete(filename, downloadUrl);
-  }
-
-  private async _seekVideos(
-    videos: Record<string, HTMLVideoElement>,
-    time: number
-  ): Promise<void> {
-    const promises = Object.values(videos).map((v) => {
-      const hasSrc = !!(v.src || v.currentSrc || v.getAttribute('src'));
-      if (!v || !hasSrc || v.readyState === 0) return Promise.resolve();
-      if (Math.abs(v.currentTime - time) < 0.01 && !v.seeking) {
-        return Promise.resolve();
-      }
-
-      return new Promise<void>((resolve) => {
-        let settled = false;
-        const finish = () => {
-          if (!settled) {
-            settled = true;
-            v.removeEventListener('seeked', onSeeked);
-            v.removeEventListener('error', finish);
-            resolve();
-          }
-        };
-
-        const onSeeked = () => {
-          if ('requestVideoFrameCallback' in v) {
-            try {
-              (v as any).requestVideoFrameCallback(() => finish());
-              return;
-            } catch (_e) {}
-          }
-          finish();
-        };
-
-        v.addEventListener('seeked', onSeeked, { once: true });
-        v.addEventListener('error', finish, { once: true });
-
-        try {
-          const maxTime =
-            Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 60;
-          v.currentTime = Math.max(0, Math.min(time, maxTime));
-        } catch (_err) {
-          finish();
-        }
-
-        setTimeout(finish, 400);
-      });
-    });
-
-    await Promise.all(promises);
-  }
-
   private _showExportOverlay(camera: string, durationSec: number) {
     const title =
       camera === 'all'
-        ? 'Exporting Camera Grid (mediabunny GPU)'
-        : `Exporting ${camera.toUpperCase()} Camera (mediabunny GPU)`;
+        ? 'Exporting Camera Grid (GPU Worker)'
+        : `Exporting ${camera.toUpperCase()} Camera (GPU Worker)`;
 
     exportModalStore.open(
       title,
