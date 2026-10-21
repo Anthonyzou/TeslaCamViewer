@@ -37,7 +37,7 @@ export function useLayout() {
     lm.onLayoutChange = (l: string) => {
       layout.value = l;
       syncLayout();
-      if (typeof origChange === 'function') origChange(l);
+      origChange?.(l);
     };
     syncLayout();
   }

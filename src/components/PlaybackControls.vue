@@ -103,16 +103,6 @@
         <Bookmark :size="20" color="#f44336" />
       </button>
 
-      <button
-        id="clearMarksBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.clearMarks')"
-        @click="emit('clearMarks')"
-      >
-        <X :size="20" />
-      </button>
-
       <div class="export-dropdown-container">
         <button
           id="exportBtn"
@@ -169,6 +159,19 @@
               }}</span>
             </button>
           </div>
+          <div class="export-video-group">
+            <button
+              class="export-option export-action-btn"
+              data-camera="all"
+              id="exportVideoBtn"
+              @click="emit('clearMarks')"
+            >
+              <X :size="18" style="margin-right: 8px" />
+              <span data-i18n="controls.clearMarks">{{
+                t('controls.clearMarks')
+              }}</span>
+            </button>
+          </div>
 
           <div class="export-dropdown-divider"></div>
 
@@ -198,16 +201,6 @@
 
     <!-- View Controls Group -->
     <div class="control-group control-group-view">
-      <button
-        id="enhanceBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.enhance')"
-        @click="emit('toggleEnhance')"
-      >
-        <Sun :size="20" />
-      </button>
-
       <div class="layout-control">
         <select
           id="layoutSelect"
@@ -328,9 +321,9 @@
         <RotateCcw :size="20" />
       </button>
 
-      <div class="sync-status">
+      <!-- <div class="sync-status">
         <span id="syncStatus" class="sync-indicator"></span>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -347,7 +340,6 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
-  Sun,
   Video,
   X,
 } from 'lucide-vue-next';
@@ -372,7 +364,6 @@ const emit = defineEmits<{
   (e: 'markOut'): void;
   (e: 'clearMarks'): void;
   (e: 'exportVideo'): void;
-  (e: 'toggleEnhance'): void;
   (e: 'changeLayout', layout: string): void;
   (e: 'changeFocusCamera', camera: string): void;
   (e: 'resetLayout'): void;
@@ -964,7 +955,6 @@ select option:hover,
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-left: 0.75rem;
   flex-shrink: 0;
 }
 

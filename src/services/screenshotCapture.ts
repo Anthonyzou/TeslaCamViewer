@@ -3,6 +3,7 @@
  * Reuses LayoutRenderer for single-source-of-truth frame and label rendering.
  */
 
+import dayjs from 'dayjs';
 import { LayoutConfig } from '../layout/layoutConfig';
 import LayoutRenderer from '../layout/layoutRenderer';
 import { settingsManager } from './settingsManager';
@@ -302,15 +303,14 @@ export class ScreenshotCapture {
    * Get formatted timestamp for filename
    */
   getFormattedTimestamp(): string {
-    const now = new Date();
     const event = this.videoPlayer.currentEvent;
 
     if (event?.timestamp) {
       const eventDate = new Date(event.timestamp);
-      return eventDate.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      return dayjs(eventDate).format('YYYY-MM-DDTHH-mm-ss');
     }
 
-    return now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    return dayjs().format('YYYY-MM-DDTHH-mm-ss');
   }
 
   /**

@@ -68,14 +68,9 @@ export class LayoutConfig {
    * Create a default camera configuration
    */
   static getDefaultCamera(enabled = true) {
-    return {
-      enabled,
-      position: { x: 0, y: 0, width: 50, height: 50 },
-      zIndex: 1,
-      aspectRatio: 'auto',
-      objectFit: 'contain',
-      crop: { top: 0, right: 0, bottom: 0, left: 0 },
-    };
+    const def = this.getDefault().cameras.front;
+    def.enabled = enabled;
+    return def;
   }
 
   /**
@@ -152,101 +147,6 @@ export class LayoutConfig {
         },
       },
     };
-  }
-
-  /**
-   * Validate a layout configuration
-   * @returns {{ valid: boolean, errors: string[] }}
-   */
-  static validate(config) {
-    const errors = [];
-
-    if (!config) {
-      return { valid: false, errors: ['Config is null or undefined'] };
-    }
-
-    // Version check
-    if (typeof config.version !== 'number') {
-      errors.push('Missing or invalid version number');
-    }
-
-    // Required fields
-    if (!config.id || typeof config.id !== 'string') {
-      errors.push('Missing or invalid id');
-    }
-    if (!config.name || typeof config.name !== 'string') {
-      errors.push('Missing or invalid name');
-    }
-
-    // Canvas validation
-    if (!config.canvas) {
-      errors.push('Missing canvas configuration');
-    } else {
-      if (!config.canvas.aspectRatio) {
-        errors.push('Missing canvas aspectRatio');
-      }
-    }
-
-    // Cameras validation
-    if (!config.cameras || typeof config.cameras !== 'object') {
-      errors.push('Missing or invalid cameras configuration');
-    } else {
-      for (const camName of this.CURRENT_CAMERAS) {
-        if (!config.cameras[camName]) {
-          errors.push(`Missing camera configuration: ${camName}`);
-          continue;
-        }
-
-        const cam = config.cameras[camName];
-        if (typeof cam.enabled !== 'boolean') {
-          errors.push(`Camera ${camName}: invalid enabled flag`);
-        }
-        if (!cam.position || typeof cam.position !== 'object') {
-          errors.push(`Camera ${camName}: missing position`);
-        } else {
-          const { x, y, width, height } = cam.position;
-          if (typeof x !== 'number' || x < 0 || x > 100) {
-            errors.push(`Camera ${camName}: invalid x position`);
-          }
-          if (typeof y !== 'number' || y < 0 || y > 100) {
-            errors.push(`Camera ${camName}: invalid y position`);
-          }
-          if (typeof width !== 'number' || width <= 0 || width > 100) {
-            errors.push(`Camera ${camName}: invalid width`);
-          }
-          if (typeof height !== 'number' || height <= 0 || height > 100) {
-            errors.push(`Camera ${camName}: invalid height`);
-          }
-        }
-      }
-    }
-
-    return { valid: errors.length === 0, errors };
-  }
-
-  /**
-   * Migrate older config versions to current version
-   */
-  static migrate(config) {
-    if (!config || !config.version) {
-      return this.getDefault();
-    }
-
-    // Version 1 is current, no migration needed
-    if (config.version === 1) {
-      // Ensure future cameras exist
-      for (const cam of this.FUTURE_CAMERAS) {
-        if (!config.cameras[cam]) {
-          config.cameras[cam] = this.getDefaultCamera(false);
-        }
-      }
-      return config;
-    }
-
-    // Future migrations would go here
-    // if (config.version === 1) { migrate to 2 }
-
-    return config;
   }
 
   /**

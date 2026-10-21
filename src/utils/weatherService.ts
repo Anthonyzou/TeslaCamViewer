@@ -4,6 +4,7 @@
  * Caches results in IndexedDB for offline access
  */
 
+import dayjs from 'dayjs';
 import { openDB, type IDBPDatabase } from 'idb';
 import { settingsManager } from '../services/settingsManager';
 import type { WeatherDBSchema } from '../types';
@@ -67,7 +68,7 @@ class WeatherService {
       return null;
     }
 
-    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateStr = dayjs(date).format('YYYY-MM-DD'); // YYYY-MM-DD
     const hour = date.getHours();
 
     // Create cache key

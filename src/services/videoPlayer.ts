@@ -408,7 +408,7 @@ export class VideoPlayer {
 
     // Hardware pause only, preserve user intent
     for (const v of Object.values(this.videos)) {
-      if (v && typeof v.pause === 'function') v.pause();
+      v?.pause?.();
     }
     this.currentClipIndex = clipIndex;
     this.resetAllVideoLabelStates();
@@ -558,7 +558,7 @@ export class VideoPlayer {
     this._isPlayingIntent = false;
     this._bufferingCameras.clear();
     for (const video of Object.values(this.videos)) {
-      if (video && typeof video.pause === 'function') video.pause();
+      video?.pause?.();
     }
   }
 
@@ -598,11 +598,9 @@ export class VideoPlayer {
     // Pause active videos during seek to prevent audio/video desync while frames buffer
     const activeVideos = this.getActiveVideos();
     for (const v of activeVideos) {
-      if (typeof v.pause === 'function') {
-        try {
-          v.pause();
-        } catch (_e) {}
-      }
+      try {
+        v?.pause?.();
+      } catch (_e) {}
     }
 
     for (const video of Object.values(this.videos)) {

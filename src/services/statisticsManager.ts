@@ -4,7 +4,9 @@
  * trigger reasons, and storage estimates without direct DOM manipulation.
  */
 
+import dayjs from 'dayjs';
 import { statisticsModalStore } from '../composables/useModals';
+import LayoutConfig from '../layout/layoutConfig';
 import type {
   CameraDistributionStat,
   DayOfWeekPoint,
@@ -89,7 +91,7 @@ export class StatisticsManager {
 
       if (event.timestamp) {
         const date = new Date(event.timestamp);
-        const dayKey = date.toISOString().split('T')[0];
+        const dayKey = dayjs(date).format('YYYY-MM-DD');
         eventsByDay[dayKey] = (eventsByDay[dayKey] || 0) + 1;
 
         const hour = date.getHours();
@@ -114,7 +116,8 @@ export class StatisticsManager {
       }
     }
 
-    const averageEventLength = totalEvents > 0 ? totalRecordingTime / totalEvents : 0;
+    const averageEventLength =
+      totalEvents > 0 ? totalRecordingTime / totalEvents : 0;
     const storage = this.calculateStorageEstimate(totalClips);
 
     const typeColors: Record<string, string> = {
@@ -168,7 +171,9 @@ export class StatisticsManager {
 
     const totalDayNight = dayVsNight.day + dayVsNight.night;
     const dayPercent =
-      totalDayNight > 0 ? Math.round((dayVsNight.day / totalDayNight) * 100) : 0;
+      totalDayNight > 0
+        ? Math.round((dayVsNight.day / totalDayNight) * 100)
+        : 0;
     const nightPercent = totalDayNight > 0 ? 100 - dayPercent : 0;
 
     return {
@@ -225,7 +230,7 @@ export class StatisticsManager {
     for (let i = 13; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dayKey = date.toISOString().split('T')[0];
+      const dayKey = dayjs(date).format('YYYY-MM-DD');
       const count = eventsByDay[dayKey] || 0;
 
       data.push({
@@ -255,48 +260,35 @@ export class StatisticsManager {
     mode: 'weekly' | 'monthly' = 'weekly'
   ): TrendDataPoint[] {
     const data: TrendDataPoint[] = [];
-    const today = new Date();
 
+    const today = new Date();
     if (mode === 'weekly') {
       for (let i = 11; i >= 0; i--) {
-        const weekEnd = new Date(today);
-        weekEnd.setDate(weekEnd.getDate() - i * 7);
-        const weekStart = new Date(weekEnd);
-        weekStart.setDate(weekStart.getDate() - 6);
+        const weekEnd = dayjs(today).subtract(i, 'week'); // or .subtract(i * 7, 'day')
+        const weekStart = weekEnd.subtract(6, 'day');
 
         let count = 0;
         for (let d = 0; d <= 6; d++) {
-          const date = new Date(weekStart);
+          const date = weekStart.toDate();
           date.setDate(date.getDate() + d);
-          const dayKey = date.toISOString().split('T')[0];
+          const dayKey = dayjs(date).format('YYYY-MM-DD');
           if (eventsByDay[dayKey]) {
             count += eventsByDay[dayKey];
           }
         }
 
         data.push({
-          label: weekStart.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
+          label: dayjs(weekStart).format('MMM D'),
           count,
           percent: 0,
-          start: weekStart,
-          end: weekEnd,
+          start: weekStart.toDate(),
+          end: weekEnd.toDate(),
         });
       }
     } else {
       for (let i = 5; i >= 0; i--) {
-        const monthDate = new Date(
-          today.getFullYear(),
-          today.getMonth() - i,
-          1
-        );
-        const monthKey = monthDate.toISOString().slice(0, 7);
-        const monthName = monthDate.toLocaleDateString('en-US', {
-          month: 'short',
-          year: '2-digit',
-        });
+        const monthKey = dayjs().format('YYYY-MM');
+        const monthName = dayjs().format('MMM YY');
 
         let count = 0;
         Object.entries(eventsByDay).forEach(([dayKey, dayCount]) => {
@@ -403,20 +395,20 @@ export class StatisticsManager {
    */
   normalizeCameraName(camera: string | number): string {
     const cameraMap: Record<string, string> = {
-      '0': 'Front',
-      '1': 'Rear',
+      '0': LayoutConfig.CAMERA_NAMES.front,
+      '1': LayoutConfig.CAMERA_NAMES.back,
       '2': 'Front Left',
       '3': 'Front Right',
-      '4': 'Left Pillar',
-      '5': 'Left Repeater',
-      '6': 'Right Repeater',
-      '7': 'Right Pillar',
-      front: 'Front',
-      back: 'Rear',
-      left_repeater: 'Left Repeater',
-      right_repeater: 'Right Repeater',
-      left_pillar: 'Left Pillar',
-      right_pillar: 'Right Pillar',
+      '4': LayoutConfig.CAMERA_NAMES.left_pillar,
+      '5': LayoutConfig.CAMERA_NAMES.left_repeater,
+      '6': LayoutConfig.CAMERA_NAMES.right_repeater,
+      '7': LayoutConfig.CAMERA_NAMES.right_pillar,
+      front: LayoutConfig.CAMERA_NAMES.front,
+      back: LayoutConfig.CAMERA_NAMES.back,
+      left_repeater: LayoutConfig.CAMERA_NAMES.left_repeater,
+      right_repeater: LayoutConfig.CAMERA_NAMES.right_repeater,
+      left_pillar: LayoutConfig.CAMERA_NAMES.left_pillar,
+      right_pillar: LayoutConfig.CAMERA_NAMES.right_pillar,
     };
     return cameraMap[String(camera).toLowerCase()] || String(camera);
   }
@@ -427,7 +419,10 @@ export class StatisticsManager {
   normalizeTriggerReason(reason?: string): string {
     if (!reason) return 'Unknown';
     const lower = reason.toLowerCase();
-    if (lower.includes('user_interaction') || lower.includes('dashcam_launcher')) {
+    if (
+      lower.includes('user_interaction') ||
+      lower.includes('dashcam_launcher')
+    ) {
       return 'Manual Save';
     }
     if (lower.includes('object_detection')) {

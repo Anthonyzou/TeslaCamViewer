@@ -373,12 +373,11 @@ export class LayoutRenderer {
     spacing: number
   ) {
     let currentX = x;
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
+    Array.from(text).forEach((char) => {
       ctx.fillText(char, currentX, y);
       const charWidth = ctx.measureText(char).width;
       currentX += charWidth + spacing;
-    }
+    });
   }
 
   /**

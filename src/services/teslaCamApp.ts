@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import type { DriveSetupOptions } from '../components/DriveSetupModal.vue';
 import { useClipMarking } from '../composables/useClipMarking';
 import { syncEvents } from '../composables/useEvents';
 import { filterPanelStore } from '../composables/useFilterPanel';
@@ -18,13 +19,12 @@ import { B2Client } from './b2Client';
 import { EventBrowser } from './eventBrowser';
 import { folderManager } from './folderManager';
 import { folderParser } from './folderParser';
+import type MapView from './mapView';
 import { ScreenshotCapture } from './screenshotCapture';
 import { settingsManager } from './settingsManager';
 import { StatisticsManager } from './statisticsManager';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
-import type MapView from './mapView';
-import type { DriveSetupOptions } from '../components/DriveSetupModal.vue';
 
 /**
  * TeslaCamApp - Central application service orchestrating headless engines
@@ -175,16 +175,16 @@ export class TeslaCamApp {
 
         try {
           let permission = 'prompt';
-          if (typeof drive.handle.queryPermission === 'function') {
-            permission = await drive.handle.queryPermission({ mode: 'read' });
-          }
+          permission = await drive.handle.queryPermission?.({ mode: 'read' });
           if (permission === 'granted') {
             folderParser.setDriveContext(drive.id, drive.label, drive.color);
             folderParser.rootHandle = drive.handle;
             const events = await folderParser.parseFolder();
             const cutoff = folderManager.getDateFilterCutoff(drive.dateFilter);
             drive.events = cutoff
-              ? events.filter((ev: TeslaCamEvent) => new Date(ev.timestamp) >= cutoff)
+              ? events.filter(
+                  (ev: TeslaCamEvent) => new Date(ev.timestamp) >= cutoff
+                )
               : events;
 
             for (const event of drive.events) {
@@ -258,9 +258,7 @@ export class TeslaCamApp {
       this.timeline?.setDuration(totalDuration);
       this.timeline?.setClipMarkers(event.clipGroups);
 
-      if (typeof this.timeline?.resetThumbnailTooltip === 'function') {
-        this.timeline.resetThumbnailTooltip();
-      }
+      this.timeline?.resetThumbnailTooltip?.();
 
       if (folderParser?.detectGaps) {
         const gaps = folderParser.detectGaps(event.clipGroups);
@@ -287,9 +285,7 @@ export class TeslaCamApp {
 
       this.updateEventInfo(event);
 
-      if (typeof this.mapView?.selectEvent === 'function') {
-        this.mapView?.selectEvent(event);
-      }
+      this.mapView?.selectEvent?.(event);
 
       if (this.clipMarking) {
         this.clipMarking.clearMarks();
@@ -607,14 +603,11 @@ export class TeslaCamApp {
       ) {
         try {
           let permission = 'prompt';
-          if (typeof drive.handle.queryPermission === 'function') {
-            permission = await drive.handle.queryPermission({ mode: 'read' });
-          }
-          if (
-            permission !== 'granted' &&
-            typeof drive.handle.requestPermission === 'function'
-          ) {
-            permission = await drive.handle.requestPermission({ mode: 'read' });
+          permission = await drive.handle?.queryPermission?.({ mode: 'read' });
+          if (permission !== 'granted') {
+            permission = await drive.handle.requestPermission?.({
+              mode: 'read',
+            });
           }
           if (permission === 'granted') {
             this.showLoading(`Loading ${drive.label}...`);
@@ -758,7 +751,10 @@ export class TeslaCamApp {
 
   public async refreshDrives(): Promise<void> {
     const activeDrive = folderManager?.getActiveDrive();
-    if (folderManager.isB2Drive(activeDrive?.id) || (!activeDrive && this.b2Client)) {
+    if (
+      folderManager.isB2Drive(activeDrive?.id) ||
+      (!activeDrive && this.b2Client)
+    ) {
       await this.loadFromB2(true);
       return;
     }

@@ -202,9 +202,7 @@ function executeSelected(): void {
     if (item.kind === 'cmd') {
       item.cmd.action(props.app);
     } else if (item.kind === 'event') {
-      if (typeof props.app?.onEventSelected === 'function') {
-        props.app.onEventSelected(item.event);
-      }
+      props?.app?.onEventSelected?.(item.event);
     }
   } catch (err) {
     console.warn('[CommandPalette] Command failed:', err);

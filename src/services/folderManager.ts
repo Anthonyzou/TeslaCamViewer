@@ -53,12 +53,10 @@ class FolderManager {
   }
 
   notifyDrivesChanged(): void {
-    if (typeof this._onDrivesChanged === 'function') {
-      try {
-        this._onDrivesChanged(this.drives);
-      } catch (e) {
-        console.error('Error in onDrivesChanged callback:', e);
-      }
+    try {
+      this._onDrivesChanged?.(this.drives);
+    } catch (e) {
+      console.error('Error in onDrivesChanged callback:', e);
     }
     this._drivesChangedListeners.forEach((listener) => {
       try {

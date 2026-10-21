@@ -41,20 +41,20 @@ export function usePlayback() {
     const origPlayState = vp.onPlayStateChange;
     vp.onPlayStateChange = (playing: boolean) => {
       isPlaying.value = playing;
-      if (typeof origPlayState === 'function') origPlayState(playing);
+      origPlayState?.(playing);
     };
 
     const origClipChange = vp.onClipChange;
     vp.onClipChange = (clipIdx: number) => {
       currentClipIndex.value = clipIdx;
-      if (typeof origClipChange === 'function') origClipChange(clipIdx);
+      origClipChange?.(clipIdx);
     };
 
     const origTimeUpdate = vp.onTimeUpdate;
     vp.onTimeUpdate = (time: number, dur: number) => {
       currentTime.value = time;
       duration.value = dur;
-      if (typeof origTimeUpdate === 'function') origTimeUpdate(time, dur);
+      origTimeUpdate?.(time, dur);
     };
 
     syncPlayback();
@@ -104,14 +104,7 @@ export function usePlayback() {
 
   function changeSpeed(val: string): void {
     speed.value = val;
-    const vp = window.app?.videoPlayer;
-    if (vp) {
-      if (typeof vp.setPlaybackSpeed === 'function') {
-        vp.setPlaybackSpeed(parseFloat(val));
-      } else {
-        vp.playbackRate = parseFloat(val);
-      }
-    }
+    window.app?.videoPlayer?.setPlaybackSpeed?.(parseFloat(val));
     syncPlayback();
   }
 
