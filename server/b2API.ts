@@ -46,8 +46,8 @@ const rootDir = path.resolve(import.meta.dirname, '..');
 
 export const VIDEO_CACHE_DIR =
   process.env.VIDEO_CACHE_DIR || path.resolve(rootDir, '.cache', 'videos');
-export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_BYTES
-  ? parseInt(process.env.VIDEO_CACHE_MAX_BYTES, 10)
+export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_GB
+  ? parseInt(process.env.VIDEO_CACHE_MAX_GB, 10) * 1024 * 1024 * 1024
   : 5 * 1024 * 1024 * 1024; // 5 GB default
 
 export let cachedB2Data: B2ParseResult | null = null;
@@ -60,7 +60,44 @@ export let activeB2Auth: ActiveB2Auth = {
   appKey: null,
 };
 
-const inFlightDownloads = new Map<string, Promise<string>>();
+export const inFlightDownloads = new Map<string, Promise<string>>();
+
+// Queue for preloading videos in background with bounded concurrency
+export const MAX_PRELOAD_CONCURRENCY = 30;
+export const preloadQueue: Array<() => Promise<void>> = [];
+export let activePreloadCount = 0;
+
+export function pumpPreloadQueue(): void {
+  while (
+    activePreloadCount < MAX_PRELOAD_CONCURRENCY &&
+    preloadQueue.length > 0
+  ) {
+    const task = preloadQueue.shift()!;
+    activePreloadCount++;
+    task().finally(() => {
+      activePreloadCount--;
+      pumpPreloadQueue();
+    });
+  }
+}
+
+export function scheduleVideoPreload(
+  safeRelative: string,
+  resolvedSource: string
+): void {
+  const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
+  if (fs.existsSync(cacheFilePath) || inFlightDownloads.has(cacheFilePath)) {
+    return;
+  }
+  preloadQueue.push(async () => {
+    try {
+      await ensureVideoCached(safeRelative, resolvedSource);
+    } catch (err: any) {
+      console.warn('[B2 Video Cache] Preload warning:', err.message);
+    }
+  });
+  pumpPreloadQueue();
+}
 
 export function setCachedB2Data(
   data: B2ParseResult | null,
@@ -364,6 +401,7 @@ export async function getVideoCacheStatus(): Promise<VideoCacheStatus> {
  * Clear the video disk cache directory
  */
 export async function clearVideoCache(): Promise<void> {
+  preloadQueue.length = 0;
   if (fs.existsSync(VIDEO_CACHE_DIR)) {
     await fs.promises.rm(VIDEO_CACHE_DIR, { recursive: true, force: true });
     await fs.promises.mkdir(VIDEO_CACHE_DIR, { recursive: true });
@@ -548,10 +586,8 @@ export default function registerB2Routes(app: Application): void {
         const resolvedSource = resolveSourceUrl(safeRelative, urlParam);
         if (resolvedSource) {
           scheduled.push(safeRelative);
-          // Trigger background caching to warm the disk cache
-          ensureVideoCached(safeRelative, resolvedSource).catch((err: any) =>
-            console.warn('[B2 Video Cache] Preload warning:', err.message)
-          );
+          // Queue background caching with bounded concurrency so it doesn't choke active playback
+          scheduleVideoPreload(safeRelative, resolvedSource);
         }
       }
 
@@ -779,15 +815,21 @@ export default function registerB2Routes(app: Application): void {
         });
 
         const clientHeaders: Record<string, string> = {
-          'Content-Type': String(response.headers['content-type'] || 'video/mp4'),
+          'Content-Type': String(
+            response.headers['content-type'] || 'video/mp4'
+          ),
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=31536000, immutable',
         };
         if (response.headers['content-range']) {
-          clientHeaders['Content-Range'] = String(response.headers['content-range']);
+          clientHeaders['Content-Range'] = String(
+            response.headers['content-range']
+          );
         }
         if (response.headers['content-length']) {
-          clientHeaders['Content-Length'] = String(response.headers['content-length']);
+          clientHeaders['Content-Length'] = String(
+            response.headers['content-length']
+          );
         }
 
         res.writeHead(response.status, clientHeaders);

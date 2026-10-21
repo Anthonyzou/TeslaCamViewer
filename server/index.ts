@@ -10,15 +10,20 @@ import express, {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import registerB2Routes, {
+  activePreloadCount,
   clearVideoCache,
   ensureVideoCached,
   getCachedB2Data,
   getVideoCacheStatus,
   httpAgent,
   httpsAgent,
+  inFlightDownloads,
+  MAX_PRELOAD_CONCURRENCY,
   organizeB2Events,
   performB2Parse,
+  preloadQueue,
   pruneVideoCache,
+  scheduleVideoPreload,
   setCachedB2Data,
   touchCacheFile,
   VIDEO_CACHE_DIR,
@@ -127,6 +132,7 @@ if (isEntryFile()) {
 }
 
 export {
+  activePreloadCount,
   app,
   clearVideoCache,
   ensureVideoCached,
@@ -134,9 +140,13 @@ export {
   getVideoCacheStatus,
   httpAgent,
   httpsAgent,
+  inFlightDownloads,
+  MAX_PRELOAD_CONCURRENCY,
   organizeB2Events,
   performB2Parse,
+  preloadQueue,
   pruneVideoCache,
+  scheduleVideoPreload,
   setCachedB2Data,
   touchCacheFile,
   VIDEO_CACHE_DIR,

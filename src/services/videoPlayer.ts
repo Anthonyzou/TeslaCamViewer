@@ -342,7 +342,6 @@ export class VideoPlayer {
       };
 
       video.addEventListener('canplay', onCameraReady);
-      video.addEventListener('loadstart', () => this._checkPreloadTrigger());
 
       video.addEventListener('playing', () => {
         this.updateVideoLabelState(camera, false);

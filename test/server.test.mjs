@@ -632,3 +632,88 @@ test('API POST /api/b2/cache/preload validates and schedules server-side video p
     await new Promise((resolve) => mockOriginServer.close(resolve));
   }
 });
+
+test('API GET /api/b2/video background caching continues to disk when client closes connection after initial buffer', async () => {
+  const fullPayload = Buffer.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': String(fullPayload.length),
+      'Accept-Ranges': 'bytes',
+    });
+    // Stream chunks slowly to simulate network delivery
+    let offset = 0;
+    const interval = setInterval(() => {
+      if (offset < fullPayload.length) {
+        const next = Math.min(fullPayload.length, offset + 10);
+        res.write(fullPayload.subarray(offset, next));
+        offset = next;
+      } else {
+        clearInterval(interval);
+        res.end();
+      }
+    }, 20);
+    interval.unref();
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originPort = mockOriginServer.address().port;
+  const originUrl = `http://127.0.0.1:${originPort}/uninterruptible-test.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const testFileRel = 'Uninterruptible/clip.mp4';
+  const testFileAbs = path.join(VIDEO_CACHE_DIR, testFileRel);
+
+  try {
+    await clearVideoCache();
+
+    // 1. Client connects with Range: bytes=0-
+    const controller = new AbortController();
+    const res1 = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      {
+        headers: { Range: 'bytes=0-' },
+        signal: controller.signal,
+      }
+    );
+    assert.strictEqual(res1.status, 206);
+
+    // Read first chunk (10 bytes), then client closes socket (buffer full simulation)
+    const reader = res1.body.getReader();
+    const { value } = await reader.read();
+    assert.ok(value && value.length >= 10);
+    controller.abort();
+
+    // 2. Verify: background download continues writing to disk cache until complete
+    let retries = 30;
+    while (!fs.existsSync(testFileAbs) && retries > 0) {
+      await new Promise((r) => setTimeout(r, 30));
+      retries--;
+    }
+    assert.strictEqual(fs.existsSync(testFileAbs), true, 'Full file should complete downloading to disk in background');
+    const cachedData = await fs.promises.readFile(testFileAbs);
+    assert.strictEqual(cachedData.toString(), '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+    // 3. Client subsequent request for next range: served directly from disk cache in <10ms
+    const startTime = performance.now();
+    const res2 = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=10-' } }
+    );
+    const duration = performance.now() - startTime;
+    assert.strictEqual(res2.status, 206);
+    assert.strictEqual(res2.headers.get('content-range'), 'bytes 10-35/36');
+    const text2 = await res2.text();
+    assert.strictEqual(text2, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    assert.ok(duration < 50, `Subsequent range served from local SSD cache in ${duration}ms`);
+  } finally {
+    await clearVideoCache();
+    mockOriginServer.closeAllConnections?.();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
