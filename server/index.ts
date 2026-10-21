@@ -86,6 +86,13 @@ if (isEntryFile()) {
     console.error('[Process] Uncaught Exception:', err);
   });
 
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+  });
+
   const server = app.listen(PORT, async () => {
     console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
 
