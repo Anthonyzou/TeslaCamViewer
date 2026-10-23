@@ -1,18 +1,19 @@
 import { settingsManager } from '../services/settingsManager';
+import { statisticsManager } from '../services/statisticsManager';
 import { useDrives } from './useDrives';
 import { useEvents } from './useEvents';
 import { useLayout } from './useLayout';
 import { usePlayback } from './usePlayback';
 
+export * from './useClipMarking';
 export * from './useDrives';
 export * from './useEvents';
+export * from './useFilterPanel';
 export * from './useLayout';
+export * from './useMapView';
+export * from './useModals';
 export * from './usePlayback';
 export * from './useTimeline';
-export * from './useClipMarking';
-export * from './useMapView';
-export * from './useFilterPanel';
-export * from './useModals';
 
 /**
  * useTeslaCam - Top-level orchestrator composing specialized domain composables
@@ -44,7 +45,7 @@ export function useTeslaCam() {
   }
 
   function openStats(): void {
-    window.app?.statisticsManager?.showModal();
+    statisticsManager?.showModal();
   }
 
   function openHelp(): void {

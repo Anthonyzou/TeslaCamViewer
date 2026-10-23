@@ -3,6 +3,7 @@ import type { DriveSetupOptions } from '../components/DriveSetupModal.vue';
 import { useClipMarking } from '../composables/useClipMarking';
 import { syncEvents } from '../composables/useEvents';
 import { filterPanelStore } from '../composables/useFilterPanel';
+import { layoutStore } from '../composables/useLayout';
 import { mapViewStore } from '../composables/useMapView';
 import {
   commandPaletteModalStore,
@@ -11,7 +12,6 @@ import {
   helpModalStore,
 } from '../composables/useModals';
 import { timelineStore } from '../composables/useTimeline';
-import { layoutStore } from '../composables/useLayout';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
 import weatherService from '../utils/weatherService';
@@ -22,7 +22,7 @@ import { folderParser } from './folderParser';
 import type MapView from './mapView';
 import { ScreenshotCapture } from './screenshotCapture';
 import { settingsManager } from './settingsManager';
-import { StatisticsManager } from './statisticsManager';
+import { statisticsManager } from './statisticsManager';
 import { VideoExport } from './videoExport';
 import { VideoPlayer } from './videoPlayer';
 
@@ -36,7 +36,6 @@ export class TeslaCamApp {
   public layoutManager = layoutStore;
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
   public videoExport = new VideoExport(this.videoPlayer);
-  public statisticsManager = new StatisticsManager();
   public b2Client = new B2Client();
 
   public get mapView(): MapView | null {
@@ -53,7 +52,6 @@ export class TeslaCamApp {
   public filterPanel = filterPanelStore;
   public helpModal = helpModalStore;
   public commandPalette = commandPaletteModalStore;
-  public telemetryOverlay: any = null;
 
   public allEvents: TeslaCamEvent[] = [];
   public filteredEvents: TeslaCamEvent[] = [];
@@ -214,7 +212,7 @@ export class TeslaCamApp {
           folderManager.setActiveDrive(firstActive.id);
         }
         this.allEvents = folderManager.getAllEvents();
-        this.statisticsManager.setEvents(this.allEvents);
+        statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
         this.updateDriveSelector(folderManager.getDrives());
         if (this.filteredEvents.length > 0) {
@@ -622,7 +620,7 @@ export class TeslaCamApp {
     }
 
     this.allEvents = folderManager.getAllEvents();
-    this.statisticsManager.setEvents(this.allEvents);
+    statisticsManager.setEvents(this.allEvents);
     this.applyFilters();
     this.updateDriveSelector(folderManager.getDrives());
     if (
@@ -694,7 +692,7 @@ export class TeslaCamApp {
         drive.events = events;
         folderManager.setActiveDrive(drive.id);
         this.allEvents = folderManager.getAllEvents();
-        this.statisticsManager.setEvents(this.allEvents);
+        statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
         this.updateDriveSelector(folderManager.getDrives());
         if (this.filteredEvents.length > 0) {
@@ -735,7 +733,7 @@ export class TeslaCamApp {
 
       folderManager.activeDriveId = b2Drive.id;
       this.allEvents = folderManager.getAllEvents();
-      this.statisticsManager.setEvents(this.allEvents);
+      statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
       this.updateDriveSelector(folderManager.getDrives());
       if (this.filteredEvents.length > 0) {
@@ -774,7 +772,7 @@ export class TeslaCamApp {
           ...this.allEvents.filter((e) => e.driveId !== activeDrive.id),
           ...events,
         ];
-        this.statisticsManager.setEvents(this.allEvents);
+        statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
         this.updateDriveSelector(folderManager.getDrives());
       } catch (err: any) {
@@ -820,7 +818,7 @@ export class TeslaCamApp {
           const events = await folderParser.parseFolder();
           drive.events = events;
           this.allEvents = [...this.allEvents, ...events];
-          this.statisticsManager.setEvents(this.allEvents);
+          statisticsManager.setEvents(this.allEvents);
           this.applyFilters();
         }
 
@@ -848,7 +846,7 @@ export class TeslaCamApp {
         ...this.allEvents.filter((e) => e.driveId !== driveId),
         ...events,
       ];
-      this.statisticsManager.setEvents(this.allEvents);
+      statisticsManager.setEvents(this.allEvents);
       this.applyFilters();
       this.updateDriveSelector(folderManager.getDrives());
       this.hideLoading();
@@ -876,7 +874,7 @@ export class TeslaCamApp {
           ...this.allEvents.filter((e) => e.driveId !== driveId),
           ...events,
         ];
-        this.statisticsManager.setEvents(this.allEvents);
+        statisticsManager.setEvents(this.allEvents);
         this.applyFilters();
       }
       this.updateDriveSelector(folderManager.getDrives());
