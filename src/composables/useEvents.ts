@@ -7,7 +7,6 @@ import { EventFilter } from '../utils/eventFilter';
 import { filterPanelStore } from './useFilterPanel';
 import { layoutStore } from './useLayout';
 import { mapViewStore } from './useMapView';
-import { settingsStore } from './useSettings';
 import { timelineStore } from './useTimeline';
 
 const currentEvent: Ref<TeslaCamEvent | null> = ref(null);
@@ -186,10 +185,7 @@ export const eventsStore = {
 
       await videoPlayer.loadEvent(event, startTime);
       mapViewStore.instance?.selectEvent?.(event);
-
-      if (settingsStore.get('autoPlayNextEvent')) {
-        await videoPlayer.play();
-      }
+      await videoPlayer.play();
     } catch (err) {
       console.error('[Events] Error loading event:', err);
     }

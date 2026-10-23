@@ -47,19 +47,32 @@ export class VideoPlayer {
     // Single bank architecture
   }
 
+  private _boundVideos = new WeakSet<HTMLVideoElement>();
+
   constructor() {
+    this.bindVideos();
+  }
+
+  public bindVideos(): void {
+    if (typeof document === 'undefined') return;
     this.videos = this._resolveVideos();
     this.videoLabels = this._resolveLabels();
     this.setupEventListeners();
   }
 
   getActiveVideos(): HTMLVideoElement[] {
+    if (!this.videos.front && typeof document !== 'undefined') {
+      this.bindVideos();
+    }
     return Object.values(this.videos).filter((v): v is HTMLVideoElement =>
       Boolean(v && (v.getAttribute('src') || v.src))
     );
   }
 
   getMasterVideo(): HTMLVideoElement | null {
+    if (!this.videos.front && typeof document !== 'undefined') {
+      this.bindVideos();
+    }
     if (this.videos.front) {
       return this.videos.front;
     }
@@ -297,6 +310,8 @@ export class VideoPlayer {
 
     for (const [camera, video] of Object.entries(this.videos)) {
       if (!video || typeof video.addEventListener !== 'function') continue;
+      if (this._boundVideos.has(video)) continue;
+      this._boundVideos.add(video);
 
       video.addEventListener('timeupdate', () => {
         const isMaster =
@@ -388,6 +403,10 @@ export class VideoPlayer {
     _isPreload = false,
     startTimeInClip = 0
   ): Promise<void> {
+    if (!this.videos.front && typeof document !== 'undefined') {
+      this.bindVideos();
+    }
+
     if (
       !this.currentEvent ||
       clipIndex < 0 ||

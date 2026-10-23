@@ -75,6 +75,7 @@ import { useI18n } from '../composables/useI18n';
 import { layoutStore } from '../composables/useLayout';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { calculateContainSize } from '../layout/layoutMath';
+import { videoPlayer } from '../services/videoPlayer';
 import type { LayoutConfigSchema } from '../types';
 
 const props = withDefaults(
@@ -198,6 +199,7 @@ useResizeObserver(containerRef, () => {
 
 onMounted(() => {
   updateGridDimensions();
+  videoPlayer.bindVideos();
 });
 
 watch([activeConfig, () => props.layout], () => {
