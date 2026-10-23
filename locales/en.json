@@ -32,13 +32,13 @@
     "exitFullscreen": "Exit fullscreen"
   },
   "cameras": {
+    "hiddenCameras": "Hidden",
     "front": "Front",
     "back": "Back",
-    "left": "Left",
-    "right": "Right",
-    "hiddenCameras": "Hidden",
-    "leftPillar": "Left Pillar",
-    "rightPillar": "Right Pillar",
+    "left_repeater": "Left",
+    "right_repeater": "Right",
+    "left_pillar": "Left Pillar",
+    "right_pillar": "Right Pillar",
     "hideFront": "Hide Front Camera",
     "hideBack": "Hide Back Camera",
     "hideLeft": "Hide Left Camera",

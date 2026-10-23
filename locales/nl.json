@@ -39,8 +39,8 @@
   "cameras": {
     "front": "Voor",
     "back": "Achter",
-    "left": "Links",
-    "right": "Rechts",
+    "left_repeater": "Links",
+    "right_repeater": "Rechts",
     "hideFront": "Voorste camera verbergen",
     "hideBack": "Achterste camera verbergen",
     "hideLeft": "Linker camera verbergen",

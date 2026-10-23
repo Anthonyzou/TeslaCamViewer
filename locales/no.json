@@ -39,8 +39,8 @@
   "cameras": {
     "front": "Foran",
     "back": "Bak",
-    "left": "Venstre",
-    "right": "Høyre",
+    "left_repeater": "Venstre",
+    "right_repeater": "Høyre",
     "hideFront": "Skjul frontkamera",
     "hideBack": "Skjul bakkamera",
     "hideLeft": "Skjul venstre kamera",

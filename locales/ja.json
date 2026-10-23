@@ -39,8 +39,8 @@
   "cameras": {
     "front": "前",
     "back": "後",
-    "left": "左",
-    "right": "右",
+    "left_repeater": "左",
+    "right_repeater": "右",
     "hideFront": "フロントカメラを非表示",
     "hideBack": "リアカメラを非表示",
     "hideLeft": "左カメラを非表示",

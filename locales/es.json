@@ -39,8 +39,8 @@
   "cameras": {
     "front": "Frontal",
     "back": "Trasera",
-    "left": "Izquierda",
-    "right": "Derecha",
+    "left_repeater": "Izquierda",
+    "right_repeater": "Derecha",
     "hideFront": "Ocultar cámara frontal",
     "hideBack": "Ocultar cámara trasera",
     "hideLeft": "Ocultar cámara izquierda",

@@ -2,13 +2,6 @@
   <div class="timeline-row">
     <!-- Timeline -->
     <div class="timeline-container">
-      <!-- Mini-map for zoomed timeline -->
-      <div id="timelineMinimap" class="timeline-minimap hidden">
-        <div id="minimapProgress" class="minimap-progress"></div>
-        <div id="minimapMarkers" class="minimap-markers"></div>
-        <div id="minimapViewport" class="minimap-viewport"></div>
-        <div id="minimapPosition" class="minimap-position"></div>
-      </div>
       <div
         id="timeline"
         class="timeline"

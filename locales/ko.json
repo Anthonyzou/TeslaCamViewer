@@ -39,8 +39,8 @@
   "cameras": {
     "front": "전방",
     "back": "후방",
-    "left": "좌측",
-    "right": "우측",
+    "left_repeater": "좌측",
+    "right_repeater": "우측",
     "hideFront": "전방 카메라 숨기기",
     "hideBack": "후방 카메라 숨기기",
     "hideLeft": "좌측 카메라 숨기기",

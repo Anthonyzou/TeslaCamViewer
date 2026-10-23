@@ -39,8 +39,8 @@
   "cameras": {
     "front": "前",
     "back": "后",
-    "left": "左",
-    "right": "右",
+    "left_repeater": "左",
+    "right_repeater": "右",
     "hideFront": "隐藏前置摄像头",
     "hideBack": "隐藏后置摄像头",
     "hideLeft": "隐藏左侧摄像头",

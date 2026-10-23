@@ -39,8 +39,8 @@
   "cameras": {
     "front": "Vorne",
     "back": "Hinten",
-    "left": "Links",
-    "right": "Rechts",
+    "left_repeater": "Links",
+    "right_repeater": "Rechts",
     "hideFront": "Frontkamera ausblenden",
     "hideBack": "Heckkamera ausblenden",
     "hideLeft": "Linke Kamera ausblenden",

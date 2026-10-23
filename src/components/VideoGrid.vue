@@ -6,160 +6,30 @@
       :class="[layout, { 'has-pillars': hasPillarCameras }]"
       :style="gridStyle"
     >
-      <div
-        class="video-container"
-        data-camera="front"
-        :class="{ hidden: isHidden('front') }"
-        :style="getCameraContainerStyle('front')"
-      >
-        <video
-          id="videoFront"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('front') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.front">
-          {{ t('cameras.front') }}
-        </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="front"
-          :title="t('cameras.hideFront')"
-          @click="emit('toggleCameraHide', 'front')"
+      <div v-for="item in cameras" :key="item[0]">
+        <div
+          class="video-container"
+          data-camera="{{item}}"
+          :class="{ hidden: isHidden(item[0]) }"
+          :style="getCameraContainerStyle(item[0])"
         >
-          <Eye :size="16" />
-        </button>
-      </div>
-
-      <div
-        class="video-container"
-        data-camera="back"
-        :class="{ hidden: isHidden('back') }"
-        :style="getCameraContainerStyle('back')"
-      >
-        <video
-          id="videoBack"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('back') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.back">
-          {{ t('cameras.back') }}
+          <video
+            :id="item[1]"
+            class="video-player"
+            crossorigin="anonymous"
+            preload="auto"
+            :style="{ objectFit: getCameraObjectFit(item[0]) }"
+          ></video>
+          <div class="video-label" :data-i18n="'cameras.' + item[0]"></div>
+          <button
+            class="camera-hide-btn"
+            data-camera="{{item[0]}}"
+            :title="t('cameras.' + item[2])"
+            @click="emit('toggleCameraHide', item[0])"
+          >
+            <Eye :size="16" />
+          </button>
         </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="back"
-          :title="t('cameras.hideBack')"
-          @click="emit('toggleCameraHide', 'back')"
-        >
-          <Eye :size="16" />
-        </button>
-      </div>
-
-      <div
-        class="video-container"
-        data-camera="left_repeater"
-        :class="{ hidden: isHidden('left_repeater') }"
-        :style="getCameraContainerStyle('left_repeater')"
-      >
-        <video
-          id="videoLeft"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('left_repeater') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.left">
-          {{ t('cameras.left') }}
-        </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="left_repeater"
-          :title="t('cameras.hideLeft')"
-          @click="emit('toggleCameraHide', 'left_repeater')"
-        >
-          <Eye :size="16" />
-        </button>
-      </div>
-
-      <div
-        class="video-container"
-        data-camera="right_repeater"
-        :class="{ hidden: isHidden('right_repeater') }"
-        :style="getCameraContainerStyle('right_repeater')"
-      >
-        <video
-          id="videoRight"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('right_repeater') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.right">
-          {{ t('cameras.right') }}
-        </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="right_repeater"
-          :title="t('cameras.hideRight')"
-          @click="emit('toggleCameraHide', 'right_repeater')"
-        >
-          <Eye :size="16" />
-        </button>
-      </div>
-
-      <div
-        class="video-container pillar-camera"
-        data-camera="left_pillar"
-        :class="{ hidden: isHidden('left_pillar') }"
-        :style="getCameraContainerStyle('left_pillar')"
-      >
-        <video
-          id="videoLeftPillar"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('left_pillar') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.leftPillar">
-          {{ t('cameras.leftPillar') }}
-        </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="left_pillar"
-          :title="t('cameras.hideLeftPillar')"
-          @click="emit('toggleCameraHide', 'left_pillar')"
-        >
-          <Eye :size="16" />
-        </button>
-      </div>
-
-      <div
-        class="video-container pillar-camera"
-        data-camera="right_pillar"
-        :class="{ hidden: isHidden('right_pillar') }"
-        :style="getCameraContainerStyle('right_pillar')"
-      >
-        <video
-          id="videoRightPillar"
-          class="video-player"
-          crossorigin="anonymous"
-          preload="auto"
-          :style="{ objectFit: getCameraObjectFit('right_pillar') }"
-        ></video>
-        <div class="video-label" data-i18n="cameras.rightPillar">
-          {{ t('cameras.rightPillar') }}
-        </div>
-        <button
-          class="camera-hide-btn"
-          data-camera="right_pillar"
-          :title="t('cameras.hideRightPillar')"
-          @click="emit('toggleCameraHide', 'right_pillar')"
-        >
-          <Eye :size="16" />
-        </button>
       </div>
     </div>
 
@@ -183,40 +53,11 @@
         </button>
       </div>
     </div>
-
-    <!-- Mobile Fullscreen Button -->
-    <button
-      id="mobileFullscreenBtn"
-      class="mobile-fullscreen-btn hidden"
-      :title="t('player.fullscreen')"
-      @click="emit('toggleMobileFullscreen')"
-    >
-      <Maximize :size="24" />
-    </button>
-
-    <!-- Mobile Fullscreen Overlay -->
-    <div id="mobileFullscreenOverlay" class="mobile-fullscreen-overlay hidden">
-      <button
-        id="fullscreenPlayBtn"
-        class="fullscreen-control-btn"
-        @click="emit('togglePlay')"
-      >
-        <Play :size="48" />
-      </button>
-      <button
-        id="exitFullscreenBtn"
-        class="fullscreen-exit-btn"
-        :title="t('player.exitFullscreen')"
-        @click="emit('exitFullscreen')"
-      >
-        <Minimize :size="24" />
-      </button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Eye, Maximize, Minimize, Play } from 'lucide-vue-next';
+import { Eye } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { LayoutConfig } from '../layout/layoutConfig';
@@ -229,9 +70,18 @@ const props = withDefaults(
     layout?: string;
     focusCamera?: string | null;
     hasPillarCameras?: boolean;
+    cameras: string[][];
     hiddenCameras?: string[];
   }>(),
   {
+    cameras: () => [
+      ['front', 'videoFront', 'hideFront'],
+      ['back', 'videoBack', 'hideback'],
+      ['left_repeater', 'videoLeft', 'hideLeft'],
+      ['right_repeater', 'videoRight', 'hideRight'],
+      ['left_pillar', 'videoLeftPillar', 'hideLeftPillar'],
+      ['right_pillar', 'videoRightPillar', 'hideRightPillar'],
+    ],
     hasEvent: false,
     layout: 'layout-6-3',
     focusCamera: null,
