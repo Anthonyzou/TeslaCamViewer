@@ -1,8 +1,8 @@
 <template>
   <div id="eventInfo" class="event-info">
     <div class="event-info-content">
-      <span id="eventDate" class="event-date" data-i18n="player.noEventLoaded"
-        >No event loaded</span
+      <span id="eventDate" class="event-date"
+        >{{ hasEvent ? '' : t('player.noEventLoaded') }}</span
       >
       <span id="eventLocation" class="event-location"></span>
       <span id="eventReason" class="event-reason"></span>
@@ -12,7 +12,11 @@
 </template>
 
 <script setup lang="ts">
-// EventInfoBar provides the persistent DOM container populated by TeslaCamViewerApp.updateEventInfo
+import { useI18n } from '../composables/useI18n';
+import { useEvents } from '../composables/useEvents';
+
+const { t } = useI18n();
+const { hasEvent } = useEvents();
 </script>
 
 <style scoped>

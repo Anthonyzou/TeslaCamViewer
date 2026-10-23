@@ -1,10 +1,6 @@
 <template>
   <div v-if="isOpen" class="help-modal" @keydown.esc="close">
-    <div
-      class="help-overlay"
-      @mousedown="onOverlayMouseDown"
-      @click="onOverlayClick"
-    ></div>
+    <div class="help-overlay" @click="close"></div>
     <div class="help-panel">
       <div class="help-header">
         <h2>{{ t('help.title') }}</h2>
@@ -195,7 +191,6 @@ import { useModals } from '../composables/useModals';
 
 const { isHelpOpen: isOpen, helpModal } = useModals();
 const { t } = useI18n();
-let mouseDownOnOverlay = false;
 
 function open(): void {
   helpModal.open();
@@ -207,21 +202,6 @@ function close(): void {
 
 function toggle(): void {
   helpModal.toggle();
-}
-
-function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
-    'help-overlay'
-  );
-}
-
-function onOverlayClick(e: MouseEvent): void {
-  if (
-    mouseDownOnOverlay &&
-    (e.target as HTMLElement).classList.contains('help-overlay')
-  ) {
-    close();
-  }
 }
 
 defineExpose({

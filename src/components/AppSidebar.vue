@@ -14,7 +14,7 @@
 
     <div class="sidebar-header">
       <h2>
-        <span data-i18n="sidebar.events">{{ t('sidebar.events') }}</span>
+        <span>{{ t('sidebar.events') }}</span>
         <span id="eventCount" class="event-count">{{ eventCountText }}</span>
       </h2>
       <div id="eventStats" class="event-stats">{{ eventStatsText }}</div>
@@ -33,7 +33,7 @@
           v-model="selectedDrive"
           @change="emit('changeDrive', selectedDrive)"
         >
-          <option value="" data-i18n="sidebar.allDrives">
+          <option value="">
             {{ t('sidebar.allDrives') }}
           </option>
           <option v-for="d in drives" :key="d.id" :value="d.id">
@@ -73,7 +73,6 @@
         class="tab-btn"
         :class="{ active: activeTab === 'events' }"
         data-tab="events"
-        data-i18n="sidebar.events"
         @click="activeTab = 'events'"
       >
         {{ t('sidebar.events') }}
@@ -82,7 +81,6 @@
         class="tab-btn"
         :class="{ active: activeTab === 'map' }"
         data-tab="map"
-        data-i18n="sidebar.map"
         @click="activeTab = 'map'"
       >
         {{ t('sidebar.map') }}
@@ -102,7 +100,7 @@
       @click="emit('selectFolder')"
     >
       <Folder :size="20" style="margin-right: 8px" />
-      <span data-i18n="sidebar.selectFolder">{{
+      <span>{{
         t('sidebar.selectFolder')
       }}</span>
     </button>

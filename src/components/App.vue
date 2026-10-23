@@ -90,14 +90,15 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="loading-spinner"></div>
-      <div id="loadingText" class="loading-text" data-i18n="loading.loading">
-        Loading...
+      <div id="loadingText" class="loading-text">
+        {{ t('loading.loading') }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '../composables/useI18n';
 import { useTeslaCam } from '../composables/useTeslaCam';
 import AppHeader from './AppHeader.vue';
 import AppSidebar from './AppSidebar.vue';
@@ -112,6 +113,8 @@ import SettingsModal from './SettingsModal.vue';
 import StatisticsModal from './StatisticsModal.vue';
 import TimelineBar from './TimelineBar.vue';
 import VideoGrid from './VideoGrid.vue';
+
+const { t } = useI18n();
 
 const {
   currentEvent,

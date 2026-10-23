@@ -5,8 +5,8 @@
       class="empty-state"
       id="emptyState"
     >
-      <p data-i18n="sidebar.emptyState">{{ t('sidebar.emptyState') }}</p>
-      <p class="hint" data-i18n="sidebar.emptyStateHint">
+      <p>{{ t('sidebar.emptyState') }}</p>
+      <p class="hint">
         {{ t('sidebar.emptyStateHint') }}
       </p>
     </div>

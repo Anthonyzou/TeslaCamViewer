@@ -131,7 +131,7 @@
       class="export-dropdown"
       :class="{ hidden: !isExportDropdownOpen }"
     >
-      <div class="export-dropdown-header" data-i18n="export.header">
+      <div class="export-dropdown-header">
         {{ t('export.header') }}
       </div>
 
@@ -142,7 +142,7 @@
         @click="onScreenshotClick"
       >
         <Camera :size="18" style="margin-right: 8px" />
-        <span data-i18n="controls.screenshot">{{
+        <span>{{
           t('controls.screenshot')
         }}</span>
       </button>
@@ -156,7 +156,7 @@
           @click="onExportVideoClick"
         >
           <Video :size="18" style="margin-right: 8px" />
-          <span data-i18n="export.exportVideo">{{
+          <span>{{
             t('export.exportVideo')
           }}</span>
         </button>
@@ -169,7 +169,7 @@
           @click="emit('clearMarks')"
         >
           <X :size="18" style="margin-right: 8px" />
-          <span data-i18n="controls.clearMarks">{{
+          <span>{{
             t('controls.clearMarks')
           }}</span>
         </button>
@@ -182,10 +182,10 @@
 
       <label class="export-option export-checkbox-option">
         <input type="checkbox" id="privacyModeCheckbox" v-model="privacyMode" />
-        <span class="export-checkbox-label" data-i18n="export.privacyMode">{{
+        <span class="export-checkbox-label">{{
           t('export.privacyMode')
         }}</span>
-        <span class="export-option-hint" data-i18n="export.privacyModeHint">{{
+        <span class="export-option-hint">{{
           t('export.privacyModeHint')
         }}</span>
       </label>
@@ -200,35 +200,33 @@
           v-model="selectedLayout"
           @change="emit('changeLayout', selectedLayout)"
         >
-          <option value="grid-2x2" data-i18n="layouts.grid2x2">
+          <option value="grid-2x2">
             {{ t('layouts.grid2x2') }}
           </option>
           <option
             value="grid-3x2"
-            data-i18n="layouts.grid3x2"
             class="pillar-layout-option"
             style="display: none"
           >
             3×2 Grid (6 Cam)
           </option>
-          <option value="layout-6-3" data-i18n="layouts.layout63">
+          <option value="layout-6-3">
             {{ t('layouts.layout63') }}
           </option>
-          <option value="layout-4-3" data-i18n="layouts.layout43">
+          <option value="layout-4-3">
             {{ t('layouts.layout43') }}
           </option>
-          <option value="layout-all-16-9" data-i18n="layouts.all169">
+          <option value="layout-all-16-9">
             {{ t('layouts.all169') }}
           </option>
-          <option value="layout-front-left" data-i18n="layouts.frontLeft">
+          <option value="layout-front-left">
             {{ t('layouts.frontLeft') }}
           </option>
-          <option value="layout-front-right" data-i18n="layouts.frontRight">
+          <option value="layout-front-right">
             {{ t('layouts.frontRight') }}
           </option>
           <option
             value="layout-front-repeaters"
-            data-i18n="layouts.frontRepeaters"
           >
             {{ t('layouts.frontRepeaters') }}
           </option>
@@ -253,7 +251,7 @@
           >
             Front + Right Pillar
           </option>
-          <option value="layout-focus" data-i18n="layouts.focus">
+          <option value="layout-focus">
             {{ t('layouts.focus') }}
           </option>
         </select>
@@ -271,31 +269,23 @@
           v-model="focusCamera"
           @change="emit('changeFocusCamera', focusCamera)"
         >
-          <option value="front" data-i18n="cameras.front">
+          <option value="front">
             {{ t('cameras.front') }}
           </option>
-          <option value="back" data-i18n="cameras.back">
+          <option value="back">
             {{ t('cameras.back') }}
           </option>
-          <option value="left_repeater" data-i18n="cameras.left">
-            {{ t('cameras.left') }}
+          <option value="left_repeater">
+            {{ t('cameras.left_repeater') }}
           </option>
-          <option value="right_repeater" data-i18n="cameras.right">
-            {{ t('cameras.right') }}
+          <option value="right_repeater">
+            {{ t('cameras.right_repeater') }}
           </option>
-          <option
-            value="left_pillar"
-            data-i18n="cameras.leftPillar"
-            class="pillar-option"
-          >
-            Left Pillar
+          <option value="left_pillar">
+            {{ t('cameras.left_pillar') }}
           </option>
-          <option
-            value="right_pillar"
-            data-i18n="cameras.rightPillar"
-            class="pillar-option"
-          >
-            Right Pillar
+          <option value="right_pillar">
+            {{ t('cameras.right_pillar') }}
           </option>
         </select>
       </div>

@@ -9,7 +9,6 @@ class I18n {
   public fallbackLocale: string = 'en';
   public messages: Record<string, any> = {};
   public loadedLocales: Set<string> = new Set();
-  private _i18nRef: number = 0x54435669;
 
   public supportedLocales: Record<string, string> = {
     en: 'English',
@@ -22,14 +21,6 @@ class I18n {
     nl: 'Nederlands',
     no: 'Norsk',
   };
-
-  constructor() {
-    this.locale = 'en';
-    this.fallbackLocale = 'en';
-    this.messages = {};
-    this.loadedLocales = new Set();
-    this._i18nRef = 0x54435669;
-  }
 
   /**
    * Initialize i18n system
@@ -50,9 +41,6 @@ class I18n {
     if (this.locale !== this.fallbackLocale) {
       await this.loadLocale(this.locale);
     }
-
-    // Apply translations to DOM
-    this.translatePage();
 
     console.log(`i18n initialized: ${this.locale}`);
     return this;
@@ -120,9 +108,6 @@ class I18n {
       localStorage.setItem('tcv_locale', locale);
     }
 
-    // Re-translate the page
-    this.translatePage();
-
     // Dispatch event for components to update
     if (
       typeof window !== 'undefined' &&
@@ -181,76 +166,6 @@ class I18n {
     }
 
     return typeof result === 'string' ? result : key;
-  }
-
-  /**
-   * Pluralization helper
-   * @param {string} key - Base key (will look for key.zero, key.one, key.other)
-   * @param {number} count - Count for pluralization
-   * @param {Object} params - Additional parameters
-   * @returns {string} Pluralized string
-   */
-  plural(key, count, params = {}) {
-    let pluralKey;
-
-    if (count === 0) {
-      pluralKey = `${key}.zero`;
-    } else if (count === 1) {
-      pluralKey = `${key}.one`;
-    } else {
-      pluralKey = `${key}.other`;
-    }
-
-    // Try specific plural form, fall back to 'other', then to base key
-    let text = this.getMessage(pluralKey, this.locale);
-    if (text === pluralKey) {
-      text = this.getMessage(`${key}.other`, this.locale);
-    }
-    if (text === `${key}.other`) {
-      text = this.getMessage(key, this.locale);
-    }
-
-    // Always include count in params
-    return this.t(pluralKey !== text ? pluralKey : key, { count, ...params });
-  }
-
-  /**
-   * Translate all elements with data-i18n attributes
-   */
-  translatePage() {
-    if (typeof document === 'undefined') return;
-
-    // Translate text content: data-i18n="key"
-    document.querySelectorAll('[data-i18n]').forEach((el) => {
-      const key = el.getAttribute('data-i18n');
-      if (key) {
-        el.textContent = this.t(key);
-      }
-    });
-
-    // Translate titles: data-i18n-title="key"
-    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
-      const key = el.getAttribute('data-i18n-title');
-      if (key) {
-        (el as HTMLElement).title = this.t(key);
-      }
-    });
-
-    // Translate placeholders: data-i18n-placeholder="key"
-    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-      const key = el.getAttribute('data-i18n-placeholder');
-      if (key) {
-        (el as HTMLInputElement).placeholder = this.t(key);
-      }
-    });
-
-    // Translate aria-labels: data-i18n-aria="key"
-    document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
-      const key = el.getAttribute('data-i18n-aria');
-      if (key) {
-        el.setAttribute('aria-label', this.t(key));
-      }
-    });
   }
 
   /**

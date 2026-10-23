@@ -140,7 +140,9 @@ export const layoutStore = {
     return activeConfig.value;
   },
   get focusCamera(): string | null {
-    return focusCamera.value;
+    return layout.value === 'layout-focus'
+      ? focusCamera.value || 'front'
+      : null;
   },
   get hiddenCameras(): string[] {
     return hiddenCameras.value;
@@ -191,6 +193,9 @@ export const layoutStore = {
       layout.value = String(layoutOrConfig);
     }
     cameraSwaps.value = {};
+    if (layout.value !== 'layout-focus') {
+      focusCamera.value = null;
+    }
   },
 
   setFocusCamera(cam: string | null): void {

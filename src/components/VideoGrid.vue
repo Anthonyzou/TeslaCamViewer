@@ -31,7 +31,7 @@
             preload="auto"
             :style="{ objectFit: getCameraObjectFit(item[0]) }"
           ></video>
-          <div class="video-label" :data-i18n="'cameras.' + item[0]"></div>
+          <div class="video-label">{{ t('cameras.' + item[0]) }}</div>
           <button
             class="camera-hide-btn"
             :data-camera="item[0]"
@@ -50,7 +50,7 @@
       class="hidden-cameras-panel"
       :class="{ hidden: !hiddenCameras || hiddenCameras.length === 0 }"
     >
-      <span class="hidden-cameras-label" data-i18n="cameras.hiddenCameras"
+      <span class="hidden-cameras-label"
         >{{ t('cameras.hiddenCameras') }}:</span
       >
       <div id="hiddenCamerasList" class="hidden-cameras-list">
@@ -255,7 +255,9 @@ function getCameraContainerStyle(
     return { display: 'none' };
   }
 
-  const isFocused = props.focusCamera === cameraName;
+  const isFocused =
+    props.layout === 'layout-focus' &&
+    (props.focusCamera || 'front') === cameraName;
   const pos = isFocused
     ? { x: 0, y: 0, width: 100, height: 100 }
     : cam.position;
