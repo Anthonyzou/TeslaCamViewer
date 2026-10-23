@@ -34,10 +34,10 @@ function invalidateMapSize(): void {
 
 onMounted(() => {
   if (!mapContainer.value) return;
+  const app = window.app;
 
   mapViewInstance = new MapView(mapContainer.value, (event: TeslaCamEvent) => {
     emit('selectEvent', event);
-    const app = window.app;
     if (app?.onEventSelected) {
       app.onEventSelected(event);
     }
@@ -46,16 +46,13 @@ onMounted(() => {
   mapViewInstance.initialize();
 
   setMapView(mapViewInstance);
-  const app = window.app;
-  if (app) {
-    app.mapView = mapViewInstance;
-  }
 
   const eventsToLoad = props.events || app?.filteredEvents || app?.allEvents;
   if (eventsToLoad && eventsToLoad.length > 0) {
     mapViewInstance.loadEvents(eventsToLoad);
   }
 
+  mapViewInstance?.fitBounds();
   // Use ResizeObserver for automatic sizing
   if (typeof ResizeObserver !== 'undefined' && mapContainer.value) {
     resizeObserver = new ResizeObserver(() => {
@@ -73,19 +70,6 @@ watch(
     }
   },
   { deep: false }
-);
-
-watch(
-  () => props.visible,
-  (isVisible) => {
-    if (isVisible && mapViewInstance) {
-      invalidateMapSize();
-      setTimeout(invalidateMapSize, 100);
-      setTimeout(() => {
-        mapViewInstance?.fitBounds();
-      }, 250);
-    }
-  }
 );
 
 onUnmounted(() => {
@@ -191,109 +175,5 @@ defineExpose({
 
 .leaflet-popup-tip {
   background: #fff;
-}
-
-/* Leaflet Zoom Controls - Base styles */
-.leaflet-control-zoom {
-  border: none !important;
-  border-radius: 6px !important;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-}
-
-.leaflet-control-zoom a,
-.leaflet-control-zoom a:hover {
-  background: #ffffff !important;
-  color: #333333 !important;
-  border: none !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-  width: 30px !important;
-  height: 30px !important;
-  line-height: 30px !important;
-  font-size: 18px !important;
-  font-weight: normal !important;
-}
-
-.leaflet-control-zoom a:last-child {
-  border-bottom: none !important;
-}
-
-.leaflet-control-zoom a:hover {
-  background: #f0f0f0 !important;
-  color: #0066cc !important;
-}
-
-/* Leaflet Attribution - Light Mode (default) */
-.leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.85) !important;
-  color: #666666 !important;
-  font-size: 10px !important;
-}
-
-.leaflet-control-attribution a {
-  color: #333333 !important;
-}
-
-/* Map Control Buttons - Light Mode Base (default) */
-.heatmap-control,
-.struggle-zones-control,
-.incident-control,
-.scan-all-control {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.heatmap-toggle-btn,
-.struggle-zones-toggle-btn,
-.incident-toggle-btn,
-.scan-all-btn {
-  color: #666666 !important;
-}
-
-.heatmap-toggle-btn:hover,
-.struggle-zones-toggle-btn:hover,
-.incident-toggle-btn:hover,
-.scan-all-btn:hover {
-  background: #f0f0f0 !important;
-  color: #0066cc !important;
-}
-
-/* Override Leaflet default focus/active states for custom controls */
-.leaflet-bar a.heatmap-toggle-btn,
-.leaflet-bar a.struggle-zones-toggle-btn,
-.leaflet-bar a.incident-toggle-btn,
-.leaflet-bar a.scan-all-btn {
-  background: transparent !important;
-}
-
-.leaflet-bar a.heatmap-toggle-btn:focus,
-.leaflet-bar a.struggle-zones-toggle-btn:focus,
-.leaflet-bar a.incident-toggle-btn:focus,
-.leaflet-bar a.scan-all-btn:focus {
-  background: var(--bg-tertiary, #3a3a3a) !important;
-  outline: none;
-}
-
-.leaflet-bar a.heatmap-toggle-btn.active,
-.leaflet-bar a.heatmap-toggle-btn.active:focus,
-.leaflet-bar a.heatmap-toggle-btn.active:hover {
-  background: var(--accent, #4a9eff) !important;
-  color: white !important;
-}
-
-.leaflet-bar a.struggle-zones-toggle-btn.active,
-.leaflet-bar a.struggle-zones-toggle-btn.active:focus,
-.leaflet-bar a.struggle-zones-toggle-btn.active:hover {
-  background: #ff9800 !important;
-  color: white !important;
-}
-
-.leaflet-bar a.incident-toggle-btn.active,
-.leaflet-bar a.incident-toggle-btn.active:focus,
-.leaflet-bar a.incident-toggle-btn.active:hover {
-  background: #f44336 !important;
-  color: white !important;
 }
 </style>
