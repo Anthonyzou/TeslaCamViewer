@@ -6,6 +6,7 @@
 import dayjs from 'dayjs';
 import { LayoutConfig } from '../layout/layoutConfig';
 import LayoutRenderer from '../layout/layoutRenderer';
+import { layoutStore } from '../composables/useLayout';
 import { settingsManager } from './settingsManager';
 import type VideoPlayer from './videoPlayer';
 
@@ -72,12 +73,11 @@ export class ScreenshotCapture {
     const videoWidth = firstVideo?.videoWidth || 1280;
     const videoHeight = firstVideo?.videoHeight || 960;
 
-    const layoutManager = window.app?.layoutManager;
-    const renderer = layoutManager?.renderer || new LayoutRenderer();
+    const renderer = new LayoutRenderer();
     const config =
-      layoutManager?.getCurrentConfig() ||
+      layoutStore.currentConfig ||
       LayoutConfig.presetToConfig('layout-6-3');
-    const visibleCameras = layoutManager?.visibleCameras || null;
+    const visibleCameras = layoutStore.visibleCameras;
 
     const exportConfig = renderer.calculateExportConfig(
       config,

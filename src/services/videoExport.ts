@@ -4,6 +4,7 @@
  * a background Web Worker utilizing Origin Private File System (OPFS) and GPU hardware.
  */
 import { exportModalStore } from '../composables/useModals';
+import { layoutStore } from '../composables/useLayout';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { LayoutRenderer } from '../layout/layoutRenderer';
 import type VideoPlayer from './videoPlayer';
@@ -154,23 +155,21 @@ class VideoExport {
       }
 
       // Determine Layout and Canvas Output Resolution
-      const layoutManager = window.app?.layoutManager;
-      const renderer = layoutManager?.renderer || new LayoutRenderer();
+      const renderer = new LayoutRenderer();
       let canvasWidth = 1920;
       let canvasHeight = 1080;
       let exportConfig: any = null;
 
       if (camera === 'all') {
         const activeLayoutConfig =
-          layoutManager?.getCurrentConfig?.() ||
-          layoutManager?.getCurrentLayoutConfig?.() ||
+          layoutStore.currentConfig ||
           LayoutConfig.presetToConfig('layout-6-3');
 
         exportConfig = renderer.calculateExportConfig(
           activeLayoutConfig,
           1280,
           960,
-          { visibleCameras: layoutManager?.visibleCameras }
+          { visibleCameras: layoutStore.visibleCameras }
         );
         canvasWidth = Math.floor((exportConfig.canvasWidth || 1920) / 2) * 2;
         canvasHeight = Math.floor((exportConfig.canvasHeight || 1080) / 2) * 2;

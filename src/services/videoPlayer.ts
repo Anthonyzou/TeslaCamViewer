@@ -547,7 +547,9 @@ export class VideoPlayer {
     return Promise.all(
       activeVideos.map((v) =>
         v.play().catch((err: unknown) => {
-          console.warn('[VideoPlayer] Play error:', err);
+          if ((err as Error)?.name !== 'AbortError') {
+            console.warn('[VideoPlayer] Play error:', err);
+          }
         })
       )
     );

@@ -9,9 +9,19 @@
       <div v-for="item in cameras" :key="item[0]">
         <div
           class="video-container"
-          data-camera="{{item}}"
-          :class="{ hidden: isHidden(item[0]) }"
+          :data-camera="item[0]"
+          :class="{
+            hidden: isHidden(item[0]),
+            dragging: draggedCamera === item[0],
+            'drag-over': dragOverCamera === item[0],
+          }"
           :style="getCameraContainerStyle(item[0])"
+          :draggable="true"
+          @dragstart="handleDragStart(item[0], $event)"
+          @dragover="handleDragOver(item[0], $event)"
+          @dragleave="handleDragLeave"
+          @drop="handleDrop(item[0], $event)"
+          @dragend="handleDragEnd"
         >
           <video
             :id="item[1]"
@@ -23,7 +33,7 @@
           <div class="video-label" :data-i18n="'cameras.' + item[0]"></div>
           <button
             class="camera-hide-btn"
-            data-camera="{{item[0]}}"
+            :data-camera="item[0]"
             :title="t('cameras.' + item[2])"
             @click="emit('toggleCameraHide', item[0])"
           >
@@ -60,6 +70,7 @@
 import { Eye } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
+import { layoutStore } from '../composables/useLayout';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { calculateContainSize } from '../layout/layoutMath';
 import type { LayoutConfigSchema } from '../types';
@@ -70,18 +81,9 @@ const props = withDefaults(
     layout?: string;
     focusCamera?: string | null;
     hasPillarCameras?: boolean;
-    cameras: string[][];
     hiddenCameras?: string[];
   }>(),
   {
-    cameras: () => [
-      ['front', 'videoFront', 'hideFront'],
-      ['back', 'videoBack', 'hideback'],
-      ['left_repeater', 'videoLeft', 'hideLeft'],
-      ['right_repeater', 'videoRight', 'hideRight'],
-      ['left_pillar', 'videoLeftPillar', 'hideLeftPillar'],
-      ['right_pillar', 'videoRightPillar', 'hideRightPillar'],
-    ],
     hasEvent: false,
     layout: 'layout-6-3',
     focusCamera: null,
@@ -100,19 +102,61 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const cameras = [
+  ['front', 'videoFront', 'hideFront'],
+  ['back', 'videoBack', 'hideback'],
+  ['left_repeater', 'videoLeft', 'hideLeft'],
+  ['right_repeater', 'videoRight', 'hideRight'],
+  ['left_pillar', 'videoLeftPillar', 'hideLeftPillar'],
+  ['right_pillar', 'videoRightPillar', 'hideRightPillar'],
+];
+
 const containerRef = ref<HTMLElement | null>(null);
 const gridWidth = ref(0);
 const gridHeight = ref(0);
 
-const activeConfig = computed<LayoutConfigSchema | any>(() => {
-  const lm = typeof window !== 'undefined' ? window.app?.layoutManager : null;
-  if (lm?.currentConfig) {
-    return lm.currentConfig;
+const draggedCamera = ref<string | null>(null);
+const dragOverCamera = ref<string | null>(null);
+
+function handleDragStart(camera: string, e: DragEvent): void {
+  draggedCamera.value = camera;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', camera);
   }
-  return (
-    LayoutConfig.presetToConfig(props.layout) ||
-    LayoutConfig.presetToConfig('layout-6-3')
-  );
+}
+
+function handleDragOver(camera: string, e: DragEvent): void {
+  e.preventDefault();
+  if (draggedCamera.value && draggedCamera.value !== camera) {
+    dragOverCamera.value = camera;
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  }
+}
+
+function handleDragLeave(): void {
+  dragOverCamera.value = null;
+}
+
+function handleDrop(targetCamera: string, e: DragEvent): void {
+  e.preventDefault();
+  const source = draggedCamera.value || e.dataTransfer?.getData('text/plain');
+  if (source && source !== targetCamera) {
+    layoutStore.swapCameras(source, targetCamera);
+  }
+  draggedCamera.value = null;
+  dragOverCamera.value = null;
+}
+
+function handleDragEnd(): void {
+  draggedCamera.value = null;
+  dragOverCamera.value = null;
+}
+
+const activeConfig = computed<LayoutConfigSchema | any>(() => {
+  return layoutStore.currentConfig;
 });
 
 function updateGridDimensions(): void {
