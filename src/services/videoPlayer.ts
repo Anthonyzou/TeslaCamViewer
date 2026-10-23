@@ -22,6 +22,8 @@ export class VideoPlayer {
   public _bufferingCameras = new Set<string>();
   public _isSeeking = false;
   private _seekGeneration = 0;
+  public blobCache = new Map<string, string>();
+  private _blobAbortControllers = new Map<string, AbortController>();
 
   public onClipChange: ((clipIndex: number) => void) | null = null;
   public onTimeUpdate:
@@ -189,6 +191,105 @@ export class VideoPlayer {
   set playbackRate(r: number) {
     this._intendedPlaybackRate = r;
     this._applyPlaybackRateToAll();
+    if (r >= 2 && this.currentEvent && this.currentClipIndex >= 0) {
+      this._warmBlobCacheForCurrentAndNext();
+    }
+  }
+
+  getBlobUrl(url: string): string | null {
+    return this.blobCache.get(url) || null;
+  }
+
+  async fetchClipBlob(url: string): Promise<string | null> {
+    if (!url || url.startsWith('blob:') || this.blobCache.has(url)) {
+      return this.blobCache.get(url) || null;
+    }
+    if (typeof globalThis.fetch !== 'function') return null;
+
+    this._blobAbortControllers.get(url)?.abort();
+    const controller = new AbortController();
+    this._blobAbortControllers.set(url, controller);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      this.blobCache.set(url, blobUrl);
+      this._blobAbortControllers.delete(url);
+
+      // Keep blobCache bounded to avoid memory exhaustion (max 18 items = 3 clips * 6 cameras)
+      if (this.blobCache.size > 18) {
+        const oldestKey = this.blobCache.keys().next().value;
+        if (oldestKey) {
+          const oldBlobUrl = this.blobCache.get(oldestKey);
+          if (oldBlobUrl) {
+            try {
+              URL.revokeObjectURL(oldBlobUrl);
+            } catch (_e) {}
+          }
+          this.blobCache.delete(oldestKey);
+        }
+      }
+
+      return blobUrl;
+    } catch (_err) {
+      this._blobAbortControllers.delete(url);
+      return null;
+    }
+  }
+
+  _warmBlobCacheForCurrentAndNext(): void {
+    if (!this.currentEvent || typeof globalThis.fetch !== 'function') return;
+    const clipGroups = [
+      this.currentEvent.clipGroups[this.currentClipIndex],
+      this.currentEvent.clipGroups[this.currentClipIndex + 1],
+    ].filter(Boolean);
+
+    const cameras = ['front', 'back', 'left_repeater', 'right_repeater'];
+    if (this.hasPillarCameras) cameras.push('left_pillar', 'right_pillar');
+
+    for (const group of clipGroups) {
+      for (const cam of cameras) {
+        const url = group?.clips?.[cam]?.url;
+        if (url && !url.startsWith('blob:') && !this.blobCache.has(url)) {
+          this.fetchClipBlob(url).then((blobUrl) => {
+            if (!blobUrl) return;
+            // If this is the active clip and video element is still playing the raw stream URL, upgrade
+            if (
+              this.currentEvent &&
+              group === this.currentEvent.clipGroups[this.currentClipIndex]
+            ) {
+              const video = this.videos[cam];
+              if (video && video.getAttribute('src') === url) {
+                const cur = video.currentTime;
+                const wasPlaying = !video.paused;
+                video.src = blobUrl;
+                try {
+                  video.currentTime = cur;
+                } catch (_e) {}
+                if (wasPlaying && this._isPlayingIntent) {
+                  video.play()?.catch?.(() => {});
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+  }
+
+  clearBlobCache(): void {
+    for (const controller of this._blobAbortControllers.values()) {
+      controller.abort();
+    }
+    this._blobAbortControllers.clear();
+    for (const blobUrl of this.blobCache.values()) {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch (_e) {}
+    }
+    this.blobCache.clear();
   }
 
   get playbackSpeed(): number {
@@ -418,10 +519,14 @@ export class VideoPlayer {
     const loadPromises = cameras.map((camera) => {
       const clip = clipGroup?.clips?.[camera];
       const video = this.videos?.[camera];
-      const url = clip?.url || '';
+      const rawUrl = clip?.url || '';
+      const effectiveUrl = this.blobCache.get(rawUrl) || rawUrl;
 
       if (!video) return Promise.resolve();
-      if (video.getAttribute('src') === url) {
+      if (
+        video.getAttribute('src') === effectiveUrl ||
+        (video.src && video.src === effectiveUrl)
+      ) {
         if (startTimeInClip > 0) {
           try {
             video.currentTime = startTimeInClip;
@@ -430,7 +535,7 @@ export class VideoPlayer {
         return Promise.resolve();
       }
 
-      if (!url) {
+      if (!effectiveUrl) {
         return Promise.resolve();
       }
 
@@ -450,7 +555,7 @@ export class VideoPlayer {
           resolve();
         };
         video.preload = 'auto';
-        video.src = url;
+        video.src = effectiveUrl;
       });
     });
 
@@ -471,6 +576,11 @@ export class VideoPlayer {
 
     // Re-apply playback rate because browsers often reset it when src changes
     this._applyPlaybackRateToAll();
+
+    // If playback speed is high (>=2x), pre-warm blob buffers in memory to bypass 6.5MB limits
+    if (this._intendedPlaybackRate >= 2) {
+      this._warmBlobCacheForCurrentAndNext();
+    }
 
     if (this.onClipChange) this.onClipChange(clipIndex);
     if (this._isPlayingIntent) this.play();
@@ -522,6 +632,15 @@ export class VideoPlayer {
           }).catch((err) => {
             console.warn('[VideoPlayer] Server cache preload error:', err);
           });
+        }
+      }
+
+      // If playing at high speed (>=2x), pre-fetch Blobs for next clip into memory
+      if (this.playbackRate >= 2 && typeof globalThis.fetch === 'function') {
+        for (const it of items) {
+          if (it.url && !it.url.startsWith('blob:')) {
+            this.fetchClipBlob(it.url).catch(() => {});
+          }
         }
       }
     } finally {
@@ -743,6 +862,7 @@ export class VideoPlayer {
 
   clear(): void {
     this.pause();
+    this.clearBlobCache();
     this._bufferingCameras.clear();
     this._isSeeking = false;
     for (const video of Object.values(this.videos)) {

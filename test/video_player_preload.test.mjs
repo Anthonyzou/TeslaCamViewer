@@ -507,3 +507,54 @@ test('VideoPlayer - syncCameras adjusts playbackRate for slight drift and snaps 
   assert.strictEqual(vSevereDrift.currentTime, 10.0);
   assert.strictEqual(vSevereDrift.playbackRate, 1.0);
 });
+
+test('VideoPlayer - caches full-clip blobs for high-speed playback and seamless transition', async () => {
+  const player = new VideoPlayer();
+
+  const originalFetch = globalThis.fetch;
+  const mockBlob = new Blob(['mock-video-bytes'], { type: 'video/mp4' });
+  globalThis.fetch = async (_url) => {
+    return {
+      ok: true,
+      blob: async () => mockBlob,
+    };
+  };
+
+  try {
+    const rawUrl = 'https://test/clip_5x_front.mp4';
+    const blobUrl = await player.fetchClipBlob(rawUrl);
+
+    assert.ok(blobUrl && blobUrl.startsWith('blob:'));
+    assert.strictEqual(player.getBlobUrl(rawUrl), blobUrl);
+
+    const mockEvent = {
+      name: 'event-5x',
+      clipGroups: [
+        {
+          clips: {
+            front: { url: rawUrl, duration: 60 },
+          },
+        },
+      ],
+    };
+
+    player.videos = {
+      front: createMockVideoElement(),
+    };
+    player.currentEvent = mockEvent;
+
+    // Loading clip with cached blob URL should immediately set video.src to blobUrl
+    await player.loadClip(0);
+    assert.strictEqual(player.videos.front.src, blobUrl);
+
+    // Setting high playback rate (5x) warms current and next clips
+    player.setPlaybackSpeed(5);
+    assert.strictEqual(player.playbackRate, 5);
+
+    // Clearing player revokes and clears blobCache
+    player.clear();
+    assert.strictEqual(player.blobCache.size, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
