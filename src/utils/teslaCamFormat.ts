@@ -14,9 +14,31 @@ export interface ParsedEventFolderName {
   timestamp: string;
 }
 
+export interface RawClip {
+  timestamp: string;
+  camera: string;
+  fileName?: string;
+  file?: any;
+  url?: string;
+  fileHandle?: FileSystemFileHandle;
+  duration?: number;
+  [key: string]: any;
+}
+
 export interface ClipGroup {
   timestamp: string;
-  clips: Record<string, any>;
+  fileName?: string | null;
+  camera?: string;
+  clips: Record<
+    string,
+    {
+      fileName?: string;
+      url?: string;
+      fileHandle?: FileSystemFileHandle;
+      duration?: number;
+      [key: string]: any;
+    }
+  >;
 }
 
 export interface RecordingGap {
@@ -87,11 +109,12 @@ export function parseClipTimestamp(timestamp: string): Date | null {
 /**
  * Group clips by timestamp (same timestamp = all synchronized cameras for that 1-minute segment).
  */
-export function groupClips(clips: Array<{ timestamp: string; camera: string; [key: string]: any }>): ClipGroup[] {
+export function groupClips(clips: RawClip[]): ClipGroup[] {
   if (!Array.isArray(clips)) return [];
   const groups = new Map<string, ClipGroup>();
 
   for (const clip of clips) {
+    if (!clip || !clip.timestamp || !clip.camera) continue;
     if (!groups.has(clip.timestamp)) {
       groups.set(clip.timestamp, {
         timestamp: clip.timestamp,

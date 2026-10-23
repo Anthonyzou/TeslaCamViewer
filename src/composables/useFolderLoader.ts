@@ -14,35 +14,6 @@ export function useFolderLoader() {
   ];
 
   /**
-   * Helper to probe video duration from a blob URL
-   */
-  async function probeClipDuration(url: string): Promise<number> {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      const timeout = setTimeout(() => {
-        video.src = '';
-        resolve(60);
-      }, 3000);
-
-      video.onloadedmetadata = () => {
-        clearTimeout(timeout);
-        const d = video.duration;
-        video.src = '';
-        resolve(d && isFinite(d) ? d : 60);
-      };
-
-      video.onerror = () => {
-        clearTimeout(timeout);
-        video.src = '';
-        resolve(60);
-      };
-
-      video.src = url;
-    });
-  }
-
-  /**
    * Pre-generate Blobs for all clips in an event to support URL-only playback.
    * Also probes durations for accurate timeline mapping.
    */
@@ -73,7 +44,6 @@ export function useFolderLoader() {
                 timeoutCount < MAX_TIMEOUTS
               ) {
                 const start = performance.now();
-                clip.duration = await probeClipDuration(clip.url);
                 const elapsed = performance.now() - start;
 
                 if (elapsed > 2500) timeoutCount++;
@@ -112,6 +82,5 @@ export function useFolderLoader() {
   return {
     prepareEventURLs,
     cleanupEventURLs,
-    probeClipDuration,
   };
 }

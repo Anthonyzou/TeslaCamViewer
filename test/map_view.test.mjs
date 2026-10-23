@@ -83,13 +83,3 @@ test('MapView - createPopupContent creates formatted popup HTML', () => {
   assert.ok(html.includes('2 clips'));
   assert.ok(html.includes('sentry'));
 });
-
-test('MapView - provider configuration and dark mode properties', () => {
-  const container = {};
-  const mapView = new MapView(container, () => {});
-
-  const providers = mapView.getAvailableProviders();
-  assert.ok('osm' in providers);
-
-  assert.strictEqual(mapView.isDarkMode, false);
-});

@@ -1,5 +1,7 @@
 import type { DBSchema } from 'idb';
-import { ClipGroup } from '../utils/teslaCamFormat';
+import { ClipGroup, RawClip } from '../utils/teslaCamFormat';
+
+export type { RawClip };
 
 export interface FilterTypes {
   SavedClips: boolean;

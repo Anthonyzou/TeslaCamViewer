@@ -4,7 +4,6 @@
  * DOM rendering is declaratively managed by VideoGrid.vue.
  */
 import type { LayoutConfigSchema } from '../types';
-import { LayoutConfig } from './layoutConfig';
 import {
   calculateContainSize,
   calculateDrawParams,
@@ -381,70 +380,6 @@ export class LayoutRenderer {
       const charWidth = ctx.measureText(char).width;
       currentX += charWidth + spacing;
     });
-  }
-
-  /**
-   * Create a preview element for the layout editor
-   */
-  createPreviewElement(config: any, width = 400, _height = 300) {
-    const container = document.createElement('div');
-    container.className = 'layout-preview';
-    container.style.cssText = `
-            position: relative;
-            width: ${width}px;
-            background: #1a1a1a;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-        `;
-
-    const aspectRatio = config.canvas?.aspectRatio || '4:3';
-    const arParts = LayoutConfig.ASPECT_RATIOS[aspectRatio] || {
-      width: 4,
-      height: 3,
-    };
-    container.style.aspectRatio = `${arParts.width} / ${arParts.height}`;
-
-    for (const camName of LayoutConfig.CAMERAS) {
-      const camConfig = config.cameras?.[camName];
-      if (!camConfig || !camConfig.enabled) continue;
-
-      const pos = camConfig.position;
-      const placeholder = document.createElement('div');
-      placeholder.className = 'layout-preview-camera';
-      placeholder.dataset.camera = camName;
-      placeholder.style.cssText = `
-                position: absolute;
-                left: ${pos.x}%;
-                top: ${pos.y}%;
-                width: ${pos.width}%;
-                height: ${pos.height}%;
-                background: var(--bg-tertiary);
-                border: 2px solid var(--border);
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                color: var(--text-secondary);
-                z-index: ${camConfig.zIndex || 1};
-                cursor: move;
-                user-select: none;
-                box-sizing: border-box;
-            `;
-
-      const crop = camConfig.crop || { top: 0, right: 0, bottom: 0, left: 0 };
-      if (crop.top > 0 || crop.right > 0 || crop.bottom > 0 || crop.left > 0) {
-        placeholder.style.clipPath = `inset(${crop.top}% ${crop.right}% ${crop.bottom}% ${crop.left}%)`;
-      }
-
-      placeholder.textContent =
-        LayoutConfig.CAMERA_SHORT_NAMES[camName] || camName;
-
-      container.appendChild(placeholder);
-    }
-
-    return container;
   }
 
   /**

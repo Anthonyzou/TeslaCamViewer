@@ -11,7 +11,7 @@ import {
   helpModalStore,
 } from '../composables/useModals';
 import { timelineStore } from '../composables/useTimeline';
-import { LayoutManager } from '../layout/layoutManager';
+import { layoutStore } from '../composables/useLayout';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
 import weatherService from '../utils/weatherService';
@@ -33,7 +33,7 @@ import { VideoPlayer } from './videoPlayer';
 export class TeslaCamApp {
   public eventFilter = new EventFilter();
   public videoPlayer = new VideoPlayer();
-  public layoutManager = new LayoutManager();
+  public layoutManager = layoutStore;
   public screenshotCapture = new ScreenshotCapture(this.videoPlayer);
   public videoExport = new VideoExport(this.videoPlayer);
   public statisticsManager = new StatisticsManager();

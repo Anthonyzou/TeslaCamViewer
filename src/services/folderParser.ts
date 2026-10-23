@@ -3,6 +3,7 @@
  * Parser v3.7.12
  */
 import { openDB, type IDBPDatabase } from 'idb';
+import type { TeslaCamEvent, TeslaCamViewerDBSchema } from '../types';
 import {
   detectGaps,
   formatGapDuration,
@@ -13,12 +14,10 @@ import {
   parseClipTimestamp,
   parseEventFolderName,
 } from '../utils/teslaCamFormat';
-import type { TeslaCamEvent, TeslaCamViewerDBSchema } from '../types';
 
 class FolderParser {
   public rootHandle: FileSystemDirectoryHandle | null = null;
   public events: TeslaCamEvent[] = [];
-  private _sig = 'nmccomb';
   public DB_NAME = 'TeslaCamViewerDB';
   public DB_STORE = 'folderHandles' as const;
   public DB_KEY = 'lastFolder';
