@@ -745,5 +745,13 @@ class FolderParser {
 }
 
 const folderParser = new FolderParser();
+
+export function useFolderParser() {
+  return {
+    parser: folderParser,
+    parseFolder: () => folderParser.parseFolder(),
+  };
+}
+
 export { FolderParser, folderParser };
 export default FolderParser;

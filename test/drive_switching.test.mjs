@@ -3,7 +3,9 @@ import assert from 'node:assert';
 import { createJiti } from 'jiti';
 
 const jiti = createJiti(process.cwd());
-const { FolderManager, folderManager } = jiti('./src/services/folderManager.ts');
+const { FolderManager, folderManager } = jiti(
+  './src/composables/useFolderManager.ts'
+);
 const { useDrives } = jiti('./src/composables/useDrives.ts');
 
 test('FolderManager - retains events from both local drive and B2, and switches cleanly', () => {

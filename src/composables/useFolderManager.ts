@@ -745,5 +745,13 @@ class FolderManager {
 }
 
 const folderManager = new FolderManager();
+
+export function useFolderManager() {
+  return {
+    manager: folderManager,
+    drives: folderManager.drives,
+  };
+}
+
 export { FolderManager, folderManager };
 export default FolderManager;

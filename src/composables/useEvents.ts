@@ -1,7 +1,7 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
-import { folderManager } from '../services/folderManager';
-import { folderParser } from '../services/folderParser';
-import { videoPlayer } from '../services/videoPlayer';
+import { folderManager } from './useFolderManager';
+import { folderParser } from './useFolderParser';
+import { videoPlayer } from './useVideoPlayer';
 import type { TeslaCamEvent } from '../types';
 import { EventFilter } from '../utils/eventFilter';
 import { filterPanelStore } from './useFilterPanel';

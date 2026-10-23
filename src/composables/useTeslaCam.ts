@@ -1,10 +1,10 @@
 import { onMounted } from 'vue';
-import { b2Client } from '../services/b2Client';
-import { folderManager } from '../services/folderManager';
-import { folderParser } from '../services/folderParser';
-import { ScreenshotCapture } from '../services/screenshotCapture';
-import { VideoExport } from '../services/videoExport';
-import { videoPlayer } from '../services/videoPlayer';
+import { b2Client } from './useB2';
+import { folderManager } from './useFolderManager';
+import { folderParser } from './useFolderParser';
+import { ScreenshotCapture } from './useScreenshot';
+import { VideoExport } from './useVideoExport';
+import { videoPlayer } from './useVideoPlayer';
 import { useClipMarking } from './useClipMarking';
 import { drivesStore, useDrives } from './useDrives';
 import { eventsStore, useEvents } from './useEvents';

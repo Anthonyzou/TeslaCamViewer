@@ -1,8 +1,7 @@
 /**
- * EventBrowser - Headless event loading, thumbnail pre-resolution, and event selection service.
- * DOM rendering is declaratively managed by EventList.vue and EventCard.vue.
+ * useEventBrowser - Composable and helper engine for event thumbnail loading and recording health.
  */
-import { syncEvents } from '../composables/useEvents';
+import { syncEvents } from './useEvents';
 import type { TeslaCamEvent } from '../types';
 
 /**
@@ -132,7 +131,7 @@ export function getTimeRangeFromClips(event: TeslaCamEvent): string | null {
   return null;
 }
 
-class EventBrowser {
+export class EventBrowser {
   private events: TeslaCamEvent[] = [];
   private selectedEvent: TeslaCamEvent | null = null;
   private thumbnailCache = new Map<string, string>();
@@ -143,21 +142,14 @@ class EventBrowser {
     private onEventSelect: ((event: TeslaCamEvent) => void) | null = null
   ) {}
 
-  /**
-   * Compute recording health for an event.
-   */
   computeRecordingHealth(event: TeslaCamEvent) {
     return computeRecordingHealth(event);
   }
 
-  /**
-   * Load and pre-resolve events and thumbnails
-   */
   async loadEvents(events: TeslaCamEvent[]) {
     this.events = events;
     this.selectedEvent = null;
 
-    // Resolve local file thumbnails concurrently so img tags can use native loading="lazy"
     await Promise.all(
       events.map(async (event) => {
         if (!event.thumbnailUrl && event.thumbnailFile) {
@@ -168,7 +160,6 @@ class EventBrowser {
 
     syncEvents();
 
-    // Notify AI Search + other listeners that a new library loaded
     if (
       typeof window !== 'undefined' &&
       typeof window.dispatchEvent === 'function'
@@ -181,21 +172,14 @@ class EventBrowser {
     }
   }
 
-  /** Public alias so aiSearchUI can navigate to events by object reference. */
   loadEvent(event: TeslaCamEvent) {
     if (!event) return;
     this.selectEvent(event);
   }
 
-  /** No-op retained for backwards compatibility */
   renderEvents() {}
-
-  /** No-op retained for backwards compatibility */
   render() {}
 
-  /**
-   * Get or create thumbnail URL with local blob caching
-   */
   async getThumbnail(event: TeslaCamEvent): Promise<string | null> {
     if (event.thumbnailUrl) {
       return event.thumbnailUrl;
@@ -220,16 +204,10 @@ class EventBrowser {
     }
   }
 
-  /**
-   * Get time range string from event clips (e.g., "From 7:00-7:59 AM")
-   */
   _getTimeRangeFromClips(event: TeslaCamEvent) {
     return getTimeRangeFromClips(event);
   }
 
-  /**
-   * Select an event
-   */
   selectEvent(event: TeslaCamEvent) {
     this.selectedEvent = event;
     if (this.onEventSelect) {
@@ -237,9 +215,6 @@ class EventBrowser {
     }
   }
 
-  /**
-   * Clear all events and revoke thumbnail blob URLs
-   */
   clear() {
     this.events = [];
     this.selectedEvent = null;
@@ -250,20 +225,25 @@ class EventBrowser {
     this.thumbnailCache.clear();
   }
 
-  /**
-   * Get currently selected event
-   */
   getSelectedEvent(): TeslaCamEvent | null {
     return this.selectedEvent;
   }
 
-  /**
-   * Get all loaded events
-   */
   getEvents(): TeslaCamEvent[] {
     return this.events;
   }
 }
 
-export { EventBrowser };
+export const eventBrowser = new EventBrowser();
+
+export function useEventBrowser() {
+  return {
+    browser: eventBrowser,
+    computeRecordingHealth,
+    getTimeRangeFromClips,
+    getThumbnail: (event: TeslaCamEvent) => eventBrowser.getThumbnail(event),
+    loadEvents: (events: TeslaCamEvent[]) => eventBrowser.loadEvents(events),
+  };
+}
+
 export default EventBrowser;

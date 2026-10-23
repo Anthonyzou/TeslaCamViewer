@@ -104,6 +104,18 @@ const activeConfig: ComputedRef<LayoutConfigSchema | any> = computed(() => {
     return baseConfig;
   }
 
+  // Handle focus layout mode by enabling only the target focus camera
+  if (layout.value === 'layout-focus') {
+    const focused = focusCamera.value || 'front';
+    for (const [camName, camCfg] of Object.entries(baseConfig.cameras)) {
+      (camCfg as any).enabled = camName === focused;
+      if (camName === focused) {
+        (camCfg as any).position = { x: 0, y: 0, width: 100, height: 100 };
+        (camCfg as any).zIndex = 10;
+      }
+    }
+  }
+
   // Apply camera swaps if any
   for (const [cam, swap] of Object.entries(cameraSwaps.value)) {
     if (baseConfig.cameras[cam]) {

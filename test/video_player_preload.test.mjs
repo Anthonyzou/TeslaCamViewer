@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createJiti } from 'jiti';
 
 const jiti = createJiti(process.cwd());
-const { VideoPlayer } = jiti('./src/services/videoPlayer.ts');
+const { VideoPlayer } = jiti('./src/composables/useVideoPlayer.ts');
 
 function createMockVideoElement() {
   let _src = '';

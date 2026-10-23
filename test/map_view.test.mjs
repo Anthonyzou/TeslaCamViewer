@@ -22,7 +22,7 @@ if (typeof globalThis.window === 'undefined') {
 }
 
 const jiti = createJiti(process.cwd());
-const { MapView } = jiti('./src/services/mapView.ts');
+const { MapView } = jiti('./src/composables/mapEngine.ts');
 
 test('MapView - hasValidGPS properly validates coordinates', () => {
   const container = {};

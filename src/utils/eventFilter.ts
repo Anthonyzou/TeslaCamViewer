@@ -2,7 +2,7 @@
  * EventFilter - Handles filtering and sorting of events
  */
 import dayjs from 'dayjs';
-import { FolderParser } from '../services/folderParser';
+import { FolderParser } from '../composables/useFolderParser';
 
 class EventFilter {
   public filters: any;

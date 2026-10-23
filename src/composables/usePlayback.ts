@@ -1,7 +1,9 @@
 import { ref, type Ref } from 'vue';
 import { settingsStore } from './useSettings';
-import { videoPlayer } from '../services/videoPlayer';
+import { videoPlayer, VideoPlayer } from './useVideoPlayer';
 import { timelineStore } from './useTimeline';
+
+export { videoPlayer, VideoPlayer };
 
 const isPlaying: Ref<boolean> = ref(false);
 const speed: Ref<string> = ref('1');

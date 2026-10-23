@@ -9,7 +9,7 @@ globalThis.localStorage = globalThis.localStorage || {
 };
 
 const jiti = createJiti(process.cwd());
-const { VideoExport } = jiti('./src/services/videoExport.ts');
+const { VideoExport } = jiti('./src/composables/useVideoExport.ts');
 const { Output, Mp4OutputFormat, BufferTarget, StreamTarget } = jiti('mediabunny');
 
 test('VideoExport - initializes properly and manages export state', () => {

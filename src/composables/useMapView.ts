@@ -1,14 +1,22 @@
 import { shallowRef, type ShallowRef } from 'vue';
-import type { MapView } from '../services/mapView';
-import { TeslaCamEvent } from '../types';
+import type { TeslaCamEvent } from '../types';
 
-const mapViewInstance: ShallowRef<MapView | null> = shallowRef(null);
+export interface MapViewLike {
+  invalidateSize?: () => void;
+  fitBounds?: () => void;
+  loadEvents?: (events: TeslaCamEvent[]) => void;
+  selectEvent?: (event: TeslaCamEvent) => void;
+  destroy?: () => void;
+  [key: string]: any;
+}
+
+const mapViewInstance: ShallowRef<MapViewLike | null> = shallowRef(null);
 
 export const mapViewStore = {
-  get instance(): MapView | null {
+  get instance(): MapViewLike | null {
     return mapViewInstance.value;
   },
-  setInstance(inst: MapView | null): void {
+  setInstance(inst: MapViewLike | null): void {
     mapViewInstance.value = inst;
   },
   invalidateSize(): void {
@@ -31,3 +39,5 @@ export function useMapView() {
     loadEvents: mapViewStore.loadEvents,
   };
 }
+
+export default useMapView;

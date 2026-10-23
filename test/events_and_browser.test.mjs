@@ -15,7 +15,7 @@ const {
   EventBrowser,
   computeRecordingHealth,
   getTimeRangeFromClips,
-} = jiti('./src/services/eventBrowser.ts');
+} = jiti('./src/composables/useEventBrowser.ts');
 
 test('useEvents - updates shared state and computes counts and statistics reactively', () => {
   const events = useEvents();

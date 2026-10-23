@@ -8,8 +8,9 @@
 import 'leaflet';
 import 'leaflet.markercluster';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { eventsStore } from '../composables/useEvents';
+import { MapView } from '../composables/mapEngine';
 import { useMapView } from '../composables/useMapView';
-import { MapView } from '../services/mapView';
 import type { TeslaCamEvent } from '../types';
 
 const props = defineProps<{
@@ -38,9 +39,7 @@ onMounted(() => {
 
   mapViewInstance = new MapView(mapContainer.value, (event: TeslaCamEvent) => {
     emit('selectEvent', event);
-    if (app?.onEventSelected) {
-      app.onEventSelected(event);
-    }
+    eventsStore.selectEvent(event);
   });
 
   mapViewInstance.initialize();

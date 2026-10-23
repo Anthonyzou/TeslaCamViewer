@@ -1,7 +1,7 @@
 import { getCurrentInstance, onMounted, onUnmounted, ref, type Ref } from 'vue';
-import { b2Client } from '../services/b2Client';
-import { folderManager } from '../services/folderManager';
-import { folderParser } from '../services/folderParser';
+import { b2Client } from './useB2';
+import { folderManager } from './useFolderManager';
+import { folderParser } from './useFolderParser';
 import { settingsStore } from './useSettings';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { eventsStore } from './useEvents';

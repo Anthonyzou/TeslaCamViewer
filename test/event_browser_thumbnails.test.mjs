@@ -18,7 +18,7 @@ globalThis.URL.createObjectURL = () => 'blob:test/thumbnail-blob-url';
 globalThis.URL.revokeObjectURL = () => {};
 
 const jiti = createJiti(process.cwd());
-const EventBrowserModule = jiti('./src/services/eventBrowser.ts');
+const EventBrowserModule = jiti('./src/composables/useEventBrowser.ts');
 const EventBrowser = EventBrowserModule.EventBrowser || EventBrowserModule.default;
 
 test('EventBrowser - preserves existing thumbnailUrl (e.g. from B2) during loadEvents', async () => {

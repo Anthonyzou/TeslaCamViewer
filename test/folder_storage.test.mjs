@@ -5,8 +5,8 @@ import { IDBFactory } from 'fake-indexeddb';
 import { createJiti } from 'jiti';
 
 const jiti = createJiti(process.cwd());
-const { FolderManager } = jiti('./src/services/folderManager.ts');
-const FolderParserModule = jiti('./src/services/folderParser.ts');
+const { FolderManager } = jiti('./src/composables/useFolderManager.ts');
+const FolderParserModule = jiti('./src/composables/useFolderParser.ts');
 const FolderParser = FolderParserModule.FolderParser || FolderParserModule.default;
 
 test('FolderManager & FolderParser - DB schema upgrade initializes both drives and folderHandles stores', async () => {

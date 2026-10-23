@@ -66,7 +66,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import {
   computeRecordingHealth,
   getTimeRangeFromClips,
-} from '../services/eventBrowser';
+} from '../composables/useEventBrowser';
 import { settingsStore } from '../composables/useSettings';
 import type { TeslaCamEvent } from '../types';
 import { formatReason } from '../utils/teslaCamFormat';

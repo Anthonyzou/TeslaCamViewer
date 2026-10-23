@@ -1,19 +1,21 @@
 /**
- * VideoExport - Hardware-Accelerated Video Exporter powered by mediabunny Web Worker & WebCodecs.
+ * useVideoExport - Composable and engine for hardware-accelerated video export
  * Offloads multi-camera video decoding, layout compositing, and MP4 encoding directly to
  * a background Web Worker utilizing Origin Private File System (OPFS) and GPU hardware.
  */
-import { exportModalStore } from '../composables/useModals';
-import { layoutStore } from '../composables/useLayout';
+
+import { ref, type Ref } from 'vue';
+import { exportModalStore } from './useModals';
+import { layoutStore } from './useLayout';
+import { videoPlayer, type VideoPlayer } from './usePlayback';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { LayoutRenderer } from '../layout/layoutRenderer';
-import type VideoPlayer from './videoPlayer';
 import type {
   ExportWorkerStartPayload,
   WorkerOutMessage,
 } from '../workers/videoExportWorker';
 
-class VideoExport {
+export class VideoExport {
   public isExporting = false;
   private _cancelled = false;
   private _worker: Worker | null = null;
@@ -103,28 +105,16 @@ class VideoExport {
 
     const exportDuration = Math.max(0.5, endSec - startSec);
 
-    if (
-      typeof (window as any).VideoEncoder !== 'function' ||
-      typeof Worker === 'undefined' ||
-      typeof navigator?.storage?.getDirectory !== 'function'
-    ) {
-      alert(
-        'Your browser does not support the required WebCodecs or OPFS APIs. Please update to a modern browser (Chrome, Safari 16.4+, Firefox 130+, Edge).'
-      );
-      return;
-    }
-
     this.isExporting = true;
     this._cancelled = false;
+    this._showExportOverlay(camera, exportDuration);
     window.app?.disableControls?.();
 
-    this._showExportOverlay(camera, exportDuration);
-
     try {
-      // Collect clip file handles or URLs for the target clip group
-      const clipGroup = clipGroups[targetClipIndex];
+      const activeGroup = clipGroups[targetClipIndex];
       const clipInputs: Record<string, File | Blob | string> = {};
-      const camerasToExport =
+
+      const camerasToGather =
         camera === 'all'
           ? [
               'front',
@@ -136,22 +126,22 @@ class VideoExport {
             ]
           : [camera];
 
-      for (const cam of camerasToExport) {
-        const clip = clipGroup?.clips?.[cam];
-        if (!clip) continue;
-        if (clip.fileHandle && typeof clip.fileHandle.getFile === 'function') {
+      for (const cam of camerasToGather) {
+        const c = activeGroup?.clips?.[cam];
+        if (!c) continue;
+        if (c.fileHandle) {
           try {
-            clipInputs[cam] = await clip.fileHandle.getFile();
-          } catch (err) {
-            console.warn(`[VideoExport] Could not read fileHandle for ${cam}:`, err);
+            clipInputs[cam] = await c.fileHandle.getFile();
+          } catch (e) {
+            console.warn(`[VideoExport] Could not get file for ${cam}:`, e);
           }
-        } else if (clip.url) {
-          clipInputs[cam] = clip.url;
+        } else if (c.url) {
+          clipInputs[cam] = c.url;
         }
       }
 
       if (Object.keys(clipInputs).length === 0) {
-        throw new Error('No video sources available to export');
+        throw new Error('No video feeds found for the target export interval');
       }
 
       // Determine Layout and Canvas Output Resolution
@@ -176,10 +166,10 @@ class VideoExport {
       } else {
         const videos = this.videoPlayer?.videos || {};
         const activeVideo = videos[camera] || videos.front;
-        const vw = activeVideo?.videoWidth || 1280;
-        const vh = activeVideo?.videoHeight || 960;
-        canvasWidth = Math.floor(vw / 2) * 2;
-        canvasHeight = Math.floor(vh / 2) * 2;
+        canvasWidth =
+          Math.floor((activeVideo?.videoWidth || 1280) / 2) * 2;
+        canvasHeight =
+          Math.floor((activeVideo?.videoHeight || 960) / 2) * 2;
       }
 
       await this._exportWithWorker({
@@ -345,5 +335,31 @@ class VideoExport {
   }
 }
 
-export { VideoExport };
-export default VideoExport;
+export const videoExport = new VideoExport(videoPlayer);
+
+export function useVideoExport() {
+  const isExporting: Ref<boolean> = ref(false);
+
+  async function startExport(options: any = {}): Promise<void> {
+    isExporting.value = true;
+    try {
+      await videoExport.startExport(options);
+    } finally {
+      isExporting.value = videoExport.isExporting;
+    }
+  }
+
+  async function cancelExport(): Promise<void> {
+    await videoExport.cancelExport();
+    isExporting.value = false;
+  }
+
+  return {
+    isExporting,
+    startExport,
+    cancelExport,
+    videoExport,
+  };
+}
+
+export default useVideoExport;

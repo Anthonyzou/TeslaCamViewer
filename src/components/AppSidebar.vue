@@ -140,7 +140,10 @@
         class="tab-pane"
         :class="{ active: activeTab === 'map' }"
       >
-        <MapView :visible="activeTab === 'map'" />
+        <MapView
+          :visible="activeTab === 'map'"
+          @selectEvent="emit('selectEvent', $event)"
+        />
       </div>
     </div>
 

@@ -145,7 +145,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { drivesStore } from '../composables/useDrives';
 import { driveSetupModalStore, useModals } from '../composables/useModals';
-import { folderManager } from '../services/folderManager';
+import { folderManager } from '../composables/useFolderManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 
 const { isDriveManagementOpen: isOpen, driveManagementModal } = useModals();

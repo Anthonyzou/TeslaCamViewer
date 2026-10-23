@@ -123,82 +123,73 @@
         >
           <ChevronDown :size="14" />
         </button>
-
-        <div
-          id="exportDropdown"
-          class="export-dropdown"
-          :class="{ hidden: !isExportDropdownOpen }"
-        >
-          <div class="export-dropdown-header" data-i18n="export.header">
-            {{ t('export.header') }}
-          </div>
-
-          <!-- Capture Screenshot -->
-          <button
-            class="export-option export-action-btn"
-            data-action="screenshot"
-            @click="onScreenshotClick"
-          >
-            <Camera :size="18" style="margin-right: 8px" />
-            <span data-i18n="controls.screenshot">{{
-              t('controls.screenshot')
-            }}</span>
-          </button>
-
-          <!-- Export Video with Format -->
-          <div class="export-video-group">
-            <button
-              class="export-option export-action-btn"
-              data-camera="all"
-              id="exportVideoBtn"
-              @click="onExportVideoClick"
-            >
-              <Video :size="18" style="margin-right: 8px" />
-              <span data-i18n="export.exportVideo">{{
-                t('export.exportVideo')
-              }}</span>
-            </button>
-          </div>
-          <div class="export-video-group">
-            <button
-              class="export-option export-action-btn"
-              data-camera="all"
-              id="exportVideoBtn"
-              @click="emit('clearMarks')"
-            >
-              <X :size="18" style="margin-right: 8px" />
-              <span data-i18n="controls.clearMarks">{{
-                t('controls.clearMarks')
-              }}</span>
-            </button>
-          </div>
-
-          <div class="export-dropdown-divider"></div>
-
-          <!-- Export Settings -->
-          <div class="export-settings-header">Settings</div>
-
-          <label class="export-option export-checkbox-option">
-            <input
-              type="checkbox"
-              id="privacyModeCheckbox"
-              v-model="privacyMode"
-            />
-            <span
-              class="export-checkbox-label"
-              data-i18n="export.privacyMode"
-              >{{ t('export.privacyMode') }}</span
-            >
-            <span
-              class="export-option-hint"
-              data-i18n="export.privacyModeHint"
-              >{{ t('export.privacyModeHint') }}</span
-            >
-          </label>
-        </div>
       </div>
     </div>
 
+    <div
+      id="exportDropdown"
+      class="export-dropdown"
+      :class="{ hidden: !isExportDropdownOpen }"
+    >
+      <div class="export-dropdown-header" data-i18n="export.header">
+        {{ t('export.header') }}
+      </div>
+
+      <!-- Capture Screenshot -->
+      <button
+        class="export-option export-action-btn"
+        data-action="screenshot"
+        @click="onScreenshotClick"
+      >
+        <Camera :size="18" style="margin-right: 8px" />
+        <span data-i18n="controls.screenshot">{{
+          t('controls.screenshot')
+        }}</span>
+      </button>
+
+      <!-- Export Video with Format -->
+      <div class="export-video-group">
+        <button
+          class="export-option export-action-btn"
+          data-camera="all"
+          id="exportVideoBtn"
+          @click="onExportVideoClick"
+        >
+          <Video :size="18" style="margin-right: 8px" />
+          <span data-i18n="export.exportVideo">{{
+            t('export.exportVideo')
+          }}</span>
+        </button>
+      </div>
+      <div class="export-video-group">
+        <button
+          class="export-option export-action-btn"
+          data-camera="all"
+          id="exportVideoBtn"
+          @click="emit('clearMarks')"
+        >
+          <X :size="18" style="margin-right: 8px" />
+          <span data-i18n="controls.clearMarks">{{
+            t('controls.clearMarks')
+          }}</span>
+        </button>
+      </div>
+
+      <div class="export-dropdown-divider"></div>
+
+      <!-- Export Settings -->
+      <div class="export-settings-header">Settings</div>
+
+      <label class="export-option export-checkbox-option">
+        <input type="checkbox" id="privacyModeCheckbox" v-model="privacyMode" />
+        <span class="export-checkbox-label" data-i18n="export.privacyMode">{{
+          t('export.privacyMode')
+        }}</span>
+        <span class="export-option-hint" data-i18n="export.privacyModeHint">{{
+          t('export.privacyModeHint')
+        }}</span>
+      </label>
+    </div>
     <!-- View Controls Group -->
     <div class="control-group control-group-view">
       <div class="layout-control">
@@ -296,7 +287,6 @@
             value="left_pillar"
             data-i18n="cameras.leftPillar"
             class="pillar-option"
-            style="display: none"
           >
             Left Pillar
           </option>
@@ -304,7 +294,6 @@
             value="right_pillar"
             data-i18n="cameras.rightPillar"
             class="pillar-option"
-            style="display: none"
           >
             Right Pillar
           </option>
@@ -343,16 +332,27 @@ import {
   Video,
   X,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 
-const props = defineProps<{
-  hasEvent: boolean;
-  isPlaying: boolean;
-  speed: string;
-  isLooping: boolean;
-  layout: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    hasEvent?: boolean;
+    isPlaying?: boolean;
+    speed?: string;
+    isLooping?: boolean;
+    layout?: string;
+    focusCamera?: string | null;
+  }>(),
+  {
+    hasEvent: false,
+    isPlaying: false,
+    speed: '1',
+    isLooping: false,
+    layout: 'layout-6-3',
+    focusCamera: 'front',
+  }
+);
 
 const emit = defineEmits<{
   (e: 'togglePlay'): void;
@@ -376,9 +376,23 @@ const emit = defineEmits<{
 
 const selectedSpeed = ref(props.speed || '1');
 const selectedLayout = ref(props.layout || 'layout-6-3');
-const focusCamera = ref('front');
+const focusCamera = ref(props.focusCamera || 'front');
 const isExportDropdownOpen = ref(false);
 const privacyMode = ref(false);
+
+watch(
+  () => props.layout,
+  (l) => {
+    if (l) selectedLayout.value = l;
+  }
+);
+
+watch(
+  () => props.focusCamera,
+  (c) => {
+    if (c) focusCamera.value = c;
+  }
+);
 
 const { t } = useI18n();
 
@@ -396,6 +410,7 @@ function onExportVideoClick(): void {
 <style scoped>
 /* ==================== CONTROLS ==================== */
 .controls {
+  position: relative;
   background: var(--bg-secondary);
   padding: 0.375rem 1rem;
   display: flex;

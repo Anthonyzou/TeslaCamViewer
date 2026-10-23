@@ -768,4 +768,13 @@ export class VideoPlayer {
 }
 
 export const videoPlayer = new VideoPlayer();
+
+export function useVideoPlayer() {
+  return {
+    player: videoPlayer,
+    play: () => videoPlayer.play(),
+    pause: () => videoPlayer.pause(),
+  };
+}
+
 export default VideoPlayer;

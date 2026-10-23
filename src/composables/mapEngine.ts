@@ -2,9 +2,29 @@
  * MapView - Leaflet map integration for displaying event locations
  */
 
+// Node.js test environment guard for Leaflet
+if (typeof globalThis.window === 'undefined') {
+  const doc = {
+    documentElement: { style: {} },
+    createElement: () => ({ style: {} }),
+  };
+  globalThis.window = {
+    devicePixelRatio: 1,
+    screen: {},
+    requestAnimationFrame: (cb: any) => setTimeout(cb, 0),
+    cancelAnimationFrame: (id: any) => clearTimeout(id),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    document: doc,
+    navigator: globalThis.navigator || { userAgent: 'node', onLine: true },
+  } as any;
+  globalThis.document = doc as any;
+}
+
 import L from 'leaflet';
+import { shallowRef, type ShallowRef } from 'vue';
 import { TeslaCamEvent } from '../types';
-import { FolderParser } from './folderParser';
+import { FolderParser } from './useFolderParser';
 
 class MapView {
   private container: HTMLElement | null = null;
@@ -152,6 +172,18 @@ class MapView {
       marker.on('click', () => {
         if (this.onEventSelect) {
           this.onEventSelect(event);
+        }
+      });
+
+      marker.on('popupopen', (e: any) => {
+        const popupEl = e.popup?.getElement?.();
+        if (popupEl) {
+          popupEl.style.cursor = 'pointer';
+          popupEl.onclick = () => {
+            if (this.onEventSelect) {
+              this.onEventSelect(event);
+            }
+          };
         }
       });
 
@@ -365,6 +397,36 @@ class MapView {
       this.initialized = false;
     }
   }
+}
+
+const mapViewInstance: ShallowRef<MapView | null> = shallowRef(null);
+
+export const mapViewStore = {
+  get instance(): MapView | null {
+    return mapViewInstance.value;
+  },
+  setInstance(inst: MapView | null): void {
+    mapViewInstance.value = inst;
+  },
+  invalidateSize(): void {
+    mapViewInstance.value?.invalidateSize?.();
+  },
+  fitBounds(): void {
+    mapViewInstance.value?.fitBounds?.();
+  },
+  loadEvents(events: TeslaCamEvent[]): void {
+    mapViewInstance.value?.loadEvents?.(events);
+  },
+};
+
+export function useMapView() {
+  return {
+    mapView: mapViewInstance,
+    setMapView: mapViewStore.setInstance,
+    invalidateSize: mapViewStore.invalidateSize,
+    fitBounds: mapViewStore.fitBounds,
+    loadEvents: mapViewStore.loadEvents,
+  };
 }
 
 export { MapView };

@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue';
-import type { VideoPlayer } from '../services/videoPlayer';
+import type { VideoPlayer } from './useVideoPlayer';
 
 const inPoint: Ref<number | null> = ref(null);
 const outPoint: Ref<number | null> = ref(null);

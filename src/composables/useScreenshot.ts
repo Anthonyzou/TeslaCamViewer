@@ -1,14 +1,14 @@
 /**
- * ScreenshotCapture - Captures and exports screenshots from video playback
- * Reuses LayoutRenderer for single-source-of-truth frame and label rendering.
+ * useScreenshot - Composable and engine for capturing and exporting video screenshots
  */
 
 import dayjs from 'dayjs';
+import { ref, type Ref } from 'vue';
+import { layoutStore } from './useLayout';
+import { settingsStore } from './useSettings';
+import { videoPlayer, type VideoPlayer } from './usePlayback';
 import { LayoutConfig } from '../layout/layoutConfig';
 import LayoutRenderer from '../layout/layoutRenderer';
-import { layoutStore } from '../composables/useLayout';
-import { settingsStore } from '../composables/useSettings';
-import type VideoPlayer from './videoPlayer';
 
 export interface ScreenshotOptions {
   includeTimestamp?: boolean;
@@ -18,9 +18,6 @@ export interface ScreenshotOptions {
 export class ScreenshotCapture {
   constructor(private videoPlayer: VideoPlayer) {}
 
-  /**
-   * Convert an OffscreenCanvas or HTMLCanvasElement to a Blob
-   */
   private async canvasToBlob(
     canvas: OffscreenCanvas | HTMLCanvasElement,
     mimeType: string,
@@ -55,9 +52,6 @@ export class ScreenshotCapture {
     }
   }
 
-  /**
-   * Capture current composite view using the active layout configuration
-   */
   async captureComposite(options?: ScreenshotOptions): Promise<void> {
     const { includeTimestamp = true, quality = 0.95 } = options || {};
 
@@ -97,14 +91,12 @@ export class ScreenshotCapture {
       | CanvasRenderingContext2D
       | OffscreenCanvasRenderingContext2D;
 
-    // 1. Draw camera frames using shared renderer
     renderer.renderToCanvas(
       ctx as CanvasRenderingContext2D,
       exportConfig,
       videos
     );
 
-    // 2. Add camera labels using shared renderer
     const labelScale = width / 1920;
     const scaledFontSize = Math.round(18 * labelScale);
     renderer.addLabelsToCanvas(ctx as CanvasRenderingContext2D, exportConfig, {
@@ -112,7 +104,6 @@ export class ScreenshotCapture {
       videos,
     });
 
-    // 3. Optional Timestamp Overlay
     const settings = settingsStore;
     const privacyMode = settings && settings.get('privacyModeExport') === true;
 
@@ -120,7 +111,6 @@ export class ScreenshotCapture {
       this.addTimestampOverlay(ctx as CanvasRenderingContext2D, width, height);
     }
 
-    // 4. Optional Telemetry HUD Overlay
     const telemetryEnabled =
       !settings || settings.get('telemetryOverlayInExport') !== false;
 
@@ -157,7 +147,6 @@ export class ScreenshotCapture {
       }
     }
 
-    // 5. Convert to Blob and trigger download
     const mimeType = 'image/jpeg';
     const blob = await this.canvasToBlob(canvas, mimeType, quality);
     const timestamp = this.getFormattedTimestamp();
@@ -165,10 +154,7 @@ export class ScreenshotCapture {
     this.downloadBlob(blob, `TeslaCam_${timestamp}.${extension}`);
   }
 
-  /**
-   * Capture a single camera view
-   */
-  async captureSingle(camera: string, options: ScreenshotOptions = {}) {
+  async captureSingle(camera: string, options: ScreenshotOptions = {}): Promise<void> {
     const { includeTimestamp = true, quality = 0.95 } = options;
 
     const video = this.videoPlayer.videos[camera];
@@ -210,9 +196,6 @@ export class ScreenshotCapture {
     this.downloadBlob(blob, `TeslaCam_${cameraName}_${timestamp}.${extension}`);
   }
 
-  /**
-   * Add camera label for single camera capture
-   */
   addCameraLabel(
     ctx: CanvasRenderingContext2D,
     label: string,
@@ -227,9 +210,6 @@ export class ScreenshotCapture {
     ctx.fillText(label, x, y);
   }
 
-  /**
-   * Add timestamp overlay to bottom of image
-   */
   addTimestampOverlay(
     ctx: CanvasRenderingContext2D,
     width: number,
@@ -258,9 +238,6 @@ export class ScreenshotCapture {
     }
   }
 
-  /**
-   * Add overlay bar with text
-   */
   addOverlayBar(
     ctx: CanvasRenderingContext2D,
     width: number,
@@ -290,18 +267,12 @@ export class ScreenshotCapture {
     ctx.textAlign = 'left';
   }
 
-  /**
-   * Format seconds to MM:SS
-   */
   formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
-  /**
-   * Get formatted timestamp for filename
-   */
   getFormattedTimestamp(): string {
     const event = this.videoPlayer.currentEvent;
 
@@ -313,9 +284,6 @@ export class ScreenshotCapture {
     return dayjs().format('YYYY-MM-DDTHH-mm-ss');
   }
 
-  /**
-   * Trigger download of blob
-   */
   downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -329,4 +297,36 @@ export class ScreenshotCapture {
   }
 }
 
-export default ScreenshotCapture;
+export const screenshotCapture = new ScreenshotCapture(videoPlayer);
+
+export function useScreenshot() {
+  const isCapturing: Ref<boolean> = ref(false);
+
+  async function captureComposite(options?: ScreenshotOptions): Promise<void> {
+    isCapturing.value = true;
+    try {
+      await screenshotCapture.captureComposite(options);
+    } finally {
+      isCapturing.value = false;
+    }
+  }
+
+  async function captureSingle(camera: string, options?: ScreenshotOptions): Promise<void> {
+    isCapturing.value = true;
+    try {
+      await screenshotCapture.captureSingle(camera, options);
+    } finally {
+      isCapturing.value = false;
+    }
+  }
+
+  return {
+    isCapturing,
+    captureComposite,
+    captureSingle,
+    capture: captureComposite,
+    screenshotCapture,
+  };
+}
+
+export default useScreenshot;

@@ -56,6 +56,7 @@
           :speed="speed"
           :isLooping="isLooping"
           :layout="layout"
+          :focusCamera="focusCamera"
           @togglePlay="togglePlay"
           @prevClip="prevClip"
           @nextClip="nextClip"
