@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted } from 'vue';
+import { onKeyStroke, useFullscreen } from '@vueuse/core';
 import { settingsManager } from '../services/settingsManager';
 
 interface ShortcutActions {
@@ -24,7 +24,9 @@ interface ShortcutActions {
  * useKeyboardShortcuts - Global keyboard shortcuts handler for TeslaCamViewer
  */
 export function useKeyboardShortcuts(actions?: ShortcutActions) {
-  function handleKeyDown(event: KeyboardEvent): void {
+  const { toggle: toggleFullscreen } = useFullscreen();
+
+  onKeyStroke((event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (
       target &&
@@ -133,11 +135,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
 
       case 'KeyF':
         event.preventDefault();
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        } else {
-          document.documentElement.requestFullscreen();
-        }
+        toggleFullscreen().catch(console.error);
         break;
 
       case 'Digit1':
@@ -222,13 +220,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         }
         break;
     }
-  }
-
-  onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-  });
-
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
   });
 }
+
+export default useKeyboardShortcuts;

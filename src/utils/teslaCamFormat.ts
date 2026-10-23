@@ -160,7 +160,7 @@ export function formatGapDuration(seconds: number): string {
  * Detect gaps between consecutive clip groups in an event.
  */
 export function detectGaps(
-  clipGroups: Array<{ timestamp: string; [key: string]: any }>,
+  clipGroups: ClipGroup[],
   gapThreshold = 30,
   expectedClipDuration = 60
 ): RecordingGap[] {

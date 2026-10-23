@@ -165,7 +165,8 @@
 
 <script setup lang="ts">
 import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useLocalStorage, useMediaQuery } from '@vueuse/core';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import EventList from './EventList.vue';
@@ -197,27 +198,13 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 320;
 
-function getSavedWidth(): number {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = parseInt(saved, 10);
-      if (parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) return parsed;
-    } else {
-      resetWidth();
-      return DEFAULT_WIDTH;
-    }
-  } catch (e) {
-    console.warn('[SidebarResize] Failed to restore width:', e);
-  }
-  return DEFAULT_WIDTH;
-}
-
-const sidebarWidth = ref<number>(getSavedWidth() || 10);
+const sidebarWidth = useLocalStorage<number>(STORAGE_KEY, DEFAULT_WIDTH);
 const isResizing = ref(false);
-const isMobile = ref(
-  typeof window !== 'undefined' ? window.innerWidth <= 768 : false
-);
+const isMobile = useMediaQuery('(max-width: 768px)');
+
+function resetWidth(): void {
+  sidebarWidth.value = DEFAULT_WIDTH;
+}
 
 let startX = 0;
 let startWidth = 0;
@@ -229,19 +216,6 @@ const sidebarStyle = computed(() => {
     transition: isResizing.value ? 'none' : undefined,
   };
 });
-
-function saveWidth(w: number): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, w.toString());
-  } catch (e) {
-    console.warn('[SidebarResize] Failed to save width:', e);
-  }
-}
-
-function resetWidth(): void {
-  sidebarWidth.value = DEFAULT_WIDTH;
-  saveWidth(DEFAULT_WIDTH);
-}
 
 function onPointerDown(e: PointerEvent): void {
   if (isMobile.value || e.button !== 0) return;
@@ -274,7 +248,6 @@ function onPointerUp(e: PointerEvent): void {
   }
   isResizing.value = false;
   document.body.classList.remove('sidebar-resizing');
-  saveWidth(sidebarWidth.value);
 }
 
 const activeTab = ref<'events' | 'map'>('events');
@@ -291,27 +264,7 @@ watch(
 
 const { t } = useI18n();
 
-let mediaQuery: MediaQueryList | null = null;
-let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
-
-onMounted(() => {
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function'
-  ) {
-    mediaQuery = window.matchMedia('(max-width: 768px)');
-    isMobile.value = mediaQuery.matches;
-    mediaListener = (e: MediaQueryListEvent) => {
-      isMobile.value = e.matches;
-    };
-    mediaQuery.addEventListener('change', mediaListener);
-  }
-});
-
 onUnmounted(() => {
-  if (mediaQuery && mediaListener) {
-    mediaQuery.removeEventListener('change', mediaListener);
-  }
   document.body.classList.remove('sidebar-resizing');
 });
 </script>

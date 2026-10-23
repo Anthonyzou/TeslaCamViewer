@@ -354,14 +354,6 @@ export class VideoPlayer {
       video.controls = false;
       video.muted = true;
       video.volume = 0;
-
-      video.parentElement?.addEventListener('dblclick', () => {
-        if (!document.fullscreenElement) {
-          video.parentElement?.requestFullscreen().catch(console.error);
-        } else {
-          document.exitFullscreen();
-        }
-      });
     }
   }
 

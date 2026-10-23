@@ -193,38 +193,10 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.eventsLast14Days') }}</h3>
                 <div v-if="hasTimelineEvents">
-                  <div class="stats-timeline-chart">
-                    <div
-                      v-for="d in stats?.timelineData"
-                      :key="d.date"
-                      class="stats-timeline-bar"
-                      :title="`${d.label}: ${d.count} events`"
-                    >
-                      <div
-                        class="stats-timeline-fill"
-                        :style="{
-                          height: `${Math.max(d.percent, d.count > 0 ? 5 : 0)}%`,
-                        }"
-                      ></div>
-                      <span class="stats-timeline-count">{{
-                        d.count || ''
-                      }}</span>
-                    </div>
-                  </div>
-                  <div
-                    v-if="stats?.timelineData?.length"
-                    class="stats-timeline-labels"
-                  >
-                    <span>{{ stats.timelineData[0].label }}</span>
-                    <span>{{
-                      stats.timelineData[
-                        Math.floor(stats.timelineData.length / 2)
-                      ].label
-                    }}</span>
-                    <span>{{
-                      stats.timelineData[stats.timelineData.length - 1].label
-                    }}</span>
-                  </div>
+                  <BaseChart
+                    :data="timelineChartData"
+                    :height="140"
+                  />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noEventsLast14Days') }}
@@ -250,39 +222,10 @@
                   </button>
                 </div>
                 <div v-if="hasTrendData">
-                  <div class="stats-trends-container">
-                    <div class="stats-trends-chart">
-                      <div
-                        v-for="d in activeTrendData"
-                        :key="d.label"
-                        class="stats-trend-bar"
-                        :title="`${d.label}: ${d.count} ${t('statistics.events')}`"
-                      >
-                        <div
-                          class="stats-trend-fill"
-                          :style="{
-                            height: `${Math.max(d.percent, d.count > 0 ? 5 : 0)}%`,
-                          }"
-                        ></div>
-                        <span class="stats-trend-count">{{
-                          d.count || ''
-                        }}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    v-if="activeTrendData?.length"
-                    class="stats-trends-labels"
-                  >
-                    <span>{{ activeTrendData[0]?.label }}</span>
-                    <span>{{
-                      activeTrendData[Math.floor(activeTrendData.length / 2)]
-                        ?.label
-                    }}</span>
-                    <span>{{
-                      activeTrendData[activeTrendData.length - 1]?.label
-                    }}</span>
-                  </div>
+                  <BaseChart
+                    :data="trendChartData"
+                    :height="140"
+                  />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noTrendData') }}
@@ -395,29 +338,10 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.sentryByTimeOfDay') }}</h3>
                 <div v-if="hasSentryHourData">
-                  <div class="stats-hour-chart">
-                    <div
-                      v-for="h in stats?.timeOfDay"
-                      :key="h.hour"
-                      class="stats-hour-bar"
-                      :title="`${h.label}: ${h.count} events`"
-                    >
-                      <div
-                        class="stats-hour-fill"
-                        :style="{
-                          height: `${Math.max(h.percent, h.count > 0 ? 5 : 0)}%`,
-                          background: h.color,
-                        }"
-                      ></div>
-                    </div>
-                  </div>
-                  <div class="stats-hour-labels">
-                    <span>12am</span>
-                    <span>6am</span>
-                    <span>12pm</span>
-                    <span>6pm</span>
-                    <span>12am</span>
-                  </div>
+                  <BaseChart
+                    :data="sentryHourChartData"
+                    :height="140"
+                  />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noSentryEvents') }}
@@ -427,39 +351,10 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.sentryByDayOfWeek') }}</h3>
                 <div v-if="hasSentryDowData">
-                  <div class="stats-dow-chart">
-                    <div
-                      v-for="d in stats?.dayOfWeek"
-                      :key="d.day"
-                      class="stats-dow-bar"
-                      :title="`${d.label}: ${d.count} events`"
-                    >
-                      <div
-                        class="stats-dow-fill"
-                        :style="{
-                          height: `${Math.max(d.percent, d.count > 0 ? 5 : 0)}%`,
-                          background: d.color,
-                        }"
-                      ></div>
-                      <span class="stats-dow-label">{{ d.label }}</span>
-                    </div>
-                  </div>
-                  <div class="stats-dow-legend">
-                    <span class="stats-legend-item">
-                      <span
-                        class="stats-legend-color"
-                        style="background: #4a9eff"
-                      ></span>
-                      Weekday
-                    </span>
-                    <span class="stats-legend-item">
-                      <span
-                        class="stats-legend-color"
-                        style="background: #ff9800"
-                      ></span>
-                      Weekend
-                    </span>
-                  </div>
+                  <BaseChart
+                    :data="sentryDowChartData"
+                    :height="140"
+                  />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noSentryEvents') }}
@@ -586,10 +481,12 @@ import {
   Sun,
   X,
 } from 'lucide-vue-next';
+import type { ChartData } from 'chart.js';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 import type { StatisticsData, TrendDataPoint } from '../types';
+import BaseChart from './BaseChart.vue';
 
 const {
   isStatisticsOpen: isOpen,
@@ -656,6 +553,66 @@ const activeTrendData = computed<TrendDataPoint[]>(() => {
 
 const hasTrendData = computed<boolean>(() => {
   return activeTrendData.value.some((d) => d.count > 0);
+});
+
+const timelineChartData = computed<ChartData<'bar'>>(() => {
+  const items = stats.value?.timelineData || [];
+  return {
+    labels: items.map((d) => d.label),
+    datasets: [
+      {
+        label: t('statistics.events'),
+        data: items.map((d) => d.count || 0),
+        backgroundColor: '#00d4ff',
+        borderRadius: 4,
+      },
+    ],
+  };
+});
+
+const trendChartData = computed<ChartData<'bar'>>(() => {
+  const items = activeTrendData.value || [];
+  return {
+    labels: items.map((d) => d.label),
+    datasets: [
+      {
+        label: t('statistics.events'),
+        data: items.map((d) => d.count || 0),
+        backgroundColor: '#00e676',
+        borderRadius: 4,
+      },
+    ],
+  };
+});
+
+const sentryHourChartData = computed<ChartData<'bar'>>(() => {
+  const items = stats.value?.timeOfDay || [];
+  return {
+    labels: items.map((h) => h.label),
+    datasets: [
+      {
+        label: t('statistics.events'),
+        data: items.map((h) => h.count || 0),
+        backgroundColor: items.map((h) => h.color || '#ff9100'),
+        borderRadius: 3,
+      },
+    ],
+  };
+});
+
+const sentryDowChartData = computed<ChartData<'bar'>>(() => {
+  const items = stats.value?.dayOfWeek || [];
+  return {
+    labels: items.map((d) => d.label),
+    datasets: [
+      {
+        label: t('statistics.events'),
+        data: items.map((d) => d.count || 0),
+        backgroundColor: items.map((d) => d.color || '#4a9eff'),
+        borderRadius: 4,
+      },
+    ],
+  };
 });
 
 function open(data: Record<string, unknown>): void {
@@ -1126,92 +1083,10 @@ defineExpose({
   }
 }
 
-/* Timeline Chart */
-.stats-timeline-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 80px;
-  padding: 0.5rem 0;
-}
-
-.stats-timeline-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.stats-timeline-fill {
-  width: 100%;
-  background: linear-gradient(180deg, var(--accent), var(--accent-hover));
-  border-radius: 2px 2px 0 0;
-  min-height: 0;
-  transition: height 0.3s ease;
-}
-
-.stats-timeline-count {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  margin-top: 4px;
-  height: 14px;
-}
-
-.stats-timeline-labels {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--border);
-}
-
-.stats-timeline-labels span {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
 /* Stats type label with icon */
 .stats-type-label svg {
   margin-right: 6px;
   vertical-align: middle;
-}
-
-/* Hour of Day Chart (24-hour) */
-.stats-hour-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 80px;
-  padding: 0.5rem 0;
-}
-
-.stats-hour-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.stats-hour-fill {
-  width: 100%;
-  border-radius: 2px 2px 0 0;
-  min-height: 0;
-  transition: height 0.3s ease;
-}
-
-.stats-hour-labels {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--border);
-}
-
-.stats-hour-labels span {
-  font-size: 0.65rem;
-  color: var(--text-muted);
 }
 
 /* Camera Distribution Chart */
@@ -1250,61 +1125,6 @@ defineExpose({
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: right;
-}
-
-/* Day of Week Chart */
-.stats-dow-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 100px;
-  padding: 0.5rem 0;
-}
-
-.stats-dow-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-}
-
-.stats-dow-fill {
-  width: 100%;
-  border-radius: 4px 4px 0 0;
-  min-height: 0;
-  transition: height 0.3s ease;
-}
-
-.stats-dow-label {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.stats-dow-legend {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 0.75rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.stats-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.stats-legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
 }
 
 /* Day vs Night Chart */
@@ -1428,77 +1248,6 @@ defineExpose({
   background: var(--accent);
   border-color: var(--accent);
   color: white;
-}
-
-.stats-trends-container {
-  min-height: 120px;
-}
-
-.stats-trends-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 100px;
-  padding: 0.5rem 0;
-}
-
-.stats-trend-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  min-width: 0;
-}
-
-.stats-trend-fill {
-  width: 100%;
-  max-width: 40px;
-  border-radius: 3px 3px 0 0;
-  min-height: 0;
-  transition: height 0.3s ease;
-  background: linear-gradient(
-    180deg,
-    var(--accent) 0%,
-    rgba(74, 158, 255, 0.7) 100%
-  );
-}
-
-.stats-trend-count {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  margin-bottom: 2px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.stats-trend-bar:hover .stats-trend-count {
-  opacity: 1;
-}
-
-.stats-trends-labels {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--border);
-}
-
-.stats-trends-labels span {
-  flex: 1;
-  text-align: center;
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Show only every other label on narrow screens */
-@media only screen and (max-width: 768px) {
-  .stats-trends-labels span:nth-child(even) {
-    display: none;
-  }
 }
 
 /* Export Buttons */

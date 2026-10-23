@@ -22,6 +22,7 @@
           @dragleave="handleDragLeave"
           @drop="handleDrop(item[0], $event)"
           @dragend="handleDragEnd"
+          @dblclick="handleContainerDblClick($event)"
         >
           <video
             :id="item[1]"
@@ -68,7 +69,8 @@
 
 <script setup lang="ts">
 import { Eye } from 'lucide-vue-next';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useResizeObserver } from '@vueuse/core';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { layoutStore } from '../composables/useLayout';
 import { LayoutConfig } from '../layout/layoutConfig';
@@ -155,6 +157,18 @@ function handleDragEnd(): void {
   dragOverCamera.value = null;
 }
 
+function handleContainerDblClick(e: MouseEvent): void {
+  const container = e.currentTarget as HTMLElement | null;
+  if (!container) return;
+  if (typeof document !== 'undefined') {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+    } else {
+      container.requestFullscreen?.().catch(console.error);
+    }
+  }
+}
+
 const activeConfig = computed<LayoutConfigSchema | any>(() => {
   return layoutStore.currentConfig;
 });
@@ -178,21 +192,12 @@ function updateGridDimensions(): void {
   gridHeight.value = size.height;
 }
 
-let resizeObserver: ResizeObserver | null = null;
-
-onMounted(() => {
-  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      updateGridDimensions();
-    });
-    resizeObserver.observe(containerRef.value);
-  }
+useResizeObserver(containerRef, () => {
   updateGridDimensions();
 });
 
-onUnmounted(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
+onMounted(() => {
+  updateGridDimensions();
 });
 
 watch([activeConfig, () => props.layout], () => {

@@ -132,6 +132,7 @@
 
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
+import { useDebounceFn } from '@vueuse/core';
 import { onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   filterPanelStore,
@@ -219,19 +220,15 @@ function handleSortChange(): void {
   notifyFilterChange();
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-function handleSearchInput(): void {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    const ef = getFilter();
-    if (ef) {
-      ef.setFilters({
-        searchQuery: searchQuery.value,
-      });
-    }
-    notifyFilterChange();
-  }, 300);
-}
+const handleSearchInput = useDebounceFn(() => {
+  const ef = getFilter();
+  if (ef) {
+    ef.setFilters({
+      searchQuery: searchQuery.value,
+    });
+  }
+  notifyFilterChange();
+}, 300);
 
 function handleDateChange(type: 'start' | 'end', val: string | null): void {
   const ef = getFilter();
@@ -276,7 +273,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (debounceTimer) clearTimeout(debounceTimer);
   filterPanelStore.unregisterHandlers();
 });
 

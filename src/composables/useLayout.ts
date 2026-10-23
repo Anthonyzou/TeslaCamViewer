@@ -1,32 +1,93 @@
+import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { LayoutConfig } from '../layout/layoutConfig';
 import type { LayoutConfigSchema } from '../types';
 
 const PREFS_STORAGE_KEY = 'teslacam_layout_prefs';
 
-const layout: Ref<string> = ref('layout-6-3');
-const customConfig: Ref<LayoutConfigSchema | any> = ref(null);
-const focusCamera: Ref<string | null> = ref(null);
-const hiddenCameras: Ref<string[]> = ref([]);
-const hasPillarCameras: Ref<boolean> = ref(false);
-const cameraSwaps: Ref<
-  Record<
+interface LayoutPreferences {
+  layout: string;
+  focusCamera: string | null;
+  hiddenCameras: string[];
+  cameraSwaps: Record<
     string,
     {
       position: { x: number; y: number; width: number; height: number };
       zIndex?: number;
       objectFit?: string;
     }
-  >
-> = ref({});
-const cameraOrder: Ref<string[]> = ref([
-  'front',
-  'back',
-  'left_repeater',
-  'right_repeater',
-  'left_pillar',
-  'right_pillar',
-]);
+  >;
+  cameraOrder: string[];
+  customConfig: LayoutConfigSchema | any;
+}
+
+const prefs = useLocalStorage<LayoutPreferences>(PREFS_STORAGE_KEY, {
+  layout: 'layout-6-3',
+  focusCamera: null,
+  hiddenCameras: [],
+  cameraSwaps: {},
+  cameraOrder: [
+    'front',
+    'back',
+    'left_repeater',
+    'right_repeater',
+    'left_pillar',
+    'right_pillar',
+  ],
+  customConfig: null,
+});
+
+const layout = computed({
+  get: () => prefs.value.layout || 'layout-6-3',
+  set: (val: string) => {
+    prefs.value.layout = val;
+  },
+});
+
+const customConfig = computed({
+  get: () => prefs.value.customConfig || null,
+  set: (val: any) => {
+    prefs.value.customConfig = val;
+  },
+});
+
+const focusCamera = computed({
+  get: () => prefs.value.focusCamera ?? null,
+  set: (val: string | null) => {
+    prefs.value.focusCamera = val;
+  },
+});
+
+const hiddenCameras = computed({
+  get: () => prefs.value.hiddenCameras || [],
+  set: (val: string[]) => {
+    prefs.value.hiddenCameras = val;
+  },
+});
+
+const cameraSwaps = computed({
+  get: () => prefs.value.cameraSwaps || {},
+  set: (val: any) => {
+    prefs.value.cameraSwaps = val;
+  },
+});
+
+const cameraOrder = computed({
+  get: () =>
+    prefs.value.cameraOrder || [
+      'front',
+      'back',
+      'left_repeater',
+      'right_repeater',
+      'left_pillar',
+      'right_pillar',
+    ],
+  set: (val: string[]) => {
+    prefs.value.cameraOrder = val;
+  },
+});
+
+const hasPillarCameras: Ref<boolean> = ref(false);
 
 const activeConfig: ComputedRef<LayoutConfigSchema | any> = computed(() => {
   let baseConfig: any = null;
@@ -55,46 +116,6 @@ const activeConfig: ComputedRef<LayoutConfigSchema | any> = computed(() => {
 
   return baseConfig;
 });
-
-function loadPreferences(): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    const saved = localStorage.getItem(PREFS_STORAGE_KEY);
-    if (saved) {
-      const prefs = JSON.parse(saved);
-      if (prefs.layout) layout.value = prefs.layout;
-      if (prefs.focusCamera !== undefined) focusCamera.value = prefs.focusCamera;
-      if (Array.isArray(prefs.hiddenCameras)) hiddenCameras.value = prefs.hiddenCameras;
-      if (prefs.cameraSwaps && typeof prefs.cameraSwaps === 'object') {
-        cameraSwaps.value = prefs.cameraSwaps;
-      }
-      if (Array.isArray(prefs.cameraOrder)) cameraOrder.value = prefs.cameraOrder;
-      if (prefs.customConfig) customConfig.value = prefs.customConfig;
-    }
-  } catch (e) {
-    console.warn('[Layout] Failed to load preferences:', e);
-  }
-}
-
-function savePreferences(): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    const prefs = {
-      layout: layout.value,
-      focusCamera: focusCamera.value,
-      hiddenCameras: hiddenCameras.value,
-      cameraSwaps: cameraSwaps.value,
-      cameraOrder: cameraOrder.value,
-      customConfig: customConfig.value,
-    };
-    localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
-  } catch (e) {
-    console.warn('[Layout] Failed to save preferences:', e);
-  }
-}
-
-// Auto-load saved preferences on startup
-loadPreferences();
 
 export const layoutStore = {
   get layout(): string {
@@ -158,12 +179,10 @@ export const layoutStore = {
       layout.value = String(layoutOrConfig);
     }
     cameraSwaps.value = {};
-    savePreferences();
   },
 
   setFocusCamera(cam: string | null): void {
     focusCamera.value = cam;
-    savePreferences();
   },
 
   setCameraVisibility(camera: string, visible: boolean): void {
@@ -172,7 +191,6 @@ export const layoutStore = {
     } else if (!hiddenCameras.value.includes(camera)) {
       hiddenCameras.value = [...hiddenCameras.value, camera];
     }
-    savePreferences();
   },
 
   toggleCameraHide(cam: string): void {
@@ -197,7 +215,6 @@ export const layoutStore = {
       'left_pillar',
       'right_pillar',
     ];
-    savePreferences();
   },
 
   swapCameras(cam1: string, cam2: string): void {
@@ -221,7 +238,6 @@ export const layoutStore = {
         objectFit: c1.objectFit,
       },
     };
-    savePreferences();
   },
 
   setHasPillarCameras(hasPillars: boolean): void {
@@ -261,6 +277,8 @@ export const layoutStore = {
   // Backwards compatibility no-ops
   syncLayout(): void {},
   setLayoutManager(): void {},
+  savePreferences(): void {},
+  loadPreferences(): void {},
 };
 
 /**
