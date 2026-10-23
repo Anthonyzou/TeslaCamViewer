@@ -77,7 +77,7 @@ export class VideoPlayer {
     return 'front';
   }
 
-  _waitForVideoSeeked(video: HTMLVideoElement): Promise<void> {
+  _waitForVideoSeeked(video: HTMLVideoElement) {
     if (!video) return Promise.resolve();
     if (typeof video.addEventListener !== 'function') {
       return Promise.resolve();

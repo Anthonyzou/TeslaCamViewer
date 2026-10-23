@@ -62,12 +62,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   computeRecordingHealth,
   getTimeRangeFromClips,
 } from '../services/eventBrowser';
-import { settingsManager } from '../services/settingsManager';
+import { settingsStore } from '../composables/useSettings';
 import type { TeslaCamEvent } from '../types';
 import { formatReason } from '../utils/teslaCamFormat';
 import weatherService from '../utils/weatherService';
@@ -197,21 +197,16 @@ async function loadWeather(): Promise<void> {
   }
 }
 
-let unsubSettings: (() => void) | null = null;
-
 onMounted(() => {
   loadWeather();
-  unsubSettings = settingsManager.onChange(() => {
-    loadWeather();
-  });
-});
-
-onUnmounted(() => {
-  if (unsubSettings) unsubSettings();
 });
 
 watch(
-  () => [props.event.metadata?.est_lat, props.event.metadata?.est_lon],
+  () => [
+    props.event.metadata?.est_lat,
+    props.event.metadata?.est_lon,
+    settingsStore.settings.temperatureUnits,
+  ],
   () => {
     loadWeather();
   }

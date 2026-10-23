@@ -46,7 +46,7 @@ declare global {
   }
 
   interface Window {
-    app?: import('./services/teslaCamApp').TeslaCamApp;
+    app?: any;
     i18n?: import('./utils/i18n').I18n;
     showDirectoryPicker: (options?: {
       id?: string;

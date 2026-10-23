@@ -6,7 +6,7 @@
 
 import dayjs from 'dayjs';
 import { openDB, type IDBPDatabase } from 'idb';
-import { settingsManager } from '../services/settingsManager';
+import { settingsStore } from '../composables/useSettings';
 import type { WeatherDBSchema } from '../types';
 
 class WeatherService {
@@ -218,7 +218,7 @@ class WeatherService {
     }
 
     // Check user preference from settings
-    const settings = settingsManager;
+    const settings = settingsStore;
     const preference = settings?.get('temperatureUnits');
 
     let useFahrenheit;
@@ -248,7 +248,7 @@ class WeatherService {
     }
 
     // Use telemetry units setting if available
-    const settings = settingsManager;
+    const settings = settingsStore;
     const units = settings?.get('telemetryOverlayUnits');
 
     let useMph;

@@ -1,5 +1,5 @@
 import { onKeyStroke, useFullscreen } from '@vueuse/core';
-import { settingsManager } from '../services/settingsManager';
+import { settingsStore } from './useSettings';
 
 interface ShortcutActions {
   togglePlay?: () => void;
@@ -101,7 +101,7 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
       case 'KeyQ':
         event.preventDefault();
         if (actions?.openSettings) actions.openSettings();
-        else settingsManager?.showSettingsModal();
+        else settingsStore.showSettingsModal();
         break;
 
       case 'KeyI':

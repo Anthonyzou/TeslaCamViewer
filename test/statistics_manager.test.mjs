@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createJiti } from 'jiti';
 
 const jiti = createJiti(process.cwd());
-const { StatisticsManager } = jiti('./src/services/statisticsManager.ts');
+const { StatisticsManager } = jiti('./src/composables/useStatistics.ts');
 
 test('StatisticsManager - returns null when no events', () => {
   const sm = new StatisticsManager();

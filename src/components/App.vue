@@ -178,17 +178,6 @@ useKeyboardShortcuts({
   changeLayout,
   changeFocusCamera,
 });
-
-import { onMounted } from 'vue';
-import { TeslaCamApp } from '../services/teslaCamApp';
-
-onMounted(async () => {
-  if (typeof window !== 'undefined') {
-    const app = new TeslaCamApp();
-    window.app = app;
-    await app.tryRestoreLastFolder();
-  }
-});
 </script>
 
 <style scoped>

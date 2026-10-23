@@ -39,3 +39,6 @@ export class B2Client {
     return await response.json();
   }
 }
+
+export const b2Client = new B2Client();
+export default B2Client;

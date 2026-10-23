@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import { LayoutConfig } from '../layout/layoutConfig';
 import LayoutRenderer from '../layout/layoutRenderer';
 import { layoutStore } from '../composables/useLayout';
-import { settingsManager } from './settingsManager';
+import { settingsStore } from '../composables/useSettings';
 import type VideoPlayer from './videoPlayer';
 
 export interface ScreenshotOptions {
@@ -113,7 +113,7 @@ export class ScreenshotCapture {
     });
 
     // 3. Optional Timestamp Overlay
-    const settings = settingsManager;
+    const settings = settingsStore;
     const privacyMode = settings && settings.get('privacyModeExport') === true;
 
     if (includeTimestamp && !privacyMode) {
@@ -196,7 +196,7 @@ export class ScreenshotCapture {
       30
     );
 
-    const settings = settingsManager;
+    const settings = settingsStore;
     const privacyMode = settings && settings.get('privacyModeExport') === true;
     if (includeTimestamp && !privacyMode) {
       this.addTimestampOverlay(ctx as CanvasRenderingContext2D, width, height);

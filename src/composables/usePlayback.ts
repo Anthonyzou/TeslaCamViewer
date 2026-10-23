@@ -1,129 +1,124 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { ref, type Ref } from 'vue';
+import { settingsStore } from './useSettings';
+import { videoPlayer } from '../services/videoPlayer';
+import { timelineStore } from './useTimeline';
+
+const isPlaying: Ref<boolean> = ref(false);
+const speed: Ref<string> = ref('1');
+const isLooping: Ref<boolean> = ref(false);
+const currentClipIndex: Ref<number> = ref(0);
+const currentTime: Ref<number> = ref(0);
+const duration: Ref<number> = ref(0);
+
+// Auto-wire video player callbacks directly to reactive state and timelineStore
+videoPlayer.onPlayStateChange = (playing: boolean) => {
+  isPlaying.value = playing;
+};
+
+videoPlayer.onClipChange = (clipIdx: number) => {
+  currentClipIndex.value = clipIdx;
+};
+
+videoPlayer.onTimeUpdate = (time: number, dur: number) => {
+  currentTime.value = time;
+  duration.value = dur;
+  if (!timelineStore.isDragging) {
+    const eventTime = videoPlayer.absoluteTime ?? time ?? 0;
+    timelineStore.updateTime(eventTime);
+  }
+};
+
+export const playbackStore = {
+  get isPlaying(): boolean {
+    return isPlaying.value;
+  },
+  get speed(): string {
+    return speed.value;
+  },
+  get isLooping(): boolean {
+    return isLooping.value;
+  },
+  get currentClipIndex(): number {
+    return currentClipIndex.value;
+  },
+  get currentTime(): number {
+    return currentTime.value;
+  },
+  get duration(): number {
+    return duration.value;
+  },
+  get videoPlayer() {
+    return videoPlayer;
+  },
+
+  async play(): Promise<void> {
+    await videoPlayer.play();
+    isPlaying.value = !videoPlayer.paused;
+  },
+
+  async pause(): Promise<void> {
+    await videoPlayer.pause();
+    isPlaying.value = !videoPlayer.paused;
+  },
+
+  async togglePlay(): Promise<void> {
+    if (videoPlayer.paused) {
+      await videoPlayer.play();
+    } else {
+      await videoPlayer.pause();
+    }
+    isPlaying.value = !videoPlayer.paused;
+  },
+
+  async prevClip(): Promise<void> {
+    await videoPlayer.previousClip();
+  },
+
+  async nextClip(): Promise<void> {
+    await videoPlayer.nextClip();
+  },
+
+  changeSpeed(val: string): void {
+    speed.value = val;
+    videoPlayer.setPlaybackSpeed(parseFloat(val));
+  },
+
+  toggleLoop(): void {
+    videoPlayer.loopEnabled = !videoPlayer.loopEnabled;
+    isLooping.value = videoPlayer.loopEnabled;
+  },
+
+  stepFrame(direction: number): void {
+    videoPlayer.stepFrame(direction);
+  },
+
+  frameBack(): void {
+    videoPlayer.stepFrame(-1);
+  },
+
+  frameForward(): void {
+    videoPlayer.stepFrame(1);
+  },
+
+  syncPlayback(): void {
+    isPlaying.value = !videoPlayer.paused;
+    speed.value = String(videoPlayer.playbackRate || '1');
+    isLooping.value = videoPlayer.loopEnabled;
+    if (videoPlayer.currentClipIndex >= 0) {
+      currentClipIndex.value = videoPlayer.currentClipIndex;
+    }
+  },
+
+  applyPerformanceSettings(): void {
+    const preload = settingsStore.get('preloadNextClip');
+    videoPlayer.disablePreload = !preload;
+  },
+};
 
 /**
  * usePlayback - Composable for multi-camera video playback controls
- * Replaces polling with direct event-driven hooks on VideoPlayer
  */
 export function usePlayback() {
-  const isPlaying = ref(false);
-  const speed = ref('1');
-  const isLooping = ref(false);
-  const currentClipIndex = ref(0);
-  const currentTime = ref(0);
-  const duration = ref(0);
-
-  function syncPlayback(): void {
-    const vp = window.app?.videoPlayer;
-    if (!vp) return;
-
-    const playing = !vp.paused;
-    if (isPlaying.value !== playing) isPlaying.value = playing;
-
-    const sp = String(vp.playbackRate ?? vp.playbackSpeed ?? '1');
-    if (speed.value !== sp) speed.value = sp;
-
-    // const loop = vp.loopEnabled ?? vp.isLooping ?? false;
-    // if (isLooping.value !== loop) isLooping.value = loop;
-
-    if (
-      vp.currentClipIndex !== undefined &&
-      currentClipIndex.value !== vp.currentClipIndex
-    ) {
-      currentClipIndex.value = vp.currentClipIndex;
-    }
-  }
-
-  function attachVideoHooks(): void {
-    const vp = typeof window !== 'undefined' ? window.app?.videoPlayer : null;
-    if (!vp) return;
-
-    // Direct callback hooks on VideoPlayer
-    const origPlayState = vp.onPlayStateChange;
-    vp.onPlayStateChange = (playing: boolean) => {
-      isPlaying.value = playing;
-      origPlayState?.(playing);
-    };
-
-    const origClipChange = vp.onClipChange;
-    vp.onClipChange = (clipIdx: number) => {
-      currentClipIndex.value = clipIdx;
-      origClipChange?.(clipIdx);
-    };
-
-    const origTimeUpdate = vp.onTimeUpdate;
-    vp.onTimeUpdate = (time: number, dur: number) => {
-      currentTime.value = time;
-      duration.value = dur;
-      origTimeUpdate?.(time, dur);
-    };
-
-    syncPlayback();
-  }
-
-  onMounted(() => {
-    syncPlayback();
-    if (typeof window !== 'undefined') {
-      if (window.app?.videoPlayer) {
-        attachVideoHooks();
-      } else {
-        window.addEventListener('teslacam-ready', attachVideoHooks, {
-          once: true,
-        });
-      }
-    }
-  });
-
-  onUnmounted(() => {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('teslacam-ready', attachVideoHooks);
-    }
-  });
-
-  function play(): void {
-    window.app?.play();
-  }
-
-  function pause(): void {
-    window.app?.pause();
-  }
-
-  function togglePlay(): void {
-    window.app?.togglePlayback();
-    syncPlayback();
-  }
-
-  function prevClip(): void {
-    window.app?.previousClip();
-    syncPlayback();
-  }
-
-  function nextClip(): void {
-    window.app?.nextClip();
-    syncPlayback();
-  }
-
-  function changeSpeed(val: string): void {
-    speed.value = val;
-    window.app?.videoPlayer?.setPlaybackSpeed?.(parseFloat(val));
-    syncPlayback();
-  }
-
-  function toggleLoop(): void {
-    const vp = window.app?.videoPlayer;
-    if (vp) {
-      vp.loopEnabled = !vp.loopEnabled;
-      isLooping.value = vp.loopEnabled;
-    }
-  }
-
-  function frameBack(): void {
-    window.app?.videoPlayer?.stepFrame(-1);
-  }
-
-  function frameForward(): void {
-    window.app?.videoPlayer?.stepFrame(1);
-  }
-
   return {
     isPlaying,
     speed,
@@ -131,15 +126,19 @@ export function usePlayback() {
     currentClipIndex,
     currentTime,
     duration,
-    play,
-    pause,
-    togglePlay,
-    prevClip,
-    nextClip,
-    changeSpeed,
-    toggleLoop,
-    frameBack,
-    frameForward,
-    syncPlayback,
+    videoPlayer,
+    play: playbackStore.play,
+    pause: playbackStore.pause,
+    togglePlay: playbackStore.togglePlay,
+    prevClip: playbackStore.prevClip,
+    nextClip: playbackStore.nextClip,
+    changeSpeed: playbackStore.changeSpeed,
+    toggleLoop: playbackStore.toggleLoop,
+    stepFrame: playbackStore.stepFrame,
+    frameBack: playbackStore.frameBack,
+    frameForward: playbackStore.frameForward,
+    syncPlayback: playbackStore.syncPlayback,
   };
 }
+
+export default usePlayback;

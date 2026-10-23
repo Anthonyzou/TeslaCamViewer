@@ -143,7 +143,8 @@
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from '../composables/useI18n';
-import { useModals } from '../composables/useModals';
+import { drivesStore } from '../composables/useDrives';
+import { driveSetupModalStore, useModals } from '../composables/useModals';
 import { folderManager } from '../services/folderManager';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 
@@ -220,14 +221,10 @@ async function onLabelChange(drive: DriveInfo, e: Event): Promise<void> {
 
 async function handleSync(driveId: string): Promise<void> {
   close();
-  const app = window.app;
-  if (app?.syncArchiveDrive) {
-    await app.syncArchiveDrive(driveId);
-  }
+  await drivesStore.syncArchiveDrive(driveId);
 }
 
 async function handleEdit(driveId: string): Promise<void> {
-  const app = window.app;
   if (!folderManager) return;
   const drive = folderManager.getDrive(driveId);
   if (!drive) return;
@@ -236,14 +233,14 @@ async function handleEdit(driveId: string): Promise<void> {
   const oldIsArchive = drive.isArchive;
 
   close();
-  const settings = await app.showDriveSetupDialog(null, drive);
+  const settings = await driveSetupModalStore.promptSetup(null, drive);
   if (settings && !settings.changeFolder) {
     await folderManager.updateDriveSettings(driveId, settings);
     const filterChanged = oldDateFilter !== settings.dateFilter;
     const archiveChanged = oldIsArchive !== settings.isArchive;
 
     if (archiveChanged || filterChanged) {
-      await app.reloadDriveEvents(driveId, settings);
+      await drivesStore.reloadDriveEvents(driveId, settings);
     }
   }
   open();
@@ -251,25 +248,14 @@ async function handleEdit(driveId: string): Promise<void> {
 
 async function handleRemove(driveId: string): Promise<void> {
   if (confirm('Remove this drive? Events will no longer be shown.')) {
-    const app = window.app;
-    if (folderManager) {
-      await folderManager.removeDrive(driveId);
-      if (Array.isArray(app.allEvents)) {
-        app.allEvents = app.allEvents.filter((e: any) => e.driveId !== driveId);
-        app.statisticsManager?.setEvents(app.allEvents);
-        app.applyFilters?.();
-      }
-      refreshDrives();
-    }
+    await drivesStore.removeDrive(driveId);
+    refreshDrives();
   }
 }
 
 async function handleAddDrive(): Promise<void> {
   close();
-  const app = window.app;
-  if (app?.addNewDrive) {
-    await app.addNewDrive();
-  }
+  await drivesStore.addNewDrive();
 }
 
 onMounted(() => {

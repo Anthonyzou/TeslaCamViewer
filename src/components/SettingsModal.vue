@@ -429,7 +429,7 @@ import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
-import { settingsManager } from '../services/settingsManager';
+import { settingsStore } from '../composables/useSettings';
 
 const {
   isSettingsOpen: isOpen,
@@ -443,9 +443,8 @@ let mouseDownOnOverlay = false;
 const settings = reactive<Record<string, any>>({});
 
 function syncFromManager(): void {
-  const mgr = settingsManager;
-  if (mgr && mgr.settings) {
-    Object.assign(settings, mgr.settings);
+  if (settingsStore.settings) {
+    Object.assign(settings, settingsStore.settings);
   }
 }
 
@@ -477,10 +476,7 @@ function onOverlayClick(e: MouseEvent): void {
 }
 
 function save(key: string, val: any): void {
-  const mgr = settingsManager;
-  if (mgr) {
-    mgr.set(key, val);
-  }
+  settingsStore.set(key, val);
 }
 
 function onLanguageChange(e: Event): void {
@@ -490,11 +486,8 @@ function onLanguageChange(e: Event): void {
 
 function handleReset(): void {
   if (confirm(t('settings.confirmReset'))) {
-    const mgr = settingsManager;
-    if (mgr) {
-      mgr.resetToDefaults();
-      syncFromManager();
-    }
+    settingsStore.resetToDefaults();
+    syncFromManager();
   }
 }
 
