@@ -2,823 +2,300 @@
  * LayoutConfig - Configuration schema, validation, and preset conversion
  * Defines the structure for custom camera layouts
  */
+import type {
+  LayoutCameraConfig,
+  LayoutCameraPosition,
+  LayoutConfigSchema,
+} from '../types';
+
+const CAMERAS = [
+  'front',
+  'back',
+  'left_repeater',
+  'right_repeater',
+  'left_pillar',
+  'right_pillar',
+  'interior',
+];
+
+const CAMERA_NAMES: Record<string, string> = {
+  front: 'Front',
+  back: 'Back',
+  left_repeater: 'Left Repeater',
+  right_repeater: 'Right Repeater',
+  left_pillar: 'Left Pillar',
+  right_pillar: 'Right Pillar',
+  interior: 'Interior',
+};
+
+const ASPECT_RATIOS: Record<string, { width: number; height: number }> = {
+  '4:3': { width: 4, height: 3 },
+  '16:9': { width: 16, height: 9 },
+  '6:3': { width: 6, height: 3 },
+  '8:3': { width: 8, height: 3 },
+  '12:3': { width: 12, height: 3 },
+  '21:9': { width: 21, height: 9 },
+};
+
+const VERSION = 1;
+const NO_CROP = { top: 0, right: 0, bottom: 0, left: 0 };
+const BUILT_IN_CANVAS_BACKGROUND = '#000000';
+
+interface CameraOptions {
+  zIndex?: number;
+  objectFit?: 'contain' | 'cover';
+  crop?: LayoutCameraConfig['crop'];
+}
+
+function camera(
+  enabled: boolean,
+  position: LayoutCameraPosition,
+  { zIndex = 1, objectFit = 'contain', crop = NO_CROP }: CameraOptions = {}
+): LayoutCameraConfig {
+  return { enabled, position, zIndex, aspectRatio: 'auto', objectFit, crop };
+}
+
+function preset(
+  name: string,
+  title: string,
+  aspectRatio: string,
+  cameras: Record<string, LayoutCameraConfig>
+): LayoutConfigSchema {
+  return {
+    version: VERSION,
+    id: `preset-${name}`,
+    name: title,
+    author: 'Built-in',
+    canvas: { aspectRatio, backgroundColor: BUILT_IN_CANVAS_BACKGROUND },
+    cameras,
+  };
+}
+
+const PRESETS: Record<string, LayoutConfigSchema> = {
+  'grid-2x2': preset('grid-2x2', '2x2 Grid', '4:3', {
+    front: camera(true, { x: 0, y: 0, width: 50, height: 50 }),
+    back: camera(true, { x: 50, y: 0, width: 50, height: 50 }),
+    left_repeater: camera(true, { x: 0, y: 50, width: 50, height: 50 }),
+    right_repeater: camera(true, { x: 50, y: 50, width: 50, height: 50 }),
+  }),
+  'grid-3x2': preset('grid-3x2', '3x2 Grid (6 Cameras)', '6:3', {
+    front: camera(true, { x: 33.33, y: 0, width: 33.34, height: 50 }),
+    back: camera(true, { x: 33.33, y: 50, width: 33.34, height: 50 }),
+    left_repeater: camera(true, { x: 66.67, y: 50, width: 33.33, height: 50 }),
+    right_repeater: camera(true, { x: 0, y: 50, width: 33.33, height: 50 }),
+    left_pillar: camera(true, { x: 0, y: 0, width: 33.33, height: 50 }),
+    right_pillar: camera(true, { x: 66.67, y: 0, width: 33.33, height: 50 }),
+  }),
+  'layout-6-3': preset('layout-6-3', '6:3 Centered', '6:3', {
+    front: camera(
+      true,
+      { x: 29, y: 0, width: 42, height: 57.4 },
+      { zIndex: 11, objectFit: 'cover', crop: { ...NO_CROP, bottom: 5 } }
+    ),
+    back: camera(
+      true,
+      { x: 30.9, y: 54.3, width: 37.6, height: 54.4 },
+      { zIndex: 10, objectFit: 'cover', crop: { ...NO_CROP, bottom: 17 } }
+    ),
+    left_repeater: camera(
+      true,
+      { x: 67, y: 51.8, width: 33, height: 48.2 },
+      { zIndex: 3, objectFit: 'cover' }
+    ),
+    right_repeater: camera(
+      true,
+      { x: 0, y: 52, width: 33, height: 48 },
+      { zIndex: 3, objectFit: 'cover' }
+    ),
+    left_pillar: camera(
+      true,
+      { x: 0, y: 0, width: 33, height: 50 },
+      { zIndex: 10, objectFit: 'cover' }
+    ),
+    right_pillar: camera(
+      true,
+      { x: 67, y: 0, width: 33, height: 50 },
+      { zIndex: 10, objectFit: 'cover' }
+    ),
+  }),
+  'layout-4-3': preset('layout-4-3', '4:3 Main', '4:3', {
+    front: camera(
+      true,
+      { x: 15, y: 18, width: 70, height: 50 },
+      { zIndex: 13, objectFit: 'cover' }
+    ),
+    back: camera(
+      true,
+      { x: 35, y: 0, width: 30, height: 25 },
+      { zIndex: 15, crop: { ...NO_CROP, bottom: 15 } }
+    ),
+    left_repeater: camera(
+      true,
+      { x: 55, y: 60, width: 45, height: 40 },
+      { zIndex: 10 }
+    ),
+    right_repeater: camera(
+      true,
+      { x: 0, y: 60, width: 45, height: 40 },
+      { zIndex: 10 }
+    ),
+    left_pillar: camera(
+      true,
+      { x: 0, y: 0, width: 22, height: 28 },
+      { zIndex: 12, objectFit: 'cover' }
+    ),
+    right_pillar: camera(
+      true,
+      { x: 78, y: 0, width: 22, height: 28 },
+      { zIndex: 12, objectFit: 'cover' }
+    ),
+  }),
+  'layout-all-16-9': preset('layout-all-16-9', 'All 16:9', '16:9', {
+    front: camera(
+      true,
+      { x: 25, y: 0, width: 49.57, height: 62.06 },
+      { zIndex: 20, objectFit: 'cover' }
+    ),
+    back: camera(
+      true,
+      { x: 30, y: 58, width: 40, height: 50 },
+      { zIndex: 19, objectFit: 'cover', crop: { ...NO_CROP, bottom: 16 } }
+    ),
+    left_repeater: camera(
+      true,
+      { x: 70, y: 59, width: 30, height: 41 },
+      { zIndex: 10, objectFit: 'cover' }
+    ),
+    right_repeater: camera(
+      true,
+      { x: 0, y: 59, width: 30, height: 41 },
+      { zIndex: 10, objectFit: 'cover' }
+    ),
+    left_pillar: camera(
+      true,
+      { x: 0, y: 9.76, width: 25.43, height: 34.33 },
+      { zIndex: 15 }
+    ),
+    right_pillar: camera(
+      true,
+      { x: 74.57, y: 9.76, width: 25, height: 34.33 },
+      { zIndex: 15 }
+    ),
+  }),
+  'layout-front-left': preset('layout-front-left', 'Front + Left', '8:3', {
+    front: camera(true, { x: 50, y: 0, width: 50, height: 100 }),
+    back: camera(false, { x: 0, y: 0, width: 50, height: 50 }),
+    left_repeater: camera(true, { x: 0, y: 0, width: 50, height: 100 }),
+    right_repeater: camera(false, { x: 50, y: 50, width: 50, height: 50 }),
+  }),
+  'layout-front-right': preset('layout-front-right', 'Front + Right', '8:3', {
+    front: camera(true, { x: 0, y: 0, width: 50, height: 100 }),
+    back: camera(false, { x: 0, y: 0, width: 50, height: 50 }),
+    left_repeater: camera(false, { x: 0, y: 50, width: 50, height: 50 }),
+    right_repeater: camera(true, { x: 50, y: 0, width: 50, height: 100 }),
+  }),
+  'layout-front-repeaters': preset(
+    'layout-front-repeaters',
+    'Front + Repeaters',
+    '12:3',
+    {
+      front: camera(true, { x: 33.33, y: 0, width: 33.34, height: 100 }),
+      back: camera(false, { x: 0, y: 0, width: 50, height: 50 }),
+      left_repeater: camera(true, { x: 0, y: 0, width: 33.33, height: 100 }),
+      right_repeater: camera(true, {
+        x: 66.67,
+        y: 0,
+        width: 33.33,
+        height: 100,
+      }),
+    }
+  ),
+  'layout-front-pillars': preset(
+    'layout-front-pillars',
+    'Front + Pillars',
+    '12:3',
+    {
+      front: camera(
+        true,
+        { x: 32.86, y: 0, width: 33.43, height: 100 },
+        { zIndex: 2 }
+      ),
+      back: camera(false, { x: 50, y: 0, width: 50, height: 50 }),
+      left_repeater: camera(false, { x: 0, y: 50, width: 50, height: 50 }),
+      right_repeater: camera(false, { x: 50, y: 50, width: 50, height: 50 }),
+      left_pillar: camera(true, { x: 0, y: 0, width: 32.86, height: 100 }),
+      right_pillar: camera(true, { x: 66.29, y: 0, width: 33.71, height: 100 }),
+    }
+  ),
+  'layout-front-left-pillar': preset(
+    'layout-front-left-pillar',
+    'Front + Left Pillar',
+    '8:3',
+    {
+      front: camera(true, { x: 50, y: 0, width: 50, height: 100 }),
+      back: camera(false, { x: 0, y: 0, width: 50, height: 50 }),
+      left_repeater: camera(false, { x: 0, y: 0, width: 50, height: 100 }),
+      right_repeater: camera(false, { x: 50, y: 50, width: 50, height: 50 }),
+      left_pillar: camera(true, { x: 0, y: 0, width: 50, height: 100 }),
+    }
+  ),
+  'layout-front-right-pillar': preset(
+    'layout-front-right-pillar',
+    'Front + Right Pillar',
+    '8:3',
+    {
+      front: camera(true, { x: 0, y: 0, width: 50, height: 100 }),
+      back: camera(false, { x: 0, y: 0, width: 50, height: 50 }),
+      left_repeater: camera(false, { x: 0, y: 50, width: 50, height: 50 }),
+      right_repeater: camera(false, { x: 50, y: 0, width: 50, height: 100 }),
+      right_pillar: camera(true, { x: 50, y: 0, width: 50, height: 100 }),
+    }
+  ),
+  'layout-focus': preset('layout-focus', 'Focus Mode', '4:3', {
+    front: camera(true, { x: 0, y: 0, width: 100, height: 100 }),
+    back: camera(false, { x: 0, y: 0, width: 100, height: 100 }),
+    left_repeater: camera(false, { x: 0, y: 0, width: 100, height: 100 }),
+    right_repeater: camera(false, { x: 0, y: 0, width: 100, height: 100 }),
+  }),
+};
+
+function defaultDisabledCamera(): LayoutCameraConfig {
+  return camera(false, { x: 0, y: 0, width: 50, height: 50 });
+}
+
+function cloneConfig(config: LayoutConfigSchema): LayoutConfigSchema {
+  return JSON.parse(JSON.stringify(config));
+}
 
 export class LayoutConfig {
-  static VERSION = 1;
-
-  // All supported cameras (current + future)
-  static CAMERAS = [
-    'front',
-    'back',
-    'left_repeater',
-    'right_repeater',
-    'left_pillar',
-    'right_pillar',
-    'interior',
-  ];
-
-  // Currently available cameras (Tesla's current setup - 4 or 6 cameras)
-  static CURRENT_CAMERAS = ['front', 'back', 'left_repeater', 'right_repeater'];
-  static PILLAR_CAMERAS = ['left_pillar', 'right_pillar'];
-  static SIX_CAMERA_SET = [
-    'front',
-    'back',
-    'left_repeater',
-    'right_repeater',
-    'left_pillar',
-    'right_pillar',
-  ];
-
-  // Future cameras (not yet available from Tesla)
-  static FUTURE_CAMERAS = ['interior'];
-
-  // Camera display names
-  static CAMERA_NAMES = {
-    front: 'Front',
-    back: 'Back',
-    left_repeater: 'Left Repeater',
-    right_repeater: 'Right Repeater',
-    left_pillar: 'Left Pillar',
-    right_pillar: 'Right Pillar',
-    interior: 'Interior',
-  };
-
-  // Short names for UI
-  static CAMERA_SHORT_NAMES = {
-    front: 'Front',
-    back: 'Back',
-    left_repeater: 'L.Rep',
-    right_repeater: 'R.Rep',
-    left_pillar: 'L.Pil',
-    right_pillar: 'R.Pil',
-    interior: 'Int',
-  };
-
-  // Supported canvas aspect ratios
-  static ASPECT_RATIOS = {
-    '4:3': { width: 4, height: 3 },
-    '16:9': { width: 16, height: 9 },
-    '6:3': { width: 6, height: 3 },
-    '8:3': { width: 8, height: 3 },
-    '12:3': { width: 12, height: 3 },
-    '21:9': { width: 21, height: 9 },
-  };
+  static VERSION = VERSION;
+  static CAMERAS = CAMERAS;
+  static CAMERA_NAMES = CAMERA_NAMES;
+  static ASPECT_RATIOS = ASPECT_RATIOS;
 
   /**
-   * Create a default camera configuration
+   * Convert a built-in preset name to a complete, editable config (a fresh copy).
+   * Cameras the preset does not define are added as disabled so every preset
+   * has a full camera set; otherwise their containers skip applyToDOM styling.
    */
-  static getDefaultCamera(enabled = true) {
-    const def = this.getDefault().cameras.front;
-    def.enabled = enabled;
-    return def;
-  }
-
-  /**
-   * Create a default layout configuration (2x2 grid)
-   */
-  static getDefault() {
-    return {
-      version: this.VERSION,
-      id: `custom-${Date.now()}`,
-      name: 'New Layout',
-      author: '',
-      created: new Date().toISOString(),
-      modified: new Date().toISOString(),
-      canvas: {
-        aspectRatio: '4:3',
-        backgroundColor: '#000000',
-      },
-      cameras: {
-        front: {
-          enabled: true,
-          position: { x: 0, y: 0, width: 50, height: 50 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        back: {
-          enabled: true,
-          position: { x: 50, y: 0, width: 50, height: 50 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        left_repeater: {
-          enabled: true,
-          position: { x: 0, y: 50, width: 50, height: 50 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        right_repeater: {
-          enabled: true,
-          position: { x: 50, y: 50, width: 50, height: 50 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        left_pillar: {
-          enabled: false,
-          position: { x: 0, y: 0, width: 25, height: 25 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        right_pillar: {
-          enabled: false,
-          position: { x: 75, y: 0, width: 25, height: 25 },
-          zIndex: 1,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-        interior: {
-          enabled: false,
-          position: { x: 37.5, y: 37.5, width: 25, height: 25 },
-          zIndex: 10,
-          aspectRatio: 'auto',
-          objectFit: 'contain',
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        },
-      },
-    };
-  }
-
-  /**
-   * Deep clone a config object
-   */
-  static clone(config) {
-    return JSON.parse(JSON.stringify(config));
-  }
-
-  /**
-   * Convert a preset layout name to a config object
-   * Used for editing built-in presets (creates a clone)
-   */
-  static presetToConfig(presetName) {
-    const presets = {
-      'grid-2x2': {
-        version: 1,
-        id: 'preset-grid-2x2',
-        name: '2x2 Grid',
-        author: 'Built-in',
-        canvas: { aspectRatio: '4:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: true,
-            position: { x: 50, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 0, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 50, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-6-3': {
-        version: 1,
-        id: 'preset-layout-6-3',
-        name: '6:3 Centered',
-        author: 'Built-in',
-        canvas: { aspectRatio: '6:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 29, y: 0, width: 42, height: 57.4 },
-            zIndex: 11,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 5, left: 0 },
-          },
-          back: {
-            enabled: true,
-            position: { x: 30.9, y: 54.3, width: 37.6, height: 54.4 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 17, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 67, y: 51.8, width: 33, height: 48.2 },
-            zIndex: 3,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 0, y: 52, width: 33, height: 48 },
-            zIndex: 3,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 33, height: 50 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 67, y: 0, width: 33, height: 50 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-4-3': {
-        version: 1,
-        id: 'preset-layout-4-3',
-        name: '4:3 Main',
-        author: 'Built-in',
-        canvas: { aspectRatio: '4:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 15, y: 18, width: 70, height: 50 },
-            zIndex: 13,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: true,
-            position: { x: 35, y: 0, width: 30, height: 25 },
-            zIndex: 15,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 15, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 55, y: 60, width: 45, height: 40 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 0, y: 60, width: 45, height: 40 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 22, height: 28 },
-            zIndex: 12,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 78, y: 0, width: 22, height: 28 },
-            zIndex: 12,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-all-16-9': {
-        version: 1,
-        id: 'preset-layout-all-16-9',
-        name: 'All 16:9',
-        author: 'Built-in',
-        canvas: { aspectRatio: '16:9', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 25, y: 0, width: 49.57, height: 62.06 },
-            zIndex: 20,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: true,
-            position: { x: 30, y: 58, width: 40, height: 50 },
-            zIndex: 19,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 16, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 70, y: 59, width: 30, height: 41 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 0, y: 59, width: 30, height: 41 },
-            zIndex: 10,
-            aspectRatio: 'auto',
-            objectFit: 'cover',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 9.76, width: 25.43, height: 34.33 },
-            zIndex: 15,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 74.57, y: 9.76, width: 25, height: 34.33 },
-            zIndex: 15,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-left': {
-        version: 1,
-        id: 'preset-layout-front-left',
-        name: 'Front + Left',
-        author: 'Built-in',
-        canvas: { aspectRatio: '8:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 50, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: false,
-            position: { x: 50, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-right': {
-        version: 1,
-        id: 'preset-layout-front-right',
-        name: 'Front + Right',
-        author: 'Built-in',
-        canvas: { aspectRatio: '8:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: false,
-            position: { x: 0, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 50, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-repeaters': {
-        version: 1,
-        id: 'preset-layout-front-repeaters',
-        name: 'Front + Repeaters',
-        author: 'Built-in',
-        canvas: { aspectRatio: '12:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 33.33, y: 0, width: 33.34, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 33.33, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 66.67, y: 0, width: 33.33, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-pillars': {
-        version: 1,
-        id: 'preset-layout-front-pillars',
-        name: 'Front + Pillars',
-        author: 'Built-in',
-        canvas: { aspectRatio: '12:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 32.86, y: 0, width: 33.43, height: 100 },
-            zIndex: 2,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 50, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: false,
-            position: { x: 0, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: false,
-            position: { x: 50, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 32.86, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 66.29, y: 0, width: 33.71, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-left-pillar': {
-        version: 1,
-        id: 'preset-layout-front-left-pillar',
-        name: 'Front + Left Pillar',
-        author: 'Built-in',
-        canvas: { aspectRatio: '8:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 50, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: false,
-            position: { x: 50, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-front-right-pillar': {
-        version: 1,
-        id: 'preset-layout-front-right-pillar',
-        name: 'Front + Right Pillar',
-        author: 'Built-in',
-        canvas: { aspectRatio: '8:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: false,
-            position: { x: 0, y: 50, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: false,
-            position: { x: 50, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 50, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 50, y: 0, width: 50, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      'layout-focus': {
-        version: 1,
-        id: 'preset-layout-focus',
-        name: 'Focus Mode',
-        author: 'Built-in',
-        canvas: { aspectRatio: '4:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 100, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 100, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 100, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: false,
-            position: { x: 0, y: 0, width: 100, height: 100 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-      // 6-camera layout: pillars on outer top, repeaters (swapped) on outer bottom, front/back center
-      'grid-3x2': {
-        version: 1,
-        id: 'preset-grid-3x2',
-        name: '3x2 Grid (6 Cameras)',
-        author: 'Built-in',
-        canvas: { aspectRatio: '6:3', backgroundColor: '#000000' },
-        cameras: {
-          front: {
-            enabled: true,
-            position: { x: 33.33, y: 0, width: 33.34, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          back: {
-            enabled: true,
-            position: { x: 33.33, y: 50, width: 33.34, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_repeater: {
-            enabled: true,
-            position: { x: 66.67, y: 50, width: 33.33, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_repeater: {
-            enabled: true,
-            position: { x: 0, y: 50, width: 33.33, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          left_pillar: {
-            enabled: true,
-            position: { x: 0, y: 0, width: 33.33, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-          right_pillar: {
-            enabled: true,
-            position: { x: 66.67, y: 0, width: 33.33, height: 50 },
-            zIndex: 1,
-            aspectRatio: 'auto',
-            objectFit: 'contain',
-            crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          },
-        },
-      },
-    };
-
-    const config = presets[presetName];
-    if (!config) {
+  static presetToConfig(presetName: string): LayoutConfigSchema | null {
+    if (!Object.prototype.hasOwnProperty.call(PRESETS, presetName)) {
       return null;
     }
 
-    // Add any missing cameras with disabled state so every preset has
-    // a complete camera set. Without this, containers for undefined cameras
-    // (e.g., pillars in a 4-camera preset) skip applyToDOM styling and
-    // render at default CSS size instead of being hidden.
-    const fullConfig = this.clone(config);
-    for (const cam of this.CAMERAS) {
-      if (!fullConfig.cameras[cam]) {
-        fullConfig.cameras[cam] = this.getDefaultCamera(false);
-      }
+    const fullConfig = cloneConfig(PRESETS[presetName]);
+    const cameras = fullConfig.cameras ?? {};
+    for (const cam of CAMERAS) {
+      cameras[cam] ??= defaultDisabledCamera();
     }
+    fullConfig.cameras = cameras;
 
-    // Add timestamps
-    fullConfig.created = new Date().toISOString();
-    fullConfig.modified = new Date().toISOString();
+    const now = new Date().toISOString();
+    fullConfig.created = now;
+    fullConfig.modified = now;
 
     return fullConfig;
   }
-
-  /**
-   * Get list of all preset names
-   */
-  static getPresetNames() {
-    return [
-      'grid-2x2',
-      'grid-3x2',
-      'layout-6-3',
-      'layout-4-3',
-      'layout-all-16-9',
-      'layout-front-left',
-      'layout-front-right',
-      'layout-front-repeaters',
-      'layout-front-pillars',
-      'layout-front-left-pillar',
-      'layout-front-right-pillar',
-      'layout-focus',
-    ];
-  }
-
-  /**
-   * Check if a layout name is a built-in preset
-   */
-  static isPreset(layoutName) {
-    return this.getPresetNames().includes(layoutName);
-  }
 }
 
-// Export default
 export default LayoutConfig;

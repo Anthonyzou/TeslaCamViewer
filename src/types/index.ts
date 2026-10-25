@@ -136,6 +136,7 @@ export interface LayoutCanvasConfig {
 }
 
 export interface LayoutConfigSchema {
+  version?: number;
   id?: string;
   name?: string;
   author?: string;
