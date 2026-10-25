@@ -14,10 +14,7 @@ export function useClipMarking(
   }
 
   function getAbsoluteTime(): number {
-    const player =
-      getVideoPlayer?.() ||
-      defaultVideoPlayerGetter?.() ||
-      (typeof window !== 'undefined' ? window.app?.videoPlayer : null);
+    const player = getVideoPlayer?.() || defaultVideoPlayerGetter?.();
     return player?.absoluteTime ?? player?.currentTime ?? 0;
   }
 

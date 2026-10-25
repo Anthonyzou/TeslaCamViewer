@@ -5,10 +5,7 @@ import { folderParser } from './useFolderParser';
 import { settingsStore } from './useSettings';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 import { eventsStore } from './useEvents';
-import {
-  driveManagementModalStore,
-  driveSetupModalStore,
-} from './useModals';
+import { driveManagementModalStore, driveSetupModalStore } from './useModals';
 
 const drives: Ref<DriveInfo[]> = ref([]);
 const activeDriveId: Ref<string> = ref('');
@@ -87,7 +84,10 @@ export const drivesStore = {
             restoredAny = true;
           }
         } catch (e) {
-          console.warn(`[useDrives] Could not restore drive ${drive.label}:`, e);
+          console.warn(
+            `[useDrives] Could not restore drive ${drive.label}:`,
+            e
+          );
         }
       }
 
@@ -192,14 +192,6 @@ export const drivesStore = {
     folderManager.setActiveDrive(targetId);
     activeDriveId.value = targetId || '';
 
-    if (
-      typeof window !== 'undefined' &&
-      window.app?.changeDrive &&
-      window.app.changeDrive !== drivesStore.changeDrive
-    ) {
-      window.app.changeDrive(targetId);
-    }
-
     if (targetId) {
       const drive = folderManager.getDrive(targetId);
       if (
@@ -219,7 +211,10 @@ export const drivesStore = {
             await folderManager.parseSingleDrive(folderParser, targetId);
           }
         } catch (err) {
-          console.warn(`[useDrives] Failed to access drive ${drive.label}:`, err);
+          console.warn(
+            `[useDrives] Failed to access drive ${drive.label}:`,
+            err
+          );
         }
       }
     }

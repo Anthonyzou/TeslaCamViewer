@@ -65,6 +65,7 @@
 import { onUnmounted, ref } from 'vue';
 import { useClipMarking } from '../composables/useClipMarking';
 import { useTimeline } from '../composables/useTimeline';
+import { videoPlayer } from '../composables/useVideoPlayer';
 
 defineProps<{
   hasEvent: boolean;
@@ -82,7 +83,7 @@ const {
 } = useTimeline();
 
 const { inPoint, outPoint } = useClipMarking(
-  () => window.app?.videoPlayer,
+  () => videoPlayer,
   () => timelineEl.value
 );
 

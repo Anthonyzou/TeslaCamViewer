@@ -1,4 +1,5 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
+import { videoPlayer } from './useVideoPlayer';
 
 const currentTime: Ref<number> = ref(0);
 const totalDuration: Ref<number> = ref(0);
@@ -34,12 +35,7 @@ export const timelineStore = {
     const markers: number[] = [];
     if (clipGroups && clipGroups.length > 0 && totalDuration.value > 0) {
       let accum = 0;
-      const cached =
-        cachedDurations ||
-        (typeof window !== 'undefined'
-          ? window.app?.videoPlayer?.cachedClipDurations
-          : undefined) ||
-        [];
+      const cached = cachedDurations || videoPlayer.cachedClipDurations || [];
       for (let i = 0; i < clipGroups.length; i++) {
         const dur = cached[i] || 60;
         if (i > 0) {
@@ -78,9 +74,7 @@ export function useTimeline() {
   function seekToTime(targetTime: number): void {
     const clamped = Math.max(0, Math.min(totalDuration.value, targetTime));
     currentTime.value = clamped;
-    if (typeof window !== 'undefined') {
-      window.app?.videoPlayer?.seekToEventTime?.(clamped);
-    }
+    void videoPlayer.seekToEventTime(clamped);
   }
 
   function seekToPercent(pct: number): void {
@@ -88,9 +82,7 @@ export function useTimeline() {
     const clampedPct = Math.max(0, Math.min(1, pct));
     const targetTime = clampedPct * totalDuration.value;
     currentTime.value = targetTime;
-    if (typeof window !== 'undefined') {
-      window.app?.videoPlayer?.seekToEventTime?.(targetTime);
-    }
+    void videoPlayer.seekToEventTime(targetTime);
   }
 
   return {

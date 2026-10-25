@@ -94,20 +94,12 @@ test('FolderManager - retains events from both local drive and B2, and switches 
   assert.strictEqual(allEvents.length, 5);
 });
 
-test('useDrives - reacts to drive changes and communicates with folderManager and app', () => {
+test('useDrives - reacts to drive changes and communicates with folderManager', () => {
   folderManager.drives = [
     { id: 'drive-1', label: 'Local USB', events: [] },
     { id: 'b2', label: 'Backblaze B2', events: [] },
   ];
   folderManager.activeDriveId = 'drive-1';
-
-  let appChangedDriveTo = null;
-  globalThis.window = globalThis.window || {};
-  globalThis.window.app = {
-    changeDrive: (id) => {
-      appChangedDriveTo = id;
-    },
-  };
 
   const { drives, activeDriveId, changeDrive, syncDrives } = useDrives();
   syncDrives();
@@ -119,19 +111,16 @@ test('useDrives - reacts to drive changes and communicates with folderManager an
   changeDrive('b2');
   assert.strictEqual(activeDriveId.value, 'b2');
   assert.strictEqual(folderManager.activeDriveId, 'b2');
-  assert.strictEqual(appChangedDriveTo, 'b2');
 
   // Switch to Local Drive
   changeDrive('drive-1');
   assert.strictEqual(activeDriveId.value, 'drive-1');
   assert.strictEqual(folderManager.activeDriveId, 'drive-1');
-  assert.strictEqual(appChangedDriveTo, 'drive-1');
 
   // Switch to All Drives
   changeDrive('');
   assert.strictEqual(activeDriveId.value, '');
   assert.strictEqual(folderManager.activeDriveId, null);
-  assert.strictEqual(appChangedDriveTo, null);
 });
 
 test('FolderManager - addOrUpdateB2Drive manages B2 cloud drive natively', async () => {

@@ -143,6 +143,7 @@
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { drivesStore } from '../composables/useDrives';
+import { eventsStore } from '../composables/useEvents';
 import { folderManager } from '../composables/useFolderManager';
 import { useI18n } from '../composables/useI18n';
 import { driveSetupModalStore, useModals } from '../composables/useModals';
@@ -185,15 +186,12 @@ function onColorInput(drive: DriveInfo, e: Event): void {
 async function onColorChange(drive: DriveInfo, e: Event): Promise<void> {
   const newColor = (e.target as HTMLInputElement).value;
   drive.color = newColor;
-  const app = window.app;
   await folderManager.updateDriveColor(drive.id, newColor);
-  if (Array.isArray(app.allEvents)) {
-    app.allEvents.forEach((ev: TeslaCamEvent) => {
-      if (ev.driveId === drive.id) {
-        ev.driveColor = newColor;
-      }
-    });
-  }
+  eventsStore.allEvents.forEach((ev: TeslaCamEvent) => {
+    if (ev.driveId === drive.id) {
+      ev.driveColor = newColor;
+    }
+  });
 }
 
 async function onLabelChange(drive: DriveInfo, e: Event): Promise<void> {

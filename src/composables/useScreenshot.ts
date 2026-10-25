@@ -42,11 +42,7 @@ export class ScreenshotCapture {
       if ((err as Error)?.name === 'SecurityError') {
         const msg =
           'Screenshot blocked by browser security (CORS): The video stream from this remote host does not allow pixel extraction.';
-        if (window.app?.showToast) {
-          window.app.showToast(msg, 'error');
-        } else {
-          alert(msg);
-        }
+        alert(msg);
       }
       throw err;
     }
@@ -87,8 +83,7 @@ export class ScreenshotCapture {
         : Object.assign(document.createElement('canvas'), { width, height });
 
     const ctx = canvas.getContext('2d') as
-      | CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D;
+      CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
     renderer.renderToCanvas(
       ctx as CanvasRenderingContext2D,
@@ -136,8 +131,7 @@ export class ScreenshotCapture {
         : Object.assign(document.createElement('canvas'), { width, height });
 
     const ctx = canvas.getContext('2d') as
-      | CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D;
+      CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
     ctx.drawImage(video, 0, 0, width, height);
 

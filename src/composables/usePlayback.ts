@@ -7,6 +7,7 @@ export { videoPlayer, VideoPlayer };
 
 const isPlaying: Ref<boolean> = ref(false);
 const speed: Ref<string> = ref('1');
+const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 5];
 const isLooping: Ref<boolean> = ref(false);
 const currentClipIndex: Ref<number> = ref(0);
 const currentTime: Ref<number> = ref(0);
@@ -83,6 +84,17 @@ export const playbackStore = {
   changeSpeed(val: string): void {
     speed.value = val;
     videoPlayer.setPlaybackSpeed(parseFloat(val));
+  },
+
+  stepSpeed(direction: 1 | -1): void {
+    const current = videoPlayer.playbackRate || 1;
+    const next =
+      direction > 0
+        ? PLAYBACK_SPEEDS.find((s) => s > current)
+        : PLAYBACK_SPEEDS.filter((s) => s < current).pop();
+    if (next !== undefined) {
+      playbackStore.changeSpeed(String(next));
+    }
   },
 
   toggleLoop(): void {

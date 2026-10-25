@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isExportOpen" class="export-modal-backdrop" @keydown.esc="onCancel">
+  <div
+    v-if="isExportOpen"
+    class="export-modal-backdrop"
+    @keydown.esc="onCancel"
+  >
     <div class="export-modal-overlay"></div>
     <div class="export-modal-panel">
       <!-- Active Encoding View -->
@@ -68,9 +72,6 @@ function onCancel() {
 
 function onClose() {
   exportModal.close();
-  if (typeof window !== 'undefined') {
-    window.app?.enableControls?.();
-  }
 }
 </script>
 
@@ -166,7 +167,9 @@ function onClose() {
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;

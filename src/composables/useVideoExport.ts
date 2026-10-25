@@ -7,6 +7,7 @@
 import { ref, type Ref } from 'vue';
 import { exportModalStore } from './useModals';
 import { layoutStore } from './useLayout';
+import { useClipMarking } from './useClipMarking';
 import { videoPlayer, type VideoPlayer } from './usePlayback';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { LayoutRenderer } from '../layout/layoutRenderer';
@@ -46,10 +47,7 @@ export class VideoExport {
     const filename = `TeslaCam_${event.name || 'Export'}_${camera}.${ext}`;
 
     // Marks handling (inPoint & outPoint in event seconds)
-    const marks = window.app?.clipMarking?.getMarks?.() || {
-      inPoint: null,
-      outPoint: null,
-    };
+    const marks = useClipMarking().getMarks();
 
     const clipGroups = event.clipGroups || [];
     let targetClipIndex =
@@ -108,7 +106,6 @@ export class VideoExport {
     this.isExporting = true;
     this._cancelled = false;
     this._showExportOverlay(camera, exportDuration);
-    window.app?.disableControls?.();
 
     try {
       const activeGroup = clipGroups[targetClipIndex];
@@ -166,10 +163,8 @@ export class VideoExport {
       } else {
         const videos = this.videoPlayer?.videos || {};
         const activeVideo = videos[camera] || videos.front;
-        canvasWidth =
-          Math.floor((activeVideo?.videoWidth || 1280) / 2) * 2;
-        canvasHeight =
-          Math.floor((activeVideo?.videoHeight || 960) / 2) * 2;
+        canvasWidth = Math.floor((activeVideo?.videoWidth || 1280) / 2) * 2;
+        canvasHeight = Math.floor((activeVideo?.videoHeight || 960) / 2) * 2;
       }
 
       await this._exportWithWorker({
@@ -191,7 +186,6 @@ export class VideoExport {
         alert(`Export failed: ${err.message || 'Unknown error'}`);
       }
       exportModalStore.close();
-      window.app?.enableControls?.();
     } finally {
       this.isExporting = false;
     }
@@ -329,9 +323,6 @@ export class VideoExport {
       this._worker = null;
     }
     exportModalStore.close();
-    if (typeof window !== 'undefined') {
-      window.app?.enableControls?.();
-    }
   }
 }
 

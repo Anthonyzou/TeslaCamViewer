@@ -46,7 +46,6 @@ declare global {
   }
 
   interface Window {
-    app?: any;
     i18n?: import('./composables/useI18n').I18n;
     showDirectoryPicker: (options?: {
       id?: string;

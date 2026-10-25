@@ -467,6 +467,7 @@ import {
   X,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import { eventsStore } from '../composables/useEvents';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 import type { StatisticsData, TrendDataPoint } from '../types';
@@ -480,7 +481,6 @@ const {
 const { t } = useI18n();
 const activeTab = ref('overview');
 const trendMode = ref<'weekly' | 'monthly'>('weekly');
-let mouseDownOnOverlay = false;
 
 const isVerifying = ref(false);
 const telemetryProgress = ref(0);
@@ -613,7 +613,7 @@ async function handleVerifyTelemetry(): Promise<void> {
   telemetryText.value = 'Scanning events for telemetry...';
 
   try {
-    const events = window.app?.allEvents || [];
+    const events = eventsStore.allEvents;
     let withCount = 0;
     let withoutCount = 0;
 

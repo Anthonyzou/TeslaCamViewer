@@ -139,6 +139,7 @@ import {
   useFilterPanel,
 } from '../composables/useFilterPanel';
 import { useI18n } from '../composables/useI18n';
+import { eventsStore } from '../composables/useEvents';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{
@@ -147,7 +148,7 @@ const props = defineProps<{
 }>();
 
 function getFilter(): EventFilterLike | null {
-  return props.eventFilter || window.app?.eventFilter || null;
+  return props.eventFilter || eventsStore.eventFilter || null;
 }
 
 const { isExpanded, filterCount } = useFilterPanel();
@@ -197,7 +198,7 @@ function notifyFilterChange(): void {
   if (props.onFilterChange) {
     props.onFilterChange();
   }
-  window.app?.applyFilters?.();
+  eventsStore.applyFilters();
 }
 
 function handleTypeChange(type: string, checked: boolean): void {

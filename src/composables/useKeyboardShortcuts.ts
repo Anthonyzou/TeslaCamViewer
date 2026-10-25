@@ -1,5 +1,12 @@
 import { onKeyStroke, useFullscreen } from '@vueuse/core';
+import { useClipMarking } from './useClipMarking';
+import { eventsStore } from './useEvents';
+import { layoutStore } from './useLayout';
+import { helpModalStore } from './useModals';
+import { playbackStore } from './usePlayback';
 import { settingsStore } from './useSettings';
+import { timelineStore } from './useTimeline';
+import { videoPlayer } from './useVideoPlayer';
 
 interface ShortcutActions {
   togglePlay?: () => void;
@@ -37,25 +44,20 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
       return;
     }
 
-    const app = window.app;
-
     switch (event.code) {
       case 'Space':
         event.preventDefault();
         if (actions?.togglePlay) actions.togglePlay();
-        else app?.togglePlayback();
+        else playbackStore.togglePlay();
         break;
 
       case 'ArrowLeft':
         event.preventDefault();
         if (event.shiftKey) {
           if (actions?.prevClip) actions.prevClip();
-          else app?.previousClip();
+          else playbackStore.prevClip();
         } else {
-          const vp = app?.videoPlayer;
-          if (vp) {
-            vp.seek(vp.currentTime - 5);
-          }
+          videoPlayer.seek(videoPlayer.currentTime - 5);
         }
         break;
 
@@ -63,18 +65,10 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         event.preventDefault();
         if (event.shiftKey) {
           if (actions?.nextClip) actions.nextClip();
-          else app?.nextClip();
+          else playbackStore.nextClip();
         } else {
-          const vp = app?.videoPlayer;
-          if (vp) {
-            vp.seek(vp.currentTime + 5);
-          }
+          videoPlayer.seek(videoPlayer.currentTime + 5);
         }
-        break;
-
-      case 'KeyL':
-        event.preventDefault();
-        app?.layoutManager?.nextLayout();
         break;
 
       case 'KeyH':
@@ -82,20 +76,20 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         if (event.key === '?' || event.code === 'KeyH') {
           event.preventDefault();
           if (actions?.openHelp) actions.openHelp();
-          else app?.helpModal?.toggle();
+          else helpModalStore.toggle();
         }
         break;
 
       case 'Comma':
         event.preventDefault();
         if (actions?.frameBack) actions.frameBack();
-        else app?.videoPlayer?.stepFrame(-1);
+        else videoPlayer.stepFrame(-1);
         break;
 
       case 'Period':
         event.preventDefault();
         if (actions?.frameForward) actions.frameForward();
-        else app?.videoPlayer?.stepFrame(1);
+        else videoPlayer.stepFrame(1);
         break;
 
       case 'KeyQ':
@@ -104,33 +98,31 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         else settingsStore.showSettingsModal();
         break;
 
+      case 'KeyL':
+        event.preventDefault();
+        layoutStore.nextLayout();
+        break;
+
       case 'KeyI':
         event.preventDefault();
         if (actions?.markIn) actions.markIn();
-        else app?.markIn();
+        else useClipMarking().setInPoint();
         break;
 
       case 'KeyO':
         event.preventDefault();
         if (actions?.markOut) actions.markOut();
-        else app?.markOut();
+        else useClipMarking().setOutPoint();
         break;
 
       case 'KeyS':
         event.preventDefault();
-        if (actions?.captureScreenshot) actions.captureScreenshot();
-        else app?.captureScreenshot();
-        break;
-
-      case 'KeyP':
-        event.preventDefault();
-        app?.togglePictureInPicture();
+        actions?.captureScreenshot?.();
         break;
 
       case 'KeyE':
         event.preventDefault();
-        if (actions?.exportVideo) actions.exportVideo();
-        else app?.exportVideo();
+        actions?.exportVideo?.();
         break;
 
       case 'KeyF':
@@ -155,59 +147,56 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         ];
         const cameraIndex = parseInt(event.key, 10) - 1;
         if (cameraIndex >= 0 && cameraIndex < cameras.length) {
-          const targetCam = cameras[cameraIndex];
           if (actions?.changeFocusCamera) {
-            actions.changeFocusCamera(targetCam);
+            actions.changeFocusCamera(cameras[cameraIndex]);
           } else {
-            app?.layoutManager?.setLayout('layout-focus');
-            app?.layoutManager?.setFocusCamera(targetCam);
+            layoutStore.setLayout('layout-focus');
+            layoutStore.setFocusCamera(cameras[cameraIndex]);
           }
         }
         break;
       }
 
-      case 'Digit0': {
+      case 'Digit0':
         event.preventDefault();
-        const vp = app?.videoPlayer;
-        if (vp) vp.playbackRate = 1;
+        videoPlayer.setPlaybackSpeed(1);
         break;
-      }
 
       case 'Equal':
       case 'NumpadAdd':
         event.preventDefault();
-        app?.changeSpeed(1);
+        playbackStore.stepSpeed(1);
         break;
 
       case 'Minus':
       case 'NumpadSubtract':
         event.preventDefault();
-        app?.changeSpeed(-1);
+        playbackStore.stepSpeed(-1);
         break;
 
       case 'PageUp':
       case 'ArrowUp':
         event.preventDefault();
         if (actions?.prevEvent) actions.prevEvent();
-        else app?.previousEvent();
+        else eventsStore.previousEvent();
         break;
 
       case 'PageDown':
       case 'ArrowDown':
         event.preventDefault();
         if (actions?.nextEvent) actions.nextEvent();
-        else app?.nextEvent();
+        else eventsStore.nextEvent();
         break;
 
       case 'Home':
         event.preventDefault();
-        app?.videoPlayer?.seekToEventTime(0);
+        videoPlayer.seekToEventTime(0);
         break;
 
       case 'End': {
         event.preventDefault();
-        const duration = app?.timeline?.duration || 0;
-        app?.videoPlayer?.seekToEventTime(Math.max(0, duration - 1));
+        const duration = timelineStore.duration || 0;
+        videoPlayer.seekToEventTime(Math.max(0, duration - 1));
         break;
       }
 
@@ -216,11 +205,9 @@ export function useKeyboardShortcuts(actions?: ShortcutActions) {
         if (actions?.clearMarks) {
           actions.clearMarks();
         } else {
-          app?.clearMarks();
+          useClipMarking().clearMarks();
         }
         break;
     }
   });
 }
-
-export default useKeyboardShortcuts;

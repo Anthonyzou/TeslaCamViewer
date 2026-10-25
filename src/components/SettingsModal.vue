@@ -433,7 +433,6 @@ const {
   settingsModal,
 } = useModals();
 const { t, currentLocale, setLocale } = useI18n();
-let mouseDownOnOverlay = false;
 
 // Reactive state mirroring settings
 const settings = reactive<Record<string, any>>({});

@@ -3,11 +3,8 @@ import { b2Client } from './useB2';
 import { useClipMarking } from './useClipMarking';
 import { drivesStore, useDrives } from './useDrives';
 import { eventsStore, useEvents } from './useEvents';
-import { filterPanelStore } from './useFilterPanel';
 import { folderManager } from './useFolderManager';
-import { folderParser } from './useFolderParser';
 import { layoutStore, useLayout } from './useLayout';
-import { mapViewStore } from './useMapView';
 import {
   commandPaletteModalStore,
   helpModalStore,
@@ -17,7 +14,7 @@ import { playbackStore, usePlayback } from './usePlayback';
 import { ScreenshotCapture } from './useScreenshot';
 import { settingsStore } from './useSettings';
 import { statisticsStore } from './useStatistics';
-import { timelineStore, useTimeline } from './useTimeline';
+import { useTimeline } from './useTimeline';
 import { VideoExport } from './useVideoExport';
 import { videoPlayer } from './useVideoPlayer';
 
@@ -189,62 +186,6 @@ export function useTeslaCam() {
 
     // Apply performance settings
     playbackStore.applyPerformanceSettings();
-
-    // Populate passive window.app for DevTools debugging
-    if (typeof window !== 'undefined') {
-      window.app = {
-        videoPlayer,
-        folderManager,
-        folderParser,
-        b2Client,
-        timeline: timelineStore,
-        layoutManager: layoutStore,
-        screenshotCapture,
-        videoExport,
-        statisticsManager: statisticsStore,
-        clipMarking,
-        filterPanel: filterPanelStore,
-        helpModal: helpModalStore,
-        commandPalette: commandPaletteModalStore,
-        mapView: mapViewStore.instance,
-        telemetryOverlay: null,
-        get allEvents() {
-          return eventsStore.allEvents;
-        },
-        get filteredEvents() {
-          return eventsStore.filteredEvents;
-        },
-        get currentEvent() {
-          return eventsStore.currentEvent;
-        },
-        play: playbackStore.play,
-        pause: playbackStore.pause,
-        togglePlayback: playbackStore.togglePlay,
-        previousClip: playbackStore.prevClip,
-        nextClip: playbackStore.nextClip,
-        previousEvent: eventsStore.previousEvent,
-        nextEvent: eventsStore.nextEvent,
-        selectEvent: eventsStore.selectEvent,
-        applyFilters: eventsStore.applyFilters,
-        selectFolder: drivesStore.selectFolder,
-        loadFromB2: drivesStore.loadB2,
-        changeDrive: drivesStore.changeDrive,
-        refreshDrives: drivesStore.refreshDrives,
-        addNewDrive: drivesStore.addNewDrive,
-        syncArchiveDrive: drivesStore.syncArchiveDrive,
-        reloadDriveEvents: drivesStore.reloadDriveEvents,
-        tryRestoreLastFolder: drivesStore.tryRestoreLastFolder,
-        showDriveManagementModal: drivesStore.manageDrives,
-        markIn,
-        markOut,
-        clearMarks,
-        exportVideo,
-        captureScreenshot,
-      };
-      window.dispatchEvent(
-        new CustomEvent('teslacam-ready', { detail: window.app })
-      );
-    }
 
     // Auto-connect B2 if preloaded in config
     try {

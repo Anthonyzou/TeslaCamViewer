@@ -35,7 +35,6 @@ function invalidateMapSize(): void {
 
 onMounted(() => {
   if (!mapContainer.value) return;
-  const app = window.app;
 
   mapViewInstance = new MapView(mapContainer.value, (event: TeslaCamEvent) => {
     emit('selectEvent', event);
@@ -46,7 +45,8 @@ onMounted(() => {
 
   setMapView(mapViewInstance);
 
-  const eventsToLoad = props.events || app?.filteredEvents || app?.allEvents;
+  const eventsToLoad =
+    props.events || eventsStore.filteredEvents || eventsStore.allEvents;
   if (eventsToLoad && eventsToLoad.length > 0) {
     mapViewInstance.loadEvents(eventsToLoad);
   }
