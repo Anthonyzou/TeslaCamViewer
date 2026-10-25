@@ -13,6 +13,7 @@ import registerB2Routes, {
   activePreloadCount,
   clearVideoCache,
   ensureVideoCached,
+  getEnvB2Credentials,
   getCachedB2Data,
   getVideoCacheStatus,
   httpAgent,
@@ -102,19 +103,16 @@ if (isEntryFile()) {
     console.log(`TeslaCamViewer Server running at http://localhost:${PORT}`);
 
     // Preload if env variables are set
-    if (
-      process.env.B2_KEY_ID &&
-      process.env.B2_APP_KEY &&
-      process.env.B2_BUCKET_NAME
-    ) {
+    const envCredentials = getEnvB2Credentials();
+    if (envCredentials) {
       console.log(
         '[B2 Server Parser] Preloading data from environment variables...'
       );
       try {
         const cachedData = await performB2Parse(
-          process.env.B2_KEY_ID,
-          process.env.B2_APP_KEY,
-          process.env.B2_BUCKET_NAME
+          envCredentials.keyId,
+          envCredentials.appKey,
+          envCredentials.bucketName
         );
         setCachedB2Data(cachedData);
         console.log(

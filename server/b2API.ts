@@ -44,6 +44,46 @@ axios.defaults.httpsAgent = httpsAgent;
 const CACHE_TTL = 3600 * 1000; // 1 hour
 const rootDir = path.resolve(import.meta.dirname, '..');
 
+export function getEnvB2Credentials(): {
+  keyId: string;
+  appKey: string;
+  bucketName: string;
+} | null {
+  const { B2_KEY_ID, B2_APP_KEY, B2_BUCKET_NAME } = process.env;
+  if (!B2_KEY_ID || !B2_APP_KEY || !B2_BUCKET_NAME) return null;
+  return { keyId: B2_KEY_ID, appKey: B2_APP_KEY, bucketName: B2_BUCKET_NAME };
+}
+
+function toSafeRelativePath(filePath: string): string {
+  return path
+    .normalize(filePath)
+    .replace(/^(\.\.[\/\\])+/, '')
+    .replace(/^[/\\]+/, '');
+}
+
+function isValidUrl(value: string): boolean {
+  try {
+    void new URL(value);
+    return true;
+  } catch (_err) {
+    return false;
+  }
+}
+
+/**
+ * The explicit `file` param wins; otherwise the basename of the `url` param is used.
+ * An unparseable `url` is ignored here so callers decide whether that is an error.
+ */
+function resolveRequestedFile(fileParam?: string, urlParam?: string): string {
+  let fromUrl: string | null = null;
+  if (urlParam) {
+    try {
+      fromUrl = path.basename(new URL(urlParam).pathname);
+    } catch (_err) {}
+  }
+  return toSafeRelativePath(fileParam || fromUrl || '');
+}
+
 export const VIDEO_CACHE_DIR =
   process.env.VIDEO_CACHE_DIR || path.resolve(rootDir, '.cache', 'videos');
 export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_GB
@@ -304,6 +344,44 @@ export function touchCacheFile(filePath: string): void {
 }
 
 let prunning = false;
+
+interface CachedVideoFile {
+  path: string;
+  size: number;
+  atime: number;
+}
+
+/**
+ * Collect every finished cache file under `dir`, skipping in-progress `.tmp.` downloads.
+ * Subdirectories are walked in parallel to suit SSD queue depths.
+ */
+async function listCacheFiles(dir: string): Promise<CachedVideoFile[]> {
+  if (!fs.existsSync(dir)) return [];
+  const files: CachedVideoFile[] = [];
+
+  async function walk(current: string): Promise<void> {
+    const entries = await fs.promises.readdir(current, { withFileTypes: true });
+    await Promise.all(
+      entries.map(async (entry) => {
+        const fullPath = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+        } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
+          const stats = await fs.promises.stat(fullPath);
+          files.push({
+            path: fullPath,
+            size: stats.size,
+            atime: stats.atimeMs || stats.mtimeMs,
+          });
+        }
+      })
+    );
+  }
+
+  await walk(dir);
+  return files;
+}
+
 /**
  * Prune video cache when disk usage exceeds threshold
  */
@@ -314,30 +392,7 @@ export async function pruneVideoCache(
   if (prunning) return;
   prunning = true;
   try {
-    if (!fs.existsSync(targetDir)) return;
-    const files: Array<{ path: string; size: number; atime: number }> = [];
-
-    // Parallel asynchronous walk optimized for SSD concurrent queue depths
-    async function walk(dir: string): Promise<void> {
-      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-      await Promise.all(
-        entries.map(async (entry) => {
-          const fullPath = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            await walk(fullPath);
-          } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
-            const stats = await fs.promises.stat(fullPath);
-            files.push({
-              path: fullPath,
-              size: stats.size,
-              atime: stats.atimeMs || stats.mtimeMs,
-            });
-          }
-        })
-      );
-    }
-
-    await walk(targetDir);
+    const files = await listCacheFiles(targetDir);
 
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
     if (totalSize <= maxBytes) return;
@@ -367,32 +422,12 @@ export async function pruneVideoCache(
  * Retrieve current video cache stats (parallel async traversal for SSDs)
  */
 export async function getVideoCacheStatus(): Promise<VideoCacheStatus> {
-  let totalFiles = 0;
-  let totalBytes = 0;
-
-  async function walk(dir: string): Promise<void> {
-    if (!fs.existsSync(dir)) return;
-    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-    await Promise.all(
-      entries.map(async (entry) => {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          await walk(fullPath);
-        } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
-          const stats = await fs.promises.stat(fullPath);
-          totalFiles++;
-          totalBytes += stats.size;
-        }
-      })
-    );
-  }
-
-  await walk(VIDEO_CACHE_DIR);
+  const files = await listCacheFiles(VIDEO_CACHE_DIR);
   return {
     enabled: true,
     cacheDir: VIDEO_CACHE_DIR,
-    totalFiles,
-    totalBytes,
+    totalFiles: files.length,
+    totalBytes: files.reduce((sum, f) => sum + f.size, 0),
     maxBytes: MAX_CACHE_BYTES,
   };
 }
@@ -430,10 +465,7 @@ export async function ensureVideoCached(
   fileParam: string,
   sourceUrl?: string | null
 ): Promise<string> {
-  const safeRelative = path
-    .normalize(fileParam || '')
-    .replace(/^(\.\.[\/\\])+/, '')
-    .replace(/^[/\\]+/, '');
+  const safeRelative = toSafeRelativePath(fileParam || '');
 
   if (!safeRelative) {
     throw new Error('Invalid file parameter');
@@ -502,15 +534,249 @@ export async function ensureVideoCached(
   return await downloadPromise;
 }
 
+const VIDEO_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+function baseVideoHeaders(
+  upstreamContentType: unknown
+): Record<string, string> {
+  return {
+    'Content-Type': String(upstreamContentType || 'video/mp4'),
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': VIDEO_CACHE_CONTROL,
+  };
+}
+
+// Only a request starting at byte 0 can be teed into the disk cache in full
+function isBeginningRange(rangeHeader: string | undefined): boolean {
+  return !rangeHeader || rangeHeader.startsWith('bytes=0-');
+}
+
+function sendCachedVideo(res: Response, cacheFilePath: string): void {
+  res.sendFile(
+    cacheFilePath,
+    {
+      acceptRanges: true,
+      headers: { 'Cache-Control': VIDEO_CACHE_CONTROL },
+    },
+    (err?: any) => {
+      if (
+        err &&
+        !res.headersSent &&
+        err.code !== 'ECONNABORTED' &&
+        err.code !== 'ECANCELED'
+      ) {
+        console.warn('[B2 Video Proxy] sendFile error:', err.message);
+      }
+    }
+  );
+}
+
+/**
+ * Stream the full video to the client while writing the same bytes to the disk cache
+ */
+async function streamAndCacheVideo(
+  req: Request,
+  res: Response,
+  resolvedSource: string,
+  cacheFilePath: string,
+  rangeHeader: string | undefined
+): Promise<void> {
+  const response = await axios({
+    method: 'get',
+    url: resolvedSource,
+    responseType: 'stream',
+    timeout: 30000,
+  });
+
+  const totalLength =
+    response.headers['content-length'] != null
+      ? String(response.headers['content-length'])
+      : undefined;
+  const clientHeaders = baseVideoHeaders(response.headers['content-type']);
+
+  if (rangeHeader && totalLength) {
+    const totalNum = parseInt(totalLength, 10);
+    clientHeaders['Content-Range'] = `bytes 0-${totalNum - 1}/${totalLength}`;
+    clientHeaders['Content-Length'] = totalLength;
+    res.writeHead(206, clientHeaders);
+  } else {
+    if (totalLength) {
+      clientHeaders['Content-Length'] = totalLength;
+    }
+    res.writeHead(200, clientHeaders);
+  }
+
+  await fs.promises.mkdir(path.dirname(cacheFilePath), {
+    recursive: true,
+  });
+  const tempFilePath = `${cacheFilePath}.tmp.${Date.now()}`;
+  const diskWriter = fs.createWriteStream(tempFilePath, {
+    highWaterMark: 2 * 1024 * 1024,
+  });
+
+  let resolveInFlight!: (path: string) => void;
+  let rejectInFlight!: (err: any) => void;
+  const inFlightPromise = new Promise<string>((resolve, reject) => {
+    resolveInFlight = resolve;
+    rejectInFlight = reject;
+  });
+  // Prevent unhandled rejection if no secondary request attaches a .catch() handler
+  inFlightPromise.catch(() => {});
+  inFlightDownloads.set(cacheFilePath, inFlightPromise);
+
+  let isDone = false;
+  let isClientClosed = false;
+
+  const onClientClose = () => {
+    isClientClosed = true;
+    try {
+      response.data.unpipe(res);
+    } catch (_e) {}
+    if (!res.writableEnded) {
+      try {
+        res.end();
+      } catch (_e) {}
+    }
+    // Note: diskWriter continues streaming to tempFilePath in background
+  };
+  req.on('close', onClientClose);
+  res.on('close', onClientClose);
+
+  const onResError = (_err: any) => {
+    try {
+      response.data.unpipe(res);
+    } catch (_e) {}
+  };
+  res.on('error', onResError);
+
+  // Tee stream: Send to client response immediately for instant playback
+  response.data.pipe(res);
+
+  // Tee stream: Send to disk cache simultaneously
+  response.data.pipe(diskWriter);
+
+  diskWriter.on('finish', async () => {
+    if (isDone) return;
+    isDone = true;
+    try {
+      await fs.promises.rename(tempFilePath, cacheFilePath);
+      pruneVideoCache().catch((err: any) =>
+        console.warn('[B2 Video Cache] Pruning warning:', err.message)
+      );
+      resolveInFlight(cacheFilePath);
+    } catch (err: any) {
+      rejectInFlight(err);
+    } finally {
+      inFlightDownloads.delete(cacheFilePath);
+    }
+  });
+
+  const cleanupError = (err: any) => {
+    if (isDone) return;
+    isDone = true;
+    rejectInFlight(err);
+    inFlightDownloads.delete(cacheFilePath);
+    try {
+      response.data.unpipe(diskWriter);
+      response.data.unpipe(res);
+      response.data.destroy();
+    } catch (_e) {}
+    try {
+      diskWriter.destroy();
+    } catch (_e) {}
+    fs.promises.unlink(tempFilePath).catch(() => {});
+
+    if (!res.headersSent) {
+      res.status(502).json({ error: `Stream failed: ${err.message}` });
+    } else if (!res.writableEnded && !isClientClosed) {
+      res.destroy(err);
+    }
+  };
+
+  diskWriter.on('error', cleanupError);
+  response.data.on('error', cleanupError);
+}
+
+/**
+ * Proxy only the requested byte range to the client with HTTP 206 for zero-latency seeking,
+ * without waiting for a background download to finish. Starts a background cache if none is running.
+ */
+async function proxyVideoRange(
+  req: Request,
+  res: Response,
+  resolvedSource: string,
+  safeRelative: string,
+  cacheFilePath: string,
+  rangeHeader: string | undefined
+): Promise<void> {
+  const requestHeaders: Record<string, string> = {};
+  if (rangeHeader) {
+    requestHeaders.Range = rangeHeader;
+  }
+
+  const response = await axios({
+    method: 'get',
+    url: resolvedSource,
+    headers: requestHeaders,
+    responseType: 'stream',
+    timeout: 30000,
+    validateStatus: (status) => status >= 200 && status < 300,
+  });
+
+  const clientHeaders = baseVideoHeaders(response.headers['content-type']);
+  if (response.headers['content-range']) {
+    clientHeaders['Content-Range'] = String(response.headers['content-range']);
+  }
+  if (response.headers['content-length']) {
+    clientHeaders['Content-Length'] = String(
+      response.headers['content-length']
+    );
+  }
+
+  res.writeHead(response.status, clientHeaders);
+
+  const onClientClose = () => {
+    try {
+      response.data.destroy();
+    } catch (_e) {}
+  };
+  req.on('close', onClientClose);
+  res.on('close', onClientClose);
+
+  res.on('error', (_err: any) => {
+    try {
+      response.data.destroy();
+    } catch (_e) {}
+  });
+
+  response.data.on('error', (err: any) => {
+    console.error('[B2 Video Proxy] Range stream error:', err.message);
+    try {
+      if (!res.headersSent) {
+        res
+          .status(502)
+          .json({ error: `Failed to stream video: ${err.message}` });
+      } else if (!res.writableEnded) {
+        res.destroy(err);
+      }
+    } catch (_e) {}
+  });
+
+  response.data.pipe(res);
+
+  // If not already being cached to disk in background, trigger background caching
+  if (!inFlightDownloads.has(cacheFilePath)) {
+    ensureVideoCached(safeRelative, resolvedSource).catch((err: any) =>
+      console.warn('[B2 Video Cache] Background caching warning:', err.message)
+    );
+  }
+}
+
 export default function registerB2Routes(app: Application): void {
   // 1. Server-Side B2 Status/Config Route
   app.get('/api/b2/config', (_req: Request, res: Response) => {
     res.json({
-      isConfigured: !!(
-        process.env.B2_KEY_ID &&
-        process.env.B2_APP_KEY &&
-        process.env.B2_BUCKET_NAME
-      ),
+      isConfigured: getEnvB2Credentials() !== null,
       isPreloaded: !!cachedB2Data,
       lastParseTime: lastParseTime,
     });
@@ -566,20 +832,7 @@ export default function registerB2Routes(app: Application): void {
           } catch (_e) {}
         }
 
-        let parsedFromUrl: string | null = null;
-        if (urlParam) {
-          try {
-            parsedFromUrl = path.basename(new URL(urlParam).pathname);
-          } catch (_err) {
-            // Ignore invalid url parameter
-          }
-        }
-
-        const resolvedFile = fileParam || parsedFromUrl;
-        const safeRelative = path
-          .normalize(resolvedFile || '')
-          .replace(/^(\.\.[\/\\])+/, '')
-          .replace(/^[/\\]+/, '');
+        const safeRelative = resolveRequestedFile(fileParam, urlParam);
 
         if (!safeRelative) continue;
 
@@ -609,52 +862,20 @@ export default function registerB2Routes(app: Application): void {
           .json({ error: 'Missing file or url query parameter' });
       }
 
-      let parsedFromUrl: string | null = null;
-      if (urlParam) {
-        try {
-          parsedFromUrl = path.basename(new URL(urlParam).pathname);
-        } catch (_err) {
-          return res.status(400).json({ error: 'Invalid url query parameter' });
-        }
+      if (urlParam && !isValidUrl(urlParam)) {
+        return res.status(400).json({ error: 'Invalid url query parameter' });
       }
 
-      const resolvedFile = fileParam || parsedFromUrl;
-
-      const safeRelative = path
-        .normalize(resolvedFile || '')
-        .replace(/^(\.\.[\/\\])+/, '')
-        .replace(/^[/\\]+/, '');
-
+      const safeRelative = resolveRequestedFile(fileParam, urlParam);
       if (!safeRelative) {
         return res.status(400).json({ error: 'Invalid file parameter' });
       }
 
       const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
 
-      const sendFileCallback = (err?: any) => {
-        if (
-          err &&
-          !res.headersSent &&
-          err.code !== 'ECONNABORTED' &&
-          err.code !== 'ECANCELED'
-        ) {
-          console.warn('[B2 Video Proxy] sendFile error:', err.message);
-        }
-      };
-
-      // Fast path: If already cached on disk, serve instantly via res.sendFile with full Range support
       if (fs.existsSync(cacheFilePath)) {
         touchCacheFile(cacheFilePath);
-        return res.sendFile(
-          cacheFilePath,
-          {
-            acceptRanges: true,
-            headers: {
-              'Cache-Control': 'public, max-age=31536000, immutable',
-            },
-          },
-          sendFileCallback
-        );
+        return sendCachedVideo(res, cacheFilePath);
       }
 
       const resolvedSource = resolveSourceUrl(safeRelative, urlParam);
@@ -665,213 +886,26 @@ export default function registerB2Routes(app: Application): void {
       }
 
       const rangeHeader = req.headers.range;
-      const isBeginningRange =
-        !rangeHeader ||
-        rangeHeader.startsWith('bytes=0-') ||
-        rangeHeader === 'bytes=0-';
-
-      // If client requests from the beginning AND no download is already writing to disk,
-      // concurrently stream to the browser for instant playback AND save to disk cache.
-      if (isBeginningRange && !inFlightDownloads.has(cacheFilePath)) {
-        const response = await axios({
-          method: 'get',
-          url: resolvedSource,
-          responseType: 'stream',
-          timeout: 30000,
-        });
-
-        const totalLength =
-          response.headers['content-length'] != null
-            ? String(response.headers['content-length'])
-            : undefined;
-        const contentType = String(
-          response.headers['content-type'] || 'video/mp4'
+      if (
+        isBeginningRange(rangeHeader) &&
+        !inFlightDownloads.has(cacheFilePath)
+      ) {
+        await streamAndCacheVideo(
+          req,
+          res,
+          resolvedSource,
+          cacheFilePath,
+          rangeHeader
         );
-
-        const clientHeaders: Record<string, string> = {
-          'Content-Type': contentType,
-          'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        };
-
-        if (rangeHeader && totalLength) {
-          const totalNum = parseInt(totalLength, 10);
-          clientHeaders['Content-Range'] =
-            `bytes 0-${totalNum - 1}/${totalLength}`;
-          clientHeaders['Content-Length'] = totalLength;
-          res.writeHead(206, clientHeaders);
-        } else {
-          if (totalLength) {
-            clientHeaders['Content-Length'] = totalLength;
-          }
-          res.writeHead(200, clientHeaders);
-        }
-
-        await fs.promises.mkdir(path.dirname(cacheFilePath), {
-          recursive: true,
-        });
-        const tempFilePath = `${cacheFilePath}.tmp.${Date.now()}`;
-        const diskWriter = fs.createWriteStream(tempFilePath, {
-          highWaterMark: 2 * 1024 * 1024,
-        });
-
-        let resolveInFlight!: (path: string) => void;
-        let rejectInFlight!: (err: any) => void;
-        const inFlightPromise = new Promise<string>((resolve, reject) => {
-          resolveInFlight = resolve;
-          rejectInFlight = reject;
-        });
-        // Prevent unhandled rejection if no secondary request attaches a .catch() handler
-        inFlightPromise.catch(() => {});
-        inFlightDownloads.set(cacheFilePath, inFlightPromise);
-
-        let isDone = false;
-        let isClientClosed = false;
-
-        const onClientClose = () => {
-          isClientClosed = true;
-          try {
-            response.data.unpipe(res);
-          } catch (_e) {}
-          if (!res.writableEnded) {
-            try {
-              res.end();
-            } catch (_e) {}
-          }
-          // Note: diskWriter continues streaming to tempFilePath in background
-        };
-        req.on('close', onClientClose);
-        res.on('close', onClientClose);
-
-        const onResError = (_err: any) => {
-          try {
-            response.data.unpipe(res);
-          } catch (_e) {}
-        };
-        res.on('error', onResError);
-
-        // Tee stream: Send to client response immediately for instant playback
-        response.data.pipe(res);
-
-        // Tee stream: Send to disk cache simultaneously
-        response.data.pipe(diskWriter);
-
-        diskWriter.on('finish', async () => {
-          if (isDone) return;
-          isDone = true;
-          try {
-            await fs.promises.rename(tempFilePath, cacheFilePath);
-            pruneVideoCache().catch((err: any) =>
-              console.warn('[B2 Video Cache] Pruning warning:', err.message)
-            );
-            resolveInFlight(cacheFilePath);
-          } catch (err: any) {
-            rejectInFlight(err);
-          } finally {
-            inFlightDownloads.delete(cacheFilePath);
-          }
-        });
-
-        const cleanupError = (err: any) => {
-          if (isDone) return;
-          isDone = true;
-          rejectInFlight(err);
-          inFlightDownloads.delete(cacheFilePath);
-          try {
-            response.data.unpipe(diskWriter);
-            response.data.unpipe(res);
-            response.data.destroy();
-          } catch (_e) {}
-          try {
-            diskWriter.destroy();
-          } catch (_e) {}
-          fs.promises.unlink(tempFilePath).catch(() => {});
-
-          if (!res.headersSent) {
-            res.status(502).json({ error: `Stream failed: ${err.message}` });
-          } else if (!res.writableEnded && !isClientClosed) {
-            res.destroy(err);
-          }
-        };
-
-        diskWriter.on('error', cleanupError);
-        response.data.on('error', cleanupError);
       } else {
-        // Seeking into an uncached file OR an in-flight download is already active:
-        // Proxy the requested range slice directly to the client with HTTP 206 for zero-latency seeking,
-        // without waiting for the full background download to finish.
-        const requestHeaders: Record<string, string> = {};
-        if (rangeHeader) {
-          requestHeaders.Range = rangeHeader;
-        }
-
-        const response = await axios({
-          method: 'get',
-          url: resolvedSource,
-          headers: requestHeaders,
-          responseType: 'stream',
-          timeout: 30000,
-          validateStatus: (status) => status >= 200 && status < 300,
-        });
-
-        const clientHeaders: Record<string, string> = {
-          'Content-Type': String(
-            response.headers['content-type'] || 'video/mp4'
-          ),
-          'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        };
-        if (response.headers['content-range']) {
-          clientHeaders['Content-Range'] = String(
-            response.headers['content-range']
-          );
-        }
-        if (response.headers['content-length']) {
-          clientHeaders['Content-Length'] = String(
-            response.headers['content-length']
-          );
-        }
-
-        res.writeHead(response.status, clientHeaders);
-
-        const onClientClose = () => {
-          try {
-            response.data.destroy();
-          } catch (_e) {}
-        };
-        req.on('close', onClientClose);
-        res.on('close', onClientClose);
-
-        res.on('error', (_err: any) => {
-          try {
-            response.data.destroy();
-          } catch (_e) {}
-        });
-
-        response.data.on('error', (err: any) => {
-          console.error('[B2 Video Proxy] Range stream error:', err.message);
-          try {
-            if (!res.headersSent) {
-              res
-                .status(502)
-                .json({ error: `Failed to stream video: ${err.message}` });
-            } else if (!res.writableEnded) {
-              res.destroy(err);
-            }
-          } catch (_e) {}
-        });
-
-        response.data.pipe(res);
-
-        // If not already being cached to disk in background, trigger background caching
-        if (!inFlightDownloads.has(cacheFilePath)) {
-          ensureVideoCached(safeRelative, resolvedSource).catch((err: any) =>
-            console.warn(
-              '[B2 Video Cache] Background caching warning:',
-              err.message
-            )
-          );
-        }
+        await proxyVideoRange(
+          req,
+          res,
+          resolvedSource,
+          safeRelative,
+          cacheFilePath,
+          rangeHeader
+        );
       }
     } catch (err: any) {
       console.error('[B2 Video Proxy] Failed to stream video:', err.message);
@@ -888,9 +922,10 @@ export default function registerB2Routes(app: Application): void {
   // 5. Server-Side B2 Parsing Route
   app.post('/api/b2/parse', async (req: Request, res: Response) => {
     try {
-      const keyId = req.body?.keyId || process.env.B2_KEY_ID;
-      const appKey = req.body?.appKey || process.env.B2_APP_KEY;
-      const bucketName = req.body?.bucketName || process.env.B2_BUCKET_NAME;
+      const envCredentials = getEnvB2Credentials();
+      const keyId = req.body?.keyId || envCredentials?.keyId;
+      const appKey = req.body?.appKey || envCredentials?.appKey;
+      const bucketName = req.body?.bucketName || envCredentials?.bucketName;
       const forceRefresh = req.body?.refresh === true;
 
       if (!keyId || !appKey || !bucketName) {
@@ -902,9 +937,10 @@ export default function registerB2Routes(app: Application): void {
 
       // Return cached data if available and not forced to refresh
       const isDefaultConfig =
-        keyId === process.env.B2_KEY_ID &&
-        appKey === process.env.B2_APP_KEY &&
-        bucketName === process.env.B2_BUCKET_NAME;
+        envCredentials !== null &&
+        keyId === envCredentials.keyId &&
+        appKey === envCredentials.appKey &&
+        bucketName === envCredentials.bucketName;
 
       if (
         isDefaultConfig &&

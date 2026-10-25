@@ -8,7 +8,6 @@ import {
   detectGaps,
   formatGapDuration,
   formatHourlyRange,
-  formatReason,
   groupClips,
   parseClipFilename,
   parseClipTimestamp,
@@ -732,15 +731,6 @@ class FolderParser {
     }
     const clipGroup = event.clipGroups[clipIndex];
     return clipGroup.clips[camera]?.fileHandle || null;
-  }
-
-  /**
-   * Format event reason for display
-   * @param {string} reason
-   * @returns {string}
-   */
-  static formatReason(reason) {
-    return formatReason(reason);
   }
 }
 

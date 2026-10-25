@@ -24,7 +24,7 @@ if (typeof globalThis.window === 'undefined') {
 import L from 'leaflet';
 import { shallowRef, type ShallowRef } from 'vue';
 import { TeslaCamEvent } from '../types';
-import { FolderParser } from './useFolderParser';
+import { formatReason } from '../utils/teslaCamFormat';
 
 class MapView {
   private container: HTMLElement | null = null;
@@ -258,9 +258,7 @@ class MapView {
       }
     }
 
-    const reason = event.metadata
-      ? FolderParser.formatReason(event.metadata.reason)
-      : '';
+    const reason = event.metadata ? formatReason(event.metadata.reason) : '';
 
     let html = `
       <div class="map-popup">

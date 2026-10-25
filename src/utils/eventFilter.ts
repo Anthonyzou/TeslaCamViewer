@@ -2,7 +2,7 @@
  * EventFilter - Handles filtering and sorting of events
  */
 import dayjs from 'dayjs';
-import { FolderParser } from '../composables/useFolderParser';
+import { formatReason } from './teslaCamFormat';
 
 class EventFilter {
   public filters: any;
@@ -109,7 +109,7 @@ class EventFilter {
     }
 
     // Search in formatted reason
-    const formattedReason = FolderParser.formatReason(event.metadata?.reason);
+    const formattedReason = formatReason(event.metadata?.reason);
     if (formattedReason && formattedReason.toLowerCase().includes(query)) {
       return true;
     }
