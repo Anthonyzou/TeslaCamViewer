@@ -30,7 +30,6 @@ A powerful browser-based Tesla dashcam viewer with synchronized multi-angle play
 - **Screenshot Capture** - Save current frame from all cameras
 - **Video Export** - Export clips as WebM or MP4 with overlays
 - **Clip Marking** - Set IN/OUT points for precise export ranges
-- **Telemetry CSV Export** - Download telemetry data for external analysis
 
 ### Customization
 
@@ -68,23 +67,20 @@ npm run start
 3. Click an event to start playback
 4. Use the timeline to scrub through footage
 5. Press `L` to cycle through layout presets
-6. Press `T` for telemetry overlay, `G` for graphs, `M` for mini-map
 
 ## Keyboard Shortcuts
 
-| Key                  | Action                   |
-| -------------------- | ------------------------ |
-| `Space`              | Play/Pause               |
-| `Left/Right Arrow`   | Seek 5 seconds           |
-| `Shift + Left/Right` | Previous/Next clip       |
-| `Up/Down Arrow`      | Previous/Next event      |
-| `L`                  | Cycle layouts            |
-| `T`                  | Toggle telemetry overlay |
-| `G`                  | Toggle telemetry graphs  |
-| `M`                  | Toggle GPS mini-map      |
-| `F`                  | Toggle fullscreen        |
-| `S`                  | Take screenshot          |
-| `?`                  | Show all shortcuts       |
+| Key                  | Action              |
+| -------------------- | ------------------- |
+| `Space`              | Play/Pause          |
+| `Left/Right Arrow`   | Seek 5 seconds      |
+| `Shift + Left/Right` | Previous/Next clip  |
+| `Up/Down Arrow`      | Previous/Next event |
+| `L`                  | Cycle layouts       |
+| `M`                  | Toggle GPS mini-map |
+| `F`                  | Toggle fullscreen   |
+| `S`                  | Take screenshot     |
+| `?`                  | Show all shortcuts  |
 
 ## Tesla Dashcam Folder Structure
 

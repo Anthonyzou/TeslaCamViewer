@@ -4,8 +4,8 @@
     class="modal-overlay"
     id="driveManagementModal"
     @keydown.esc="close"
-    @mousedown="onOverlayMouseDown"
-    @click="onOverlayClick"
+    @mousedown="close"
+    @click="close"
   >
     <div class="modal drive-management-modal" @click.stop>
       <div class="modal-header">
@@ -142,16 +142,15 @@
 <script setup lang="ts">
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
-import { useI18n } from '../composables/useI18n';
 import { drivesStore } from '../composables/useDrives';
-import { driveSetupModalStore, useModals } from '../composables/useModals';
 import { folderManager } from '../composables/useFolderManager';
+import { useI18n } from '../composables/useI18n';
+import { driveSetupModalStore, useModals } from '../composables/useModals';
 import type { DriveInfo, TeslaCamEvent } from '../types';
 
 const { isDriveManagementOpen: isOpen, driveManagementModal } = useModals();
 const { t } = useI18n();
 const drivesList = ref<DriveInfo[]>([]);
-let mouseDownOnOverlay = false;
 
 function refreshDrives(): void {
   drivesList.value = folderManager.getDrives() || [];
@@ -164,21 +163,6 @@ function open(): void {
 
 function close(): void {
   driveManagementModal.close();
-}
-
-function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
-    'modal-overlay'
-  );
-}
-
-function onOverlayClick(e: MouseEvent): void {
-  if (
-    mouseDownOnOverlay &&
-    (e.target as HTMLElement).classList.contains('modal-overlay')
-  ) {
-    close();
-  }
 }
 
 function getEventCountText(drive: DriveInfo): string {

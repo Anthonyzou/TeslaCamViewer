@@ -17,9 +17,7 @@ export function useClipMarking(
     const player =
       getVideoPlayer?.() ||
       defaultVideoPlayerGetter?.() ||
-      (typeof window !== 'undefined'
-        ? window.app?.videoPlayer
-        : null);
+      (typeof window !== 'undefined' ? window.app?.videoPlayer : null);
     return player?.absoluteTime ?? player?.currentTime ?? 0;
   }
 

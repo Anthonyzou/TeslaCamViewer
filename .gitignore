@@ -9,6 +9,7 @@ Thumbs.db
 # Environment variables
 .env
 
+.ori
 node_modules/
 dist/
 .cache/

@@ -1,10 +1,6 @@
 <template>
   <div v-if="isOpen" class="stats-modal" @keydown.esc="close">
-    <div
-      class="stats-overlay"
-      @mousedown="onOverlayMouseDown"
-      @click="onOverlayClick"
-    ></div>
+    <div class="stats-overlay" @mousedown="close" @click="close"></div>
     <div class="stats-panel">
       <div class="stats-layout">
         <!-- Sidebar Navigation -->
@@ -193,10 +189,7 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.eventsLast14Days') }}</h3>
                 <div v-if="hasTimelineEvents">
-                  <BaseChart
-                    :data="timelineChartData"
-                    :height="140"
-                  />
+                  <BaseChart :data="timelineChartData" :height="140" />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noEventsLast14Days') }}
@@ -222,10 +215,7 @@
                   </button>
                 </div>
                 <div v-if="hasTrendData">
-                  <BaseChart
-                    :data="trendChartData"
-                    :height="140"
-                  />
+                  <BaseChart :data="trendChartData" :height="140" />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noTrendData') }}
@@ -338,10 +328,7 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.sentryByTimeOfDay') }}</h3>
                 <div v-if="hasSentryHourData">
-                  <BaseChart
-                    :data="sentryHourChartData"
-                    :height="140"
-                  />
+                  <BaseChart :data="sentryHourChartData" :height="140" />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noSentryEvents') }}
@@ -351,10 +338,7 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.sentryByDayOfWeek') }}</h3>
                 <div v-if="hasSentryDowData">
-                  <BaseChart
-                    :data="sentryDowChartData"
-                    :height="140"
-                  />
+                  <BaseChart :data="sentryDowChartData" :height="140" />
                 </div>
                 <p v-else class="stats-empty">
                   {{ t('statistics.noSentryEvents') }}
@@ -471,6 +455,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ChartData } from 'chart.js';
 import {
   BarChart3,
   Calendar,
@@ -481,7 +466,6 @@ import {
   Sun,
   X,
 } from 'lucide-vue-next';
-import type { ChartData } from 'chart.js';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
@@ -621,21 +605,6 @@ function open(data: Record<string, unknown>): void {
 
 function close(): void {
   statisticsModal.close();
-}
-
-function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
-    'stats-overlay'
-  );
-}
-
-function onOverlayClick(e: MouseEvent): void {
-  if (
-    mouseDownOnOverlay &&
-    (e.target as HTMLElement).classList.contains('stats-overlay')
-  ) {
-    close();
-  }
 }
 
 async function handleVerifyTelemetry(): Promise<void> {

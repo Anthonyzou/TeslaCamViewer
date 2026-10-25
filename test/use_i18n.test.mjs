@@ -9,8 +9,7 @@ globalThis.localStorage = globalThis.localStorage || {
 };
 
 const jiti = createJiti(process.cwd());
-const { useI18n } = jiti('./src/composables/useI18n.ts');
-const { i18n } = jiti('./src/utils/i18n.ts');
+const { useI18n, i18n } = jiti('./src/composables/useI18n.ts');
 
 test('useI18n - provides translations and reactive locale state', async () => {
   // Ensure english and german messages are preloaded in mock

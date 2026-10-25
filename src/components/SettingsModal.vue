@@ -1,10 +1,6 @@
 <template>
   <div v-if="isOpen" class="settings-modal" @keydown.esc="close">
-    <div
-      class="settings-overlay"
-      @mousedown="onOverlayMouseDown"
-      @click="onOverlayClick"
-    ></div>
+    <div class="settings-overlay" @mousedown="close" @click="close"></div>
     <div class="settings-panel">
       <div class="settings-layout">
         <!-- Sidebar Navigation -->
@@ -458,21 +454,6 @@ function open(tab?: string): void {
 
 function close(): void {
   settingsModal.close();
-}
-
-function onOverlayMouseDown(e: MouseEvent): void {
-  mouseDownOnOverlay = (e.target as HTMLElement).classList.contains(
-    'settings-overlay'
-  );
-}
-
-function onOverlayClick(e: MouseEvent): void {
-  if (
-    mouseDownOnOverlay &&
-    (e.target as HTMLElement).classList.contains('settings-overlay')
-  ) {
-    close();
-  }
 }
 
 function save(key: string, val: any): void {

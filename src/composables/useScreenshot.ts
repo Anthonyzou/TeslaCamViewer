@@ -4,11 +4,11 @@
 
 import dayjs from 'dayjs';
 import { ref, type Ref } from 'vue';
-import { layoutStore } from './useLayout';
-import { settingsStore } from './useSettings';
-import { videoPlayer, type VideoPlayer } from './usePlayback';
 import { LayoutConfig } from '../layout/layoutConfig';
 import LayoutRenderer from '../layout/layoutRenderer';
+import { layoutStore } from './useLayout';
+import { videoPlayer, type VideoPlayer } from './usePlayback';
+import { settingsStore } from './useSettings';
 
 export interface ScreenshotOptions {
   includeTimestamp?: boolean;
@@ -69,8 +69,7 @@ export class ScreenshotCapture {
 
     const renderer = new LayoutRenderer();
     const config =
-      layoutStore.currentConfig ||
-      LayoutConfig.presetToConfig('layout-6-3');
+      layoutStore.currentConfig || LayoutConfig.presetToConfig('layout-6-3');
     const visibleCameras = layoutStore.visibleCameras;
 
     const exportConfig = renderer.calculateExportConfig(
@@ -111,42 +110,6 @@ export class ScreenshotCapture {
       this.addTimestampOverlay(ctx as CanvasRenderingContext2D, width, height);
     }
 
-    const telemetryEnabled =
-      !settings || settings.get('telemetryOverlayInExport') !== false;
-
-    if (
-      !privacyMode &&
-      window.app?.telemetryOverlay &&
-      telemetryEnabled &&
-      window.app.telemetryOverlay.hasTelemetryData()
-    ) {
-      const clipIndex = this.videoPlayer.currentClipIndex || 0;
-      const timeInClip = this.videoPlayer.currentTime || 0;
-      const videoDuration = this.videoPlayer.duration || 60;
-
-      window.app.telemetryOverlay.updateTelemetry(
-        clipIndex,
-        timeInClip,
-        videoDuration
-      );
-      const telemetryData = window.app.telemetryOverlay.currentData;
-
-      if (telemetryData) {
-        try {
-          const hudScale = width / 1000;
-          window.app.telemetryOverlay.renderToCanvas(
-            ctx,
-            width,
-            height,
-            telemetryData,
-            { blinkState: true, scale: hudScale }
-          );
-        } catch (e) {
-          console.error('[Screenshot] Telemetry render error:', e);
-        }
-      }
-    }
-
     const mimeType = 'image/jpeg';
     const blob = await this.canvasToBlob(canvas, mimeType, quality);
     const timestamp = this.getFormattedTimestamp();
@@ -154,7 +117,10 @@ export class ScreenshotCapture {
     this.downloadBlob(blob, `TeslaCam_${timestamp}.${extension}`);
   }
 
-  async captureSingle(camera: string, options: ScreenshotOptions = {}): Promise<void> {
+  async captureSingle(
+    camera: string,
+    options: ScreenshotOptions = {}
+  ): Promise<void> {
     const { includeTimestamp = true, quality = 0.95 } = options;
 
     const video = this.videoPlayer.videos[camera];
@@ -311,7 +277,10 @@ export function useScreenshot() {
     }
   }
 
-  async function captureSingle(camera: string, options?: ScreenshotOptions): Promise<void> {
+  async function captureSingle(
+    camera: string,
+    options?: ScreenshotOptions
+  ): Promise<void> {
     isCapturing.value = true;
     try {
       await screenshotCapture.captureSingle(camera, options);
