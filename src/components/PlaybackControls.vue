@@ -384,6 +384,13 @@ watch(
   }
 );
 
+watch(
+  () => props.speed,
+  (s) => {
+    if (s) selectedSpeed.value = s;
+  }
+);
+
 const { t } = useI18n();
 
 function onScreenshotClick(): void {
