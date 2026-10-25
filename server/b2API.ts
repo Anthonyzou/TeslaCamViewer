@@ -556,6 +556,8 @@ function sendCachedVideo(res: Response, cacheFilePath: string): void {
     cacheFilePath,
     {
       acceptRanges: true,
+      // The cache lives under `.cache/`, which Express 5's `send` would otherwise hide as a dotfile
+      dotfiles: 'allow',
       headers: { 'Cache-Control': VIDEO_CACHE_CONTROL },
     },
     (err?: any) => {

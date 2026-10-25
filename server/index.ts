@@ -13,8 +13,8 @@ import registerB2Routes, {
   activePreloadCount,
   clearVideoCache,
   ensureVideoCached,
-  getEnvB2Credentials,
   getCachedB2Data,
+  getEnvB2Credentials,
   getVideoCacheStatus,
   httpAgent,
   httpsAgent,
@@ -45,7 +45,7 @@ registerB2Routes(app);
 app.use(express.static(rootDir));
 
 // Default to index.html for unknown routes
-app.get('*', (_req: Request, res: Response) => {
+app.get('*any', (_req: Request, res: Response) => {
   res.sendFile(path.join(rootDir, 'index.html'), (err?: any) => {
     if (
       err &&
