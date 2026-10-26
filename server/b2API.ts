@@ -42,6 +42,7 @@ axios.defaults.httpAgent = httpAgent;
 axios.defaults.httpsAgent = httpsAgent;
 
 const CACHE_TTL = 3600 * 1000; // 1 hour
+const MAX_CACHE_BACKLOG_BYTES = 32 * 1024 * 1024;
 const rootDir = path.resolve(import.meta.dirname, '..');
 
 export function getEnvB2Credentials(): {
@@ -633,6 +634,7 @@ async function streamAndCacheVideo(
     isClientClosed = true;
     try {
       response.data.unpipe(res);
+      response.data.resume();
     } catch (_e) {}
     if (!res.writableEnded) {
       try {
@@ -647,6 +649,7 @@ async function streamAndCacheVideo(
   const onResError = (_err: any) => {
     try {
       response.data.unpipe(res);
+      response.data.resume();
     } catch (_e) {}
   };
   res.on('error', onResError);
@@ -654,8 +657,30 @@ async function streamAndCacheVideo(
   // Tee stream: Send to client response immediately for instant playback
   response.data.pipe(res);
 
-  // Tee stream: Send to disk cache simultaneously
-  response.data.pipe(diskWriter);
+  // Disk writes are fed from a separate listener, not a pipe, so a slow disk never pauses the origin stream.
+  const abandonCache = (reason: string) => {
+    if (isDone) return;
+    isDone = true;
+    console.warn('[B2 Video Cache] Skipping disk cache:', reason);
+    rejectInFlight(new Error(reason));
+    inFlightDownloads.delete(cacheFilePath);
+    diskWriter.once('close', () => {
+      fs.promises.unlink(tempFilePath).catch(() => {});
+    });
+    diskWriter.destroy();
+  };
+
+  response.data.on('data', (chunk: Buffer) => {
+    if (isDone) return;
+    if (diskWriter.writableLength + chunk.length > MAX_CACHE_BACKLOG_BYTES) {
+      abandonCache('disk writer fell behind the origin stream');
+      return;
+    }
+    diskWriter.write(chunk);
+  });
+  response.data.on('end', () => {
+    if (!isDone) diskWriter.end();
+  });
 
   diskWriter.on('finish', async () => {
     if (isDone) return;
