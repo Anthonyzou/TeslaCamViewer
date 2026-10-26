@@ -638,6 +638,8 @@ export class VideoPlayer {
     this._isSeeking = false;
     this._bufferingCameras.clear();
     this._applyPlaybackRateToAll();
+    // Seeks within the current clip don't reload it, so request the next clip here
+    this._checkPreloadTrigger();
 
     if (autoPlay) {
       this.play();

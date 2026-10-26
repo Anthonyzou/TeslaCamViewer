@@ -90,7 +90,7 @@
         :title="t('controls.markIn')"
         @click="emit('markIn')"
       >
-        <Bookmark :size="20" color="#4caf50" />
+        <StepForward :size="20" color="#4caf50" />
       </button>
 
       <button
@@ -100,7 +100,7 @@
         :title="t('controls.markOut')"
         @click="emit('markOut')"
       >
-        <Bookmark :size="20" color="#f44336" />
+        <StepBack :size="20" color="#f44336" />
       </button>
 
       <div class="export-dropdown-container">
@@ -142,9 +142,7 @@
         @click="onScreenshotClick"
       >
         <Camera :size="18" style="margin-right: 8px" />
-        <span>{{
-          t('controls.screenshot')
-        }}</span>
+        <span>{{ t('controls.screenshot') }}</span>
       </button>
 
       <!-- Export Video with Format -->
@@ -156,9 +154,7 @@
           @click="onExportVideoClick"
         >
           <Video :size="18" style="margin-right: 8px" />
-          <span>{{
-            t('export.exportVideo')
-          }}</span>
+          <span>{{ t('export.exportVideo') }}</span>
         </button>
       </div>
       <div class="export-video-group">
@@ -169,9 +165,7 @@
           @click="emit('clearMarks')"
         >
           <X :size="18" style="margin-right: 8px" />
-          <span>{{
-            t('controls.clearMarks')
-          }}</span>
+          <span>{{ t('controls.clearMarks') }}</span>
         </button>
       </div>
 
@@ -182,9 +176,7 @@
 
       <label class="export-option export-checkbox-option">
         <input type="checkbox" id="privacyModeCheckbox" v-model="privacyMode" />
-        <span class="export-checkbox-label">{{
-          t('export.privacyMode')
-        }}</span>
+        <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
         }}</span>
@@ -225,9 +217,7 @@
           <option value="layout-front-right">
             {{ t('layouts.frontRight') }}
           </option>
-          <option
-            value="layout-front-repeaters"
-          >
+          <option value="layout-front-repeaters">
             {{ t('layouts.frontRepeaters') }}
           </option>
           <option
@@ -309,7 +299,6 @@
 
 <script setup lang="ts">
 import {
-  Bookmark,
   Camera,
   ChevronDown,
   Download,
@@ -319,6 +308,8 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
+  StepBack,
+  StepForward,
   Video,
   X,
 } from 'lucide-vue-next';

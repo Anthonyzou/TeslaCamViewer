@@ -1001,3 +1001,37 @@ test('API GET /api/b2/video reports X-Video-Source as b2 when streaming from ori
     await new Promise((resolve) => mockOriginServer.close(resolve));
   }
 });
+
+test('concurrent performB2Parse calls for the same bucket share one B2 listing', async (t) => {
+  const { default: B2 } = await import('backblaze-b2');
+  const { performB2Parse } = await import('../server/b2API.ts');
+
+  let listCalls = 0;
+  let releaseList;
+  const listGate = new Promise((resolve) => {
+    releaseList = resolve;
+  });
+  t.mock.method(B2.prototype, 'authorize', async function () {
+    this.downloadUrl = 'https://f000.backblazeb2.com';
+    return { data: {} };
+  });
+  t.mock.method(B2.prototype, 'getBucket', async () => ({
+    data: { buckets: [{ bucketName: 'shared-bucket', bucketId: 'bkt-1' }] },
+  }));
+  t.mock.method(B2.prototype, 'listFileNames', async () => {
+    listCalls++;
+    await listGate;
+    return { data: { files: [], nextFileName: null } };
+  });
+  t.mock.method(B2.prototype, 'getDownloadAuthorization', async () => ({
+    data: { authorizationToken: 'tok' },
+  }));
+
+  const first = performB2Parse('key-id', 'app-key', 'shared-bucket');
+  const second = performB2Parse('key-id', 'app-key', 'shared-bucket');
+  releaseList();
+  const [a, b] = await Promise.all([first, second]);
+
+  assert.strictEqual(listCalls, 1, 'Only one listing should reach B2');
+  assert.strictEqual(a, b, 'Both callers receive the same result');
+});

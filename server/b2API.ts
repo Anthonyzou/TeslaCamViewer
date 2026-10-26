@@ -158,10 +158,29 @@ export function getCachedB2Data(): {
   return { cachedB2Data, lastParseTime };
 }
 
+const inFlightParses = new Map<string, Promise<B2ParseResult>>();
+
 /**
- * Perform the B2 parsing logic using the backblaze-b2 SDK
+ * Perform the B2 parsing logic using the backblaze-b2 SDK.
+ * Concurrent calls for the same credentials and bucket share one run instead of listing the bucket twice.
  */
-export async function performB2Parse(
+export function performB2Parse(
+  keyId: string,
+  appKey: string,
+  bucketName: string
+): Promise<B2ParseResult> {
+  const key = JSON.stringify([keyId, appKey, bucketName]);
+  const existing = inFlightParses.get(key);
+  if (existing) return existing;
+
+  const parse = runB2Parse(keyId, appKey, bucketName).finally(() => {
+    inFlightParses.delete(key);
+  });
+  inFlightParses.set(key, parse);
+  return parse;
+}
+
+async function runB2Parse(
   keyId: string,
   appKey: string,
   bucketName: string
