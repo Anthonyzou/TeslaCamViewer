@@ -1,9 +1,17 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import {
+import os from 'node:os';
+import { execFile } from 'node:child_process';
+
+// Tests clear and prune the cache dir, so point it at a throwaway directory before the server module reads its config
+const testCacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'teslacam-test-cache-'));
+process.env.VIDEO_CACHE_DIR = testCacheDir;
+after(() => fs.rmSync(testCacheDir, { recursive: true, force: true }));
+
+const {
   app,
   organizeB2Events,
   VIDEO_CACHE_DIR,
@@ -13,7 +21,8 @@ import {
   httpAgent,
   httpsAgent,
   touchCacheFile,
-} from '../server/index.ts';
+} = await import('../server/index.ts');
+const { MAX_CACHE_BYTES } = await import('../server/b2API.ts');
 
 test('organizeB2Events - groups files into chronological events and detects cameras', async () => {
   const mockFiles = [
@@ -716,4 +725,231 @@ test('API GET /api/b2/video background caching continues to disk when client clo
     await new Promise((resolve) => server.close(resolve));
     await new Promise((resolve) => mockOriginServer.close(resolve));
   }
+});
+
+test('API GET /api/b2/video keeps streaming to the client while the disk cache writer is slow', async (t) => {
+  const payload = Buffer.alloc(8 * 1024 * 1024, 'z');
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': String(payload.length),
+      'Accept-Ranges': 'bytes',
+    });
+    res.end(payload);
+  });
+
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originUrl = `http://127.0.0.1:${mockOriginServer.address().port}/slow-disk.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const testFileRel = 'SlowDisk/clip.mp4';
+  const realCreateWriteStream = fs.createWriteStream;
+  t.mock.method(fs, 'createWriteStream', (...args) => {
+    const writer = realCreateWriteStream(...args);
+    const realWrite = writer._write.bind(writer);
+    const realWritev = writer._writev.bind(writer);
+    writer._write = (chunk, enc, cb) => {
+      setTimeout(() => realWrite(chunk, enc, cb), 200);
+    };
+    writer._writev = (chunks, cb) => {
+      setTimeout(() => realWritev(chunks, cb), 200);
+    };
+    return writer;
+  });
+
+  try {
+    await clearVideoCache();
+
+    const start = performance.now();
+    const res = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=0-' } }
+    );
+    assert.strictEqual(res.status, 206);
+    const body = Buffer.from(await res.arrayBuffer());
+    const elapsed = performance.now() - start;
+
+    assert.strictEqual(body.length, payload.length, 'Client receives the full body');
+    assert.ok(elapsed < 500, `Client finished in ${elapsed}ms; a slow disk writer must not pace playback`);
+  } finally {
+    t.mock.restoreAll();
+    await clearVideoCache();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    mockOriginServer.closeAllConnections?.();
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('parallel cache listing excludes in-progress tmp files and counts the rest', async () => {
+  try {
+    await clearVideoCache();
+    const folder = path.join(VIDEO_CACHE_DIR, 'ListFolder');
+    await fs.promises.mkdir(folder, { recursive: true });
+    for (let i = 0; i < 40; i++) {
+      await fs.promises.writeFile(path.join(folder, `clip_${i}.mp4`), Buffer.alloc(10, 'x'));
+    }
+    await fs.promises.writeFile(path.join(folder, 'clip_0.mp4.tmp.123'), Buffer.alloc(10, 'x'));
+
+    const status = await getVideoCacheStatus();
+    assert.strictEqual(status.totalFiles, 40, 'In-progress .tmp. files are excluded');
+    assert.strictEqual(status.totalBytes, 400);
+  } finally {
+    await clearVideoCache();
+  }
+});
+
+test('cache byte counter avoids a directory scan when a download stays under the limit', async (t) => {
+  const payload = Buffer.from('counter-under-limit-payload');
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': String(payload.length),
+      'Accept-Ranges': 'bytes',
+    });
+    res.end(payload);
+  });
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originUrl = `http://127.0.0.1:${mockOriginServer.address().port}/counter.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const testFileRel = 'CounterScan/clip.mp4';
+  const testFileAbs = path.join(VIDEO_CACHE_DIR, testFileRel);
+
+  try {
+    await clearVideoCache();
+    const readdirSpy = t.mock.method(fs.promises, 'readdir');
+
+    const res = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=0-' } }
+    );
+    await res.arrayBuffer();
+
+    let retries = 50;
+    while (!fs.existsSync(testFileAbs) && retries > 0) {
+      await new Promise((r) => setTimeout(r, 20));
+      retries--;
+    }
+    assert.strictEqual(fs.existsSync(testFileAbs), true);
+    await new Promise((r) => setTimeout(r, 100));
+
+    assert.strictEqual(readdirSpy.mock.callCount(), 0, 'Under-limit download must not walk the cache dir');
+  } finally {
+    t.mock.restoreAll();
+    await clearVideoCache();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    mockOriginServer.closeAllConnections?.();
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('cache byte counter evicts the oldest file once a download pushes the total over the limit', async () => {
+  const payload = Buffer.from('counter-over-limit-payload');
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': String(payload.length),
+      'Accept-Ranges': 'bytes',
+    });
+    res.end(payload);
+  });
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originUrl = `http://127.0.0.1:${mockOriginServer.address().port}/over-limit.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const oldRel = 'OverLimit/old-sparse.mp4';
+  const oldAbs = path.join(VIDEO_CACHE_DIR, oldRel);
+  const newRel = 'OverLimit/new-clip.mp4';
+  const newAbs = path.join(VIDEO_CACHE_DIR, newRel);
+
+  try {
+    await clearVideoCache();
+
+    // A sparse file just over the configured limit, with the oldest atime so it is evicted first
+    await fs.promises.mkdir(path.dirname(oldAbs), { recursive: true });
+    await fs.promises.writeFile(oldAbs, '');
+    await fs.promises.truncate(oldAbs, MAX_CACHE_BYTES + 1);
+    await fs.promises.utimes(oldAbs, 1000, 1000);
+
+    // Seed the counter from disk; Infinity limit means no eviction during the seed
+    await pruneVideoCache(VIDEO_CACHE_DIR, Infinity);
+
+    const res = await fetch(
+      `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(newRel)}&url=${encodeURIComponent(originUrl)}`,
+      { headers: { Range: 'bytes=0-' } }
+    );
+    await res.arrayBuffer();
+
+    let retries = 100;
+    while (fs.existsSync(oldAbs) && retries > 0) {
+      await new Promise((r) => setTimeout(r, 20));
+      retries--;
+    }
+    assert.strictEqual(fs.existsSync(oldAbs), false, 'Oldest file is evicted once the total exceeds the limit');
+    assert.strictEqual(fs.existsSync(newAbs), true, 'Newly cached file is kept');
+  } finally {
+    await clearVideoCache();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    mockOriginServer.closeAllConnections?.();
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});
+
+test('clearVideoCache refuses to wipe a non-temp cache directory during a test run', async () => {
+  const env = { ...process.env, VIDEO_CACHE_DIR: path.join(os.homedir(), 'teslacam-not-tmp') };
+  const script = `
+    const { clearVideoCache } = await import(${JSON.stringify(path.resolve(import.meta.dirname, '..', 'server', 'b2API.ts'))});
+    try {
+      await clearVideoCache();
+      console.log('CLEARED');
+    } catch (err) {
+      console.log('REFUSED', err.message);
+    }
+  `;
+  const output = await new Promise((resolve, reject) => {
+    execFile(process.execPath, ['--input-type=module', '-e', script], { env }, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout);
+    });
+  });
+  assert.match(output, /REFUSED Refusing to clear a non-temp video cache/);
+});
+
+function resolveCacheDirInChild(envValue, cwd) {
+  const env = { ...process.env, VIDEO_CACHE_DIR: envValue };
+  const script = `
+    const { VIDEO_CACHE_DIR } = await import(${JSON.stringify(path.resolve(import.meta.dirname, '..', 'server', 'b2API.ts'))});
+    console.log(VIDEO_CACHE_DIR);
+  `;
+  return new Promise((resolve, reject) => {
+    execFile(process.execPath, ['--input-type=module', '-e', script], { env, cwd }, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout.trim());
+    });
+  });
+}
+
+test('VIDEO_CACHE_DIR resolves relative paths against the project root, not the launch directory', async () => {
+  const projectRoot = path.resolve(import.meta.dirname, '..');
+  assert.strictEqual(
+    await resolveCacheDirInChild('.cache/videos', os.tmpdir()),
+    path.join(projectRoot, '.cache', 'videos')
+  );
+});
+
+test('VIDEO_CACHE_DIR keeps absolute paths unchanged', async () => {
+  const absolute = path.join(os.tmpdir(), 'teslacam-abs-cache');
+  assert.strictEqual(await resolveCacheDirInChild(absolute, os.tmpdir()), absolute);
 });

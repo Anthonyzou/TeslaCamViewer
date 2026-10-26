@@ -4,6 +4,7 @@ import type { Application, Request, Response } from 'express';
 import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
+import os from 'node:os';
 import path from 'node:path';
 import stream from 'node:stream';
 import { promisify } from 'node:util';
@@ -85,8 +86,10 @@ function resolveRequestedFile(fileParam?: string, urlParam?: string): string {
   return toSafeRelativePath(fileParam || fromUrl || '');
 }
 
-export const VIDEO_CACHE_DIR =
-  process.env.VIDEO_CACHE_DIR || path.resolve(rootDir, '.cache', 'videos');
+// Relative values resolve against the project root, not the launch directory
+export const VIDEO_CACHE_DIR = process.env.VIDEO_CACHE_DIR
+  ? path.resolve(rootDir, process.env.VIDEO_CACHE_DIR)
+  : path.resolve(rootDir, '.cache', 'videos');
 export const MAX_CACHE_BYTES = process.env.VIDEO_CACHE_MAX_GB
   ? parseInt(process.env.VIDEO_CACHE_MAX_GB, 10) * 1024 * 1024 * 1024
   : 5 * 1024 * 1024 * 1024; // 5 GB default
@@ -345,6 +348,11 @@ export function touchCacheFile(filePath: string): void {
 }
 
 let prunning = false;
+let prunePending = false;
+// Null until seeded by a real scan; afterwards kept in step with the cache dir by the server's own writes and evictions
+let cachedBytes: number | null = null;
+
+const STAT_CONCURRENCY = 32;
 
 interface CachedVideoFile {
   path: string;
@@ -354,11 +362,11 @@ interface CachedVideoFile {
 
 /**
  * Collect every finished cache file under `dir`, skipping in-progress `.tmp.` downloads.
- * Subdirectories are walked in parallel to suit SSD queue depths.
+ * Subdirectories are walked in parallel to suit SSD queue depths; stats run in bounded batches.
  */
 async function listCacheFiles(dir: string): Promise<CachedVideoFile[]> {
   if (!fs.existsSync(dir)) return [];
-  const files: CachedVideoFile[] = [];
+  const filePaths: string[] = [];
 
   async function walk(current: string): Promise<void> {
     const entries = await fs.promises.readdir(current, { withFileTypes: true });
@@ -368,40 +376,49 @@ async function listCacheFiles(dir: string): Promise<CachedVideoFile[]> {
         if (entry.isDirectory()) {
           await walk(fullPath);
         } else if (entry.isFile() && !entry.name.includes('.tmp.')) {
-          const stats = await fs.promises.stat(fullPath);
-          files.push({
-            path: fullPath,
-            size: stats.size,
-            atime: stats.atimeMs || stats.mtimeMs,
-          });
+          filePaths.push(fullPath);
         }
       })
     );
   }
 
   await walk(dir);
+
+  const files: CachedVideoFile[] = [];
+  for (let i = 0; i < filePaths.length; i += STAT_CONCURRENCY) {
+    const batch = await Promise.all(
+      filePaths.slice(i, i + STAT_CONCURRENCY).map(async (filePath) => {
+        try {
+          const stats = await fs.promises.stat(filePath);
+          return {
+            path: filePath,
+            size: stats.size,
+            atime: stats.atimeMs || stats.mtimeMs,
+          };
+        } catch (err: any) {
+          // A concurrent prune or clear may remove a file between the walk and the stat
+          if (err.code === 'ENOENT') return null;
+          throw err;
+        }
+      })
+    );
+    for (const file of batch) {
+      if (file) files.push(file);
+    }
+  }
   return files;
 }
 
-/**
- * Prune video cache when disk usage exceeds threshold
- */
-export async function pruneVideoCache(
-  targetDir: string = VIDEO_CACHE_DIR,
-  maxBytes: number = MAX_CACHE_BYTES
-): Promise<void> {
-  if (prunning) return;
-  prunning = true;
-  try {
-    const files = await listCacheFiles(targetDir);
+async function pruneOnce(targetDir: string, maxBytes: number): Promise<void> {
+  const files = await listCacheFiles(targetDir);
 
-    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-    if (totalSize <= maxBytes) return;
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+  let currentSize = totalSize;
 
+  if (totalSize > maxBytes) {
     // Sort by atime ascending (oldest first)
     files.sort((a, b) => a.atime - b.atime);
 
-    let currentSize = totalSize;
     const targetSize = maxBytes * 0.8; // Evict down to 80%
     for (const file of files) {
       if (currentSize <= targetSize) break;
@@ -412,11 +429,57 @@ export async function pruneVideoCache(
         // Ignore unlink error if already deleted
       }
     }
+  }
+
+  if (targetDir === VIDEO_CACHE_DIR) {
+    cachedBytes = currentSize;
+  }
+}
+
+/**
+ * Prune video cache when disk usage exceeds threshold.
+ * A request that arrives mid-prune is queued and runs once more after the current pass.
+ */
+export async function pruneVideoCache(
+  targetDir: string = VIDEO_CACHE_DIR,
+  maxBytes: number = MAX_CACHE_BYTES
+): Promise<void> {
+  if (prunning) {
+    prunePending = true;
+    return;
+  }
+  prunning = true;
+  try {
+    do {
+      prunePending = false;
+      await pruneOnce(targetDir, maxBytes);
+    } while (prunePending);
   } catch (err: any) {
     console.warn('[B2 Video Cache] Eviction error:', err.message);
   } finally {
     prunning = false;
   }
+}
+
+/**
+ * Add a freshly cached file to the running total and only scan when the total is unknown or over the limit
+ */
+function recordCachedFile(cacheFilePath: string): void {
+  if (cachedBytes === null) {
+    pruneVideoCache().catch(() => {});
+    return;
+  }
+  fs.promises
+    .stat(cacheFilePath)
+    .then((stats) => {
+      if (cachedBytes !== null) cachedBytes += stats.size;
+      if (cachedBytes === null || cachedBytes > MAX_CACHE_BYTES) {
+        return pruneVideoCache();
+      }
+    })
+    .catch((err: any) =>
+      console.warn('[B2 Video Cache] Pruning warning:', err.message)
+    );
 }
 
 /**
@@ -438,10 +501,21 @@ export async function getVideoCacheStatus(): Promise<VideoCacheStatus> {
  */
 export async function clearVideoCache(): Promise<void> {
   preloadQueue.length = 0;
+  // Node sets NODE_TEST_CONTEXT in every test process; tests may only clear directories under the OS temp dir
+  const tmpRoot = path.resolve(os.tmpdir()) + path.sep;
+  if (
+    process.env.NODE_TEST_CONTEXT &&
+    !path.resolve(VIDEO_CACHE_DIR).startsWith(tmpRoot)
+  ) {
+    throw new Error(
+      'Refusing to clear a non-temp video cache during a test run; set VIDEO_CACHE_DIR to a directory under os.tmpdir()'
+    );
+  }
   if (fs.existsSync(VIDEO_CACHE_DIR)) {
     await fs.promises.rm(VIDEO_CACHE_DIR, { recursive: true, force: true });
     await fs.promises.mkdir(VIDEO_CACHE_DIR, { recursive: true });
   }
+  cachedBytes = 0;
 }
 
 function resolveSourceUrl(
@@ -506,9 +580,7 @@ export async function ensureVideoCached(
 
       await fs.promises.rename(tempFilePath, cacheFilePath);
 
-      pruneVideoCache().catch((err: any) =>
-        console.warn('[B2 Video Cache] Pruning warning:', err.message)
-      );
+      recordCachedFile(cacheFilePath);
 
       return cacheFilePath;
     } catch (err) {
@@ -687,9 +759,7 @@ async function streamAndCacheVideo(
     isDone = true;
     try {
       await fs.promises.rename(tempFilePath, cacheFilePath);
-      pruneVideoCache().catch((err: any) =>
-        console.warn('[B2 Video Cache] Pruning warning:', err.message)
-      );
+      recordCachedFile(cacheFilePath);
       resolveInFlight(cacheFilePath);
     } catch (err: any) {
       rejectInFlight(err);
