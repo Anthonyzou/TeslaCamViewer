@@ -953,3 +953,51 @@ test('VIDEO_CACHE_DIR keeps absolute paths unchanged', async () => {
   const absolute = path.join(os.tmpdir(), 'teslacam-abs-cache');
   assert.strictEqual(await resolveCacheDirInChild(absolute, os.tmpdir()), absolute);
 });
+
+test('API GET /api/b2/video reports X-Video-Source as b2 when streaming from origin and cache when served from disk', async () => {
+  const payload = Buffer.from('source-header-payload');
+  const mockOriginServer = http.createServer((req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': String(payload.length),
+      'Accept-Ranges': 'bytes',
+    });
+    res.end(payload);
+  });
+  await new Promise((resolve) => mockOriginServer.listen(0, resolve));
+  const originUrl = `http://127.0.0.1:${mockOriginServer.address().port}/source.mp4`;
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const serverPort = server.address().port;
+
+  const testFileRel = 'SourceHeader/clip.mp4';
+  const testFileAbs = path.join(VIDEO_CACHE_DIR, testFileRel);
+  const url = `http://127.0.0.1:${serverPort}/api/b2/video?file=${encodeURIComponent(testFileRel)}&url=${encodeURIComponent(originUrl)}`;
+
+  try {
+    await clearVideoCache();
+
+    const fromOrigin = await fetch(url, { headers: { Range: 'bytes=0-' } });
+    assert.strictEqual(fromOrigin.headers.get('x-video-source'), 'b2');
+    await fromOrigin.arrayBuffer();
+
+    let retries = 50;
+    while (!fs.existsSync(testFileAbs) && retries > 0) {
+      await new Promise((r) => setTimeout(r, 20));
+      retries--;
+    }
+    assert.strictEqual(fs.existsSync(testFileAbs), true);
+
+    const fromCache = await fetch(url);
+    assert.strictEqual(fromCache.status, 200);
+    assert.strictEqual(fromCache.headers.get('x-video-source'), 'cache');
+    await fromCache.arrayBuffer();
+  } finally {
+    await clearVideoCache();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    mockOriginServer.closeAllConnections?.();
+    await new Promise((resolve) => mockOriginServer.close(resolve));
+  }
+});

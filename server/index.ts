@@ -37,6 +37,7 @@ const rootDir = path.resolve(import.meta.dirname, '..');
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.disable('x-powered-by');
 
 // API Routes FIRST
 registerB2Routes(app);

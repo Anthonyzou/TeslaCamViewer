@@ -608,14 +608,19 @@ export async function ensureVideoCached(
 }
 
 const VIDEO_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+const VIDEO_SOURCE_HEADER = 'X-Video-Source';
+
+type VideoSource = 'cache' | 'b2';
 
 function baseVideoHeaders(
-  upstreamContentType: unknown
+  upstreamContentType: unknown,
+  source: VideoSource
 ): Record<string, string> {
   return {
     'Content-Type': String(upstreamContentType || 'video/mp4'),
     'Accept-Ranges': 'bytes',
     'Cache-Control': VIDEO_CACHE_CONTROL,
+    [VIDEO_SOURCE_HEADER]: source,
   };
 }
 
@@ -631,7 +636,10 @@ function sendCachedVideo(res: Response, cacheFilePath: string): void {
       acceptRanges: true,
       // The cache lives under `.cache/`, which Express 5's `send` would otherwise hide as a dotfile
       dotfiles: 'allow',
-      headers: { 'Cache-Control': VIDEO_CACHE_CONTROL },
+      headers: {
+        'Cache-Control': VIDEO_CACHE_CONTROL,
+        [VIDEO_SOURCE_HEADER]: 'cache',
+      },
     },
     (err?: any) => {
       if (
@@ -667,7 +675,10 @@ async function streamAndCacheVideo(
     response.headers['content-length'] != null
       ? String(response.headers['content-length'])
       : undefined;
-  const clientHeaders = baseVideoHeaders(response.headers['content-type']);
+  const clientHeaders = baseVideoHeaders(
+    response.headers['content-type'],
+    'b2'
+  );
 
   if (rangeHeader && totalLength) {
     const totalNum = parseInt(totalLength, 10);
@@ -820,7 +831,10 @@ async function proxyVideoRange(
     validateStatus: (status) => status >= 200 && status < 300,
   });
 
-  const clientHeaders = baseVideoHeaders(response.headers['content-type']);
+  const clientHeaders = baseVideoHeaders(
+    response.headers['content-type'],
+    'b2'
+  );
   if (response.headers['content-range']) {
     clientHeaders['Content-Range'] = String(response.headers['content-range']);
   }

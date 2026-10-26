@@ -507,3 +507,38 @@ test('VideoPlayer - syncCameras adjusts playbackRate for slight drift and snaps 
   assert.strictEqual(vSevereDrift.currentTime, 10.0);
   assert.strictEqual(vSevereDrift.playbackRate, 1.0);
 });
+
+test('VideoPlayer - a seek within the current clip still requests the next clip preload', async () => {
+  const player = new VideoPlayer();
+  const mockEvent = {
+    name: 'event-seek',
+    clipGroups: [0, 1, 2].map((i) => ({
+      clips: { front: { url: `seek-clip${i}.mp4`, duration: 60 } },
+    })),
+  };
+  const videoEl = createMockVideoElement();
+  videoEl.duration = 60;
+  videoEl.addEventListener = () => {};
+  videoEl.removeEventListener = () => {};
+  player.banks = {
+    a: { front: videoEl, back: null, left_repeater: null, right_repeater: null, left_pillar: null, right_pillar: null },
+    b: { front: createMockVideoElement(), back: null, left_repeater: null, right_repeater: null, left_pillar: null, right_pillar: null },
+  };
+  player.activeBank = 'a';
+  player.currentEvent = mockEvent;
+
+  const preloadedClips = [];
+  const originalPreloadClip = player.preloadClip.bind(player);
+  player.preloadClip = async function (idx) {
+    preloadedClips.push(idx);
+    return originalPreloadClip(idx);
+  };
+
+  await player.loadClip(0);
+  preloadedClips.length = 0;
+
+  await player.seekToEventTime(30, false);
+
+  assert.strictEqual(player.currentClipIndex, 0, 'Seek stays in the current clip');
+  assert.deepStrictEqual(preloadedClips, [1], 'Seek within clip 0 requests clip 1');
+});
