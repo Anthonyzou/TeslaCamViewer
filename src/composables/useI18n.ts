@@ -38,13 +38,8 @@ class I18n {
       preferredLocale || savedLocale || browserLocale || this.fallbackLocale;
     syncLocale();
 
-    // Always load fallback first
-    await this.loadLocale(this.fallbackLocale);
-
-    // Load preferred locale if different
-    if (this.locale !== this.fallbackLocale) {
-      await this.loadLocale(this.locale);
-    }
+    const localesToLoad = [...new Set([this.fallbackLocale, this.locale])];
+    await Promise.all(localesToLoad.map((locale) => this.loadLocale(locale)));
 
     console.log(`i18n initialized: ${this.locale}`);
     return this;
@@ -84,6 +79,7 @@ class I18n {
       const messages = await response.json();
       this.messages[locale] = messages;
       this.loadedLocales.add(locale);
+      syncLocale();
     } catch (error) {
       console.warn(
         `Could not load locale '${locale}':`,

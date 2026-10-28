@@ -191,7 +191,7 @@ export function useTeslaCam() {
     try {
       const config = await b2Client.getConfig();
       if (config?.isConfigured && config?.isPreloaded) {
-        await drivesStore.loadB2();
+        drivesStore.loadB2(); // do not await
       }
     } catch (_e) {}
 
