@@ -1,42 +1,18 @@
 <template>
   <header class="app-header">
-    <button
-      id="menuToggleBtn"
-      class="menu-toggle-btn"
-      aria-label="Toggle sidebar menu"
-      @click="emit('toggleSidebar')"
-    >
+    <button id="menuToggleBtn" class="menu-toggle-btn" aria-label="Toggle sidebar menu" @click="emit('toggleSidebar')">
       <Menu :size="24" />
     </button>
     <div class="header-brand">
       <svg class="brand-icon" width="36" height="36" viewBox="0 0 64 64">
         <defs>
-          <linearGradient
-            id="brandGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
+          <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" class="brand-gradient-start" />
             <stop offset="100%" class="brand-gradient-end" />
           </linearGradient>
         </defs>
-        <circle
-          cx="32"
-          cy="32"
-          r="30"
-          fill="url(#brandGradient)"
-          opacity="0.15"
-        />
-        <circle
-          cx="32"
-          cy="32"
-          r="30"
-          fill="none"
-          stroke="url(#brandGradient)"
-          stroke-width="2"
-        />
+        <circle cx="32" cy="32" r="30" fill="url(#brandGradient)" opacity="0.15" />
+        <circle cx="32" cy="32" r="30" fill="none" stroke="url(#brandGradient)" stroke-width="2" />
         <rect x="18" y="24" width="28" height="20" rx="3" fill="#e8eaed" />
         <circle cx="32" cy="34" r="7" fill="#0a0c12" />
         <circle cx="32" cy="34" r="4" fill="#161a24" />
@@ -63,28 +39,13 @@
         </svg>
         <span>{{ t('header.github') }}</span>
       </a> -->
-      <button
-        id="statsBtn"
-        class="header-btn"
-        :title="t('header.statistics')"
-        @click="emit('openStats')"
-      >
+      <button id="statsBtn" class="header-btn" :title="t('header.statistics')" @click="emit('openStats')">
         <BarChart3 :size="20" />
       </button>
-      <button
-        id="helpBtn"
-        class="header-btn"
-        :title="t('header.keyboardShortcuts')"
-        @click="emit('openHelp')"
-      >
+      <button id="helpBtn" class="header-btn" :title="t('header.keyboardShortcuts')" @click="emit('openHelp')">
         <HelpCircle :size="20" />
       </button>
-      <button
-        id="settingsBtn"
-        class="header-btn"
-        :title="t('header.settings')"
-        @click="emit('openSettings')"
-      >
+      <button id="settingsBtn" class="header-btn" :title="t('header.settings')" @click="emit('openSettings')">
         <Settings :size="20" />
       </button>
     </div>
@@ -92,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { BarChart3, HelpCircle, Menu, Settings } from 'lucide-vue-next';
+import { BarChart3, HelpCircle, Menu, Settings } from '@lucide/vue';
 import { useI18n } from '../composables/useI18n';
 
 const emit = defineEmits<{
@@ -111,24 +72,20 @@ const { t } = useI18n();
 /* ==================== HEADER ==================== */
 .app-header {
   @apply relative z-100 flex items-center justify-between px-6 py-3.5 border-b border-(--border);
-  background: linear-gradient(
-    180deg,
-    var(--bg-secondary) 0%,
-    var(--bg-primary) 100%
-  );
+  background: linear-gradient(180deg,
+      var(--bg-secondary) 0%,
+      var(--bg-primary) 100%);
 }
 
 /* Subtle glow line under header */
 .app-header::after {
   @apply absolute bottom-0 left-0 right-0 h-px opacity-30;
   content: '';
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent) 20%,
-    var(--accent) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      var(--accent) 20%,
+      var(--accent) 80%,
+      transparent 100%);
 }
 
 .header-brand {
@@ -150,11 +107,9 @@ const { t } = useI18n();
 
 .app-header h1 {
   @apply m-0 font-(family-name:--font-ui) text-[1.35rem] leading-none font-semibold tracking-[-0.02em] whitespace-nowrap overflow-hidden text-ellipsis;
-  background: linear-gradient(
-    135deg,
-    var(--text-primary) 0%,
-    var(--accent) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--text-primary) 0%,
+      var(--accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -204,11 +159,9 @@ const { t } = useI18n();
 }
 
 .primary-btn:hover {
-  background: linear-gradient(
-    135deg,
-    var(--accent-hover) 0%,
-    var(--accent) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--accent-hover) 0%,
+      var(--accent) 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 30px var(--accent-glow);
 }

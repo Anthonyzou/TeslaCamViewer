@@ -5,7 +5,7 @@
         <span>{{ t('filter.filters') }}</span>
         <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{
           filterCount
-        }}</span>
+          }}</span>
       </div>
       <ChevronDown :class="{ collapsed: !isExpanded }" :size="14" class="
         collapse-icon-svg collapse-icon-animated
@@ -41,7 +41,7 @@
       <div class="filter-group">
         <label class="filter-label" for="sortOrder">{{
           t('filter.sortBy')
-        }}</label>
+          }}</label>
         <select id="sortOrder" class="filter-select" v-model="filters.sortOrder" @change="handleSortChange">
           <option value="newest">{{ t('filter.newestFirst') }}</option>
           <option value="oldest">{{ t('filter.oldestFirst') }}</option>
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDown } from '@lucide/vue';
 import { onMounted, onUnmounted, reactive } from 'vue';
 import { eventsStore } from '../composables/useEvents';
 import {

@@ -59,34 +59,34 @@
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.totalEvents || 0
-                    }}</span>
+                      }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.totalEvents')
-                    }}</span>
+                      }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.totalClips || 0
-                    }}</span>
+                      }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.totalClips')
-                    }}</span>
+                      }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.formattedDuration || '0m'
-                    }}</span>
+                      }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.recordingTime')
-                    }}</span>
+                      }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.storage?.displayValue || '0 MB'
-                    }}</span>
+                      }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.estStorage')
-                    }}</span>
+                      }}</span>
                   </div>
                 </div>
               </div>
@@ -200,14 +200,14 @@
                       <span class="stats-dn-label">Day (6am-8pm)</span>
                       <span class="stats-dn-value">{{ stats?.dayVsNight?.day }} ({{
                         stats?.dayVsNight?.dayPercent
-                        }}%)</span>
+                      }}%)</span>
                     </div>
                     <div class="stats-dn-item">
                       <span class="stats-dn-color stats-dn-swatch-night"></span>
                       <span class="stats-dn-label">Night (8pm-6am)</span>
                       <span class="stats-dn-value">{{ stats?.dayVsNight?.night }} ({{
                         stats?.dayVsNight?.nightPercent
-                        }}%)</span>
+                      }}%)</span>
                     </div>
                   </div>
                 </div>
@@ -327,19 +327,19 @@
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
                         telemetryResults.withCount
-                      }}</span>
+                        }}</span>
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithTelemetry')
-                      }}</span>
+                        }}</span>
                       <span class="stats-card-percent">{{ telemetryResults.withPercent }}%</span>
                     </div>
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
                         telemetryResults.withoutCount
-                      }}</span>
+                        }}</span>
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithoutTelemetry')
-                      }}</span>
+                        }}</span>
                       <span class="stats-card-percent">{{ telemetryResults.withoutPercent }}%</span>
                     </div>
                   </div>
@@ -354,7 +354,6 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartData } from 'chart.js';
 import {
   BarChart3,
   Calendar,
@@ -364,7 +363,8 @@ import {
   Shield,
   Sun,
   X,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
+import type { ChartData } from 'chart.js';
 import { computed, ref, watch } from 'vue';
 import { eventsStore } from '../composables/useEvents';
 import { useI18n } from '../composables/useI18n';

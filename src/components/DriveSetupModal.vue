@@ -37,7 +37,7 @@
           <div class="drive-setup-field">
             <label for="dateFilter">{{
               t('driveSetup.dateFilterField')
-              }}</label>
+            }}</label>
             <select id="dateFilter" v-model="dateFilter">
               <option value="all">{{ t('driveSetup.dateFilterAll') }}</option>
               <option value="week">{{ t('driveSetup.dateFilterWeek') }}</option>
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { Folder, Info, X } from 'lucide-vue-next';
+import { Folder, Info, X } from '@lucide/vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';

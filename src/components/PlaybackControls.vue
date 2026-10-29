@@ -101,7 +101,7 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-        }}</span>
+          }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
@@ -206,7 +206,7 @@ import {
   StepForward,
   Video,
   X,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import { ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 

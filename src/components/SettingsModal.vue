@@ -273,7 +273,7 @@
 </template>
 
 <script setup lang="ts">
-import { Cpu, Layers, Play, RotateCcw, Sliders, X } from 'lucide-vue-next';
+import { Cpu, Layers, Play, RotateCcw, Sliders, X } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';

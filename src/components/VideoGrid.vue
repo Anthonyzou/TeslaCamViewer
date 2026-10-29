@@ -36,8 +36,8 @@
 </template>
 
 <script setup lang="ts">
+import { Eye } from '@lucide/vue';
 import { useResizeObserver } from '@vueuse/core';
-import { Eye } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { layoutStore } from '../composables/useLayout';

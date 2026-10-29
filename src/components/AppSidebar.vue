@@ -59,7 +59,7 @@
       <Folder :size="20" class="icon-mr-2" />
       <span>{{
         t('sidebar.selectFolder')
-        }}</span>
+      }}</span>
     </button>
 
     <!-- Backblaze B2 Button -->
@@ -98,8 +98,8 @@
 </template>
 
 <script setup lang="ts">
+import { Cloud, Folder, Plus, RefreshCw, Settings } from '@lucide/vue';
 import { useLocalStorage, useMediaQuery } from '@vueuse/core';
-import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import type { DriveInfo, TeslaCamEvent } from '../types';

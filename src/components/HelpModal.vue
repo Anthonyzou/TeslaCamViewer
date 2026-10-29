@@ -175,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { X } from 'lucide-vue-next';
+import { X } from '@lucide/vue';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
 
