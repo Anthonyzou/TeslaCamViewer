@@ -37,7 +37,7 @@
           <div class="drive-setup-field">
             <label for="dateFilter">{{
               t('driveSetup.dateFilterField')
-              }}</label>
+            }}</label>
             <select id="dateFilter" v-model="dateFilter">
               <option value="all">{{ t('driveSetup.dateFilterAll') }}</option>
               <option value="week">{{ t('driveSetup.dateFilterWeek') }}</option>

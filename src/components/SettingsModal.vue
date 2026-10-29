@@ -6,8 +6,9 @@
       settings-overlay absolute inset-0 bg-black/80 backdrop-blur-[5px]
     " @mousedown="close" @click="close"></div>
     <div class="
-      settings-panel relative flex h-[80vh] max-h-150 w-[90%] max-w-180 flex-col
-      overflow-hidden rounded-2xl border border-(--border) bg-(--bg-secondary)
+      settings-panel relative flex h-[80vh] max-h-150 w-[90%] max-w-180
+      flex-col overflow-hidden rounded-2xl border border-(--border)
+      bg-(--bg-secondary)
       shadow-[var(--shadow-lg),0_0_60px_color-mix(in_srgb,var(--accent)_10%,transparent)]
       max-md:h-screen max-md:max-h-screen max-md:w-full max-md:max-w-full
       max-md:rounded-none

@@ -1,8 +1,6 @@
 <template>
   <div v-if="isOpen" class="modal-overlay" id="driveManagementModal">
-    <div class="
-      settings-overlay absolute inset-0 z-10 bg-black/80 backdrop-blur-[5px]
-    " @mousedown="close" @click="close"></div>
+    <div class="modal-outset absolute inset-0 z-10" @mousedown="close" @click="close"></div>
     <div class="modal drive-management-modal z-20" @click.stop>
       <div class="modal-header">
         <h3>{{ t('driveManager.title') }}</h3>
@@ -39,7 +37,7 @@
               <div class="drive-meta-row">
                 <span class="drive-event-count">{{
                   getEventCountText(drive)
-                  }}</span>
+                }}</span>
                 <span v-if="getDateFilterText(drive)" class="drive-date-filter">
                   • {{ getDateFilterText(drive) }}
                 </span>

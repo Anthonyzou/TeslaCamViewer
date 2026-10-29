@@ -35,6 +35,7 @@ export default defineConfig([
         'warn',
         {
           indent: 2,
+          classesPerLine: 7,
         },
       ],
       'better-tailwindcss/no-unknown-classes': 'off',

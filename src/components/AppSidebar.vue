@@ -82,18 +82,6 @@
       </div>
     </div>
 
-    <!-- Bird's Eye View Panel -->
-    <div id="birdsEyePanel" class="sidebar-panel collapsible hidden">
-      <div class="sidebar-panel-header" id="birdsEyeHeader">
-        <span class="panel-title">Bird's Eye View</span>
-        <button class="panel-collapse-btn" aria-label="Toggle panel">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
-          </svg>
-        </button>
-      </div>
-      <div class="sidebar-panel-content" id="birdsEyeContent"></div>
-    </div>
   </aside>
 </template>
 
@@ -344,14 +332,7 @@ body.sidebar-resizing * {
   padding: 0 !important;
 }
 
-/* Bird's Eye View Panel */
-#birdsEyeContent {
-  @apply relative flex h-50 max-h-50 self-center justify-center;
-}
 
-#birdsEyeContent canvas {
-  @apply size-full;
-}
 
 /* Telemetry Panel - height matches bottom controls pane (~200px) */
 #telemetryContent {
@@ -420,228 +401,6 @@ body.sidebar-resizing * {
   @apply border-(--accent) bg-(--accent-subtle) text-(--accent);
 }
 
-/* Drive color badge in select options */
-.drive-option-badge {
-  @apply mr-2 inline-block size-2 rounded-full align-middle;
-}
-
-/* Modal overlay */
-.modal-overlay {
-  @apply fixed inset-0 z-10000 flex items-center justify-center bg-black/70 p-4;
-}
-
-.modal {
-  @apply flex max-h-[80vh] w-full flex-col overflow-hidden rounded-xl border border-(--border) bg-(--bg-secondary);
-}
-
-.modal-header {
-  @apply flex items-center justify-between border-b border-(--border) px-5 py-4;
-}
-
-.modal-header h3 {
-  @apply m-0 text-[1.1rem] text-(--text-primary);
-}
-
-.modal-close-btn {
-  @apply flex cursor-pointer rounded bg-transparent p-1 text-(--text-muted) border-none transition-all duration-200;
-}
-
-.modal-close-btn:hover {
-  @apply bg-(--bg-tertiary) text-(--text-primary);
-}
-
-.modal-content {
-  @apply overflow-y-auto p-5;
-}
-
-/* Drive management modal */
-.drive-management-modal {
-  @apply max-w-125;
-}
-
-.drive-list {
-  @apply mb-4 flex flex-col gap-3;
-}
-
-.drive-item {
-  @apply flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-tertiary) p-3;
-}
-
-.drive-color-dot {
-  @apply size-3 shrink-0 rounded-full;
-}
-
-.drive-color-picker {
-  @apply relative shrink-0 cursor-pointer;
-}
-
-.drive-color-input {
-  @apply absolute size-6 cursor-pointer opacity-0;
-}
-
-.drive-color-preview {
-  @apply size-6 rounded-full border-2 border-(--border) transition-all duration-200;
-}
-
-.drive-color-picker:hover .drive-color-preview {
-  @apply scale-110 border-(--accent);
-}
-
-.drive-label-input {
-  @apply flex-1 rounded border border-transparent bg-(--bg-primary) px-2 py-1.5 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary);
-}
-
-.drive-label-input:hover {
-  @apply border-(--border);
-}
-
-.drive-label-input:focus {
-  @apply border-(--accent) outline-none;
-}
-
-.drive-event-count {
-  @apply text-xs whitespace-nowrap text-(--text-muted);
-  font-family: var(--font-mono);
-}
-
-.drive-remove-btn {
-  @apply flex cursor-pointer items-center rounded border-none bg-transparent p-1 text-(--text-muted) transition-all duration-200;
-}
-
-.drive-remove-btn:hover {
-  @apply text-(--c-destructive);
-  background-color: var(--c-destructive-tint);
-}
-
-/* Drive Setup Dialog */
-.drive-setup-modal {
-  @apply max-w-120;
-}
-
-.drive-setup-modal .modal-content {
-  @apply p-5;
-}
-
-.drive-setup-selected {
-  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-mono text-[0.85rem] text-(--text-secondary);
-}
-
-.drive-setup-selected svg {
-  @apply shrink-0 text-(--accent);
-}
-
-.drive-setup-tip {
-  @apply mb-5 rounded-lg border border-(--border-accent) bg-(--accent-subtle) p-3.5;
-}
-
-.drive-setup-tip-header {
-  @apply mb-2 flex items-center gap-2 text-[0.85rem] font-medium text-(--accent);
-}
-
-.drive-setup-tip ul {
-  @apply m-0 pl-6 text-[0.8rem] leading-[1.6] text-(--text-secondary);
-}
-
-.drive-setup-tip li {
-  @apply mb-1;
-}
-
-.drive-setup-form {
-  @apply flex flex-col gap-4;
-}
-
-.drive-setup-field {
-  @apply flex flex-col gap-1.5;
-}
-
-.drive-setup-field label {
-  @apply text-[0.8rem] font-medium text-(--text-secondary);
-}
-
-.drive-setup-field input[type='text'],
-.drive-setup-field select {
-  @apply rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2.5 font-(family-name:--font-ui) text-[0.9rem] text-(--text-primary);
-}
-
-.drive-setup-field input[type='text']:focus,
-.drive-setup-field select:focus {
-  @apply border-(--accent) outline-none;
-}
-
-.drive-setup-checkbox {
-  @apply flex cursor-pointer items-center gap-2.5 rounded-md border border-(--border) bg-(--bg-tertiary) p-2.5 transition-all duration-200;
-}
-
-.drive-setup-checkbox:hover {
-  @apply border-(--accent);
-}
-
-.drive-setup-checkbox input[type='checkbox'] {
-  @apply h-4.5 w-4.5 cursor-pointer accent-(--accent);
-}
-
-.drive-setup-checkbox-content {
-  @apply flex-1;
-}
-
-.drive-setup-checkbox-label {
-  @apply text-[0.9rem] font-medium text-(--text-primary);
-}
-
-.drive-setup-checkbox-hint {
-  @apply mt-0.5 text-xs text-(--text-muted);
-}
-
-.drive-setup-actions {
-  @apply mt-2 flex gap-3;
-}
-
-.drive-setup-actions .btn {
-  @apply flex-1 cursor-pointer rounded-md p-3 font-medium transition-all duration-200;
-}
-
-.drive-setup-actions .btn-secondary {
-  @apply border border-(--border) bg-(--bg-tertiary) text-(--text-secondary);
-}
-
-.drive-setup-actions .btn-secondary:hover {
-  @apply border-(--text-muted) text-(--text-primary);
-}
-
-.drive-setup-actions .btn-primary {
-  @apply border-none bg-(--accent) text-(--bg-void);
-}
-
-.drive-setup-actions .btn-primary:hover {
-  @apply bg-(--accent-hover);
-}
-
-/* Archive drive badge */
-.drive-archive-badge {
-  @apply mx-2 rounded-[3px] bg-(--warning) px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-[0.5px] text-(--bg-void) uppercase;
-}
-
-.drive-item.is-archive {
-  @apply opacity-70;
-}
-
-.drive-item.is-archive .drive-event-count {
-  @apply text-(--warning);
-}
-
-.drive-sync-btn {
-  @apply flex cursor-pointer items-center gap-1 rounded bg-(--accent) px-2.5 py-1.5 text-xs font-medium text-(--bg-void) border-none transition-all duration-200;
-}
-
-.drive-sync-btn:hover {
-  @apply bg-(--accent-hover);
-}
-
-.drive-date-filter {
-  @apply text-[0.7rem] text-(--text-muted);
-  font-family: var(--font-mono);
-}
-
 /* Sidebar Tabs */
 .sidebar-tabs {
   @apply flex gap-0 border-b border-(--border) bg-(--bg-primary);
@@ -664,7 +423,6 @@ body.sidebar-resizing * {
   content: '';
   box-shadow: 0 0 10px var(--accent-glow);
 }
-
 
 .sync-cloud-bg {
   background: var(--c-drive-cloud);

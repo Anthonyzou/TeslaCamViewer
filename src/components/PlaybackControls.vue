@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed z-20 min-h-screen min-w-screen" @mousedown="isExportDropdownOpen = false"
-    @click="isExportDropdownOpen = false"></div>
+  <div v-if="isExportDropdownOpen" class="fixed z-20 min-h-screen min-w-screen"
+    @mousedown="isExportDropdownOpen = false" @click="isExportDropdownOpen = false"></div>
   <div class="controls z-20">
     <!-- Primary Playback Group -->
     <div class="control-group control-group-playback">
@@ -103,7 +103,7 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-        }}</span>
+          }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
