@@ -4,16 +4,8 @@
     <div class="command-palette-panel">
       <div class="command-palette-input-row">
         <Search class="command-palette-icon" :size="18" />
-        <input
-          ref="inputRef"
-          type="text"
-          class="command-palette-input"
-          placeholder="Type a command or search events…"
-          spellcheck="false"
-          autocomplete="off"
-          v-model="query"
-          @keydown="onInputKey"
-        />
+        <input ref="inputRef" type="text" class="command-palette-input" placeholder="Type a command or search events…"
+          spellcheck="false" autocomplete="off" v-model="query" @keydown="onInputKey" />
         <span class="command-palette-hint">Esc</span>
       </div>
       <div ref="listRef" class="command-palette-list" role="listbox">
@@ -21,25 +13,18 @@
           No matches
         </div>
         <template v-else>
-          <div
-            v-for="(item, idx) in filtered"
-            :key="idx"
-            class="command-palette-item"
-            :class="{
-              selected: idx === selectedIndex,
-              'command-palette-event': item.kind === 'event',
-            }"
-            :data-idx="idx"
-            @click="selectAndExecute(idx)"
-          >
+          <div v-for="(item, idx) in filtered" :key="idx" class="command-palette-item" :class="{
+            selected: idx === selectedIndex,
+            'command-palette-event': item.kind === 'event',
+          }" :data-idx="idx" @click="selectAndExecute(idx)">
             <template v-if="item.kind === 'cmd'">
               <span v-if="item.cmd.category" class="command-palette-cat">{{
                 item.cmd.category
-              }}</span>
+                }}</span>
               <span class="command-palette-title">{{ item.cmd.title }}</span>
               <span v-if="item.cmd.shortcut" class="command-palette-shortcut">{{
                 item.cmd.shortcut
-              }}</span>
+                }}</span>
             </template>
             <template v-else>
               <span class="command-palette-cat">Event</span>
@@ -296,10 +281,11 @@ defineExpose({
 .command-palette-backdrop {
   @apply absolute inset-0 bg-black/55 backdrop-blur-[3px];
   -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
 
 .command-palette-panel {
-  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px,90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border) bg-(--c-palette-surface);
+  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px, 90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border) bg-(--c-palette-surface);
   box-shadow: 0 24px 60px var(--c-overlay-black-60);
 }
 

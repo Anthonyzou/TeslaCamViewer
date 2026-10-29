@@ -244,47 +244,6 @@ body::before {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* ==================== ANIMATIONS ==================== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.event-item {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-.event-item:nth-child(1) {
-  animation-delay: 0.02s;
-}
-
-.event-item:nth-child(2) {
-  animation-delay: 0.04s;
-}
-
-.event-item:nth-child(3) {
-  animation-delay: 0.06s;
-}
-
-.event-item:nth-child(4) {
-  animation-delay: 0.08s;
-}
-
-.event-item:nth-child(5) {
-  animation-delay: 0.10s;
-}
-
-.event-item:nth-child(n+6) {
-  animation-delay: 0.12s;
-}
-
 /* ==================== ACCESSIBILITY ==================== */
 
 /* Text Size - Small */

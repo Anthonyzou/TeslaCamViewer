@@ -4,11 +4,7 @@
     <div class="help-panel">
       <div class="help-header">
         <h2>{{ t('help.title') }}</h2>
-        <button
-          class="help-close-btn"
-          :title="t('common.close')"
-          @click="close"
-        >
+        <button class="help-close-btn" :title="t('common.close')" @click="close">
           <X :size="24" />
         </button>
       </div>
@@ -168,13 +164,8 @@
       <div class="help-footer">
         <span class="help-tip">{{ t('help.tip') }}</span>
         <div class="help-footer-actions">
-          <a
-            class="help-report-btn no-underline"
-            href="https://github.com/teslacamviewer/teslacamviewer.github.io/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Report an issue on GitHub"
-          >
+          <a class="help-report-btn no-underline" href="https://github.com/Anthonyzou/TeslaCamViewer" target="_blank"
+            rel="noopener noreferrer" title="Report an issue on GitHub">
             🐛 Report Bug
           </a>
         </div>

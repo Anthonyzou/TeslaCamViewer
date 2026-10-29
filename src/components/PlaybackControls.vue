@@ -2,56 +2,25 @@
   <div class="controls">
     <!-- Primary Playback Group -->
     <div class="control-group control-group-playback">
-      <button
-        id="playPauseBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :aria-label="isPlaying ? 'Pause' : 'Play'"
-        @click="emit('togglePlay')"
-      >
-        <Play
-          class="play-icon"
-          :size="24"
-          :style="{ display: isPlaying ? 'none' : '' }"
-          aria-hidden="true"
-        />
-        <Pause
-          class="pause-icon"
-          :size="24"
-          :style="{ display: isPlaying ? '' : 'none' }"
-          aria-hidden="true"
-        />
+      <button id="playPauseBtn" class="control-btn" :disabled="!hasEvent" :aria-label="isPlaying ? 'Pause' : 'Play'"
+        @click="emit('togglePlay')">
+        <Play class="play-icon" :size="24" :style="{ display: isPlaying ? 'none' : '' }" aria-hidden="true" />
+        <Pause class="pause-icon" :size="24" :style="{ display: isPlaying ? '' : 'none' }" aria-hidden="true" />
       </button>
 
-      <button
-        id="prevClipBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.previousClip')"
-        @click="emit('prevClip')"
-      >
+      <button id="prevClipBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.previousClip')"
+        @click="emit('prevClip')">
         <SkipBack :size="24" />
       </button>
 
-      <button
-        id="nextClipBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.nextClip')"
-        @click="emit('nextClip')"
-      >
+      <button id="nextClipBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.nextClip')"
+        @click="emit('nextClip')">
         <SkipForward :size="24" />
       </button>
 
       <div class="speed-control">
-        <select
-          id="speedSelect"
-          class="speed-select"
-          :disabled="!hasEvent"
-          title="Playback Speed"
-          v-model="selectedSpeed"
-          @change="emit('changeSpeed', selectedSpeed)"
-        >
+        <select id="speedSelect" class="speed-select" :disabled="!hasEvent" title="Playback Speed"
+          v-model="selectedSpeed" @change="emit('changeSpeed', selectedSpeed)">
           <option value="0.25">0.25x</option>
           <option value="0.5">0.5x</option>
           <option value="0.75">0.75x</option>
@@ -63,107 +32,60 @@
         </select>
       </div>
 
-      <button
-        id="loopBtn"
-        class="control-btn"
-        :class="{ active: isLooping }"
-        :disabled="!hasEvent"
-        title="Toggle Loop"
-        @click="emit('toggleLoop')"
-      >
+      <button id="loopBtn" class="control-btn" :class="{ active: isLooping }" :disabled="!hasEvent" title="Toggle Loop"
+        @click="emit('toggleLoop')">
         <Repeat :size="20" />
       </button>
-      <input
-        type="checkbox"
-        id="loopCheckbox"
-        class="hidden"
-        :checked="isLooping"
-      />
+      <input type="checkbox" id="loopCheckbox" class="hidden" :checked="isLooping" />
     </div>
 
     <!-- Export Group -->
     <div class="control-group control-group-export">
-      <button
-        id="markInBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.markIn')"
-        @click="emit('markIn')"
-      >
+      <button id="markInBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.markIn')"
+        @click="emit('markIn')">
         <StepForward :size="20" color="#4caf50" />
       </button>
 
-      <button
-        id="markOutBtn"
-        class="control-btn"
-        :disabled="!hasEvent"
-        :title="t('controls.markOut')"
-        @click="emit('markOut')"
-      >
+      <button id="markOutBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.markOut')"
+        @click="emit('markOut')">
         <StepBack :size="20" color="#f44336" />
       </button>
 
       <div class="export-dropdown-container">
-        <button
-          id="exportBtn"
-          class="control-btn export-main-btn"
-          :disabled="!hasEvent"
-          :title="t('controls.export')"
-          @click="emit('exportVideo')"
-        >
+        <button id="exportBtn" class="control-btn export-main-btn" :disabled="!hasEvent" :title="t('controls.export')"
+          @click="emit('exportVideo')">
           <Download :size="20" />
         </button>
 
-        <button
-          id="exportDropdownBtn"
-          class="control-btn dropdown-toggle"
-          :disabled="!hasEvent"
-          :title="t('controls.exportOptions')"
-          @click="isExportDropdownOpen = !isExportDropdownOpen"
-        >
+        <button id="exportDropdownBtn" class="control-btn dropdown-toggle" :disabled="!hasEvent"
+          :title="t('controls.exportOptions')" @click="isExportDropdownOpen = !isExportDropdownOpen">
           <ChevronDown :size="14" />
         </button>
       </div>
     </div>
 
-    <div
-      id="exportDropdown"
-      class="export-dropdown"
-      :class="{ hidden: !isExportDropdownOpen }"
-    >
+    <div id="exportDropdown" class="export-dropdown" :class="{ hidden: !isExportDropdownOpen }">
       <div class="export-dropdown-header">
         {{ t('export.header') }}
       </div>
 
       <!-- Capture Screenshot -->
-      <button
-        class="export-option export-action-btn"
-        data-action="screenshot"
-        @click="onScreenshotClick"
-      >
+      <button class="export-option export-action-btn" data-action="screenshot" @click="onScreenshotClick">
         <Camera :size="18" class="icon-mr-2" />
         <span>{{ t('controls.screenshot') }}</span>
       </button>
 
       <!-- Export Video with Format -->
       <div class="export-video-group">
-        <button
-          class="export-option export-action-btn"
-          data-camera="all"
-          id="exportVideoBtn"
-          @click="onExportVideoClick"
-        >
+        <button class="export-option export-action-btn" data-camera="all" id="exportVideoBtn"
+          @click="onExportVideoClick">
           <Video :size="18" class="icon-mr-2" />
           <span>{{ t('export.exportVideo') }}</span>
         </button>
       </div>
       <div class="export-video-group">
-        <button
-          class="export-option export-action-btn"
-          data-camera="all"
-          id="exportVideoBtn"
-          @click="emit('clearMarks')"
-        >
+        <button class="export-option export-action-btn" data-camera="all" id="exportVideoBtn"
+          @click="emit('clearMarks')">
           <X :size="18" class="icon-mr-2" />
           <span>{{ t('controls.clearMarks') }}</span>
         </button>
@@ -179,26 +101,18 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-        }}</span>
+          }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
     <div class="control-group control-group-view">
       <div class="layout-control">
-        <select
-          id="layoutSelect"
-          class="layout-select"
-          title="Layout"
-          v-model="selectedLayout"
-          @change="emit('changeLayout', selectedLayout)"
-        >
+        <select id="layoutSelect" class="layout-select" title="Layout" v-model="selectedLayout"
+          @change="emit('changeLayout', selectedLayout)">
           <option value="grid-2x2">
             {{ t('layouts.grid2x2') }}
           </option>
-          <option
-            value="grid-3x2"
-            class="pillar-layout-option hidden"
-          >
+          <option value="grid-3x2" class="pillar-layout-option hidden">
             3×2 Grid (6 Cam)
           </option>
           <option value="layout-6-3">
@@ -219,22 +133,13 @@
           <option value="layout-front-repeaters">
             {{ t('layouts.frontRepeaters') }}
           </option>
-          <option
-            value="layout-front-pillars"
-            class="pillar-layout-option hidden"
-          >
+          <option value="layout-front-pillars" class="pillar-layout-option hidden">
             Front + Pillars
           </option>
-          <option
-            value="layout-front-left-pillar"
-            class="pillar-layout-option hidden"
-          >
+          <option value="layout-front-left-pillar" class="pillar-layout-option hidden">
             Front + Left Pillar
           </option>
-          <option
-            value="layout-front-right-pillar"
-            class="pillar-layout-option hidden"
-          >
+          <option value="layout-front-right-pillar" class="pillar-layout-option hidden">
             Front + Right Pillar
           </option>
           <option value="layout-focus">
@@ -243,18 +148,10 @@
         </select>
       </div>
 
-      <div
-        class="layout-control"
-        id="focusCameraControl"
-        :style="{ display: selectedLayout === 'layout-focus' ? '' : 'none' }"
-      >
-        <select
-          id="focusCameraSelect"
-          class="layout-select"
-          title="Focus Camera"
-          v-model="focusCamera"
-          @change="emit('changeFocusCamera', focusCamera)"
-        >
+      <div class="layout-control" id="focusCameraControl"
+        :style="{ display: selectedLayout === 'layout-focus' ? '' : 'none' }">
+        <select id="focusCameraSelect" class="layout-select" title="Focus Camera" v-model="focusCamera"
+          @change="emit('changeFocusCamera', focusCamera)">
           <option value="front">
             {{ t('cameras.front') }}
           </option>
@@ -276,12 +173,8 @@
         </select>
       </div>
 
-      <button
-        id="resetLayoutBtn"
-        class="control-btn hidden"
-        title="Reset camera positions to layout defaults"
-        @click="emit('resetLayout')"
-      >
+      <button id="resetLayoutBtn" class="control-btn hidden" title="Reset camera positions to layout defaults"
+        @click="emit('resetLayout')">
         <RotateCcw :size="20" />
       </button>
 
@@ -496,12 +389,10 @@ function onExportVideoClick(): void {
 
 .event-nav-separator {
   @apply mx-1.5 h-7 w-px;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--border) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg,
+      transparent 0%,
+      var(--border) 50%,
+      transparent 100%);
 }
 
 /* Export Dropdown */
@@ -520,6 +411,7 @@ function onExportVideoClick(): void {
 .export-dropdown {
   @apply absolute bottom-full left-1/2 z-1000 mb-2.5 min-w-[260px] -translate-x-1/2 overflow-hidden rounded-[10px] border border-(--glass-border) bg-(--glass) shadow-(--shadow-lg) backdrop-blur-[20px];
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 
 .export-dropdown.hidden {
@@ -566,20 +458,16 @@ function onExportVideoClick(): void {
 /* Export action buttons (Screenshot, Export Video, Insurance Report) */
 .export-action-btn {
   @apply mx-1.5 my-1 flex w-[calc(100%-0.75rem)] cursor-pointer items-center gap-2 rounded-md border-none px-3 py-2.5 text-left font-[inherit] text-[0.8rem] text-(--text-primary) transition-all duration-150;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--c-palette-accent) 8%, transparent),
-    color-mix(in srgb, var(--c-palette-accent) 2%, transparent)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--c-palette-accent) 8%, transparent),
+      color-mix(in srgb, var(--c-palette-accent) 2%, transparent));
   border-left: 3px solid var(--accent);
 }
 
 .export-action-btn:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--c-palette-accent) 15%, transparent),
-    color-mix(in srgb, var(--c-palette-accent) 5%, transparent)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--c-palette-accent) 15%, transparent),
+      color-mix(in srgb, var(--c-palette-accent) 5%, transparent));
 }
 
 .export-action-btn svg {
@@ -638,7 +526,7 @@ function onExportVideoClick(): void {
   content: '';
 }
 
-.export-checkbox-option input:checked + .export-checkbox-label::before {
+.export-checkbox-option input:checked+.export-checkbox-label::before {
   @apply border-(--accent) bg-(--accent) bg-no-repeat bg-center;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
   background-size: 10px;
@@ -662,16 +550,16 @@ function onExportVideoClick(): void {
   @apply hidden;
 }
 
-.privacy-mode-option > span:first-of-type {
+.privacy-mode-option>span:first-of-type {
   @apply flex items-center gap-2 text-[0.85rem] text-(--text-primary);
 }
 
-.privacy-mode-option > span:first-of-type::before {
+.privacy-mode-option>span:first-of-type::before {
   @apply size-4 shrink-0 rounded-[3px] border-2 border-(--text-muted) transition-all duration-150;
   content: '';
 }
 
-.privacy-mode-option input:checked + span::before {
+.privacy-mode-option input:checked+span::before {
   @apply border-(--accent) bg-(--accent) bg-no-repeat bg-center;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
   background-size: 12px;
@@ -685,7 +573,7 @@ function onExportVideoClick(): void {
   @apply bg-(--accent-subtle);
 }
 
-.privacy-mode-option:hover > span:first-of-type::before {
+.privacy-mode-option:hover>span:first-of-type::before {
   @apply border-(--accent);
 }
 
@@ -776,6 +664,7 @@ function onExportVideoClick(): void {
 }
 
 @keyframes pulse-success {
+
   0%,
   100% {
     box-shadow: 0 0 8px var(--success-glow);
@@ -787,6 +676,7 @@ function onExportVideoClick(): void {
 }
 
 @keyframes pulse-warning {
+
   0%,
   100% {
     box-shadow: 0 0 8px var(--warning-glow);
@@ -798,6 +688,7 @@ function onExportVideoClick(): void {
 }
 
 @keyframes pulse-recovering {
+
   0%,
   100% {
     box-shadow: 0 0 6px color-mix(in srgb, var(--c-recording-pulse) 40%, transparent);

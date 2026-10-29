@@ -1,43 +1,19 @@
 <template>
   <div ref="containerRef" class="video-grid-container">
-    <div
-      id="videoGrid"
-      class="video-grid"
-      :class="[layout, { 'has-pillars': hasPillarCameras }]"
-      :style="gridStyle"
-    >
+    <div id="videoGrid" class="video-grid" :class="[layout, { 'has-pillars': hasPillarCameras }]" :style="gridStyle">
       <div v-for="item in cameras" :key="item[0]">
-        <div
-          class="video-container"
-          :data-camera="item[0]"
-          :class="{
-            hidden: isHidden(item[0]),
-            dragging: draggedCamera === item[0],
-            'drag-over': dragOverCamera === item[0],
-          }"
-          :style="getCameraContainerStyle(item[0])"
-          :draggable="true"
-          @dragstart="handleDragStart(item[0], $event)"
-          @dragover="handleDragOver(item[0], $event)"
-          @dragleave="handleDragLeave"
-          @drop="handleDrop(item[0], $event)"
-          @dragend="handleDragEnd"
-          @dblclick="handleContainerDblClick($event)"
-        >
-          <video
-            :id="item[1]"
-            class="video-player"
-            crossorigin="anonymous"
-            preload="auto"
-            :style="{ objectFit: getCameraObjectFit(item[0]) }"
-          ></video>
+        <div class="video-container" :data-camera="item[0]" :class="{
+          hidden: isHidden(item[0]),
+          dragging: draggedCamera === item[0],
+          'drag-over': dragOverCamera === item[0],
+        }" :style="getCameraContainerStyle(item[0])" :draggable="true" @dragstart="handleDragStart(item[0], $event)"
+          @dragover="handleDragOver(item[0], $event)" @dragleave="handleDragLeave" @drop="handleDrop(item[0], $event)"
+          @dragend="handleDragEnd" @dblclick="handleContainerDblClick($event)">
+          <video :id="item[1]" class="video-player" crossorigin="anonymous" preload="auto"
+            :style="{ objectFit: getCameraObjectFit(item[0]) }"></video>
           <div class="video-label">{{ t('cameras.' + item[0]) }}</div>
-          <button
-            class="camera-hide-btn"
-            :data-camera="item[0]"
-            :title="t('cameras.' + item[2])"
-            @click="emit('toggleCameraHide', item[0])"
-          >
+          <button class="camera-hide-btn" :data-camera="item[0]" :title="t('cameras.' + item[2])"
+            @click="emit('toggleCameraHide', item[0])">
             <Eye :size="16" />
           </button>
         </div>
@@ -45,21 +21,13 @@
     </div>
 
     <!-- Hidden Cameras Panel -->
-    <div
-      id="hiddenCamerasPanel"
-      class="hidden-cameras-panel"
-      :class="{ hidden: !hiddenCameras || hiddenCameras.length === 0 }"
-    >
-      <span class="hidden-cameras-label"
-        >{{ t('cameras.hiddenCameras') }}:</span
-      >
+    <div id="hiddenCamerasPanel" class="hidden-cameras-panel"
+      :class="{ hidden: !hiddenCameras || hiddenCameras.length === 0 }">
+      <span class="hidden-cameras-label">{{ t('cameras.hiddenCameras') }}:</span>
       <div id="hiddenCamerasList" class="hidden-cameras-list">
-        <button
-          v-for="cam in hiddenCameras"
-          :key="cam"
-          class="unhide-camera-btn"
-          @click="emit('unhideCamera', cam)"
-        >
+        <button v-for="cam in hiddenCameras" :key="cam" class="
+          unhide-camera-btn
+        " @click="emit('unhideCamera', cam)">
           {{ cam }} ✕
         </button>
       </div>
@@ -68,14 +36,14 @@
 </template>
 
 <script setup lang="ts">
-import { Eye } from 'lucide-vue-next';
 import { useResizeObserver } from '@vueuse/core';
+import { Eye } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import { layoutStore } from '../composables/useLayout';
+import { videoPlayer } from '../composables/useVideoPlayer';
 import { LayoutConfig } from '../layout/layoutConfig';
 import { calculateContainSize } from '../layout/layoutMath';
-import { videoPlayer } from '../composables/useVideoPlayer';
 import type { LayoutConfigSchema } from '../types';
 
 const props = withDefaults(
@@ -298,13 +266,11 @@ function getCameraObjectFit(cameraName: string): 'contain' | 'cover' | 'fill' {
 .video-grid-container::after {
   @apply pointer-events-none absolute inset-0 z-10;
   content: '';
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    var(--c-overlay-black-3) 2px,
-    var(--c-overlay-black-3) 4px
-  );
+  background: repeating-linear-gradient(0deg,
+      transparent,
+      transparent 2px,
+      var(--c-overlay-black-3) 2px,
+      var(--c-overlay-black-3) 4px);
 }
 
 .video-grid-container {
@@ -572,8 +538,9 @@ button svg *,
 }
 
 .video-label {
-  @apply pointer-events-none absolute top-2.5 left-2.5 z-100 rounded border border-(--glass-border) bg-(--glass) px-3 py-1.5 font-(family-name:--font-mono) text-xs font-medium tracking-[0.05em] text-(--text-primary) uppercase backdrop-blur-[8px];
+  @apply pointer-events-none absolute top-2.5 left-1/2 z-100 rounded border border-(--glass-border) bg-(--glass) px-3 py-1.5 font-(family-name:--font-mono) text-xs font-medium tracking-[0.05em] text-(--text-primary) uppercase backdrop-blur-[8px];
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .video-label.ended {
@@ -586,6 +553,7 @@ button svg *,
 .camera-hide-btn {
   @apply absolute top-2.5 right-2.5 z-10 flex cursor-pointer items-center justify-center rounded-md border border-(--glass-border) bg-(--glass) p-1.5 text-(--text-secondary) opacity-0 backdrop-blur-[8px] transition-all duration-200;
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .video-container:hover .camera-hide-btn {
@@ -600,6 +568,7 @@ button svg *,
 .hidden-cameras-panel {
   @apply absolute bottom-2.5 left-1/2 z-100 flex items-center gap-2 rounded-lg border border-(--glass-border) bg-(--glass) px-3 py-2 backdrop-blur-[10px];
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   transform: translateX(-50%);
 }
 
