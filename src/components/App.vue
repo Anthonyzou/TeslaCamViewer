@@ -1,80 +1,34 @@
 <template>
-  <div
-    class="app-container"
-    role="application"
-    aria-label="TeslaCam Viewer Application"
-  >
-    <AppHeader
-      @toggleSidebar="toggleSidebar"
-      @openStats="openStats"
-      @openHelp="openHelp"
-      @openSettings="openSettings"
-    />
+  <div class="app-container" role="application" aria-label="TeslaCam Viewer Application">
+    <AppHeader @toggleSidebar="toggleSidebar" @openStats="openStats" @openHelp="openHelp"
+      @openSettings="openSettings" />
 
     <div class="main-content">
       <!-- Sidebar Overlay for mobile -->
       <div id="sidebarOverlay" class="sidebar-overlay hidden"></div>
 
       <!-- Sidebar -->
-      <AppSidebar
-        :drives="drives"
-        :activeDriveId="activeDriveId"
-        :hasEvents="hasEvent"
-        :events="filteredEvents"
-        :currentEvent="currentEvent"
-        :eventCountText="eventCountText"
-        :eventStatsText="eventStatsText"
-        @selectEvent="selectEvent"
-        @changeDrive="changeDrive"
-        @manageDrives="manageDrives"
-        @addDrive="addDrive"
-        @refreshDrives="refreshDrives"
-        @selectFolder="selectFolder"
-        @loadB2="loadB2"
-      />
+      <AppSidebar :drives="drives" :activeDriveId="activeDriveId" :hasEvents="hasEvent" :events="filteredEvents"
+        :currentEvent="currentEvent" :eventCountText="eventCountText" :eventStatsText="eventStatsText"
+        @selectEvent="selectEvent" @changeDrive="changeDrive" @manageDrives="manageDrives" @addDrive="addDrive"
+        @refreshDrives="refreshDrives" @selectFolder="selectFolder" @loadB2="loadB2" />
 
       <!-- Main Video Player Area -->
       <main class="player-area">
-        <VideoGrid
-          :hasEvent="hasEvent"
-          :layout="layout"
-          :focusCamera="focusCamera"
-          :hasPillarCameras="currentEvent?.hasPillarCameras"
-          :hiddenCameras="hiddenCameras"
-          @toggleCameraHide="toggleCameraHide"
-          @unhideCamera="unhideCamera"
-          @togglePlay="togglePlay"
-        />
+        <VideoGrid :hasEvent="hasEvent" :layout="layout" :focusCamera="focusCamera"
+          :hasPillarCameras="currentEvent?.hasPillarCameras" :hiddenCameras="hiddenCameras"
+          @toggleCameraHide="toggleCameraHide" @unhideCamera="unhideCamera" @togglePlay="togglePlay" />
 
         <EventInfoBar />
 
         <TimelineBar :hasEvent="hasEvent" />
 
-        <PlaybackControls
-          :hasEvent="hasEvent"
-          :isPlaying="isPlaying"
-          :speed="speed"
-          :isLooping="isLooping"
-          :layout="layout"
-          :focusCamera="focusCamera"
-          @togglePlay="togglePlay"
-          @prevClip="prevClip"
-          @nextClip="nextClip"
-          @changeSpeed="changeSpeed"
-          @toggleLoop="toggleLoop"
-          @markIn="markIn"
-          @markOut="markOut"
-          @clearMarks="clearMarks"
-          @exportVideo="exportVideo"
-          @captureScreenshot="captureScreenshot"
-          @changeLayout="changeLayout"
-          @changeFocusCamera="changeFocusCamera"
-          @resetLayout="resetLayout"
-          @frameBack="frameBack"
-          @frameForward="frameForward"
-          @prevEvent="prevEvent"
-          @nextEvent="nextEvent"
-        />
+        <PlaybackControls :hasEvent="hasEvent" :isPlaying="isPlaying" :speed="speed" :isLooping="isLooping"
+          :layout="layout" :focusCamera="focusCamera" @togglePlay="togglePlay" @prevClip="prevClip" @nextClip="nextClip"
+          @changeSpeed="changeSpeed" @toggleLoop="toggleLoop" @markIn="markIn" @markOut="markOut"
+          @clearMarks="clearMarks" @exportVideo="exportVideo" @captureScreenshot="captureScreenshot"
+          @changeLayout="changeLayout" @changeFocusCamera="changeFocusCamera" @resetLayout="resetLayout"
+          @frameBack="frameBack" @frameForward="frameForward" @prevEvent="prevEvent" @nextEvent="nextEvent" />
       </main>
     </div>
 
@@ -196,7 +150,7 @@ useKeyboardShortcuts({
 }
 
 .loading-overlay {
-  @apply fixed inset-0 z-1000 flex flex-col items-center justify-center gap-4 backdrop-blur-[8px];
+  @apply fixed inset-0 z-1000 flex flex-col items-center justify-center gap-4 backdrop-blur-sm;
   background-color: var(--c-loading-scrim);
 }
 
@@ -210,7 +164,7 @@ useKeyboardShortcuts({
 }
 
 .loading-text {
-  @apply text-[0.95rem] tracking-[0.05em] text-(--text-secondary);
+  @apply text-[0.95rem] tracking-wider text-(--text-secondary);
 }
 
 @keyframes spin {

@@ -13,18 +13,20 @@
           No matches
         </div>
         <template v-else>
-          <div v-for="(item, idx) in filtered" :key="idx" class="command-palette-item" :class="{
+          <div v-for="(item, idx) in filtered" :key="idx" class="
+            command-palette-item
+          " :class="{
             selected: idx === selectedIndex,
             'command-palette-event': item.kind === 'event',
           }" :data-idx="idx" @click="selectAndExecute(idx)">
             <template v-if="item.kind === 'cmd'">
               <span v-if="item.cmd.category" class="command-palette-cat">{{
                 item.cmd.category
-                }}</span>
+              }}</span>
               <span class="command-palette-title">{{ item.cmd.title }}</span>
               <span v-if="item.cmd.shortcut" class="command-palette-shortcut">{{
                 item.cmd.shortcut
-                }}</span>
+              }}</span>
             </template>
             <template v-else>
               <span class="command-palette-cat">Event</span>
@@ -271,7 +273,7 @@ defineExpose({
 @reference "tailwindcss";
 
 .command-palette {
-  @apply fixed inset-0 z-10001 invisible opacity-0 transition-opacity duration-[120ms] ease-in-out;
+  @apply fixed inset-0 z-10001 invisible opacity-0 transition-opacity duration-120 ease-in-out;
 }
 
 .command-palette.visible {
@@ -312,7 +314,7 @@ defineExpose({
 }
 
 .command-palette-item {
-  @apply flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-(--text-primary) transition-[background] duration-[80ms] ease-in-out;
+  @apply flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-(--text-primary) transition-[background] duration-80 ease-in-out;
 }
 
 .command-palette-item:hover,
@@ -321,7 +323,7 @@ defineExpose({
 }
 
 .command-palette-cat {
-  @apply shrink-0 rounded bg-(--bg-tertiary) px-2 py-0.5 text-[0.7rem] text-(--text-muted) uppercase tracking-[0.05em];
+  @apply shrink-0 rounded bg-(--bg-tertiary) px-2 py-0.5 text-[0.7rem] text-(--text-muted) uppercase tracking-wider;
 }
 
 .command-palette-title {

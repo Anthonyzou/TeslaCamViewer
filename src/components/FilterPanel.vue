@@ -5,7 +5,7 @@
         <span>{{ t('filter.filters') }}</span>
         <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{
           filterCount
-          }}</span>
+        }}</span>
       </div>
       <ChevronDown :class="{ collapsed: !isExpanded }" :size="14" class="
         collapse-icon-svg collapse-icon-animated
@@ -41,7 +41,7 @@
       <div class="filter-group">
         <label class="filter-label" for="sortOrder">{{
           t('filter.sortBy')
-          }}</label>
+        }}</label>
         <select id="sortOrder" class="filter-select" v-model="filters.sortOrder" @change="handleSortChange">
           <option value="newest">{{ t('filter.newestFirst') }}</option>
           <option value="oldest">{{ t('filter.oldestFirst') }}</option>
@@ -236,11 +236,11 @@ defineExpose({
 }
 
 .filter-header-content {
-  @apply flex items-center gap-2.5 font-(family-name:--font-ui) text-[0.85rem] font-semibold tracking-[0.05em] text-(--text-secondary) uppercase;
+  @apply flex items-center gap-2.5 font-(family-name:--font-ui) text-[0.85rem] font-semibold tracking-wider text-(--text-secondary) uppercase;
 }
 
 .filter-badge {
-  @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[10px] bg-(--accent) px-1.5 font-(family-name:--font-mono) text-[0.7rem] font-semibold text-(--bg-void);
+  @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[10px] bg-(--accent) px-1.5 font-mono text-[0.7rem] font-semibold text-(--bg-void);
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -253,7 +253,7 @@ defineExpose({
 }
 
 .filter-content.expanded {
-  @apply max-h-[500px] overflow-y-auto;
+  @apply max-h-125 overflow-y-auto;
 }
 
 .filter-group {
@@ -261,7 +261,7 @@ defineExpose({
 }
 
 .filter-label {
-  @apply mb-2.5 block font-(family-name:--font-ui) text-[0.75rem] font-semibold tracking-[0.05em] text-(--text-muted) uppercase;
+  @apply mb-2.5 block font-(family-name:--font-ui) text-[0.75rem] font-semibold tracking-wider text-(--text-muted) uppercase;
 }
 
 .filter-checkboxes {
@@ -277,7 +277,7 @@ defineExpose({
 }
 
 .filter-checkbox-label input[type='checkbox'] {
-  @apply h-[15px] w-[15px] cursor-pointer accent-(--accent);
+  @apply h-3.75 w-3.75 cursor-pointer accent-(--accent);
 }
 
 .filter-select,

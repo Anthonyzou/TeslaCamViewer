@@ -327,7 +327,7 @@ button svg *,
 }
 
 .video-grid.grid-2x2 {
-  @apply grid h-auto w-auto max-h-full max-w-full aspect-[4/3] grid-cols-2 grid-rows-2;
+  @apply grid h-auto w-auto max-h-full max-w-full aspect-4/3 grid-cols-2 grid-rows-2;
   /* No gap - videos touch edge-to-edge, all dead space goes to outer edges */
 }
 
@@ -346,7 +346,7 @@ button svg *,
 
 /* Layout: 6:3 */
 .video-grid.layout-6-3 {
-  @apply aspect-[6/3];
+  @apply aspect-6/3;
 }
 
 .video-grid.layout-6-3 .video-container {
@@ -371,7 +371,7 @@ button svg *,
 
 /* Layout: 4:3 */
 .video-grid.layout-4-3 {
-  @apply aspect-[4/3];
+  @apply aspect-4/3;
 }
 
 .video-grid.layout-4-3 .video-container {
@@ -421,7 +421,7 @@ button svg *,
 
 /* Layout: Front & Left 8:3 */
 .video-grid.layout-front-left {
-  @apply aspect-[8/3];
+  @apply aspect-8/3;
 }
 
 .video-grid.layout-front-left .video-container {
@@ -446,7 +446,7 @@ button svg *,
 
 /* Layout: Front & Right 8:3 */
 .video-grid.layout-front-right {
-  @apply aspect-[8/3];
+  @apply aspect-8/3;
 }
 
 .video-grid.layout-front-right .video-container {
@@ -471,7 +471,7 @@ button svg *,
 
 /* Layout: Front & Repeaters 12:3 */
 .video-grid.layout-front-repeaters {
-  @apply aspect-[12/3];
+  @apply aspect-12/3;
 }
 
 .video-grid.layout-front-repeaters .video-container {
@@ -496,7 +496,7 @@ button svg *,
 
 /* Layout: Focus Mode */
 .video-grid.layout-focus {
-  @apply relative aspect-[4/3] w-full max-w-full max-h-full;
+  @apply relative aspect-4/3 w-full max-w-full max-h-full;
 }
 
 .video-grid.layout-focus .video-container {
@@ -538,7 +538,7 @@ button svg *,
 }
 
 .video-label {
-  @apply pointer-events-none absolute top-2.5 left-1/2 z-100 rounded border border-(--glass-border) bg-(--glass) px-3 py-1.5 font-(family-name:--font-mono) text-xs font-medium tracking-[0.05em] text-(--text-primary) uppercase backdrop-blur-[8px];
+  @apply pointer-events-none absolute top-2.5 left-1/2 z-100 rounded border border-(--glass-border) bg-(--glass) px-3 py-1.5 font-mono text-xs font-medium tracking-wider text-(--text-primary) uppercase backdrop-blur-sm;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -551,7 +551,7 @@ button svg *,
 
 /* Camera Hide Button */
 .camera-hide-btn {
-  @apply absolute top-2.5 right-2.5 z-10 flex cursor-pointer items-center justify-center rounded-md border border-(--glass-border) bg-(--glass) p-1.5 text-(--text-secondary) opacity-0 backdrop-blur-[8px] transition-all duration-200;
+  @apply absolute top-2.5 right-2.5 z-10 flex cursor-pointer items-center justify-center rounded-md border border-(--glass-border) bg-(--glass) p-1.5 text-(--text-secondary) opacity-0 backdrop-blur-sm transition-all duration-200;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -577,7 +577,7 @@ button svg *,
 }
 
 .hidden-label {
-  @apply font-(family-name:--font-ui) text-xs tracking-[0.05em] text-(--text-muted) uppercase;
+  @apply font-(family-name:--font-ui) text-xs tracking-wider text-(--text-muted) uppercase;
 }
 
 .hidden-cameras-list {
@@ -585,7 +585,7 @@ button svg *,
 }
 
 .hidden-camera-btn {
-  @apply flex cursor-pointer items-center gap-1.5 rounded border border-(--border) bg-(--bg-tertiary) px-2.5 py-1 font-(family-name:--font-mono) text-xs text-(--text-secondary) transition-all duration-200;
+  @apply flex cursor-pointer items-center gap-1.5 rounded border border-(--border) bg-(--bg-tertiary) px-2.5 py-1 font-mono text-xs text-(--text-secondary) transition-all duration-200;
 }
 
 .hidden-camera-btn:hover {

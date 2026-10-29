@@ -1,16 +1,8 @@
 <template>
   <aside class="sidebar" id="sidebar" :style="sidebarStyle">
-    <div
-      class="sidebar-resize-handle"
-      id="sidebarResizeHandle"
-      :class="{ resizing: isResizing }"
-      title="Drag to resize"
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
-      @dblclick="resetWidth"
-    ></div>
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle" :class="{ resizing: isResizing }" title="Drag to resize"
+      @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerUp"
+      @dblclick="resetWidth"></div>
 
     <div class="sidebar-header">
       <h2>
@@ -21,18 +13,10 @@
     </div>
 
     <!-- Drive Selector (multi-drive support) -->
-    <div
-      id="driveSelector"
-      class="drive-selector"
-      :class="{ hidden: !drives || drives.length === 0 }"
-    >
+    <div id="driveSelector" class="drive-selector" :class="{ hidden: !drives || drives.length === 0 }">
       <div class="drive-selector-header">
-        <select
-          id="driveSelect"
-          class="drive-select"
-          v-model="selectedDrive"
-          @change="emit('changeDrive', selectedDrive)"
-        >
+        <select id="driveSelect" class="drive-select" v-model="selectedDrive"
+          @change="emit('changeDrive', selectedDrive)">
           <option value="">
             {{ t('sidebar.allDrives') }}
           </option>
@@ -40,28 +24,15 @@
             {{ d.label || d.name || d.id }}
           </option>
         </select>
-        <button
-          id="manageDrivesBtn"
-          class="drive-action-btn"
-          :title="t('sidebar.manageDrives')"
-          @click="emit('manageDrives')"
-        >
+        <button id="manageDrivesBtn" class="drive-action-btn" :title="t('sidebar.manageDrives')"
+          @click="emit('manageDrives')">
           <Settings :size="16" />
         </button>
-        <button
-          id="addDriveBtn"
-          class="drive-action-btn"
-          :title="t('sidebar.addDrive')"
-          @click="emit('addDrive')"
-        >
+        <button id="addDriveBtn" class="drive-action-btn" :title="t('sidebar.addDrive')" @click="emit('addDrive')">
           <Plus :size="16" />
         </button>
-        <button
-          id="refreshDrivesBtn"
-          class="drive-action-btn"
-          :title="t('sidebar.refreshDrives') || 'Refresh drives'"
-          @click="emit('refreshDrives')"
-        >
+        <button id="refreshDrivesBtn" class="drive-action-btn" :title="t('sidebar.refreshDrives') || 'Refresh drives'"
+          @click="emit('refreshDrives')">
           <RefreshCw :size="16" />
         </button>
       </div>
@@ -69,20 +40,11 @@
 
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'events' }"
-        data-tab="events"
-        @click="activeTab = 'events'"
-      >
+      <button class="tab-btn" :class="{ active: activeTab === 'events' }" data-tab="events"
+        @click="activeTab = 'events'">
         {{ t('sidebar.events') }}
       </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'map' }"
-        data-tab="map"
-        @click="activeTab = 'map'"
-      >
+      <button class="tab-btn" :class="{ active: activeTab === 'map' }" data-tab="map" @click="activeTab = 'map'">
         {{ t('sidebar.map') }}
       </button>
     </div>
@@ -93,25 +55,16 @@
     </div>
 
     <!-- Folder Selector Button -->
-    <button
-      id="selectFolderBtn"
-      class="select-folder-btn"
-      :class="{ hidden: hasEvents }"
-      @click="emit('selectFolder')"
-    >
+    <button id="selectFolderBtn" class="select-folder-btn" :class="{ hidden: hasEvents }" @click="emit('selectFolder')">
       <Folder :size="20" class="icon-mr-2" />
       <span>{{
         t('sidebar.selectFolder')
-      }}</span>
+        }}</span>
     </button>
 
     <!-- Backblaze B2 Button -->
-    <button
-      id="loadB2Btn"
-      class="select-folder-btn b2-btn sync-cloud-bg"
-      :class="{ hidden: hasEvents }"
-      @click="emit('loadB2')"
-    >
+    <button id="loadB2Btn" class="select-folder-btn b2-btn sync-cloud-bg" :class="{ hidden: hasEvents }"
+      @click="emit('loadB2')">
       <Cloud :size="20" class="icon-mr-2" />
       <span>Load from Backblaze B2</span>
     </button>
@@ -119,36 +72,18 @@
     <!-- Tab Content -->
     <div class="tab-content">
       <!-- Events Tab -->
-      <div
-        id="eventsTab"
-        class="tab-pane"
-        :class="{ active: activeTab === 'events' }"
-      >
-        <EventList
-          :events="events || []"
-          :currentEvent="currentEvent"
-          @selectEvent="emit('selectEvent', $event)"
-        />
+      <div id="eventsTab" class="tab-pane" :class="{ active: activeTab === 'events' }">
+        <EventList :events="events || []" :currentEvent="currentEvent" @selectEvent="emit('selectEvent', $event)" />
       </div>
 
       <!-- Map Tab -->
-      <div
-        id="mapTab"
-        class="tab-pane"
-        :class="{ active: activeTab === 'map' }"
-      >
-        <MapView
-          :visible="activeTab === 'map'"
-          @selectEvent="emit('selectEvent', $event)"
-        />
+      <div id="mapTab" class="tab-pane" :class="{ active: activeTab === 'map' }">
+        <MapView :visible="activeTab === 'map'" @selectEvent="emit('selectEvent', $event)" />
       </div>
     </div>
 
     <!-- Bird's Eye View Panel -->
-    <div
-      id="birdsEyePanel"
-      class="sidebar-panel collapsible hidden"
-    >
+    <div id="birdsEyePanel" class="sidebar-panel collapsible hidden">
       <div class="sidebar-panel-header" id="birdsEyeHeader">
         <span class="panel-title">Bird's Eye View</span>
         <button class="panel-collapse-btn" aria-label="Toggle panel">
@@ -163,8 +98,8 @@
 </template>
 
 <script setup lang="ts">
-import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { useLocalStorage, useMediaQuery } from '@vueuse/core';
+import { Cloud, Folder, Plus, RefreshCw, Settings } from 'lucide-vue-next';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 import type { DriveInfo, TeslaCamEvent } from '../types';
@@ -243,7 +178,7 @@ function onPointerUp(e: PointerEvent): void {
   if (target) {
     try {
       target.releasePointerCapture(e.pointerId);
-    } catch (_e) {}
+    } catch (_e) { }
   }
   isResizing.value = false;
   document.body.classList.remove('sidebar-resizing');
@@ -279,11 +214,9 @@ onUnmounted(() => {
 }
 
 .select-folder-btn:hover {
-  background: linear-gradient(
-    135deg,
-    var(--accent-hover) 0%,
-    var(--accent) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--accent-hover) 0%,
+      var(--accent) 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 30px var(--accent-glow);
 }
@@ -304,12 +237,10 @@ onUnmounted(() => {
 
 /* ==================== SIDEBAR ==================== */
 .sidebar {
-  @apply relative flex w-80 max-w-[600px] min-w-[200px] flex-col border-r border-(--border);
-  background: linear-gradient(
-    180deg,
-    var(--bg-secondary) 0%,
-    var(--bg-primary) 100%
-  );
+  @apply relative flex w-80 max-w-150-w-[200px] flex-col border-r border-(--border);
+  background: linear-gradient(180deg,
+      var(--bg-secondary) 0%,
+      var(--bg-primary) 100%);
 }
 
 @media only screen and (max-width: 514px) {
@@ -324,7 +255,7 @@ onUnmounted(() => {
    6px outside (into video grid gutter). Keeps scrollbar usable while giving
    the resize grip a reasonable hit target. */
 .sidebar-resize-handle {
-  @apply absolute top-0 right-[-6px] bottom-0 z-100 w-2 cursor-ew-resize bg-transparent transition-[background] duration-150;
+  @apply absolute top-0 -right-1.5 bottom-0 z-100 w-2 cursor-ew-resize bg-transparent transition-[background] duration-150;
   touch-action: none;
 }
 
@@ -334,7 +265,7 @@ onUnmounted(() => {
 }
 
 .sidebar-resize-handle::after {
-  @apply absolute top-1/2 left-1/2 h-10 w-1 rounded-[2px] bg-(--text-muted) opacity-0 transition-opacity duration-150;
+  @apply absolute top-1/2 left-1/2 h-10 w-1 rounded-xs-(--text-muted) opacity-0 transition-opacity duration-150;
   content: '';
   transform: translate(-50%, -50%);
 }
@@ -358,13 +289,11 @@ body.sidebar-resizing * {
 .sidebar::after {
   @apply pointer-events-none absolute top-0 right-0 bottom-0 w-px opacity-20;
   content: '';
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--accent) 30%,
-    var(--accent) 70%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg,
+      transparent 0%,
+      var(--accent) 30%,
+      var(--accent) 70%,
+      transparent 100%);
 }
 
 .sidebar-header {
@@ -372,7 +301,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-header h2 {
-  @apply m-0 font-(family-name:--font-ui) text-[0.95rem] font-semibold tracking-[0.1em] text-(--text-secondary) uppercase;
+  @apply m-0 font-(family-name:--font-ui) text-[0.95rem] font-semibold tracking-widest text-(--text-secondary) uppercase;
 }
 
 /* ==================== SIDEBAR COLLAPSIBLE PANELS ==================== */
@@ -393,7 +322,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-panel-header .panel-collapse-btn {
-  @apply flex cursor-pointer items-center justify-center bg-transparent p-[0.2rem] text-(--text-muted) border-none transition-[transform,color] duration-200;
+  @apply flex cursor-pointer items-center justify-center bg-transparent p-[0.2rem] text-(--text-muted) border-none transition-[transform, color] duration-200;
 }
 
 .sidebar-panel-header .panel-collapse-btn:hover {
@@ -405,7 +334,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-panel-content {
-  @apply overflow-hidden opacity-100 transition-[max-height,height,opacity,padding] duration-300;
+  @apply overflow-hidden opacity-100 transition-[max-height, height, opacity, padding] duration-300;
 }
 
 .sidebar-panel.collapsed .sidebar-panel-content {
@@ -417,7 +346,7 @@ body.sidebar-resizing * {
 
 /* Bird's Eye View Panel */
 #birdsEyeContent {
-  @apply relative flex h-[200px] max-h-[200px] items-center justify-center;
+  @apply relative flex h-50hmax-h-50s-center justify-center;
 }
 
 #birdsEyeContent canvas {
@@ -426,7 +355,7 @@ body.sidebar-resizing * {
 
 /* Telemetry Panel - height matches bottom controls pane (~200px) */
 #telemetryContent {
-  @apply flex h-[200px] max-h-[200px] flex-col p-1;
+  @apply flex h-50 max-h-50 flex-col p-1;
 }
 
 .sidebar .tab-content {
@@ -446,7 +375,7 @@ body.sidebar-resizing * {
 }
 
 .event-stats {
-  @apply w-full font-(family-name:--font-mono) text-xs tracking-[0.02em] text-(--text-muted);
+  @apply w-full font-mono text-xs tracking-[0.02em] text-(--text-muted);
 }
 
 /* Drive Selector (multi-drive support) */
@@ -483,7 +412,7 @@ body.sidebar-resizing * {
 }
 
 .drive-action-btn {
-  @apply flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-(--border) bg-(--bg-primary) p-1.5 text-(--text-muted) transition-[background,border-color,color] duration-150;
+  @apply flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-(--border) bg-(--bg-primary) p-1.5 text-(--text-muted) transition-[background, border-color, color] duration-150;
   /* don't let the icon buttons compress to nothing */
 }
 
@@ -527,7 +456,7 @@ body.sidebar-resizing * {
 
 /* Drive management modal */
 .drive-management-modal {
-  @apply max-w-[500px];
+  @apply max-w-125;
 }
 
 .drive-list {
@@ -586,7 +515,7 @@ body.sidebar-resizing * {
 
 /* Drive Setup Dialog */
 .drive-setup-modal {
-  @apply max-w-[480px];
+  @apply max-w-120;
 }
 
 .drive-setup-modal .modal-content {
@@ -594,7 +523,7 @@ body.sidebar-resizing * {
 }
 
 .drive-setup-selected {
-  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-(family-name:--font-mono) text-[0.85rem] text-(--text-secondary);
+  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-mono text-[0.85rem] text-(--text-secondary);
 }
 
 .drive-setup-selected svg {
@@ -648,7 +577,7 @@ body.sidebar-resizing * {
 }
 
 .drive-setup-checkbox input[type='checkbox'] {
-  @apply h-[18px] w-[18px] cursor-pointer accent-(--accent);
+  @apply h-4.5 w-4.5 cursor-pointer accent-(--accent);
 }
 
 .drive-setup-checkbox-content {
@@ -736,184 +665,6 @@ body.sidebar-resizing * {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
-/* ==================== AI Search (sidebar) ==================== */
-/* AI Search panel theming — matches sibling .filter-panel so the sidebar
- * reads as one continuous surface. The original stylesheet referenced
- * --bg-panel / --bg-elev, which don't exist in the project's token set,
- * so it fell through to its literal fallbacks (#242424 / #2f2f2f) and
- * looked wrong against the actual theme (bg-primary is #0a0c12). */
-.ai-search-panel {
-  @apply border-b border-(--border) bg-(--bg-primary);
-}
-
-.ai-search-header {
-  @apply flex cursor-pointer items-center justify-between bg-(--bg-primary) px-3 py-2 select-none;
-}
-
-.ai-search-header:hover {
-  @apply bg-(--bg-elevated);
-}
-
-.ai-search-header-content {
-  @apply flex items-center gap-1.5 text-[0.82rem] font-medium text-(--text-primary);
-}
-
-.ai-search-badge {
-  @apply rounded-lg bg-(--accent) px-1.5 py-px text-[0.68rem] font-medium text-white;
-}
-
-/* Container holds the BETA pill + collapse chevron together so they
- * stay right-anchored regardless of label/badge width on the left. */
-.ai-search-header-right {
-  @apply flex shrink-0 items-center gap-2;
-}
-
-/* Outlined pill — readable but quiet so it doesn't fight the rest of
- * the sidebar. Subtle pulse to nudge attention without being loud. */
-.ai-search-beta-pill {
-  @apply cursor-help rounded-lg border px-1.5 py-px text-[0.6rem] font-bold tracking-[0.08em] text-(--warning) uppercase leading-[1.3];
-  border-color: color-mix(in srgb, var(--c-health-minor) 45%, transparent);
-  background-color: color-mix(in srgb, var(--c-health-minor) 8%, transparent);
-}
-
-.ai-search-collapse-icon,
-.collapse-icon-svg {
-  @apply shrink-0 text-(--text-muted) transition-transform duration-[220ms] ease-in-out;
-}
-
-.ai-search-collapse-icon.collapsed,
-.collapse-icon-svg.collapsed {
-  transform: rotate(-90deg);
-}
-
-.ai-search-content {
-  @apply max-h-0 overflow-hidden transition-[max-height] duration-[220ms] ease-in-out;
-}
-
-.ai-search-content.expanded {
-  @apply max-h-[400px] border-t border-(--border) px-3 pt-2 pb-2.5;
-}
-
-.ai-search-row {
-  @apply flex items-center gap-1.5;
-}
-
-.ai-search-input {
-  @apply flex-1 rounded border border-(--border) bg-(--bg-tertiary) px-2.5 py-1.5 text-[0.85rem] text-(--text-primary);
-}
-
-.ai-search-input:focus {
-  @apply outline outline-1 outline-(--accent);
-}
-
-.ai-search-clear {
-  @apply h-7 w-7 cursor-pointer rounded border border-(--border) bg-transparent text-[1.1rem] leading-none text-(--text-muted);
-}
-
-.ai-search-clear:hover {
-  @apply border-(--accent) text-(--text-primary);
-}
-
-.ai-search-chips {
-  @apply mt-2 flex max-h-20 flex-wrap gap-1 overflow-y-auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
-.ai-search-chips::-webkit-scrollbar {
-  width: 6px;
-}
-
-.ai-search-chips::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ai-search-chips::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-.ai-search-chips::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
-.ai-search-chip {
-  @apply cursor-pointer rounded-xl border border-(--border) bg-(--bg-elevated) px-2 py-[3px] text-[0.72rem] whitespace-nowrap text-(--text-muted);
-}
-
-.ai-search-chip:hover {
-  @apply border-(--accent) text-(--text-primary);
-}
-
-.ai-search-chip.active {
-  @apply border-(--accent) bg-(--accent) text-white;
-}
-
-.ai-search-results-header {
-  @apply mt-2 rounded bg-(--bg-tertiary) px-2 py-1.5 text-[0.75rem] leading-[1.4] text-(--text-muted);
-  font-family: ui-monospace, monospace;
-}
-
-.event-item.ai-confident {
-  @apply border-l-[3px] border-l-(--c-launch);
-}
-
-.event-item.ai-possible {
-  @apply border-l-[3px] border-l-(--c-health-minor) opacity-80;
-}
-
-.event-ai-match-label {
-  @apply mt-0.5 text-[0.7rem] text-(--text-muted);
-  font-family: ui-monospace, monospace;
-}
-
-.event-ai-tags {
-  @apply mt-1 flex flex-wrap gap-[3px];
-}
-
-.event-ai-tag {
-  @apply rounded-lg bg-(--bg-tertiary) px-1.5 py-px text-[0.62rem] text-(--text-muted);
-}
-
-.ai-search-tier-divider {
-  @apply border-b border-(--border) bg-(--bg-tertiary) px-3 py-2 text-[0.72rem];
-  font-family: ui-monospace, monospace;
-}
-
-.ai-search-tier-confident {
-  @apply text-(--c-launch);
-}
-
-.ai-search-tier-possible {
-  @apply text-(--c-health-minor);
-}
-
-.ai-search-tier-none {
-  @apply text-(--c-severity-critical);
-}
-
-/* Toast for first-run prompt — positioned TOP-right so it doesn't collide
-   with the persistent indexing widget at bottom-right */
-.ai-search-toast {
-  @apply fixed top-16 right-5 z-10001 max-w-[360px] rounded-lg border border-(--accent) bg-(--bg-elevated) px-4 py-3.5 text-[0.88rem] leading-normal;
-  box-shadow: 0 8px 24px var(--c-overlay-black-40);
-}
-
-.ai-search-toast-title {
-  @apply mb-1 font-semibold;
-}
-
-.ai-search-toast-actions {
-  @apply mt-2.5 flex justify-end gap-2;
-}
-
-.ai-search-toast-btn {
-  @apply cursor-pointer rounded border border-(--border) bg-transparent px-3 py-1 text-[0.82rem] text-(--text-primary);
-}
-
-.ai-search-toast-btn.primary {
-  @apply border-(--accent) bg-(--accent) text-white;
-}
 
 .sync-cloud-bg {
   background: var(--c-drive-cloud);

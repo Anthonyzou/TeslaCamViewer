@@ -218,7 +218,7 @@ defineExpose({
 }
 
 .help-panel {
-  @apply relative flex max-h-[85vh] w-[90%] max-w-[600px] flex-col rounded-2xl border border-(--border) bg-(--bg-secondary);
+  @apply relative flex max-h-[85vh] w-[90%] max-w-150 flex-col rounded-2xl border border-(--border) bg-(--bg-secondary);
   box-shadow:
     var(--shadow-lg),
     0 0 60px color-mix(in srgb, var(--accent) 10%, transparent);
@@ -229,7 +229,7 @@ defineExpose({
 }
 
 .help-header h2 {
-  @apply m-0 font-(family-name:--font-ui) text-[1.1rem] font-semibold uppercase tracking-[0.05em];
+  @apply m-0 font-(family-name:--font-ui) text-[1.1rem] font-semibold uppercase tracking-wider;
 }
 
 .help-close-btn {
@@ -276,7 +276,7 @@ defineExpose({
 }
 
 .help-section h3 {
-  @apply mb-4 font-(family-name:--font-ui) text-xs font-semibold tracking-[0.1em] text-(--accent) uppercase;
+  @apply mb-4 font-(family-name:--font-ui) text-xs font-semibold tracking-widest text-(--accent) uppercase;
 }
 
 .help-footer {
@@ -308,7 +308,7 @@ defineExpose({
 }
 
 .shortcut-row kbd {
-  @apply min-w-[55px] rounded-md border border-(--border) bg-(--bg-tertiary) px-2.5 py-[0.3rem] text-center font-(family-name:--font-mono) text-[0.8rem] text-(--accent);
+  @apply min-w-13.75 rounded-md border border-(--border) bg-(--bg-tertiary) px-2.5 py-[0.3rem] text-center font-mono text-[0.8rem] text-(--accent);
   box-shadow: inset 0 -2px 0 var(--bg-void);
 }
 

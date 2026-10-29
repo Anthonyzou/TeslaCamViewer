@@ -39,7 +39,7 @@
               <div class="drive-meta-row">
                 <span class="drive-event-count">{{
                   getEventCountText(drive)
-                  }}</span>
+                }}</span>
                 <span v-if="getDateFilterText(drive)" class="drive-date-filter">
                   • {{ getDateFilterText(drive) }}
                 </span>
@@ -198,7 +198,7 @@ defineExpose({
 
 /* Drive management modal */
 .drive-management-modal {
-  @apply max-w-[500px];
+  @apply max-w-125;
 }
 
 .drive-list {

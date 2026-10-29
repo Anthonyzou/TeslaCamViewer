@@ -101,7 +101,7 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-          }}</span>
+        }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
@@ -133,13 +133,19 @@
           <option value="layout-front-repeaters">
             {{ t('layouts.frontRepeaters') }}
           </option>
-          <option value="layout-front-pillars" class="pillar-layout-option hidden">
+          <option value="layout-front-pillars" class="
+            pillar-layout-option hidden
+          ">
             Front + Pillars
           </option>
-          <option value="layout-front-left-pillar" class="pillar-layout-option hidden">
+          <option value="layout-front-left-pillar" class="
+            pillar-layout-option hidden
+          ">
             Front + Left Pillar
           </option>
-          <option value="layout-front-right-pillar" class="pillar-layout-option hidden">
+          <option value="layout-front-right-pillar" class="
+            pillar-layout-option hidden
+          ">
             Front + Right Pillar
           </option>
           <option value="layout-focus">
@@ -318,7 +324,7 @@ function onExportVideoClick(): void {
 }
 
 .control-btn svg {
-  @apply size-[18px];
+  @apply size-4.5;
 }
 
 /* Control Groups */
@@ -358,7 +364,7 @@ function onExportVideoClick(): void {
 }
 
 .overlay-toggle-btn svg {
-  @apply size-[18px];
+  @apply size-4.5;
 }
 
 .overlay-toggle-btn.active {
@@ -401,7 +407,7 @@ function onExportVideoClick(): void {
 }
 
 .export-dropdown-container .dropdown-toggle {
-  @apply ml-[-1px] min-w-7 rounded-l-none p-1.5;
+  @apply -ml-px min-w-7 rounded-l-none p-1.5;
 }
 
 .export-dropdown-container #exportBtn {
@@ -409,7 +415,7 @@ function onExportVideoClick(): void {
 }
 
 .export-dropdown {
-  @apply absolute bottom-full left-1/2 z-1000 mb-2.5 min-w-[260px] -translate-x-1/2 overflow-hidden rounded-[10px] border border-(--glass-border) bg-(--glass) shadow-(--shadow-lg) backdrop-blur-[20px];
+  @apply absolute bottom-full left-1/2 z-1000 mb-2.5 min-w-65 -translate-x-1/2 overflow-hidden rounded-[10px] border border-(--glass-border) bg-(--glass) shadow-(--shadow-lg) backdrop-blur-[20px];
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
@@ -590,12 +596,12 @@ function onExportVideoClick(): void {
 
 .speed-label,
 .layout-label {
-  @apply font-(family-name:--font-ui) text-xs tracking-[0.05em] text-(--text-muted) uppercase;
+  @apply font-(family-name:--font-ui) text-xs tracking-wider text-(--text-muted) uppercase;
 }
 
 .speed-select,
 .layout-select {
-  @apply cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2 font-(family-name:--font-mono) text-[0.8rem] text-(--text-primary) outline-none transition-all duration-200;
+  @apply cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2 font-mono text-[0.8rem] text-(--text-primary) outline-none transition-all duration-200;
 }
 
 .speed-select:hover:not(:disabled),
@@ -619,7 +625,7 @@ function onExportVideoClick(): void {
 }
 
 .loop-label {
-  @apply flex cursor-pointer items-center gap-2 font-(family-name:--font-ui) text-xs tracking-[0.05em] text-(--text-muted) uppercase select-none;
+  @apply flex cursor-pointer items-center gap-2 font-(family-name:--font-ui) text-xs tracking-wider text-(--text-muted) uppercase select-none;
 }
 
 .loop-label input[type='checkbox'] {
@@ -700,7 +706,7 @@ function onExportVideoClick(): void {
 }
 
 .sync-status::before {
-  @apply absolute right-0 bottom-full mb-2 rounded-md border border-(--border) bg-(--glass) px-3.5 py-2 font-(family-name:--font-mono) text-xs whitespace-nowrap text-(--text-primary) opacity-0 transition-opacity duration-200 pointer-events-none backdrop-blur-[10px];
+  @apply absolute right-0 bottom-full mb-2 rounded-md border border-(--border) bg-(--glass) px-3.5 py-2 font-mono text-xs whitespace-nowrap text-(--text-primary) opacity-0 transition-opacity duration-200 pointer-events-none backdrop-blur-[10px];
   content: 'Sync: ' attr(data-status);
 }
 
