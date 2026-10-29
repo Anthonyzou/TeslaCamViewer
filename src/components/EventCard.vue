@@ -235,13 +235,13 @@ function handleClick(): void {
   @apply pointer-events-none absolute top-0 left-0 right-0 h-[60%];
   content: '';
   background: linear-gradient(180deg,
-      rgba(255, 255, 255, 0.02) 0%,
+      color-mix(in srgb, #fff 2%, transparent) 0%,
       transparent 100%);
 }
 
 .event-item:hover {
   @apply translate-x-1 border-(--border-accent) bg-(--bg-elevated);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .event-item.active {
@@ -251,7 +251,7 @@ function handleClick(): void {
       var(--bg-elevated) 100%);
   box-shadow:
     0 0 25px var(--accent-glow),
-    inset 0 0 30px rgba(0, 212, 255, 0.05);
+    inset 0 0 30px color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .event-item.active .event-item-location,
@@ -308,23 +308,23 @@ function handleClick(): void {
   @apply inline-flex items-center rounded px-2.5 py-1 font-(family-name:--font-mono) text-[0.65rem] font-semibold tracking-[0.08em] text-white uppercase;
   /* Explicit text color — previously inherited --text-muted (#5c6370),
      * which rendered nearly invisible against the dark gradient fills. */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent);
 }
 
 .event-type.saved {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, var(--c-type-saved) 0%, var(--c-type-saved-dark) 100%);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c-type-saved) 30%, transparent);
 }
 
 .event-type.sentry {
-  background: linear-gradient(135deg, var(--danger) 0%, #cc2929 100%);
+  background: linear-gradient(135deg, var(--danger) 0%, var(--c-type-sentry-dark) 100%);
   box-shadow: 0 0 10px var(--danger-glow);
 }
 
 .event-type.recent {
   /* Slightly lighter gradient + brighter text — the original gray-on-gray
      * combo was the worst offender for legibility. */
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  background: linear-gradient(135deg, var(--c-type-recent) 0%, var(--c-type-recent-dark) 100%);
 }
 
 /* Drive badge for multi-drive support */
@@ -346,30 +346,33 @@ function handleClick(): void {
 }
 
 .nearmiss-indicator.critical {
-  @apply bg-[rgba(255,59,59,0.9)] text-white;
-  box-shadow: 0 0 8px rgba(255, 59, 59, 0.5);
+  @apply text-white;
+  background-color: color-mix(in srgb, var(--c-nearmiss-critical) 90%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-nearmiss-critical) 50%, transparent);
 }
 
 .nearmiss-indicator.critical:hover {
-  box-shadow: 0 0 12px rgba(255, 59, 59, 0.8);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-nearmiss-critical) 80%, transparent);
 }
 
 .nearmiss-indicator.warning {
-  @apply bg-[rgba(255,145,0,0.9)] text-white;
-  box-shadow: 0 0 8px rgba(255, 145, 0, 0.5);
+  @apply text-white;
+  background-color: color-mix(in srgb, var(--c-nearmiss-warning) 90%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-nearmiss-warning) 50%, transparent);
 }
 
 .nearmiss-indicator.warning:hover {
-  box-shadow: 0 0 12px rgba(255, 145, 0, 0.8);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-nearmiss-warning) 80%, transparent);
 }
 
 .nearmiss-indicator.caution {
-  @apply bg-[rgba(255,193,7,0.9)] text-[#1a1a1a];
-  box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+  color: var(--c-nearmiss-text-caution);
+  background-color: color-mix(in srgb, var(--c-nearmiss-caution) 90%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-nearmiss-caution) 40%, transparent);
 }
 
 .nearmiss-indicator.caution:hover {
-  box-shadow: 0 0 12px rgba(255, 193, 7, 0.7);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-nearmiss-caution) 70%, transparent);
 }
 
 .event-item-date {
@@ -415,8 +418,8 @@ function handleClick(): void {
   background: repeating-linear-gradient(-45deg,
       transparent,
       transparent 8px,
-      rgba(255, 59, 59, 0.05) 8px,
-      rgba(255, 59, 59, 0.05) 16px);
+      color-mix(in srgb, var(--c-nearmiss-critical) 5%, transparent) 8px,
+      color-mix(in srgb, var(--c-nearmiss-critical) 5%, transparent) 16px);
 }
 
 .event-item.event-empty:hover {
@@ -431,7 +434,7 @@ function handleClick(): void {
 .empty-event-toast {
   @apply fixed bottom-[100px] left-1/2 z-10000 flex items-center gap-2.5 rounded-lg border border-(--danger) bg-(--bg-elevated) px-5 py-3 text-sm opacity-0 transition-[opacity,transform] duration-300;
   transform: translateX(-50%) translateY(20px);
-  box-shadow: 0 4px 20px rgba(255, 59, 59, 0.3);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--c-nearmiss-critical) 30%, transparent);
 }
 
 .empty-event-toast.show {
@@ -453,11 +456,15 @@ function handleClick(): void {
 }
 
 .health-badge.health-minor {
-  @apply border border-[rgba(255,184,0,0.5)] bg-[rgba(255,184,0,0.2)] text-[#ffb800];
+  @apply border text-[var(--c-health-minor)];
+  border-color: color-mix(in srgb, var(--c-health-minor) 50%, transparent);
+  background-color: color-mix(in srgb, var(--c-health-minor) 20%, transparent);
 }
 
 .health-badge.health-warning {
-  @apply border border-[rgba(248,113,113,0.55)] bg-[rgba(248,113,113,0.2)] text-[#f87171];
+  @apply border text-[var(--c-severity-critical)];
+  border-color: color-mix(in srgb, var(--c-severity-critical) 55%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-critical) 20%, transparent);
 }
 
 /* ==================== Intervention Severity Badge ==================== */
@@ -466,15 +473,21 @@ function handleClick(): void {
 }
 
 .severity-badge.severity-moderate {
-  @apply border border-[rgba(250,204,21,0.55)] bg-[rgba(250,204,21,0.18)] text-[#facc15];
+  @apply border text-[var(--c-severity-moderate)];
+  border-color: color-mix(in srgb, var(--c-severity-moderate) 55%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-moderate) 18%, transparent);
 }
 
 .severity-badge.severity-severe {
-  @apply border border-[rgba(251,146,60,0.6)] bg-[rgba(251,146,60,0.22)] text-[#fb923c];
+  @apply border text-[var(--c-severity-severe)];
+  border-color: color-mix(in srgb, var(--c-severity-severe) 60%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-severe) 22%, transparent);
 }
 
 .severity-badge.severity-critical {
-  @apply border border-[rgba(248,113,113,0.7)] bg-[rgba(248,113,113,0.25)] text-[#f87171];
+  @apply border text-[var(--c-severity-critical)];
+  border-color: color-mix(in srgb, var(--c-severity-critical) 70%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-critical) 25%, transparent);
   animation: pulse-critical 1.6s ease-in-out infinite;
 }
 
@@ -482,11 +495,11 @@ function handleClick(): void {
 
   0%,
   100% {
-    box-shadow: 0 0 3px rgba(248, 113, 113, 0.5);
+    box-shadow: 0 0 3px color-mix(in srgb, var(--c-severity-critical) 50%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 10px rgba(248, 113, 113, 0.9);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--c-severity-critical) 90%, transparent);
   }
 }
 
@@ -504,13 +517,15 @@ function handleClick(): void {
    emoji + green ink reads as "performance highlight" without
    competing with the warning palette used by severity/health. */
 .launch-badge {
-  @apply inline-flex items-center justify-center gap-0.5 rounded-[10px] border border-[rgba(74,222,128,0.45)] bg-[rgba(74,222,128,0.16)] px-[7px] py-px text-[0.64rem] font-bold tracking-[0.02em] leading-[1.4] text-[#4ade80];
+  @apply inline-flex items-center justify-center gap-0.5 rounded-[10px] border px-[7px] py-px text-[0.64rem] font-bold tracking-[0.02em] leading-[1.4] text-[var(--c-launch)];
+  border-color: color-mix(in srgb, var(--c-launch) 45%, transparent);
+  background-color: color-mix(in srgb, var(--c-launch) 16%, transparent);
 }
 
 /* Popover listing each detected severity moment */
 .severity-popover {
-  @apply fixed z-10000 min-w-[220px] max-w-[320px] rounded-md border border-[#3a3a3a] bg-[#2d2d2d] p-1 text-xs text-[#e0e0e0];
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  @apply fixed z-10000 min-w-[220px] max-w-[320px] rounded-md border border-[var(--c-palette-border)] bg-[var(--c-palette-surface)] p-1 text-xs text-[var(--c-palette-kbd-bg)];
+  box-shadow: 0 6px 24px var(--c-overlay-black-60);
 }
 
 .severity-popover-row {
@@ -518,7 +533,7 @@ function handleClick(): void {
 }
 
 .severity-popover-row:hover {
-  @apply bg-[#3a3a3a];
+  @apply bg-[var(--c-palette-border)];
 }
 
 .severity-popover-row .sev-tier {
@@ -526,26 +541,32 @@ function handleClick(): void {
 }
 
 .severity-popover-row.sev-moderate .sev-tier {
-  @apply border border-[rgba(250,204,21,0.4)] bg-[rgba(250,204,21,0.15)] text-[#facc15];
+  @apply border text-[var(--c-severity-moderate)];
+  border-color: color-mix(in srgb, var(--c-severity-moderate) 40%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-moderate) 15%, transparent);
 }
 
 .severity-popover-row.sev-severe .sev-tier {
-  @apply border border-[rgba(251,146,60,0.5)] bg-[rgba(251,146,60,0.2)] text-[#fb923c];
+  @apply border text-[var(--c-severity-severe)];
+  border-color: color-mix(in srgb, var(--c-severity-severe) 50%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-severe) 20%, transparent);
 }
 
 .severity-popover-row.sev-critical .sev-tier {
-  @apply border border-[rgba(248,113,113,0.6)] bg-[rgba(248,113,113,0.22)] text-[#f87171];
+  @apply border text-[var(--c-severity-critical)];
+  border-color: color-mix(in srgb, var(--c-severity-critical) 60%, transparent);
+  background-color: color-mix(in srgb, var(--c-severity-critical) 22%, transparent);
 }
 
 .severity-popover-row .sev-kind {
-  @apply text-[#e0e0e0];
+  @apply text-[var(--c-palette-kbd-bg)];
 }
 
 .severity-popover-row .sev-g {
-  @apply text-[#9ca3af] tabular-nums;
+  @apply text-[var(--c-type-recent)] tabular-nums;
 }
 
 .severity-popover-row .sev-time {
-  @apply text-[#4a9eff] tabular-nums;
+  @apply text-[var(--c-palette-accent)] tabular-nums;
 }
 </style>

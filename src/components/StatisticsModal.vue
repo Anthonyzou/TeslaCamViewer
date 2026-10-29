@@ -914,7 +914,7 @@ defineExpose({
 }
 
 .stats-camera-bar-track {
-  @apply h-3 overflow-hidden rounded-[6px] bg-[rgba(255,255,255,0.1)];
+  @apply h-3 overflow-hidden rounded-[6px] bg-[var(--c-overlay-white-10)];
 }
 
 .stats-camera-bar-fill {

@@ -555,7 +555,8 @@ button svg *,
 }
 
 .video-container.drag-over {
-  @apply bg-[rgba(0,212,255,0.1)] outline-3 outline-dashed outline-(--accent) -outline-offset-3;
+  @apply outline-3 outline-dashed outline-(--accent) -outline-offset-3;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .video-container[draggable='true'] {

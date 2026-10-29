@@ -52,6 +52,37 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
+/* Shared component colors. Fixed values only: a var() defined on :root resolves
+   against :root's --accent, so accent tints are written inline where they're used
+   and resolve against the active theme. */
+:root {
+  --c-shade-select: #0d4a5a;
+  --c-surface-select: #161a24;
+  --c-text-select: #e8eaed;
+  --c-severity-moderate: #facc15;
+  --c-severity-severe: #fb923c;
+  --c-severity-critical: #f87171;
+  --c-health-minor: #ffb800;
+  --c-nearmiss-critical: #ff3b3b;
+  --c-nearmiss-warning: #ff9100;
+  --c-nearmiss-caution: #ffc107;
+  --c-nearmiss-text-caution: #1a1a1a;
+  --c-launch: #4ade80;
+  --c-type-saved: #2563eb;
+  --c-type-saved-dark: #1d4ed8;
+  --c-type-sentry-dark: #cc2929;
+  --c-type-recent: #6b7280;
+  --c-type-recent-dark: #4b5563;
+  --c-palette-surface: #242424;
+  --c-palette-border: #3a3a3a;
+  --c-palette-accent: #4a9eff;
+  --c-palette-kbd-bg: #1a1a1a;
+  --c-overlay-black-60: rgba(0, 0, 0, 0.6);
+  --c-overlay-black-40: rgba(0, 0, 0, 0.4);
+  --c-overlay-black-80: rgba(0, 0, 0, 0.8);
+  --c-overlay-white-10: rgba(255, 255, 255, 0.1);
+}
+
 @layer base {
   * {
     margin: 0;

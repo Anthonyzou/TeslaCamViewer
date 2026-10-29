@@ -88,7 +88,7 @@ function onClose() {
 
 .export-modal-panel {
   @apply relative w-[90%] max-w-[440px] rounded-xl border border-[#333333] bg-[#1e1e1e] p-8 text-center text-white z-10000;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 16px 48px var(--c-overlay-black-60);
 }
 
 .export-modal-title {

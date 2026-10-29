@@ -230,7 +230,7 @@ defineExpose({
   @apply relative flex max-h-[85vh] w-[90%] max-w-[600px] flex-col rounded-2xl border border-(--border) bg-(--bg-secondary);
   box-shadow:
     var(--shadow-lg),
-    0 0 60px rgba(0, 212, 255, 0.1);
+    0 0 60px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .help-header {

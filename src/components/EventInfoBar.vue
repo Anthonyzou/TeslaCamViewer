@@ -74,7 +74,7 @@ const { hasEvent } = useEvents();
 .timeline-thumb-time {
   @apply py-1 pt-1 pb-0.5 text-center text-[0.75rem] text-white;
   font-family: monospace;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px var(--c-overlay-black-80);
 }
 
 /* Drive refresh spinner */

@@ -18,7 +18,7 @@
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stop-color="#00d4ff" />
+            <stop offset="0%" class="brand-gradient-start" />
             <stop offset="100%" stop-color="#0099cc" />
           </linearGradient>
         </defs>
@@ -40,7 +40,7 @@
         <rect x="18" y="24" width="28" height="20" rx="3" fill="#e8eaed" />
         <circle cx="32" cy="34" r="7" fill="#0a0c12" />
         <circle cx="32" cy="34" r="4" fill="#161a24" />
-        <circle cx="30" cy="32" r="1.5" fill="#00d4ff" opacity="0.8" />
+        <circle cx="30" cy="32" r="1.5" class="brand-dot" opacity="0.8" />
         <circle cx="44" cy="27" r="2" fill="#ff3b3b" />
         <rect x="30" y="20" width="4" height="4" rx="1" fill="#161a24" />
       </svg>
@@ -224,5 +224,13 @@ const { t } = useI18n();
 
 .menu-toggle-btn:hover {
   @apply bg-(--bg-tertiary) text-(--accent);
+}
+
+.brand-gradient-start {
+  stop-color: var(--accent);
+}
+
+.brand-dot {
+  fill: var(--accent);
 }
 </style>

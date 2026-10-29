@@ -893,7 +893,7 @@ body.sidebar-resizing * {
    with the persistent indexing widget at bottom-right */
 .ai-search-toast {
   @apply fixed top-16 right-5 z-10001 max-w-[360px] rounded-lg border border-(--accent) bg-(--bg-elevated) px-4 py-3.5 text-[0.88rem] leading-normal;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px var(--c-overlay-black-40);
 }
 
 .ai-search-toast-title {

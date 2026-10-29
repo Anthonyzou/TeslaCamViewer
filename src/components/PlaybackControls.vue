@@ -843,7 +843,7 @@ select,
 .layout-select,
 .mobile-layout-select {
   color-scheme: dark;
-  accent-color: #00d4ff;
+  accent-color: var(--accent);
 }
 
 select option,
@@ -853,8 +853,8 @@ select option,
 .speed-select option,
 .layout-select option,
 .mobile-layout-select option {
-  background-color: #161a24 !important;
-  color: #e8eaed !important;
+  background-color: var(--c-surface-select) !important;
+  color: var(--c-text-select) !important;
   padding: 0.5rem;
 }
 
@@ -865,18 +865,18 @@ select option:active,
 .export-format-select option:active,
 .setting-select option:checked,
 .setting-select option:active {
-  background: #0d4a5a !important;
-  background-color: #0d4a5a !important;
-  color: #00d4ff !important;
-  -webkit-text-fill-color: #00d4ff !important;
+  background: var(--c-shade-select) !important;
+  background-color: var(--c-shade-select) !important;
+  color: var(--accent) !important;
+  -webkit-text-fill-color: var(--accent) !important;
   font-weight: 500;
-  box-shadow: 0 0 10px 100px #0d4a5a inset !important;
+  box-shadow: 0 0 10px 100px var(--c-shade-select) inset !important;
 }
 
 select option:hover,
 .export-format-select option:hover,
 .setting-select option:hover {
-  background-color: rgba(0, 212, 255, 0.2) !important;
-  color: #00d4ff !important;
+  background-color: color-mix(in srgb, var(--accent) 20%, transparent) !important;
+  color: var(--accent) !important;
 }
 </style>

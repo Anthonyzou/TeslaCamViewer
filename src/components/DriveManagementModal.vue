@@ -27,7 +27,9 @@
             <!-- Drive Info & Label -->
             <div class="drive-info">
               <div class="drive-label-row">
-                <input type="text" class="drive-label-input drive-label-input-grow" :value="drive.label"
+                <input type="text" class="
+                  drive-label-input drive-label-input-grow
+                " :value="drive.label"
                   @change="onLabelChange(drive, $event)" />
                 <span v-if="drive.isArchive" class="drive-archive-badge">
                   {{ t('driveManager.archive') }}

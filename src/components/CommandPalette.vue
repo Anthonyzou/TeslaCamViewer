@@ -299,16 +299,16 @@ defineExpose({
 }
 
 .command-palette-panel {
-  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px,90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border,#3a3a3a) bg-(--bg-panel,#242424);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px,90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border) bg-(--c-palette-surface);
+  box-shadow: 0 24px 60px var(--c-overlay-black-60);
 }
 
 .command-palette-input-row {
-  @apply flex items-center gap-2.5 border-b border-(--border,#3a3a3a) px-4 py-3.5;
+  @apply flex items-center gap-2.5 border-b border-(--border) px-4 py-3.5;
 }
 
 .command-palette-icon {
-  @apply shrink-0 text-(--text-muted,#888);
+  @apply shrink-0 text-(--text-muted);
 }
 
 .command-palette-input {
@@ -317,7 +317,7 @@ defineExpose({
 }
 
 .command-palette-hint {
-  @apply shrink-0 rounded border border-(--border,#3a3a3a) px-2 py-0.5 text-xs text-(--text-muted,#888);
+  @apply shrink-0 rounded border border-(--border) px-2 py-0.5 text-xs text-(--text-muted);
   font-family: monospace;
 }
 
@@ -331,11 +331,11 @@ defineExpose({
 
 .command-palette-item:hover,
 .command-palette-item.selected {
-  @apply bg-(--bg-elevated,#2f2f2f);
+  @apply bg-(--bg-elevated);
 }
 
 .command-palette-cat {
-  @apply shrink-0 rounded bg-(--bg-tertiary,#1a1a1a) px-2 py-0.5 text-[0.7rem] text-(--text-muted,#888) uppercase tracking-[0.05em];
+  @apply shrink-0 rounded bg-(--bg-tertiary) px-2 py-0.5 text-[0.7rem] text-(--text-muted) uppercase tracking-[0.05em];
 }
 
 .command-palette-title {
@@ -343,24 +343,24 @@ defineExpose({
 }
 
 .command-palette-shortcut {
-  @apply shrink-0 rounded border border-(--border,#3a3a3a) px-1.5 py-0.5 text-xs text-(--text-muted,#888);
+  @apply shrink-0 rounded border border-(--border) px-1.5 py-0.5 text-xs text-(--text-muted);
   font-family: monospace;
 }
 
 .command-palette-event .command-palette-cat {
-  @apply bg-(--accent-subtle,#1b3a52) text-(--accent,#4a9eff);
+  @apply bg-(--accent-subtle) text-(--accent);
 }
 
 .command-palette-empty {
-  @apply p-8 text-center text-[0.9rem] text-(--text-muted,#888);
+  @apply p-8 text-center text-[0.9rem] text-(--text-muted);
 }
 
 .command-palette-footer {
-  @apply flex justify-between gap-4 border-t border-(--border,#3a3a3a) px-3.5 py-2 text-xs text-(--text-muted,#888);
+  @apply flex justify-between gap-4 border-t border-(--border) px-3.5 py-2 text-xs text-(--text-muted);
 }
 
 .command-palette-footer kbd {
-  @apply mr-0.5 rounded-[3px] border border-(--border,#3a3a3a) bg-(--bg-tertiary,#1a1a1a) px-1.5 py-px text-[0.7rem];
+  @apply mr-0.5 rounded-[3px] border border-(--border) bg-(--bg-tertiary) px-1.5 py-px text-[0.7rem];
   font-family: monospace;
 }
 </style>
