@@ -2,57 +2,28 @@
   <div class="timeline-row">
     <!-- Timeline -->
     <div class="timeline-container">
-      <div
-        id="timeline"
-        class="timeline"
-        ref="timelineEl"
-        @mousedown="onTimelineMouseDown"
-        @touchstart.passive="onTimelineTouchStart"
-      >
-        <div
-          id="timelineProgress"
-          class="timeline-progress"
-          :style="{ width: `${progressPercent}%` }"
-        ></div>
-        <div
-          id="timelineScrubber"
-          class="timeline-scrubber"
-          :class="{ dragging: isDragging }"
-          :style="{ left: `${progressPercent}%` }"
-        ></div>
+      <div id="timeline" class="timeline" ref="timelineEl" @mousedown="onTimelineMouseDown"
+        @touchstart.passive="onTimelineTouchStart">
+        <div id="timelineProgress" class="timeline-progress" :style="{ width: `${progressPercent}%` }"></div>
+        <div id="timelineScrubber" class="timeline-scrubber" :class="{ dragging: isDragging }"
+          :style="{ left: `${progressPercent}%` }"></div>
 
         <div id="timelineClips" class="timeline-clips">
           <!-- Clip Boundary Markers -->
-          <div
-            v-for="(pct, idx) in clipMarkers"
-            :key="'clip-' + idx"
-            class="clip-marker"
-            :style="{ left: pct + '%' }"
-          ></div>
+          <div v-for="(pct, idx) in clipMarkers" :key="'clip-' + idx" class="clip-marker" :style="{ left: pct + '%' }">
+          </div>
 
           <!-- Sentry Trigger Marker -->
-          <div
-            v-if="sentryMarker !== null"
-            class="sentry-trigger-marker"
-            :style="{ left: sentryMarker + '%' }"
-            title="Sentry Trigger"
-          ></div>
+          <div v-if="sentryMarker !== null" class="sentry-trigger-marker" :style="{ left: sentryMarker + '%' }"
+            title="Sentry Trigger"></div>
         </div>
 
         <!-- IN / OUT Visual Markers -->
         <div class="clip-markers">
-          <div
-            v-if="inPoint !== null"
-            class="mark-in-marker"
-            :style="getMarkerStyle(inPoint)"
-          >
+          <div v-if="inPoint !== null" class="mark-in-marker" :style="getMarkerStyle(inPoint)">
             <span class="marker-label">IN</span>
           </div>
-          <div
-            v-if="outPoint !== null"
-            class="mark-out-marker"
-            :style="getMarkerStyle(outPoint)"
-          >
+          <div v-if="outPoint !== null" class="mark-out-marker" :style="getMarkerStyle(outPoint)">
             <span class="marker-label">OUT</span>
           </div>
         </div>
@@ -175,20 +146,16 @@ onUnmounted(() => {
 .timeline::before {
   @apply pointer-events-none absolute inset-0 rounded-md;
   content: '';
-  background: linear-gradient(
-    180deg,
-    var(--c-overlay-white-3) 0%,
-    transparent 50%
-  );
+  background: linear-gradient(180deg,
+      var(--c-overlay-white-3) 0%,
+      transparent 50%);
 }
 
 .timeline-progress {
   @apply pointer-events-none absolute top-0 left-0 h-full w-0 rounded-l-md transition-[width] duration-150 ease-out;
-  background: linear-gradient(
-    90deg,
-    var(--accent-subtle) 0%,
-    var(--accent) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--accent-subtle) 0%,
+      var(--accent) 100%);
 }
 
 .timeline-scrubber {
@@ -235,7 +202,7 @@ onUnmounted(() => {
 }
 
 .zoom-indicator {
-  @apply pointer-events-none absolute top-[-20px] right-0 rounded border border-(--border-accent) bg-(--bg-tertiary) px-2 py-0.5 font-(family-name:--font-mono) text-[0.7rem] font-semibold text-(--accent);
+  @apply pointer-events-none absolute top-[-20px] right-0 rounded border border-(--border-accent) bg-(--bg-tertiary) px-2 py-0.5 font-mono text-[0.7rem] font-semibold text-(--accent);
 }
 
 .clip-markers {

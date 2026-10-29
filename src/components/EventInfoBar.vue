@@ -1,9 +1,7 @@
 <template>
   <div id="eventInfo" class="event-info">
     <div class="event-info-content">
-      <span id="eventDate" class="event-date"
-        >{{ hasEvent ? '' : t('player.noEventLoaded') }}</span
-      >
+      <span id="eventDate" class="event-date">{{ hasEvent ? '' : t('player.noEventLoaded') }}</span>
       <span id="eventLocation" class="event-location"></span>
       <span id="eventReason" class="event-reason"></span>
       <span id="eventWeather" class="event-weather"></span>
@@ -12,8 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from '../composables/useI18n';
 import { useEvents } from '../composables/useEvents';
+import { useI18n } from '../composables/useI18n';
 
 const { t } = useI18n();
 const { hasEvent } = useEvents();
@@ -68,7 +66,7 @@ const { hasEvent } = useEvents();
 }
 
 .timeline-thumb-img {
-  @apply block h-[174px] w-[232px] rounded-[3px] bg-black object-cover;
+  @apply block h-43.5 w-58 rounded-[3px] bg-black object-cover;
 }
 
 .timeline-thumb-time {

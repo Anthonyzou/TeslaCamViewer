@@ -12,44 +12,27 @@
             </h2>
           </div>
           <nav class="stats-nav">
-            <button
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'overview' }"
-              @click="activeTab = 'overview'"
-            >
+            <button class="stats-nav-item" :class="{ active: activeTab === 'overview' }"
+              @click="activeTab = 'overview'">
               <BarChart3 :size="18" />
               {{ t('statistics.tabs.overview') }}
             </button>
-            <button
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'timeline' }"
-              @click="activeTab = 'timeline'"
-            >
+            <button class="stats-nav-item" :class="{ active: activeTab === 'timeline' }"
+              @click="activeTab = 'timeline'">
               <Clock :size="18" />
               {{ t('statistics.tabs.timeline') }}
             </button>
-            <button
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'locations' }"
-              @click="activeTab = 'locations'"
-            >
+            <button class="stats-nav-item" :class="{ active: activeTab === 'locations' }"
+              @click="activeTab = 'locations'">
               <MapPin :size="18" />
               {{ t('statistics.tabs.locations') }}
             </button>
-            <button
-              v-if="hasSentryData"
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'sentry' }"
-              @click="activeTab = 'sentry'"
-            >
+            <button v-if="hasSentryData" class="stats-nav-item" :class="{ active: activeTab === 'sentry' }"
+              @click="activeTab = 'sentry'">
               <Shield :size="18" />
               {{ t('statistics.tabs.sentry') }}
             </button>
-            <button
-              class="stats-nav-item"
-              :class="{ active: activeTab === 'quality' }"
-              @click="activeTab = 'quality'"
-            >
+            <button class="stats-nav-item" :class="{ active: activeTab === 'quality' }" @click="activeTab = 'quality'">
               <CheckCircle2 :size="18" />
               {{ t('statistics.tabs.quality') }}
             </button>
@@ -60,21 +43,16 @@
         <div class="stats-main">
           <div class="stats-main-header">
             <h3 class="stats-section-title">{{ currentSectionTitle }}</h3>
-            <button
-              class="stats-close-btn"
-              :title="t('statistics.close')"
-              @click="close"
-            >
+            <button class="stats-close-btn" :title="t('statistics.close')" @click="close">
               <X :size="20" />
             </button>
           </div>
 
           <div class="stats-content">
             <!-- Overview Tab -->
-            <div
-              v-show="activeTab === 'overview'"
-              class="stats-tab-content active"
-            >
+            <div v-show="activeTab === 'overview'" class="
+              stats-tab-content active
+            ">
               <div class="stats-section">
                 <h3>{{ t('statistics.recordingOverview') }}</h3>
                 <div class="stats-grid stats-grid-4">
@@ -116,18 +94,13 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.eventTypes') }}</h3>
                 <div class="stats-types">
-                  <div
-                    v-for="item in stats?.eventsByType"
-                    :key="item.type"
-                    class="stats-type-item"
-                  >
-                    <div
-                      class="stats-type-bar"
-                      :style="{
-                        width: `${item.percent}%`,
-                        background: item.color,
-                      }"
-                    ></div>
+                  <div v-for="item in stats?.eventsByType" :key="item.type" class="
+                    stats-type-item
+                  ">
+                    <div class="stats-type-bar" :style="{
+                      width: `${item.percent}%`,
+                      background: item.color,
+                    }"></div>
                     <span class="stats-type-label">
                       {{ item.name }}: {{ item.count }} ({{ item.percent }}%)
                     </span>
@@ -141,21 +114,14 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.triggerReasons') }}</h3>
                 <div class="stats-bars">
-                  <div
-                    v-for="trig in stats?.triggerReasons"
-                    :key="trig.reason"
-                    class="stats-bar-row"
-                  >
+                  <div v-for="trig in stats?.triggerReasons" :key="trig.reason" class="
+                    stats-bar-row
+                  ">
                     <span class="stats-bar-label">{{ trig.reason }}</span>
                     <div class="stats-bar-track">
-                      <div
-                        class="stats-bar-fill"
-                        :style="{ width: `${trig.percent}%` }"
-                      ></div>
+                      <div class="stats-bar-fill" :style="{ width: `${trig.percent}%` }"></div>
                     </div>
-                    <span class="stats-bar-value"
-                      >{{ trig.count }} ({{ trig.percent }}%)</span
-                    >
+                    <span class="stats-bar-value">{{ trig.count }} ({{ trig.percent }}%)</span>
                   </div>
                   <p v-if="!stats?.triggerReasons?.length" class="stats-empty">
                     {{ t('statistics.noTrendData') }}
@@ -166,10 +132,7 @@
               <div v-if="stats?.earliestEvent" class="stats-section">
                 <h3>{{ t('statistics.dateRange') }}</h3>
                 <p class="stats-date-range">
-                  <Calendar
-                    :size="14"
-                    class="stats-inline-icon"
-                  />
+                  <Calendar :size="14" class="stats-inline-icon" />
                   {{ new Date(stats.earliestEvent).toLocaleDateString() }}
                   -
                   {{
@@ -182,10 +145,9 @@
             </div>
 
             <!-- Timeline Tab -->
-            <div
-              v-show="activeTab === 'timeline'"
-              class="stats-tab-content active"
-            >
+            <div v-show="activeTab === 'timeline'" class="
+              stats-tab-content active
+            ">
               <div class="stats-section">
                 <h3>{{ t('statistics.eventsLast14Days') }}</h3>
                 <div v-if="hasTimelineEvents">
@@ -199,18 +161,12 @@
               <div class="stats-section">
                 <h3>{{ t('statistics.eventTrends') }}</h3>
                 <div class="stats-trends-toggle">
-                  <button
-                    class="stats-trend-btn"
-                    :class="{ active: trendMode === 'weekly' }"
-                    @click="trendMode = 'weekly'"
-                  >
+                  <button class="stats-trend-btn" :class="{ active: trendMode === 'weekly' }"
+                    @click="trendMode = 'weekly'">
                     {{ t('statistics.weekly') }}
                   </button>
-                  <button
-                    class="stats-trend-btn"
-                    :class="{ active: trendMode === 'monthly' }"
-                    @click="trendMode = 'monthly'"
-                  >
+                  <button class="stats-trend-btn" :class="{ active: trendMode === 'monthly' }"
+                    @click="trendMode = 'monthly'">
                     {{ t('statistics.monthly') }}
                   </button>
                 </div>
@@ -224,21 +180,15 @@
 
               <div class="stats-section">
                 <h3>{{ t('statistics.dayVsNight') }}</h3>
-                <div
-                  v-if="
-                    (stats?.dayVsNight?.day || 0) +
-                      (stats?.dayVsNight?.night || 0) >
-                    0
-                  "
-                  class="stats-day-night"
-                >
+                <div v-if="
+                  (stats?.dayVsNight?.day || 0) +
+                  (stats?.dayVsNight?.night || 0) >
+                  0
+                " class="stats-day-night">
                   <div class="stats-day-night-visual">
-                    <div
-                      class="stats-dn-donut"
-                      :style="{
-                        '--day-percent': stats?.dayVsNight?.dayPercent || 0,
-                      }"
-                    >
+                    <div class="stats-dn-donut" :style="{
+                      '--day-percent': stats?.dayVsNight?.dayPercent || 0,
+                    }">
                       <div class="stats-dn-center">
                         <Sun :size="20" color="#ffc107" />
                       </div>
@@ -246,26 +196,18 @@
                   </div>
                   <div class="stats-day-night-legend">
                     <div class="stats-dn-item">
-                      <span
-                        class="stats-dn-color stats-dn-swatch-day"
-                      ></span>
+                      <span class="stats-dn-color stats-dn-swatch-day"></span>
                       <span class="stats-dn-label">Day (6am-8pm)</span>
-                      <span class="stats-dn-value"
-                        >{{ stats?.dayVsNight?.day }} ({{
-                          stats?.dayVsNight?.dayPercent
-                        }}%)</span
-                      >
+                      <span class="stats-dn-value">{{ stats?.dayVsNight?.day }} ({{
+                        stats?.dayVsNight?.dayPercent
+                        }}%)</span>
                     </div>
                     <div class="stats-dn-item">
-                      <span
-                        class="stats-dn-color stats-dn-swatch-night"
-                      ></span>
+                      <span class="stats-dn-color stats-dn-swatch-night"></span>
                       <span class="stats-dn-label">Night (8pm-6am)</span>
-                      <span class="stats-dn-value"
-                        >{{ stats?.dayVsNight?.night }} ({{
-                          stats?.dayVsNight?.nightPercent
-                        }}%)</span
-                      >
+                      <span class="stats-dn-value">{{ stats?.dayVsNight?.night }} ({{
+                        stats?.dayVsNight?.nightPercent
+                        }}%)</span>
                     </div>
                   </div>
                 </div>
@@ -276,23 +218,18 @@
             </div>
 
             <!-- Locations Tab -->
-            <div
-              v-show="activeTab === 'locations'"
-              class="stats-tab-content active"
-            >
+            <div v-show="activeTab === 'locations'" class="
+              stats-tab-content active
+            ">
               <div class="stats-section">
                 <h3>{{ t('statistics.topLocations') }}</h3>
                 <div class="stats-locations">
-                  <div
-                    v-for="(item, idx) in stats?.topLocations"
-                    :key="item.location"
-                    class="stats-location-row"
-                  >
+                  <div v-for="(item, idx) in stats?.topLocations" :key="item.location" class="
+                    stats-location-row
+                  ">
                     <span class="stats-location-rank">{{ idx + 1 }}.</span>
                     <span class="stats-location-name">{{ item.location }}</span>
-                    <span class="stats-location-count"
-                      >{{ item.count }} {{ t('statistics.events') }}</span
-                    >
+                    <span class="stats-location-count">{{ item.count }} {{ t('statistics.events') }}</span>
                   </div>
                   <p v-if="!stats?.topLocations?.length" class="stats-empty">
                     {{ t('statistics.noLocationData') }}
@@ -302,27 +239,21 @@
               <div v-if="stats?.sentryLocations?.length" class="stats-section">
                 <h3>{{ t('statistics.topSentryLocations') }}</h3>
                 <div class="stats-locations">
-                  <div
-                    v-for="(item, idx) in stats?.sentryLocations"
-                    :key="item.location"
-                    class="stats-location-row"
-                  >
+                  <div v-for="(item, idx) in stats?.sentryLocations" :key="item.location" class="
+                    stats-location-row
+                  ">
                     <span class="stats-location-rank">{{ idx + 1 }}.</span>
                     <span class="stats-location-name">{{ item.location }}</span>
-                    <span class="stats-location-count"
-                      >{{ item.count }} {{ t('statistics.events') }}</span
-                    >
+                    <span class="stats-location-count">{{ item.count }} {{ t('statistics.events') }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Sentry Tab -->
-            <div
-              v-if="hasSentryData"
-              v-show="activeTab === 'sentry'"
-              class="stats-tab-content active"
-            >
+            <div v-if="hasSentryData" v-show="activeTab === 'sentry'" class="
+              stats-tab-content active
+            ">
               <div class="stats-section">
                 <h3>{{ t('statistics.sentryByTimeOfDay') }}</h3>
                 <div v-if="hasSentryHourData">
@@ -343,82 +274,56 @@
                 </p>
               </div>
 
-              <div
-                v-if="stats?.cameraDistribution?.length"
-                class="stats-section"
-              >
+              <div v-if="stats?.cameraDistribution?.length" class="
+                stats-section
+              ">
                 <h3>{{ t('statistics.triggeringCamera') }}</h3>
                 <div class="stats-camera-distribution">
-                  <div
-                    v-for="cam in stats?.cameraDistribution"
-                    :key="cam.camera"
-                    class="stats-camera-row"
-                  >
-                    <span
-                      class="stats-camera-label"
-                      :style="{ color: cam.color }"
-                      >{{ cam.camera }}</span
-                    >
+                  <div v-for="cam in stats?.cameraDistribution" :key="cam.camera" class="
+                    stats-camera-row
+                  ">
+                    <span class="stats-camera-label" :style="{ color: cam.color }">{{ cam.camera }}</span>
                     <div class="stats-camera-bar-track">
-                      <div
-                        class="stats-camera-bar-fill"
-                        :style="{
-                          width: `${cam.percent}%`,
-                          background: cam.color,
-                        }"
-                      ></div>
+                      <div class="stats-camera-bar-fill" :style="{
+                        width: `${cam.percent}%`,
+                        background: cam.color,
+                      }"></div>
                     </div>
-                    <span class="stats-camera-value"
-                      >{{ cam.count }} ({{ cam.percent }}%)</span
-                    >
+                    <span class="stats-camera-value">{{ cam.count }} ({{ cam.percent }}%)</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Quality Tab -->
-            <div
-              v-show="activeTab === 'quality'"
-              class="stats-tab-content active"
-            >
+            <div v-show="activeTab === 'quality'" class="
+              stats-tab-content active
+            ">
               <div class="stats-section">
                 <h3>{{ t('statistics.dataQuality') }}</h3>
                 <div id="telemetryVerifyContainer">
                   <div class="stats-telemetry-check">
-                    <p
-                      class="stats-section-note"
-                    >
+                    <p class="stats-section-note">
                       Telemetry data is embedded in Tesla videos (2019+
                       vehicles). Click below to scan your events and verify
                       which have telemetry data.
                     </p>
-                    <button
-                      id="verifyTelemetryBtn"
-                      class="stats-verify-btn"
-                      @click="handleVerifyTelemetry"
-                    >
+                    <button id="verifyTelemetryBtn" class="stats-verify-btn" @click="handleVerifyTelemetry">
                       <CheckCircle2 :size="16" class="icon-mr-1-5" />
                       Verify Telemetry Data
                     </button>
                   </div>
-                  <div
-                    v-if="isVerifying"
-                    id="telemetryProgress"
-                    class="stats-telemetry-progress"
-                  >
+                  <div v-if="isVerifying" id="telemetryProgress" class="
+                    stats-telemetry-progress
+                  ">
                     <div class="stats-progress-bar">
-                      <div
-                        class="stats-progress-fill"
-                        :style="{ width: `${telemetryProgress}%` }"
-                      ></div>
+                      <div class="stats-progress-fill" :style="{ width: `${telemetryProgress}%` }"></div>
                     </div>
                     <p class="stats-progress-text">{{ telemetryText }}</p>
                   </div>
-                  <div
-                    v-if="telemetryResults"
-                    id="telemetryResults"
-                    class="stats-grid stats-grid-2"
-                  >
+                  <div v-if="telemetryResults" id="telemetryResults" class="
+                    stats-grid stats-grid-2
+                  ">
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
                         telemetryResults.withCount
@@ -426,9 +331,7 @@
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithTelemetry')
                       }}</span>
-                      <span class="stats-card-percent"
-                        >{{ telemetryResults.withPercent }}%</span
-                      >
+                      <span class="stats-card-percent">{{ telemetryResults.withPercent }}%</span>
                     </div>
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
@@ -437,9 +340,7 @@
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithoutTelemetry')
                       }}</span>
-                      <span class="stats-card-percent"
-                        >{{ telemetryResults.withoutPercent }}%</span
-                      >
+                      <span class="stats-card-percent">{{ telemetryResults.withoutPercent }}%</span>
                     </div>
                   </div>
                 </div>
@@ -668,7 +569,7 @@ defineExpose({
 }
 
 .stats-sidebar {
-  @apply flex w-[180px] shrink-0 flex-col border-r border-(--border) bg-(--bg-tertiary);
+  @apply flex w-45 shrink-0 flex-col border-r border-(--border) bg-(--bg-tertiary);
 }
 
 .stats-sidebar-header {
@@ -680,7 +581,7 @@ defineExpose({
 }
 
 .stats-sidebar-header h2 svg {
-  @apply size-[18px] text-(--accent);
+  @apply size-4.5 text-(--accent);
 }
 
 .stats-nav {
@@ -801,11 +702,11 @@ defineExpose({
 }
 
 .stats-card-value {
-  @apply block font-(family-name:--font-mono) text-2xl font-bold text-(--accent);
+  @apply block font-mono text-2xl font-bold text-(--accent);
 }
 
 .stats-card-label {
-  @apply mt-1 block text-[0.7rem] tracking-[0.05em] text-(--text-muted) uppercase;
+  @apply mt-1 block text-[0.7rem] tracking-wider text-(--text-muted) uppercase;
 }
 
 /* Event Types Bars */
@@ -848,7 +749,7 @@ defineExpose({
 }
 
 .stats-bar-value {
-  @apply text-right font-(family-name:--font-mono) text-xs text-(--text-muted);
+  @apply text-right font-mono text-xs text-(--text-muted);
 }
 
 /* Locations */
@@ -873,7 +774,7 @@ defineExpose({
 }
 
 .stats-location-count {
-  @apply font-(family-name:--font-mono) text-xs text-(--text-muted);
+  @apply font-mono text-xs text-(--text-muted);
 }
 
 .stats-empty {
@@ -881,7 +782,7 @@ defineExpose({
 }
 
 .stats-date-range {
-  @apply font-(family-name:--font-mono) text-[0.9rem] text-(--text-secondary);
+  @apply font-mono text-[0.9rem] text-(--text-secondary);
 }
 
 /* Stats Grid - 4 columns */
@@ -914,11 +815,11 @@ defineExpose({
 }
 
 .stats-camera-bar-track {
-  @apply h-3 overflow-hidden rounded-[6px] bg-[var(--c-overlay-white-10)];
+  @apply h-3 overflow-hidden rounded-md bg-[--c-overlay-white-10];
 }
 
 .stats-camera-bar-fill {
-  @apply h-full rounded-[6px] transition-[width] duration-500;
+  @apply h-full rounded-md transition-[width] duration-500;
 }
 
 .stats-camera-value {
@@ -936,12 +837,10 @@ defineExpose({
 
 .stats-dn-donut {
   @apply relative flex size-20 items-center justify-center rounded-full;
-  background: conic-gradient(
-    var(--c-day-swatch) 0deg,
-    var(--c-day-swatch) calc(var(--day-percent) * 3.6deg),
-    var(--c-night-swatch) calc(var(--day-percent) * 3.6deg),
-    var(--c-night-swatch) 360deg
-  );
+  background: conic-gradient(var(--c-day-swatch) 0deg,
+      var(--c-day-swatch) calc(var(--day-percent) * 3.6deg),
+      var(--c-night-swatch) calc(var(--day-percent) * 3.6deg),
+      var(--c-night-swatch) 360deg);
 }
 
 .stats-dn-center {

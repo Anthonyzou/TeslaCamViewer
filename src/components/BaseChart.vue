@@ -1,5 +1,5 @@
 <template>
-  <div class="chart-wrapper" :style="{ height: `${height}px` }">
+  <div class="chart-wrapper relative w-full" :style="{ height: `${height}px` }">
     <canvas ref="canvasRef"></canvas>
   </div>
 </template>
@@ -153,11 +153,3 @@ onUnmounted(() => {
   }
 });
 </script>
-
-<style scoped>
-@reference "tailwindcss";
-
-.chart-wrapper {
-  @apply relative w-full;
-}
-</style>

@@ -351,7 +351,7 @@ defineExpose({
 @reference "tailwindcss";
 
 .setting-select {
-  @apply min-w-[120px] cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3.5 py-2 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary) transition-all duration-200 focus:border-(--accent) focus:shadow-[0_0_10px_var(--accent-glow)] focus:outline-none;
+  @apply min-w-30 cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3.5 py-2 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary) transition-all duration-200 focus:border-(--accent) focus:shadow-[0_0_10px_var(--accent-glow)] focus:outline-none;
 }
 
 .setting-checkbox {

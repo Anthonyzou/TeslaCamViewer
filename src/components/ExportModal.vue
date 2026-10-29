@@ -1,9 +1,5 @@
 <template>
-  <div
-    v-if="isExportOpen"
-    class="export-modal-backdrop"
-    @keydown.esc="onCancel"
-  >
+  <div v-if="isExportOpen" class="export-modal-backdrop" @keydown.esc="onCancel">
     <div class="export-modal-overlay"></div>
     <div class="export-modal-panel">
       <!-- Active Encoding View -->
@@ -15,10 +11,7 @@
           {{ exportStatusText }}
         </div>
         <div class="export-progress-track">
-          <div
-            class="export-progress-fill"
-            :style="{ width: `${exportProgress}%` }"
-          ></div>
+          <div class="export-progress-fill" :style="{ width: `${exportProgress}%` }"></div>
         </div>
         <div class="export-modal-actions">
           <button class="export-btn export-btn-cancel" @click="onCancel">
@@ -35,12 +28,8 @@
           {{ exportFilename }} has been saved directly from your GPU.
         </div>
         <div class="export-modal-actions">
-          <a
-            v-if="exportDownloadUrl"
-            :href="exportDownloadUrl"
-            :download="exportFilename"
-            class="export-btn export-btn-download"
-          >
+          <a v-if="exportDownloadUrl" :href="exportDownloadUrl" :download="exportFilename"
+            class="export-btn export-btn-download">
             Download Again
           </a>
           <button class="export-btn export-btn-close" @click="onClose">
@@ -79,15 +68,15 @@ function onClose() {
 @reference "tailwindcss";
 
 .export-modal-backdrop {
-  @apply fixed inset-0 z-[9999] flex items-center justify-center;
+  @apply fixed inset-0 z-9999 flex items-center justify-center;
 }
 
 .export-modal-overlay {
-  @apply absolute inset-0 bg-black/85 backdrop-blur-[4px];
+  @apply absolute inset-0 bg-black/85 backdrop-blur-xs;
 }
 
 .export-modal-panel {
-  @apply relative w-[90%] max-w-[440px] rounded-xl border border-(--c-export-border) bg-(--c-export-surface) p-8 text-center text-white z-10000;
+  @apply relative w-[90%] max-w-110 rounded-xl border border-(--c-export-border) bg-(--c-export-surface) p-8 text-center text-white z-10000;
   box-shadow: 0 16px 48px var(--c-overlay-black-60);
 }
 
@@ -121,7 +110,7 @@ function onClose() {
 }
 
 .export-btn {
-  @apply inline-flex cursor-pointer items-center justify-center rounded-md border-none px-6 py-[0.6rem] text-[0.9rem] font-semibold no-underline transition-[background,opacity] duration-150 ease-in-out;
+  @apply inline-flex cursor-pointer items-center justify-center rounded-md border-none px-6 py-[0.6rem] text-[0.9rem] font-semibold no-underline transition-[background, opacity] duration-150 ease-in-out;
 }
 
 .export-btn-cancel {

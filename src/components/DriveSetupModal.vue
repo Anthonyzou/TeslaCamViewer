@@ -1,23 +1,11 @@
 <template>
-  <div
-    v-if="isOpen"
-    class="modal-overlay"
-    id="driveSetupModal"
-    @keydown.esc="cancel"
-    @mousedown="close"
-    @click="close"
-  >
+  <div v-if="isOpen" class="modal-overlay" id="driveSetupModal" @keydown.esc="cancel" @mousedown="close" @click="close">
     <div class="modal drive-setup-modal" @click.stop>
       <div class="modal-header">
         <h3>
           {{ isEdit ? t('driveSetup.editTitle') : t('driveSetup.title') }}
         </h3>
-        <button
-          class="modal-close-btn"
-          id="closeDriveSetup"
-          :title="t('common.close')"
-          @click="cancel"
-        >
+        <button class="modal-close-btn" id="closeDriveSetup" :title="t('common.close')" @click="cancel">
           <X :size="20" />
         </button>
       </div>
@@ -43,18 +31,13 @@
         <div class="drive-setup-form">
           <div class="drive-setup-field">
             <label for="driveLabel">{{ t('driveSetup.labelField') }}</label>
-            <input
-              type="text"
-              id="driveLabel"
-              v-model="label"
-              :placeholder="t('driveSetup.labelPlaceholder')"
-            />
+            <input type="text" id="driveLabel" v-model="label" :placeholder="t('driveSetup.labelPlaceholder')" />
           </div>
 
           <div class="drive-setup-field">
             <label for="dateFilter">{{
               t('driveSetup.dateFilterField')
-            }}</label>
+              }}</label>
             <select id="dateFilter" v-model="dateFilter">
               <option value="all">{{ t('driveSetup.dateFilterAll') }}</option>
               <option value="week">{{ t('driveSetup.dateFilterWeek') }}</option>
@@ -85,19 +68,10 @@
         </div>
 
         <div class="drive-setup-actions">
-          <button
-            v-if="!isEdit"
-            class="btn btn-secondary"
-            id="changeFolderBtn"
-            @click="changeFolder"
-          >
+          <button v-if="!isEdit" class="btn btn-secondary" id="changeFolderBtn" @click="changeFolder">
             {{ t('driveSetup.changeFolder') }}
           </button>
-          <button
-            class="btn btn-primary"
-            id="confirmDriveSetup"
-            @click="confirmSetup"
-          >
+          <button class="btn btn-primary" id="confirmDriveSetup" @click="confirmSetup">
             {{ isEdit ? t('driveSetup.save') : t('driveSetup.addDrive') }}
           </button>
         </div>
@@ -206,7 +180,7 @@ defineExpose({
 }
 
 .drive-setup-selected {
-  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-(family-name:--font-mono) text-[0.85rem] text-(--text-secondary);
+  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-mono text-[0.85rem] text-(--text-secondary);
 }
 
 .drive-setup-selected svg {

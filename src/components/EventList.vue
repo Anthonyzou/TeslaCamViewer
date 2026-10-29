@@ -1,23 +1,14 @@
 <template>
   <div id="eventList" class="event-list" ref="listContainerRef">
-    <div
-      v-if="!events || events.length === 0"
-      class="empty-state"
-      id="emptyState"
-    >
+    <div v-if="!events || events.length === 0" class="empty-state" id="emptyState">
       <p>{{ t('sidebar.emptyState') }}</p>
       <p class="hint">
         {{ t('sidebar.emptyStateHint') }}
       </p>
     </div>
     <template v-else>
-      <EventCard
-        v-for="event in events"
-        :key="event.compoundKey || event.name"
-        :event="event"
-        :isSelected="currentEvent?.name === event.name"
-        @select="onSelectEvent"
-      />
+      <EventCard v-for="event in events" :key="event.compoundKey || event.name" :event="event"
+        :isSelected="currentEvent?.name === event.name" @select="onSelectEvent" />
     </template>
   </div>
 </template>
@@ -89,31 +80,5 @@ watch(
 
 .empty-state .hint {
   @apply mt-3 text-[0.8rem] text-(--text-muted);
-}
-
-/* Welcome screen language selector */
-.welcome-language-selector {
-  @apply mt-6 flex items-center justify-center gap-3 border-t border-(--border) pt-6;
-}
-
-.welcome-language-selector label {
-  @apply text-[0.85rem] text-(--text-secondary);
-}
-
-.welcome-language-select {
-  @apply cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2 font-(family-name:--font-ui) text-[0.9rem] text-(--text-primary) transition-[border-color,box-shadow] duration-200;
-}
-
-.welcome-language-select:hover {
-  @apply border-(--accent);
-}
-
-.welcome-language-select:focus {
-  @apply border-(--accent) outline-none;
-  box-shadow: 0 0 0 2px var(--accent-subtle);
-}
-
-.welcome-language-select option {
-  @apply bg-(--bg-tertiary) text-(--text-primary);
 }
 </style>
