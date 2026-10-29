@@ -217,45 +217,32 @@ function handleClick(): void {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* Event Cards */
 .event-item {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.875rem;
-  margin-bottom: 0.625rem;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
+  @apply relative cursor-pointer overflow-hidden rounded-[10px] border border-(--border) bg-(--bg-tertiary) p-3.5 mb-2.5 transition-all duration-250;
 }
 
 /* Subtle gradient overlay */
 .event-item::before {
+  @apply pointer-events-none absolute top-0 left-0 right-0 h-[60%];
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
   background: linear-gradient(180deg,
       rgba(255, 255, 255, 0.02) 0%,
       transparent 100%);
-  pointer-events: none;
 }
 
 .event-item:hover {
-  background: var(--bg-elevated);
-  border-color: var(--border-accent);
-  transform: translateX(4px);
+  @apply translate-x-1 border-(--border-accent) bg-(--bg-elevated);
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
 }
 
 .event-item.active {
+  @apply border-(--accent);
   background: linear-gradient(135deg,
       var(--accent-subtle) 0%,
       var(--bg-elevated) 100%);
-  border-color: var(--accent);
   box-shadow:
     0 0 25px var(--accent-glow),
     inset 0 0 30px rgba(0, 212, 255, 0.05);
@@ -265,104 +252,56 @@ function handleClick(): void {
 .event-item.active .event-item-reason,
 .event-item.active .event-item-weather,
 .event-item.active .event-gps {
-  color: var(--text-secondary);
+  @apply text-(--text-secondary);
 }
 
 .event-thumbnail {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-bottom: 0.625rem;
-  background: var(--bg-void);
-  display: block;
-  border: 1px solid var(--border);
+  @apply mb-2.5 block h-30 w-full rounded-md border border-(--border) bg-(--bg-void) object-cover;
 }
 
 /* Placeholder for events without thumbnails (e.g., RecentClips) */
 .event-thumbnail-placeholder {
-  width: 100%;
-  height: 120px;
-  border-radius: 6px;
-  margin-bottom: 0.625rem;
+  @apply mb-2.5 flex h-30 w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-(--border);
   background: linear-gradient(135deg,
       var(--bg-void) 0%,
       var(--bg-tertiary) 100%);
-  border: 1px dashed var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
 }
 
 .event-thumbnail-placeholder .placeholder-icon {
-  font-size: 1.75rem;
-  opacity: 0.6;
+  @apply text-[1.75rem] opacity-60;
 }
 
 .event-thumbnail-placeholder .placeholder-text {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  @apply text-[0.8rem] font-semibold tracking-[0.05em] text-(--text-secondary) uppercase;
 }
 
 .event-thumbnail-placeholder .placeholder-time {
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  @apply text-[0.7rem] text-(--text-muted);
 }
 
 /* Preview video overlay for hover */
 .preview-video {
-  position: absolute;
-  top: 0.875rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 1.75rem);
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px;
-  background: var(--bg-void);
-  border: 1px solid var(--accent);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 5;
-  pointer-events: none;
+  @apply pointer-events-none absolute top-3.5 left-1/2 z-5 h-30 w-[calc(100%-1.75rem)] -translate-x-1/2 rounded-md border border-(--accent) bg-(--bg-void) object-cover opacity-0 transition-opacity duration-200;
 }
 
 .event-item:hover .preview-video {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 /* Hide thumbnail when preview is playing */
 .event-item:hover .preview-video+.event-thumbnail,
 .event-item:hover .event-thumbnail:has(+ .preview-video) {
-  opacity: 0;
+  @apply opacity-0;
 }
 
 .event-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.375rem;
-  gap: 0.5rem;
+  @apply mb-1.5 flex items-center justify-between gap-2;
 }
 
 .event-type {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  @apply inline-flex items-center rounded px-2.5 py-1 font-(family-name:--font-mono) text-[0.65rem] font-semibold tracking-[0.08em] text-white uppercase;
   /* Explicit text color — previously inherited --text-muted (#5c6370),
      * which rendered nearly invisible against the dark gradient fills. */
-  color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
@@ -384,46 +323,24 @@ function handleClick(): void {
 
 /* Drive badge for multi-drive support */
 .drive-badge {
-  display: inline-block;
-  padding: 0.125rem 0.4rem;
-  border-radius: 3px;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-  margin-right: 0.375rem;
-  max-width: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply mr-1.5 inline-block max-w-[60px] shrink-0 overflow-hidden rounded-[3px] px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] whitespace-nowrap text-ellipsis text-white uppercase;
 }
 
 .nearmiss-indicator {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-left: 0.25rem;
+  @apply ml-1 cursor-pointer rounded-[10px] px-1.5 py-0.5 text-[0.65rem] font-semibold transition-[transform,box-shadow] duration-150;
   text-shadow: none;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
 .nearmiss-indicator:hover {
-  transform: scale(1.1);
+  @apply scale-110;
 }
 
 .nearmiss-indicator:active {
-  transform: scale(0.95);
+  @apply scale-95;
 }
 
 .nearmiss-indicator.critical {
-  background: rgba(255, 59, 59, 0.9);
-  color: white;
+  @apply bg-[rgba(255,59,59,0.9)] text-white;
   box-shadow: 0 0 8px rgba(255, 59, 59, 0.5);
 }
 
@@ -432,8 +349,7 @@ function handleClick(): void {
 }
 
 .nearmiss-indicator.warning {
-  background: rgba(255, 145, 0, 0.9);
-  color: white;
+  @apply bg-[rgba(255,145,0,0.9)] text-white;
   box-shadow: 0 0 8px rgba(255, 145, 0, 0.5);
 }
 
@@ -442,8 +358,7 @@ function handleClick(): void {
 }
 
 .nearmiss-indicator.caution {
-  background: rgba(255, 193, 7, 0.9);
-  color: #1a1a1a;
+  @apply bg-[rgba(255,193,7,0.9)] text-[#1a1a1a];
   box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
 }
 
@@ -452,43 +367,27 @@ function handleClick(): void {
 }
 
 .event-item-date {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  @apply font-(family-name:--font-mono) text-[0.8rem] font-medium text-(--text-secondary);
 }
 
 .event-item-time {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  @apply mb-1 font-(family-name:--font-mono) text-[0.85rem] font-medium text-(--text-primary);
 }
 
 .event-item-location {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  @apply mb-1 text-[0.8rem] text-(--text-muted);
 }
 
 .event-gps {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-bottom: 0.25rem;
-  opacity: 0.8;
+  @apply mb-1 font-(family-name:--font-mono) text-[0.7rem] text-(--text-muted) opacity-80;
 }
 
 .event-item-reason {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-style: italic;
+  @apply text-[0.75rem] text-(--text-muted) italic;
 }
 
 .event-item-weather {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  @apply text-[0.75rem] text-(--text-secondary);
 }
 
 .event-item-weather:empty {
@@ -496,139 +395,80 @@ function handleClick(): void {
 }
 
 .event-item-clips {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--accent);
-  margin-top: 0.375rem;
-  opacity: 0.8;
+  @apply mt-1.5 font-(family-name:--font-mono) text-[0.7rem] text-(--accent) opacity-80;
 }
 
 /* Empty events (no usable video clips) */
 .event-item.event-empty {
-  opacity: 0.5;
-  position: relative;
+  @apply relative opacity-50;
 }
 
 .event-item.event-empty::after {
+  @apply pointer-events-none absolute inset-0 rounded-md;
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: repeating-linear-gradient(-45deg,
       transparent,
       transparent 8px,
       rgba(255, 59, 59, 0.05) 8px,
       rgba(255, 59, 59, 0.05) 16px);
-  pointer-events: none;
-  border-radius: 6px;
 }
 
 .event-item.event-empty:hover {
-  opacity: 0.6;
+  @apply opacity-60;
 }
 
 .event-item.event-empty .event-item-clips .empty-warning {
-  color: var(--danger);
-  opacity: 1;
+  @apply text-(--danger) opacity-100;
 }
 
 /* Empty event toast notification */
 .empty-event-toast {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
+  @apply fixed bottom-[100px] left-1/2 z-10000 flex items-center gap-2.5 rounded-lg border border-(--danger) bg-(--bg-elevated) px-5 py-3 text-sm opacity-0 transition-[opacity,transform] duration-300;
   transform: translateX(-50%) translateY(20px);
-  background: var(--bg-elevated);
-  border: 1px solid var(--danger);
-  border-radius: 8px;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 10000;
   box-shadow: 0 4px 20px rgba(255, 59, 59, 0.3);
-  opacity: 0;
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-  font-size: 0.875rem;
 }
 
 .empty-event-toast.show {
-  opacity: 1;
+  @apply opacity-100;
   transform: translateX(-50%) translateY(0);
 }
 
 .empty-event-toast .toast-icon {
-  font-size: 1.25rem;
-  color: var(--danger);
+  @apply text-xl text-(--danger);
 }
 
 .empty-event-toast .toast-message {
-  color: var(--text-primary);
+  @apply text-(--text-primary);
 }
 
 /* ==================== Recording Health Badge ==================== */
 .health-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: help;
-  margin-left: 2px;
+  @apply inline-flex size-4 cursor-help items-center justify-center rounded-full text-[0.7rem] leading-none font-bold ml-0.5;
 }
 
 .health-badge.health-minor {
-  background: rgba(255, 184, 0, 0.2);
-  color: #ffb800;
-  border: 1px solid rgba(255, 184, 0, 0.5);
+  @apply border border-[rgba(255,184,0,0.5)] bg-[rgba(255,184,0,0.2)] text-[#ffb800];
 }
 
 .health-badge.health-warning {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.55);
+  @apply border border-[rgba(248,113,113,0.55)] bg-[rgba(248,113,113,0.2)] text-[#f87171];
 }
 
 /* ==================== Intervention Severity Badge ==================== */
 .severity-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.3;
-  cursor: help;
-  margin-left: 3px;
-  text-transform: uppercase;
+  @apply inline-flex cursor-help items-center justify-center rounded-[10px] px-[7px] py-px text-[0.64rem] font-bold tracking-[0.02em] leading-[1.3] ml-[3px] uppercase;
 }
 
 .severity-badge.severity-moderate {
-  background: rgba(250, 204, 21, 0.18);
-  color: #facc15;
-  border: 1px solid rgba(250, 204, 21, 0.55);
+  @apply border border-[rgba(250,204,21,0.55)] bg-[rgba(250,204,21,0.18)] text-[#facc15];
 }
 
 .severity-badge.severity-severe {
-  background: rgba(251, 146, 60, 0.22);
-  color: #fb923c;
-  border: 1px solid rgba(251, 146, 60, 0.6);
+  @apply border border-[rgba(251,146,60,0.6)] bg-[rgba(251,146,60,0.22)] text-[#fb923c];
 }
 
 .severity-badge.severity-critical {
-  background: rgba(248, 113, 113, 0.25);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.7);
+  @apply border border-[rgba(248,113,113,0.7)] bg-[rgba(248,113,113,0.25)] text-[#f87171];
   animation: pulse-critical 1.6s ease-in-out infinite;
 }
 
@@ -645,11 +485,11 @@ function handleClick(): void {
 }
 
 .severity-badge.clickable {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 
 .severity-badge.clickable:hover {
-  filter: brightness(1.2);
+  @apply brightness-120;
 }
 
 /* ==================== Launch / Full-Throttle Badge ==================== */
@@ -658,87 +498,48 @@ function handleClick(): void {
    emoji + green ink reads as "performance highlight" without
    competing with the warning palette used by severity/health. */
 .launch-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.64rem;
-  font-weight: 700;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
-  background: rgba(74, 222, 128, 0.16);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.45);
+  @apply inline-flex items-center justify-center gap-0.5 rounded-[10px] border border-[rgba(74,222,128,0.45)] bg-[rgba(74,222,128,0.16)] px-[7px] py-px text-[0.64rem] font-bold tracking-[0.02em] leading-[1.4] text-[#4ade80];
 }
 
 /* Popover listing each detected severity moment */
 .severity-popover {
-  position: fixed;
-  z-index: 10000;
-  background: #2d2d2d;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
+  @apply fixed z-10000 min-w-[220px] max-w-[320px] rounded-md border border-[#3a3a3a] bg-[#2d2d2d] p-1 text-xs text-[#e0e0e0];
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
-  padding: 4px;
-  min-width: 220px;
-  max-width: 320px;
-  font-size: 0.75rem;
-  color: #e0e0e0;
 }
 
 .severity-popover-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 8px;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
+  @apply grid cursor-pointer grid-cols-[auto_1fr_auto_auto] items-center gap-2 rounded px-2 py-1.5;
 }
 
 .severity-popover-row:hover {
-  background: #3a3a3a;
+  @apply bg-[#3a3a3a];
 }
 
 .severity-popover-row .sev-tier {
-  font-weight: 700;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  padding: 1px 6px;
-  border-radius: 8px;
+  @apply rounded-lg px-1.5 py-px text-[0.65rem] font-bold uppercase;
 }
 
 .severity-popover-row.sev-moderate .sev-tier {
-  color: #facc15;
-  background: rgba(250, 204, 21, 0.15);
-  border: 1px solid rgba(250, 204, 21, 0.4);
+  @apply border border-[rgba(250,204,21,0.4)] bg-[rgba(250,204,21,0.15)] text-[#facc15];
 }
 
 .severity-popover-row.sev-severe .sev-tier {
-  color: #fb923c;
-  background: rgba(251, 146, 60, 0.2);
-  border: 1px solid rgba(251, 146, 60, 0.5);
+  @apply border border-[rgba(251,146,60,0.5)] bg-[rgba(251,146,60,0.2)] text-[#fb923c];
 }
 
 .severity-popover-row.sev-critical .sev-tier {
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.22);
-  border: 1px solid rgba(248, 113, 113, 0.6);
+  @apply border border-[rgba(248,113,113,0.6)] bg-[rgba(248,113,113,0.22)] text-[#f87171];
 }
 
 .severity-popover-row .sev-kind {
-  color: #e0e0e0;
+  @apply text-[#e0e0e0];
 }
 
 .severity-popover-row .sev-g {
-  color: #9ca3af;
-  font-variant-numeric: tabular-nums;
+  @apply text-[#9ca3af] tabular-nums;
 }
 
 .severity-popover-row .sev-time {
-  color: #4a9eff;
-  font-variant-numeric: tabular-nums;
+  @apply text-[#4a9eff] tabular-nums;
 }
 </style>

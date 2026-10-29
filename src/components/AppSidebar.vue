@@ -271,25 +271,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== SELECT FOLDER BUTTON ==================== */
 .select-folder-btn {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  margin: 0.5rem 0;
+  @apply my-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-none px-4 py-3.5 font-(family-name:--font-ui) text-[0.9rem] font-semibold tracking-[0.02em] text-(--bg-void) transition-all duration-250;
   background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
-  color: var(--bg-void);
-  border: none;
-  border-radius: 8px;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease;
   box-shadow: 0 0 20px var(--accent-glow);
-  letter-spacing: 0.02em;
 }
 
 .select-folder-btn:hover {
@@ -309,30 +297,21 @@ onUnmounted(() => {
 /* ==================== TAB PANE ==================== */
 
 .tab-pane {
-  display: none;
-  flex-direction: column;
-  min-height: 0;
+  @apply hidden min-h-0 flex-col;
 }
 
 .tab-pane.active {
-  display: flex;
-  flex: 1;
+  @apply flex flex-1;
 }
 
 /* ==================== SIDEBAR ==================== */
 .sidebar {
-  width: 320px;
-  min-width: 200px;
-  max-width: 600px;
+  @apply relative flex w-80 max-w-[600px] min-w-[200px] flex-col border-r border-(--border);
   background: linear-gradient(
     180deg,
     var(--bg-secondary) 0%,
     var(--bg-primary) 100%
   );
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  position: relative;
 }
 
 @media only screen and (max-width: 514px) {
@@ -347,41 +326,24 @@ onUnmounted(() => {
    6px outside (into video grid gutter). Keeps scrollbar usable while giving
    the resize grip a reasonable hit target. */
 .sidebar-resize-handle {
-  position: absolute;
-  top: 0;
-  right: -6px;
-  bottom: 0;
-  width: 8px;
-  cursor: ew-resize;
+  @apply absolute top-0 right-[-6px] bottom-0 z-100 w-2 cursor-ew-resize bg-transparent transition-[background] duration-150;
   touch-action: none;
-  z-index: 100;
-  background: transparent;
-  transition: background 0.15s ease;
 }
 
 .sidebar-resize-handle:hover,
 .sidebar-resize-handle.resizing {
-  background: var(--accent);
-  opacity: 0.5;
+  @apply bg-(--accent) opacity-50;
 }
 
 .sidebar-resize-handle::after {
+  @apply absolute top-1/2 left-1/2 h-10 w-1 rounded-[2px] bg-(--text-muted) opacity-0 transition-opacity duration-150;
   content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
-  width: 4px;
-  height: 40px;
-  background: var(--text-muted);
-  border-radius: 2px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
 }
 
 .sidebar-resize-handle:hover::after,
 .sidebar-resize-handle.resizing::after {
-  opacity: 0.8;
+  @apply opacity-80;
 }
 
 /* Prevent text selection while resizing */
@@ -396,12 +358,8 @@ body.sidebar-resizing * {
 
 /* Accent line on sidebar edge */
 .sidebar::after {
+  @apply pointer-events-none absolute top-0 right-0 bottom-0 w-px opacity-20;
   content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
   background: linear-gradient(
     180deg,
     transparent 0%,
@@ -409,74 +367,39 @@ body.sidebar-resizing * {
     var(--accent) 70%,
     transparent 100%
   );
-  opacity: 0.2;
-  pointer-events: none;
 }
 
 .sidebar-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  @apply flex flex-wrap items-center gap-2 border-b border-(--border) p-4;
 }
 
 .sidebar-header h2 {
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
+  @apply m-0 font-(family-name:--font-ui) text-[0.95rem] font-semibold tracking-[0.1em] text-(--text-secondary) uppercase;
 }
 
 /* ==================== SIDEBAR COLLAPSIBLE PANELS ==================== */
 .sidebar-panel {
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-secondary);
+  @apply border-b border-(--border) bg-(--bg-secondary);
 }
 
 .sidebar-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.15s ease;
+  @apply flex cursor-pointer items-center justify-between px-4 py-2.5 transition-[background-color] duration-150 select-none;
 }
 
 .sidebar-panel-header:hover {
-  background: var(--bg-tertiary);
+  @apply bg-(--bg-tertiary);
 }
 
 .sidebar-panel-header .panel-title {
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  @apply font-(family-name:--font-ui) text-[0.8rem] font-semibold tracking-[0.08em] text-(--text-secondary) uppercase;
 }
 
 .sidebar-panel-header .panel-collapse-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.2s ease,
-    color 0.15s ease;
+  @apply flex cursor-pointer items-center justify-center bg-transparent p-[0.2rem] text-(--text-muted) border-none transition-[transform,color] duration-200;
 }
 
 .sidebar-panel-header .panel-collapse-btn:hover {
-  color: var(--text-primary);
+  @apply text-(--text-primary);
 }
 
 .sidebar-panel.collapsed .panel-collapse-btn {
@@ -484,13 +407,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-panel-content {
-  overflow: hidden;
-  transition:
-    max-height 0.3s ease,
-    height 0.3s ease,
-    opacity 0.2s ease,
-    padding 0.3s ease;
-  opacity: 1;
+  @apply overflow-hidden opacity-100 transition-[max-height,height,opacity,padding] duration-300;
 }
 
 .sidebar-panel.collapsed .sidebar-panel-content {
@@ -502,62 +419,41 @@ body.sidebar-resizing * {
 
 /* Bird's Eye View Panel */
 #birdsEyeContent {
-  height: 200px;
-  max-height: 200px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply relative flex h-[200px] max-h-[200px] items-center justify-center;
 }
 
 #birdsEyeContent canvas {
-  width: 100%;
-  height: 100%;
+  @apply size-full;
 }
 
 /* Telemetry Panel - height matches bottom controls pane (~200px) */
 #telemetryContent {
-  height: 200px;
-  max-height: 200px;
-  display: flex;
-  flex-direction: column;
-  padding: 4px;
+  @apply flex h-[200px] max-h-[200px] flex-col p-1;
 }
 
 .sidebar .tab-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  @apply flex flex-1 flex-col overflow-hidden;
 }
 
 .sidebar .tab-pane {
-  overflow: hidden;
+  @apply overflow-hidden;
 }
 
 .sidebar .event-list {
-  height: 100%;
-  overflow-y: auto;
+  @apply h-full overflow-y-auto;
 }
 
 .event-count {
-  font-weight: 400;
-  color: var(--text-muted);
+  @apply font-normal text-(--text-muted);
 }
 
 .event-stats {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  width: 100%;
-  letter-spacing: 0.02em;
+  @apply w-full font-(family-name:--font-mono) text-xs tracking-[0.02em] text-(--text-muted);
 }
 
 /* Drive Selector (multi-drive support) */
 .drive-selector {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-tertiary);
+  @apply border-b border-(--border) bg-(--bg-tertiary) px-4 py-2;
 }
 
 .drive-selector.hidden {
@@ -565,497 +461,280 @@ body.sidebar-resizing * {
 }
 
 .drive-selector-header {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-wrap: wrap;
+  @apply flex flex-wrap items-center gap-1;
   /* wrap to a second row when sidebar is narrow */
 }
 
 .drive-select {
-  flex: 1 1 120px;
+  @apply min-w-0 flex-[1_1_120px] cursor-pointer rounded-md border border-(--border) bg-(--bg-primary) px-2 py-2 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary) transition-all duration-200;
   /* shrink-friendly: minimum 120px, grows to fill */
-  min-width: 0;
   /* allow it to shrink below its content width */
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.5rem;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .drive-select:hover {
-  border-color: var(--accent);
+  @apply border-(--accent);
 }
 
 .drive-select:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
   box-shadow: 0 0 0 2px var(--accent-subtle);
 }
 
 .drive-select option {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  padding: 0.5rem;
+  @apply bg-(--bg-primary) p-2 text-(--text-primary);
 }
 
 .drive-action-btn {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-  flex-shrink: 0;
+  @apply flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-(--border) bg-(--bg-primary) p-1.5 text-(--text-muted) transition-[background,border-color,color] duration-150;
   /* don't let the icon buttons compress to nothing */
 }
 
 .drive-action-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-subtle);
+  @apply border-(--accent) bg-(--accent-subtle) text-(--accent);
 }
 
 /* Drive color badge in select options */
 .drive-option-badge {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  vertical-align: middle;
+  @apply mr-2 inline-block size-2 rounded-full align-middle;
 }
 
 /* Modal overlay */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 1rem;
+  @apply fixed inset-0 z-10000 flex items-center justify-center bg-black/70 p-4;
 }
 
 .modal {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  width: 100%;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  @apply flex max-h-[80vh] w-full flex-col overflow-hidden rounded-xl border border-(--border) bg-(--bg-secondary);
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
+  @apply flex items-center justify-between border-b border-(--border) px-5 py-4;
 }
 
 .modal-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: var(--text-primary);
+  @apply m-0 text-[1.1rem] text-(--text-primary);
 }
 
 .modal-close-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  display: flex;
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer rounded bg-transparent p-1 text-(--text-muted) border-none transition-all duration-200;
 }
 
 .modal-close-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
+  @apply bg-(--bg-tertiary) text-(--text-primary);
 }
 
 .modal-content {
-  padding: 1.25rem;
-  overflow-y: auto;
+  @apply overflow-y-auto p-5;
 }
 
 /* Drive management modal */
 .drive-management-modal {
-  max-width: 500px;
+  @apply max-w-[500px];
 }
 
 .drive-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  @apply mb-4 flex flex-col gap-3;
 }
 
 .drive-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  @apply flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-tertiary) p-3;
 }
 
 .drive-color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  @apply size-3 shrink-0 rounded-full;
 }
 
 .drive-color-picker {
-  position: relative;
-  cursor: pointer;
-  flex-shrink: 0;
+  @apply relative shrink-0 cursor-pointer;
 }
 
 .drive-color-input {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  opacity: 0;
-  cursor: pointer;
+  @apply absolute size-6 cursor-pointer opacity-0;
 }
 
 .drive-color-preview {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  transition: all 0.2s ease;
+  @apply size-6 rounded-full border-2 border-(--border) transition-all duration-200;
 }
 
 .drive-color-picker:hover .drive-color-preview {
-  border-color: var(--accent);
-  transform: scale(1.1);
+  @apply scale-110 border-(--accent);
 }
 
 .drive-label-input {
-  flex: 1;
-  background: var(--bg-primary);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 0.375rem 0.5rem;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
+  @apply flex-1 rounded border border-transparent bg-(--bg-primary) px-2 py-1.5 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary);
 }
 
 .drive-label-input:hover {
-  border-color: var(--border);
+  @apply border-(--border);
 }
 
 .drive-label-input:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
 }
 
 .drive-event-count {
+  @apply text-xs whitespace-nowrap text-(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .drive-remove-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer items-center rounded border-none bg-transparent p-1 text-(--text-muted) transition-all duration-200;
 }
 
 .drive-remove-btn:hover {
-  color: #ff5252;
-  background: rgba(255, 82, 82, 0.1);
+  @apply bg-[rgba(255,82,82,0.1)] text-[#ff5252];
 }
 
 /* Drive Setup Dialog */
 .drive-setup-modal {
-  max-width: 480px;
+  @apply max-w-[480px];
 }
 
 .drive-setup-modal .modal-content {
-  padding: 1.25rem;
+  @apply p-5;
 }
 
 .drive-setup-selected {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-(family-name:--font-mono) text-[0.85rem] text-(--text-secondary);
 }
 
 .drive-setup-selected svg {
-  color: var(--accent);
-  flex-shrink: 0;
+  @apply shrink-0 text-(--accent);
 }
 
 .drive-setup-tip {
-  background: var(--accent-subtle);
-  border: 1px solid var(--border-accent);
-  border-radius: 8px;
-  padding: 0.875rem;
-  margin-bottom: 1.25rem;
+  @apply mb-5 rounded-lg border border-(--border-accent) bg-(--accent-subtle) p-3.5;
 }
 
 .drive-setup-tip-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: var(--accent);
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
+  @apply mb-2 flex items-center gap-2 text-[0.85rem] font-medium text-(--accent);
 }
 
 .drive-setup-tip ul {
-  margin: 0;
-  padding-left: 1.5rem;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.6;
+  @apply m-0 pl-6 text-[0.8rem] leading-[1.6] text-(--text-secondary);
 }
 
 .drive-setup-tip li {
-  margin-bottom: 0.25rem;
+  @apply mb-1;
 }
 
 .drive-setup-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  @apply flex flex-col gap-4;
 }
 
 .drive-setup-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  @apply flex flex-col gap-1.5;
 }
 
 .drive-setup-field label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  @apply text-[0.8rem] font-medium text-(--text-secondary);
 }
 
 .drive-setup-field input[type='text'],
 .drive-setup-field select {
-  padding: 0.625rem 0.75rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
+  @apply rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2.5 font-(family-name:--font-ui) text-[0.9rem] text-(--text-primary);
 }
 
 .drive-setup-field input[type='text']:focus,
 .drive-setup-field select:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
 }
 
 .drive-setup-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  cursor: pointer;
-  padding: 0.625rem;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer items-center gap-2.5 rounded-md border border-(--border) bg-(--bg-tertiary) p-2.5 transition-all duration-200;
 }
 
 .drive-setup-checkbox:hover {
-  border-color: var(--accent);
+  @apply border-(--accent);
 }
 
 .drive-setup-checkbox input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-  cursor: pointer;
+  @apply h-[18px] w-[18px] cursor-pointer accent-(--accent);
 }
 
 .drive-setup-checkbox-content {
-  flex: 1;
+  @apply flex-1;
 }
 
 .drive-setup-checkbox-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  @apply text-[0.9rem] font-medium text-(--text-primary);
 }
 
 .drive-setup-checkbox-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.125rem;
+  @apply mt-0.5 text-xs text-(--text-muted);
 }
 
 .drive-setup-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  @apply mt-2 flex gap-3;
 }
 
 .drive-setup-actions .btn {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply flex-1 cursor-pointer rounded-md p-3 font-medium transition-all duration-200;
 }
 
 .drive-setup-actions .btn-secondary {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  @apply border border-(--border) bg-(--bg-tertiary) text-(--text-secondary);
 }
 
 .drive-setup-actions .btn-secondary:hover {
-  border-color: var(--text-muted);
-  color: var(--text-primary);
+  @apply border-(--text-muted) text-(--text-primary);
 }
 
 .drive-setup-actions .btn-primary {
-  background: var(--accent);
-  border: none;
-  color: var(--bg-void);
+  @apply border-none bg-(--accent) text-(--bg-void);
 }
 
 .drive-setup-actions .btn-primary:hover {
-  background: var(--accent-hover);
+  @apply bg-(--accent-hover);
 }
 
 /* Archive drive badge */
 .drive-archive-badge {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--warning);
-  color: var(--bg-void);
-  padding: 0.125rem 0.375rem;
-  border-radius: 3px;
-  margin-left: 0.5rem;
+  @apply mx-2 rounded-[3px] bg-(--warning) px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-[0.5px] text-(--bg-void) uppercase;
 }
 
 .drive-item.is-archive {
-  opacity: 0.7;
+  @apply opacity-70;
 }
 
 .drive-item.is-archive .drive-event-count {
-  color: var(--warning);
+  @apply text-(--warning);
 }
 
 .drive-sync-btn {
-  background: var(--accent);
-  border: none;
-  color: var(--bg-void);
-  cursor: pointer;
-  padding: 0.375rem 0.625rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer items-center gap-1 rounded bg-(--accent) px-2.5 py-1.5 text-xs font-medium text-(--bg-void) border-none transition-all duration-200;
 }
 
 .drive-sync-btn:hover {
-  background: var(--accent-hover);
+  @apply bg-(--accent-hover);
 }
 
 .drive-date-filter {
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  @apply text-[0.7rem] text-(--text-muted);
   font-family: var(--font-mono);
 }
 
 /* Sidebar Tabs */
 .sidebar-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-primary);
+  @apply flex gap-0 border-b border-(--border) bg-(--bg-primary);
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  @apply relative flex-1 cursor-pointer border-none bg-transparent px-4 py-3 font-(family-name:--font-ui) text-[0.85rem] font-medium tracking-[0.08em] text-(--text-muted) uppercase transition-all duration-200;
 }
 
 .tab-btn:hover {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
+  @apply bg-(--bg-tertiary) text-(--text-secondary);
 }
 
 .tab-btn.active {
-  color: var(--accent);
-  background: var(--bg-tertiary);
+  @apply bg-(--bg-tertiary) text-(--accent);
 }
 
 .tab-btn.active::after {
+  @apply absolute bottom-0 left-1/5 right-1/5 h-0.5 rounded-[1px] bg-(--accent);
   content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  right: 20%;
-  height: 2px;
-  background: var(--accent);
   box-shadow: 0 0 10px var(--accent-glow);
-  border-radius: 1px;
 }
 
 /* ==================== AI Search (sidebar) ==================== */
@@ -1065,72 +744,40 @@ body.sidebar-resizing * {
  * so it fell through to its literal fallbacks (#242424 / #2f2f2f) and
  * looked wrong against the actual theme (bg-primary is #0a0c12). */
 .ai-search-panel {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border);
+  @apply border-b border-(--border) bg-(--bg-primary);
 }
 
 .ai-search-header {
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  background: var(--bg-primary);
+  @apply flex cursor-pointer items-center justify-between bg-(--bg-primary) px-3 py-2 select-none;
 }
 
 .ai-search-header:hover {
-  background: var(--bg-elevated);
+  @apply bg-(--bg-elevated);
 }
 
 .ai-search-header-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  @apply flex items-center gap-1.5 text-[0.82rem] font-medium text-(--text-primary);
 }
 
 .ai-search-badge {
-  background: var(--accent);
-  color: white;
-  font-size: 0.68rem;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-weight: 500;
+  @apply rounded-lg bg-(--accent) px-1.5 py-px text-[0.68rem] font-medium text-white;
 }
 
 /* Container holds the BETA pill + collapse chevron together so they
  * stay right-anchored regardless of label/badge width on the left. */
 .ai-search-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  @apply flex shrink-0 items-center gap-2;
 }
 
 /* Outlined pill — readable but quiet so it doesn't fight the rest of
  * the sidebar. Subtle pulse to nudge attention without being loud. */
 .ai-search-beta-pill {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 1px 6px;
-  border-radius: 8px;
-  color: var(--warning);
-  background: rgba(255, 184, 0, 0.08);
-  border: 1px solid rgba(255, 184, 0, 0.45);
-  text-transform: uppercase;
-  line-height: 1.3;
-  cursor: help;
+  @apply cursor-help rounded-lg border border-[rgba(255,184,0,0.45)] bg-[rgba(255,184,0,0.08)] px-1.5 py-px text-[0.6rem] font-bold tracking-[0.08em] text-(--warning) uppercase leading-[1.3];
 }
 
 .ai-search-collapse-icon,
 .collapse-icon-svg {
-  color: var(--text-muted, #888);
-  transition: transform 0.22s ease;
-  flex-shrink: 0;
+  @apply shrink-0 text-(--text-muted) transition-transform duration-[220ms] ease-in-out;
 }
 
 .ai-search-collapse-icon.collapsed,
@@ -1139,61 +786,35 @@ body.sidebar-resizing * {
 }
 
 .ai-search-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.22s ease;
+  @apply max-h-0 overflow-hidden transition-[max-height] duration-[220ms] ease-in-out;
 }
 
 .ai-search-content.expanded {
-  max-height: 400px;
-  padding: 8px 12px 10px;
-  border-top: 1px solid var(--border, #3a3a3a);
+  @apply max-h-[400px] border-t border-(--border) px-3 pt-2 pb-2.5;
 }
 
 .ai-search-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
+  @apply flex items-center gap-1.5;
 }
 
 .ai-search-input {
-  flex: 1;
-  background: var(--bg-tertiary, #141414);
-  color: var(--text-primary);
-  border: 1px solid var(--border, #3a3a3a);
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  @apply flex-1 rounded border border-(--border) bg-(--bg-tertiary) px-2.5 py-1.5 text-[0.85rem] text-(--text-primary);
 }
 
 .ai-search-input:focus {
-  outline: 1px solid var(--accent, #4a9eff);
+  @apply outline outline-1 outline-(--accent);
 }
 
 .ai-search-clear {
-  background: transparent;
-  color: var(--text-muted, #888);
-  border: 1px solid var(--border, #3a3a3a);
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
+  @apply h-7 w-7 cursor-pointer rounded border border-(--border) bg-transparent text-[1.1rem] leading-none text-(--text-muted);
 }
 
 .ai-search-clear:hover {
-  color: var(--text-primary);
-  border-color: var(--accent, #4a9eff);
+  @apply border-(--accent) text-(--text-primary);
 }
 
 .ai-search-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-  max-height: 80px;
-  overflow-y: auto;
+  @apply mt-2 flex max-h-20 flex-wrap gap-1 overflow-y-auto;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
@@ -1216,131 +837,80 @@ body.sidebar-resizing * {
 }
 
 .ai-search-chip {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.72rem;
-  cursor: pointer;
-  white-space: nowrap;
+  @apply cursor-pointer rounded-xl border border-(--border) bg-(--bg-elevated) px-2 py-[3px] text-[0.72rem] whitespace-nowrap text-(--text-muted);
 }
 
 .ai-search-chip:hover {
-  color: var(--text-primary);
-  border-color: var(--accent);
+  @apply border-(--accent) text-(--text-primary);
 }
 
 .ai-search-chip.active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  @apply border-(--accent) bg-(--accent) text-white;
 }
 
 .ai-search-results-header {
-  margin-top: 8px;
-  padding: 6px 8px;
-  background: var(--bg-tertiary, #141414);
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: var(--text-muted, #888);
+  @apply mt-2 rounded bg-(--bg-tertiary) px-2 py-1.5 text-[0.75rem] leading-[1.4] text-(--text-muted);
   font-family: ui-monospace, monospace;
-  line-height: 1.4;
 }
 
 .event-item.ai-confident {
-  border-left: 3px solid #4ade80;
+  @apply border-l-[3px] border-l-[#4ade80];
 }
 
 .event-item.ai-possible {
-  border-left: 3px solid #ffb800;
-  opacity: 0.8;
+  @apply border-l-[3px] border-l-[#ffb800] opacity-80;
 }
 
 .event-ai-match-label {
-  font-size: 0.7rem;
-  color: var(--text-muted, #888);
+  @apply mt-0.5 text-[0.7rem] text-(--text-muted);
   font-family: ui-monospace, monospace;
-  margin-top: 2px;
 }
 
 .event-ai-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-top: 4px;
+  @apply mt-1 flex flex-wrap gap-[3px];
 }
 
 .event-ai-tag {
-  background: var(--bg-tertiary, #141414);
-  color: var(--text-muted, #888);
-  font-size: 0.62rem;
-  padding: 1px 6px;
-  border-radius: 8px;
+  @apply rounded-lg bg-(--bg-tertiary) px-1.5 py-px text-[0.62rem] text-(--text-muted);
 }
 
 .ai-search-tier-divider {
-  padding: 8px 12px;
-  font-size: 0.72rem;
+  @apply border-b border-(--border) bg-(--bg-tertiary) px-3 py-2 text-[0.72rem];
   font-family: ui-monospace, monospace;
-  border-bottom: 1px solid var(--border, #3a3a3a);
-  background: var(--bg-tertiary, #141414);
 }
 
 .ai-search-tier-confident {
-  color: #4ade80;
+  @apply text-[#4ade80];
 }
 
 .ai-search-tier-possible {
-  color: #ffb800;
+  @apply text-[#ffb800];
 }
 
 .ai-search-tier-none {
-  color: #f87171;
+  @apply text-[#f87171];
 }
 
 /* Toast for first-run prompt — positioned TOP-right so it doesn't collide
    with the persistent indexing widget at bottom-right */
 .ai-search-toast {
-  position: fixed;
-  top: 64px;
-  right: 20px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  padding: 14px 16px;
+  @apply fixed top-16 right-5 z-10001 max-w-[360px] rounded-lg border border-(--accent) bg-(--bg-elevated) px-4 py-3.5 text-[0.88rem] leading-normal;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  max-width: 360px;
-  z-index: 10001;
-  font-size: 0.88rem;
-  line-height: 1.5;
 }
 
 .ai-search-toast-title {
-  font-weight: 600;
-  margin-bottom: 4px;
+  @apply mb-1 font-semibold;
 }
 
 .ai-search-toast-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  @apply mt-2.5 flex justify-end gap-2;
 }
 
 .ai-search-toast-btn {
-  padding: 4px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  border: 1px solid var(--border, #3a3a3a);
-  background: transparent;
-  color: var(--text-primary);
+  @apply cursor-pointer rounded border border-(--border) bg-transparent px-3 py-1 text-[0.82rem] text-(--text-primary);
 }
 
 .ai-search-toast-btn.primary {
-  background: var(--accent, #4a9eff);
-  color: white;
-  border-color: var(--accent, #4a9eff);
+  @apply border-(--accent) bg-(--accent) text-white;
 }
 </style>

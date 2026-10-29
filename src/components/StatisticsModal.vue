@@ -648,526 +648,332 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== STATISTICS MODAL ==================== */
 
 .stats-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply fixed inset-0 z-10000 flex items-center justify-center;
 }
 
 .stats-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
+  @apply absolute inset-0 bg-black/80 backdrop-blur-[4px];
 }
 
 .stats-panel {
-  position: relative;
-  width: 90%;
-  max-width: 800px;
-  max-height: 85vh;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  @apply relative flex max-h-[85vh] w-[90%] max-w-[800px] flex-col overflow-hidden rounded-xl border border-(--border) bg-(--bg-secondary) shadow-(--shadow-lg);
 }
 
 /* Stats sidebar layout */
 .stats-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
+  @apply flex min-h-0 flex-1 overflow-hidden;
 }
 
 .stats-sidebar {
-  width: 180px;
-  background: var(--bg-tertiary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
+  @apply flex w-[180px] shrink-0 flex-col border-r border-(--border) bg-(--bg-tertiary);
 }
 
 .stats-sidebar-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
+  @apply border-b border-(--border) p-4;
 }
 
 .stats-sidebar-header h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @apply flex items-center gap-2 text-base font-semibold text-(--text-primary);
 }
 
 .stats-sidebar-header h2 svg {
-  width: 18px;
-  height: 18px;
-  color: var(--accent);
+  @apply size-[18px] text-(--accent);
 }
 
 .stats-nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
+  @apply flex-1 overflow-y-auto p-2;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .stats-nav-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  text-align: left;
-  transition: all 0.15s ease;
-  margin-bottom: 2px;
+  @apply mb-0.5 flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-3 py-2.5 text-left text-[0.8rem] text-(--text-secondary) transition-all duration-150;
 }
 
 .stats-nav-item:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+  @apply bg-(--bg-elevated) text-(--text-primary);
 }
 
 .stats-nav-item.active {
   background: var(--accent-subtle, rgba(74, 158, 255, 0.15));
-  color: var(--accent);
+  @apply text-(--accent);
 }
 
 .stats-nav-item svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  opacity: 0.7;
+  @apply size-4 shrink-0 opacity-70;
 }
 
 .stats-nav-item.active svg {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .stats-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
+  @apply flex min-w-0 flex-1 flex-col overflow-hidden;
 }
 
 .stats-main-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.875rem 1.25rem;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border);
+  @apply flex items-center justify-between border-b border-(--border) bg-(--bg-tertiary) px-5 py-3.5;
 }
 
 .stats-section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  @apply text-[0.9rem] font-semibold text-(--text-primary);
 }
 
 .stats-tab-content {
-  display: none;
+  @apply hidden;
 }
 
 .stats-tab-content.active {
-  display: block;
+  @apply block;
 }
 
 /* Mobile responsive - stack sidebar on top */
 @media only screen and (max-width: 600px) {
   .stats-panel {
-    max-width: 95%;
+    @apply max-w-[95%];
   }
 
   .stats-layout {
-    flex-direction: column;
+    @apply flex-col;
   }
 
   .stats-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    @apply w-full border-r-0 border-b border-(--border);
     max-height: none;
   }
 
   .stats-sidebar-header {
-    display: none;
+    @apply hidden;
   }
 
   .stats-nav {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 0.5rem;
-    gap: 0.25rem;
+    @apply flex flex-nowrap gap-1 overflow-x-auto p-2;
   }
 
   .stats-nav-item {
-    flex-shrink: 0;
-    padding: 0.5rem 0.75rem;
-    white-space: nowrap;
-    font-size: 0.75rem;
+    @apply shrink-0 px-3 py-2 text-xs whitespace-nowrap;
   }
 
   .stats-nav-item svg {
-    width: 14px;
-    height: 14px;
+    @apply size-3.5;
   }
 }
 
 .stats-header {
-  display: none;
+  @apply hidden;
   /* Hidden - using sidebar header instead */
 }
 
 .stats-close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s;
+  @apply cursor-pointer rounded border-none bg-transparent p-1 text-(--text-secondary) transition-all duration-200;
 }
 
 .stats-close-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
+  @apply bg-(--bg-elevated) text-(--text-primary);
 }
 
 .stats-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem 1.5rem;
+  @apply flex-1 overflow-y-auto px-6 py-5;
 }
 
 .stats-section {
-  margin-bottom: 1.5rem;
+  @apply mb-6;
 }
 
 .stats-section:last-child {
-  margin-bottom: 0;
+  @apply mb-0;
 }
 
 .stats-section h3 {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  margin-bottom: 0.75rem;
+  @apply mb-3 text-xs tracking-[0.08em] text-(--text-muted) uppercase;
 }
 
 /* Stats Cards Grid */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  @apply grid grid-cols-3 gap-3;
 }
 
 .stats-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.875rem;
-  text-align: center;
+  @apply rounded-lg border border-(--border) bg-(--bg-tertiary) p-3.5 text-center;
 }
 
 .stats-card-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent);
-  font-family: var(--font-mono);
+  @apply block font-(family-name:--font-mono) text-2xl font-bold text-(--accent);
 }
 
 .stats-card-label {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  @apply mt-1 block text-[0.7rem] tracking-[0.05em] text-(--text-muted) uppercase;
 }
 
 /* Event Types Bars */
 .stats-types {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  @apply flex flex-col gap-2;
 }
 
 .stats-type-item {
-  position: relative;
-  height: 28px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
+  @apply relative h-7 overflow-hidden rounded bg-(--bg-tertiary);
 }
 
 .stats-type-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  opacity: 0.6;
-  transition: width 0.3s ease;
+  @apply absolute top-0 left-0 h-full opacity-60 transition-[width] duration-300;
 }
 
 .stats-type-label {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding: 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--text-primary);
+  @apply relative z-1 flex h-full items-center px-3 text-[0.85rem] text-(--text-primary);
 }
 
 /* Trigger Bars */
 .stats-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+  @apply flex flex-col gap-2.5;
 }
 
 .stats-bar-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 80px;
-  gap: 0.75rem;
-  align-items: center;
+  @apply grid grid-cols-[100px_1fr_80px] items-center gap-3;
 }
 
 .stats-bar-label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  @apply text-[0.8rem] text-(--text-secondary);
 }
 
 .stats-bar-track {
-  height: 8px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
+  @apply h-2 overflow-hidden rounded bg-(--bg-tertiary);
 }
 
 .stats-bar-fill {
-  height: 100%;
+  @apply h-full rounded transition-[width] duration-300;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-  border-radius: 4px;
-  transition: width 0.3s ease;
 }
 
 .stats-bar-value {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: right;
-  font-family: var(--font-mono);
+  @apply text-right font-(family-name:--font-mono) text-xs text-(--text-muted);
 }
 
 /* Locations */
 .stats-locations {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  @apply flex flex-col gap-2;
 }
 
 .stats-location-row {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+  @apply flex items-center gap-2.5 border-b border-(--border) py-2;
 }
 
 .stats-location-row:last-child {
-  border-bottom: none;
+  @apply border-b-0;
 }
 
 .stats-location-rank {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  width: 1.5rem;
+  @apply w-6 text-[0.8rem] text-(--text-muted);
 }
 
 .stats-location-name {
-  flex: 1;
-  font-size: 0.85rem;
-  color: var(--text-primary);
+  @apply flex-1 text-[0.85rem] text-(--text-primary);
 }
 
 .stats-location-count {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
+  @apply font-(family-name:--font-mono) text-xs text-(--text-muted);
 }
 
 .stats-empty {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  text-align: center;
-  padding: 1rem;
+  @apply p-4 text-center text-[0.85rem] text-(--text-muted);
 }
 
 .stats-date-range {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
+  @apply font-(family-name:--font-mono) text-[0.9rem] text-(--text-secondary);
 }
 
 /* Stats Grid - 4 columns */
 .stats-grid-4 {
-  grid-template-columns: repeat(4, 1fr);
+  @apply grid-cols-4;
 }
 
 @media only screen and (max-width: 500px) {
   .stats-grid-4 {
-    grid-template-columns: repeat(2, 1fr);
+    @apply grid-cols-2;
   }
 }
 
 /* Stats type label with icon */
 .stats-type-label svg {
-  margin-right: 6px;
-  vertical-align: middle;
+  @apply mr-1.5 align-middle;
 }
 
 /* Camera Distribution Chart */
 .stats-camera-distribution {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  @apply flex flex-col gap-2;
 }
 
 .stats-camera-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 80px;
-  gap: 0.75rem;
-  align-items: center;
+  @apply grid grid-cols-[100px_1fr_80px] items-center gap-3;
 }
 
 .stats-camera-label {
-  font-size: 0.8rem;
-  font-weight: 500;
+  @apply text-[0.8rem] font-medium;
 }
 
 .stats-camera-bar-track {
-  height: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  overflow: hidden;
+  @apply h-3 overflow-hidden rounded-[6px] bg-[rgba(255,255,255,0.1)];
 }
 
 .stats-camera-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.5s ease;
+  @apply h-full rounded-[6px] transition-[width] duration-500;
 }
 
 .stats-camera-value {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: right;
+  @apply text-right text-xs text-(--text-muted);
 }
 
 /* Day vs Night Chart */
 .stats-day-night {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  padding: 1rem 0;
+  @apply flex items-center gap-8 py-4;
 }
 
 .stats-day-night-visual {
-  flex-shrink: 0;
+  @apply shrink-0;
 }
 
 .stats-dn-donut {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+  @apply relative flex size-20 items-center justify-center rounded-full;
   background: conic-gradient(
     #ffc107 0deg,
     #ffc107 calc(var(--day-percent) * 3.6deg),
     #1a237e calc(var(--day-percent) * 3.6deg),
     #1a237e 360deg
   );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
 }
 
 .stats-dn-center {
-  width: 50px;
-  height: 50px;
+  @apply flex size-[50px] items-center justify-center rounded-full;
   background: var(--panel-bg);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .stats-day-night-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
+  @apply flex flex-1 flex-col gap-3;
 }
 
 .stats-dn-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  @apply flex items-center gap-3;
 }
 
 .stats-dn-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  flex-shrink: 0;
+  @apply size-4 shrink-0 rounded-[3px];
 }
 
 .stats-dn-label {
-  font-size: 0.85rem;
-  flex: 1;
+  @apply flex-1 text-[0.85rem];
 }
 
 .stats-dn-value {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text);
+  @apply text-[0.85rem] font-medium text-(--text);
 }
 
 /* Stats Grid 2-column */
 .stats-grid-2 {
-  grid-template-columns: repeat(2, 1fr);
+  @apply grid-cols-2;
 }
 
 /* Small stats card */
@@ -1176,142 +982,85 @@ defineExpose({
 }
 
 .stats-card-small .stats-card-value {
-  font-size: 1.5rem;
+  @apply text-2xl;
 }
 
 .stats-card-small .stats-card-label {
-  font-size: 0.7rem;
+  @apply text-[0.7rem];
 }
 
 .stats-card-percent {
-  font-size: 0.7rem;
-  color: var(--accent);
-  margin-top: 0.25rem;
-  display: block;
+  @apply mt-1 block text-[0.7rem] text-(--accent);
 }
 
 /* Weekly/Monthly Trends Chart */
 .stats-trends-toggle {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  @apply mb-3 flex gap-2;
 }
 
 .stats-trend-btn {
-  padding: 0.4rem 0.8rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply cursor-pointer rounded border border-(--border) bg-(--bg-tertiary) px-3.5 py-1.5 text-[0.8rem] text-(--text-secondary) transition-all duration-200;
 }
 
 .stats-trend-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
+  @apply border-(--accent) text-(--text-primary);
 }
 
 .stats-trend-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  @apply border-(--accent) bg-(--accent) text-white;
 }
 
 /* Export Buttons */
 .stats-export-section {
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-  margin-top: 0.5rem;
+  @apply mt-2 border-t border-(--border) pt-4;
 }
 
 .stats-export-buttons {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  @apply flex flex-wrap gap-3;
 }
 
 .stats-export-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply inline-flex cursor-pointer items-center gap-2 rounded-md border border-(--border) bg-(--bg-tertiary) px-4 py-2.5 text-[0.85rem] text-(--text-primary) transition-all duration-200;
 }
 
 .stats-export-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  @apply border-(--accent) bg-(--accent) text-white;
 }
 
 .stats-export-btn svg {
-  width: 16px;
-  height: 16px;
+  @apply size-4;
 }
 
 /* Telemetry Verification UI */
 .stats-telemetry-check {
-  text-align: center;
-  padding: 1rem 0;
+  @apply py-4 text-center;
 }
 
 .stats-verify-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--accent);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-(--accent) px-6 py-3 text-[0.9rem] font-medium text-white transition-all duration-200;
 }
 
 .stats-verify-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
+  @apply bg-(--accent-hover) -translate-y-px;
 }
 
 .stats-verify-btn svg {
-  width: 16px;
-  height: 16px;
+  @apply size-4;
 }
 
 .stats-telemetry-progress {
-  padding: 1rem 0;
+  @apply py-4;
 }
 
 .stats-progress-bar {
-  height: 8px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 0.75rem;
+  @apply mb-3 h-2 overflow-hidden rounded bg-(--bg-tertiary);
 }
 
 .stats-progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 4px;
-  width: 0;
-  transition: width 0.3s ease;
+  @apply h-full w-0 rounded bg-(--accent) transition-[width] duration-300;
 }
 
 .stats-progress-text {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  text-align: center;
-  margin: 0;
+  @apply m-0 text-center text-[0.85rem] text-(--text-secondary);
 }
 </style>
