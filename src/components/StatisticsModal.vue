@@ -7,7 +7,7 @@
         <div class="stats-sidebar">
           <div class="stats-sidebar-header">
             <h2>
-              <BarChart3 :size="20" style="margin-right: 8px" />
+              <BarChart3 :size="20" class="icon-mr-2" />
               {{ t('statistics.title') }}
             </h2>
           </div>
@@ -168,7 +168,7 @@
                 <p class="stats-date-range">
                   <Calendar
                     :size="14"
-                    style="vertical-align: middle; margin-right: 4px"
+                    class="stats-inline-icon"
                   />
                   {{ new Date(stats.earliestEvent).toLocaleDateString() }}
                   -
@@ -247,8 +247,7 @@
                   <div class="stats-day-night-legend">
                     <div class="stats-dn-item">
                       <span
-                        class="stats-dn-color"
-                        style="background: #ffc107"
+                        class="stats-dn-color stats-dn-swatch-day"
                       ></span>
                       <span class="stats-dn-label">Day (6am-8pm)</span>
                       <span class="stats-dn-value"
@@ -259,8 +258,7 @@
                     </div>
                     <div class="stats-dn-item">
                       <span
-                        class="stats-dn-color"
-                        style="background: #1a237e"
+                        class="stats-dn-color stats-dn-swatch-night"
                       ></span>
                       <span class="stats-dn-label">Night (8pm-6am)</span>
                       <span class="stats-dn-value"
@@ -388,7 +386,7 @@
                 <div id="telemetryVerifyContainer">
                   <div class="stats-telemetry-check">
                     <p
-                      style="color: var(--text-secondary); margin-bottom: 1rem"
+                      class="stats-section-note"
                     >
                       Telemetry data is embedded in Tesla videos (2019+
                       vehicles). Click below to scan your events and verify
@@ -399,7 +397,7 @@
                       class="stats-verify-btn"
                       @click="handleVerifyTelemetry"
                     >
-                      <CheckCircle2 :size="16" style="margin-right: 6px" />
+                      <CheckCircle2 :size="16" class="icon-mr-1-5" />
                       Verify Telemetry Data
                     </button>
                   </div>
@@ -1062,5 +1060,21 @@ defineExpose({
 
 .stats-progress-text {
   @apply m-0 text-center text-[0.85rem] text-(--text-secondary);
+}
+
+.stats-inline-icon {
+  @apply mr-1 align-middle;
+}
+
+.stats-dn-swatch-day {
+  background: #ffc107;
+}
+
+.stats-dn-swatch-night {
+  background: #1a237e;
+}
+
+.stats-section-note {
+  @apply mb-4 text-(--text-secondary);
 }
 </style>

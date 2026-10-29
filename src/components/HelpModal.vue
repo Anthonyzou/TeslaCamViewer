@@ -169,12 +169,11 @@
         <span class="help-tip">{{ t('help.tip') }}</span>
         <div class="help-footer-actions">
           <a
-            class="help-report-btn"
+            class="help-report-btn no-underline"
             href="https://github.com/teslacamviewer/teslacamviewer.github.io/issues/new"
             target="_blank"
             rel="noopener noreferrer"
             title="Report an issue on GitHub"
-            style="text-decoration: none"
           >
             🐛 Report Bug
           </a>

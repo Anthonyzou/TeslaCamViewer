@@ -24,13 +24,13 @@
 
       <div class="modal-content">
         <div class="drive-setup-selected">
-          <Folder :size="20" style="margin-right: 8px" />
+          <Folder :size="20" class="icon-mr-2" />
           <span>{{ folderName }}</span>
         </div>
 
         <div v-if="!isEdit" class="drive-setup-tip">
           <div class="drive-setup-tip-header">
-            <Info :size="16" style="margin-right: 6px" />
+            <Info :size="16" class="icon-mr-1-5" />
             {{ t('driveSetup.tipTitle') }}
           </div>
           <ul>

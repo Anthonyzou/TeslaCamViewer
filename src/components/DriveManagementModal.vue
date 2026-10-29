@@ -10,7 +10,7 @@
       </div>
 
       <div class="modal-content">
-        <p v-if="drivesList.length === 0" style="color: var(--text-muted); text-align: center">
+        <p v-if="drivesList.length === 0" class="empty-drives">
           {{ t('driveManager.noDrives') }}
         </p>
 
@@ -25,20 +25,15 @@
             </label>
 
             <!-- Drive Info & Label -->
-            <div style="flex: 1; min-width: 0">
-              <div style="display: flex; align-items: center; gap: 0.5rem">
-                <input type="text" class="drive-label-input" :value="drive.label" style="flex: 1"
+            <div class="drive-info">
+              <div class="drive-label-row">
+                <input type="text" class="drive-label-input drive-label-input-grow" :value="drive.label"
                   @change="onLabelChange(drive, $event)" />
                 <span v-if="drive.isArchive" class="drive-archive-badge">
                   {{ t('driveManager.archive') }}
                 </span>
               </div>
-              <div style="
-                  display: flex;
-                  align-items: center;
-                  gap: 0.5rem;
-                  margin-top: 0.25rem;
-                ">
+              <div class="drive-meta-row">
                 <span class="drive-event-count">{{
                   getEventCountText(drive)
                   }}</span>
@@ -51,19 +46,12 @@
             <!-- Sync Button (for archive drives) -->
             <button v-if="drive.isArchive" class="drive-sync-btn" :title="t('driveManager.syncNow')"
               @click="handleSync(drive.id)">
-              <RefreshCw :size="14" style="margin-right: 4px" />
+              <RefreshCw :size="14" class="icon-mr-1" />
               {{ t('driveManager.sync') }}
             </button>
 
             <!-- Edit Button -->
-            <button class="drive-edit-btn" :title="t('driveManager.editDrive')" style="
-                background: none;
-                border: none;
-                color: var(--text-muted);
-                cursor: pointer;
-                padding: 0.25rem;
-                border-radius: 4px;
-              " @click="handleEdit(drive.id)">
+            <button class="drive-edit-btn" :title="t('driveManager.editDrive')" @click="handleEdit(drive.id)">
               <Pencil :size="16" />
             </button>
 
@@ -75,9 +63,9 @@
         </div>
 
         <!-- Add Drive Button -->
-        <button class="btn btn-primary" id="addDriveModalBtn" style="width: 100%; margin-top: 1rem"
+        <button class="btn btn-primary add-drive-btn" id="addDriveModalBtn"
           @click="handleAddDrive">
-          <Plus :size="16" style="margin-right: 0.5rem" />
+          <Plus :size="16" class="icon-mr-2" />
           {{ t('driveManager.addDrive') }}
         </button>
       </div>
@@ -261,5 +249,32 @@ defineExpose({
 
 .drive-remove-btn:hover {
   @apply bg-[rgba(255,82,82,0.1)] text-[#ff5252];
+}
+.empty-drives {
+  @apply text-center text-(--text-muted);
+}
+
+.drive-info {
+  @apply min-w-0 flex-1;
+}
+
+.drive-label-row {
+  @apply flex items-center gap-2;
+}
+
+.drive-label-input-grow {
+  @apply flex-1;
+}
+
+.drive-meta-row {
+  @apply mt-1 flex items-center gap-2;
+}
+
+.drive-edit-btn {
+  @apply cursor-pointer rounded border-none bg-transparent p-1 text-(--text-muted);
+}
+
+.add-drive-btn {
+  @apply mt-4 w-full;
 }
 </style>

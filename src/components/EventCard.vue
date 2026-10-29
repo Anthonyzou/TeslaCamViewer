@@ -23,12 +23,8 @@
         {{ event.driveLabel }}
       </span>
       <span :class="['event-type', typeClass]">{{ typeClass }}</span>
-      <span v-if="health.status !== 'healthy'" :class="[
-        'health-badge',
-        `
-          health-${health.status}
-        `,
-      ]" :title="healthTooltip">
+      <span v-if="health.status !== 'healthy'" :class="['health-badge', healthBadgeClass[health.status]]"
+        :title="healthTooltip">
         {{ health.icon }}
       </span>
       <span class="event-item-date">{{ dateStr }}</span>
@@ -56,7 +52,7 @@ import {
   getTimeRangeFromClips,
 } from '../composables/useEventBrowser';
 import { settingsStore } from '../composables/useSettings';
-import type { TeslaCamEvent } from '../types';
+import type { RecordingHealth, TeslaCamEvent } from '../types';
 import { formatReason } from '../utils/teslaCamFormat';
 import weatherService from '../utils/weatherService';
 
@@ -113,8 +109,16 @@ const timeRange = computed(() => {
 });
 
 const health = computed(() => {
+
   return computeRecordingHealth(props.event);
 });
+
+
+const healthBadgeClass: Record<RecordingHealth['status'], string> = {
+  healthy: '',
+  minor: 'health-minor',
+  warning: 'health-warning',
+};
 
 const healthTooltip = computed(() => {
   if (health.value.issues.length === 0) return '';
@@ -185,6 +189,8 @@ async function loadWeather(): Promise<void> {
 
 onMounted(() => {
   loadWeather();
+
+
 });
 
 watch(

@@ -76,8 +76,8 @@
       <input
         type="checkbox"
         id="loopCheckbox"
+        class="hidden"
         :checked="isLooping"
-        style="display: none"
       />
     </div>
 
@@ -141,7 +141,7 @@
         data-action="screenshot"
         @click="onScreenshotClick"
       >
-        <Camera :size="18" style="margin-right: 8px" />
+        <Camera :size="18" class="icon-mr-2" />
         <span>{{ t('controls.screenshot') }}</span>
       </button>
 
@@ -153,7 +153,7 @@
           id="exportVideoBtn"
           @click="onExportVideoClick"
         >
-          <Video :size="18" style="margin-right: 8px" />
+          <Video :size="18" class="icon-mr-2" />
           <span>{{ t('export.exportVideo') }}</span>
         </button>
       </div>
@@ -164,7 +164,7 @@
           id="exportVideoBtn"
           @click="emit('clearMarks')"
         >
-          <X :size="18" style="margin-right: 8px" />
+          <X :size="18" class="icon-mr-2" />
           <span>{{ t('controls.clearMarks') }}</span>
         </button>
       </div>
@@ -197,8 +197,7 @@
           </option>
           <option
             value="grid-3x2"
-            class="pillar-layout-option"
-            style="display: none"
+            class="pillar-layout-option hidden"
           >
             3×2 Grid (6 Cam)
           </option>
@@ -222,22 +221,19 @@
           </option>
           <option
             value="layout-front-pillars"
-            class="pillar-layout-option"
-            style="display: none"
+            class="pillar-layout-option hidden"
           >
             Front + Pillars
           </option>
           <option
             value="layout-front-left-pillar"
-            class="pillar-layout-option"
-            style="display: none"
+            class="pillar-layout-option hidden"
           >
             Front + Left Pillar
           </option>
           <option
             value="layout-front-right-pillar"
-            class="pillar-layout-option"
-            style="display: none"
+            class="pillar-layout-option hidden"
           >
             Front + Right Pillar
           </option>
@@ -282,9 +278,8 @@
 
       <button
         id="resetLayoutBtn"
-        class="control-btn"
+        class="control-btn hidden"
         title="Reset camera positions to layout defaults"
-        style="display: none"
         @click="emit('resetLayout')"
       >
         <RotateCcw :size="20" />

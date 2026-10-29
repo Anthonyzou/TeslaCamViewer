@@ -99,7 +99,7 @@
       :class="{ hidden: hasEvents }"
       @click="emit('selectFolder')"
     >
-      <Folder :size="20" style="margin-right: 8px" />
+      <Folder :size="20" class="icon-mr-2" />
       <span>{{
         t('sidebar.selectFolder')
       }}</span>
@@ -108,12 +108,11 @@
     <!-- Backblaze B2 Button -->
     <button
       id="loadB2Btn"
-      class="select-folder-btn b2-btn"
+      class="select-folder-btn b2-btn sync-cloud-bg"
       :class="{ hidden: hasEvents }"
-      style="background: #003399"
       @click="emit('loadB2')"
     >
-      <Cloud :size="20" style="margin-right: 8px" />
+      <Cloud :size="20" class="icon-mr-2" />
       <span>Load from Backblaze B2</span>
     </button>
 
@@ -148,8 +147,7 @@
     <!-- Bird's Eye View Panel -->
     <div
       id="birdsEyePanel"
-      class="sidebar-panel collapsible"
-      style="display: none"
+      class="sidebar-panel collapsible hidden"
     >
       <div class="sidebar-panel-header" id="birdsEyeHeader">
         <span class="panel-title">Bird's Eye View</span>
@@ -912,5 +910,9 @@ body.sidebar-resizing * {
 
 .ai-search-toast-btn.primary {
   @apply border-(--accent) bg-(--accent) text-white;
+}
+
+.sync-cloud-bg {
+  background: #003399;
 }
 </style>

@@ -8,10 +8,9 @@
         }}</span>
       </div>
       <ChevronDown
-        class="collapse-icon-svg"
         :class="{ collapsed: !isExpanded }"
         :size="14"
-        style="transition: transform 0.22s ease; flex-shrink: 0"
+        class="collapse-icon-svg collapse-icon-animated"
       />
     </div>
 
@@ -389,5 +388,10 @@ defineExpose({
 
 .clear-all-filters-btn {
   @apply w-full font-semibold text-(--accent);
+}
+
+.collapse-icon-animated {
+  @apply shrink-0;
+  transition: transform 0.22s ease;
 }
 </style>

@@ -18,8 +18,8 @@
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" style="stop-color: #00d4ff" />
-            <stop offset="100%" style="stop-color: #0099cc" />
+            <stop offset="0%" stop-color="#00d4ff" />
+            <stop offset="100%" stop-color="#0099cc" />
           </linearGradient>
         </defs>
         <circle
