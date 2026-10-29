@@ -70,8 +70,9 @@
             border-(--border) bg-(--bg-secondary) px-5 py-4
           ">
             <h3 class="
-              settings-section-title m-0 font-(family-name:--font-ui)
-              setting-label font-semibold tracking-wider uppercase
+              settings-section-title setting-label m-0
+              font-(family-name:--font-ui) font-semibold tracking-wider
+              uppercase
             ">
               {{ currentSectionTitle }}
             </h3>
@@ -346,3 +347,30 @@ defineExpose({
   isOpen,
 });
 </script>
+<style scoped>
+@reference "tailwindcss";
+
+.setting-select {
+  @apply min-w-[120px] cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3.5 py-2 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary) transition-all duration-200 focus:border-(--accent) focus:shadow-[0_0_10px_var(--accent-glow)] focus:outline-none;
+}
+
+.setting-checkbox {
+  @apply size-5 cursor-pointer accent-(--accent);
+}
+
+.setting-section-title {
+  @apply mb-4 font-(family-name:--font-ui) text-xs font-semibold tracking-widest text-(--accent) uppercase;
+}
+
+.setting-section {
+  @apply mb-7 last:mb-0;
+}
+
+.setting-nav-item {
+  @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border-none bg-transparent px-3.5 py-2.5 text-left font-(family-name:--font-ui) text-sm font-medium text-(--text-secondary) transition-all duration-150 hover:bg-(--bg-secondary) hover:text-(--text-primary) max-md:min-w-fit max-md:flex-col max-md:gap-1 max-md:px-3 max-md:py-2 max-md:text-center;
+}
+
+.setting-nav-active {
+  @apply bg-(--accent-subtle) text-(--accent) [&>svg]:opacity-100;
+}
+</style>

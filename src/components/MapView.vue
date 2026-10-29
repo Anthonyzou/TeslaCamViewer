@@ -5,11 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import 'leaflet';
 import 'leaflet.markercluster';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
-import { eventsStore } from '../composables/useEvents';
 import { MapView } from '../composables/mapEngine';
+import { eventsStore } from '../composables/useEvents';
 import { useMapView } from '../composables/useMapView';
 import type { TeslaCamEvent } from '../types';
 
