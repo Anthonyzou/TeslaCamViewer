@@ -34,7 +34,7 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-line-wrapping': [
         'warn',
         {
-          indent: 4,
+          indent: 2,
         },
       ],
       'better-tailwindcss/no-unknown-classes': 'off',
