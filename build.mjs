@@ -1,5 +1,9 @@
 import * as esbuild from 'esbuild';
 import { existsSync, statSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
+import { compile } from '@tailwindcss/node';
+import { Scanner } from '@tailwindcss/oxide';
 import vuePlugin from 'unplugin-vue/esbuild';
 
 const args = process.argv.slice(2);
@@ -15,6 +19,34 @@ function formatBytes(bytes) {
 }
 
 /**
+ * Compiles Tailwind utilities from src/tailwind.css. Only the utilities layer
+ * is imported, so Tailwind's preflight reset does not change existing styles.
+ */
+const tailwindPlugin = {
+  name: 'tailwind',
+  setup(build) {
+    build.onLoad({ filter: /src[\\/]tailwind\.css$/ }, async (args) => {
+      const source = await readFile(args.path, 'utf8');
+      const compiler = await compile(source, {
+        base: dirname(args.path),
+        onDependency() {},
+      });
+      const scanner = new Scanner({
+        sources: [
+          { base: resolve('src'), pattern: '**/*', negated: false },
+          { base: resolve('.'), pattern: 'index.html', negated: false },
+        ],
+      });
+      return {
+        contents: compiler.build(scanner.scan()),
+        loader: 'css',
+        resolveDir: dirname(args.path),
+      };
+    });
+  },
+};
+
+/**
  * Common build configuration
  */
 const jsConfig = {
@@ -26,7 +58,7 @@ const jsConfig = {
   minify: isProduction,
   target: ['es2022'],
   logLevel: 'info',
-  plugins: [vuePlugin({ isProduction, sourceMap: false })],
+  plugins: [tailwindPlugin, vuePlugin({ isProduction, sourceMap: false })],
   loader: { '.png': 'dataurl' },
   define: {
     'process.env.NODE_ENV': JSON.stringify(
