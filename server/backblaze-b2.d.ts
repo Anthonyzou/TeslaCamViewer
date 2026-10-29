@@ -31,7 +31,9 @@ declare module 'backblaze-b2' {
       bucketId: string;
       startFileName?: string | null;
       maxFileCount?: number;
-    }): Promise<{ data: { files: B2FileEntry[]; nextFileName?: string | null } }>;
+    }): Promise<{
+      data: { files: B2FileEntry[]; nextFileName?: string | null };
+    }>;
     getDownloadAuthorization(params: {
       bucketId: string;
       fileNamePrefix: string;

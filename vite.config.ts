@@ -15,11 +15,15 @@ function defineFor({ isProduction }: BuildMode) {
   };
 }
 
-export function appConfig(mode: BuildMode): InlineConfig {
+export function appConfig(
+  mode: BuildMode,
+  watch: boolean = false
+): InlineConfig {
   return {
     configFile: false,
     plugins: [tailwindcss(), vue({ isProduction: mode.isProduction })],
     define: defineFor(mode),
+    ...(watch && { watch: {} }),
     build: {
       outDir: 'dist',
       emptyOutDir: false,
@@ -38,10 +42,14 @@ export function appConfig(mode: BuildMode): InlineConfig {
   };
 }
 
-export function workerConfig(mode: BuildMode): InlineConfig {
+export function workerConfig(
+  mode: BuildMode,
+  watch: boolean = false
+): InlineConfig {
   return {
     configFile: false,
     define: defineFor(mode),
+    ...(watch && { watch: {} }),
     build: {
       outDir: 'dist',
       emptyOutDir: false,

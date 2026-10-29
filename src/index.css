@@ -222,141 +222,25 @@ body::before {
 }
 
 /* --- Global themed scrollbar for modal content areas --- */
-.themed-scrollbar,
-.stats-content,
-.notes-content,
-.filter-content,
-.layout-preset-list,
-.quick-start-content,
-.changelog-content,
-.version-changelog,
-.insurance-content,
-.export-modal-content,
-.clip-info-content,
-.plate-results-thumbnails,
-.region-list {
+* {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-.themed-scrollbar::-webkit-scrollbar,
-.stats-content::-webkit-scrollbar,
-.notes-content::-webkit-scrollbar,
-.filter-content::-webkit-scrollbar,
-.layout-preset-list::-webkit-scrollbar,
-.quick-start-content::-webkit-scrollbar,
-.changelog-content::-webkit-scrollbar,
-.changelog-body::-webkit-scrollbar,
-.version-changelog::-webkit-scrollbar,
-.insurance-content::-webkit-scrollbar,
-.export-modal-content::-webkit-scrollbar,
-.clip-info-content::-webkit-scrollbar,
-.plate-results-thumbnails::-webkit-scrollbar,
-.region-list::-webkit-scrollbar,
-.modal-content::-webkit-scrollbar,
-.bottom-sheet-content::-webkit-scrollbar,
-.stats-nav::-webkit-scrollbar,
-.struggle-zone-events::-webkit-scrollbar,
-.incident-events::-webkit-scrollbar,
-.sync-modal-body::-webkit-scrollbar,
-.sync-category-items::-webkit-scrollbar,
-.sync-presets-list::-webkit-scrollbar,
-.sync-results-scroll::-webkit-scrollbar,
-.sync-stats-content::-webkit-scrollbar,
-.sync-stats-inline::-webkit-scrollbar,
-.sync-stats-table-container::-webkit-scrollbar,
-.tag-suggestions::-webkit-scrollbar {
+*::-webkit-scrollbar{
   width: 6px;
 }
 
-.themed-scrollbar::-webkit-scrollbar-track,
-.stats-content::-webkit-scrollbar-track,
-.notes-content::-webkit-scrollbar-track,
-.filter-content::-webkit-scrollbar-track,
-.layout-preset-list::-webkit-scrollbar-track,
-.quick-start-content::-webkit-scrollbar-track,
-.changelog-content::-webkit-scrollbar-track,
-.changelog-body::-webkit-scrollbar-track,
-.version-changelog::-webkit-scrollbar-track,
-.insurance-content::-webkit-scrollbar-track,
-.export-modal-content::-webkit-scrollbar-track,
-.clip-info-content::-webkit-scrollbar-track,
-.plate-results-thumbnails::-webkit-scrollbar-track,
-.region-list::-webkit-scrollbar-track,
-.modal-content::-webkit-scrollbar-track,
-.bottom-sheet-content::-webkit-scrollbar-track,
-.stats-nav::-webkit-scrollbar-track,
-.struggle-zone-events::-webkit-scrollbar-track,
-.incident-events::-webkit-scrollbar-track,
-.sync-modal-body::-webkit-scrollbar-track,
-.sync-category-items::-webkit-scrollbar-track,
-.sync-presets-list::-webkit-scrollbar-track,
-.sync-results-scroll::-webkit-scrollbar-track,
-.sync-stats-content::-webkit-scrollbar-track,
-.sync-stats-inline::-webkit-scrollbar-track,
-.sync-stats-table-container::-webkit-scrollbar-track,
-.tag-suggestions::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.themed-scrollbar::-webkit-scrollbar-thumb,
-.stats-content::-webkit-scrollbar-thumb,
-.notes-content::-webkit-scrollbar-thumb,
-.filter-content::-webkit-scrollbar-thumb,
-.layout-preset-list::-webkit-scrollbar-thumb,
-.quick-start-content::-webkit-scrollbar-thumb,
-.changelog-content::-webkit-scrollbar-thumb,
-.changelog-body::-webkit-scrollbar-thumb,
-.version-changelog::-webkit-scrollbar-thumb,
-.insurance-content::-webkit-scrollbar-thumb,
-.export-modal-content::-webkit-scrollbar-thumb,
-.clip-info-content::-webkit-scrollbar-thumb,
-.plate-results-thumbnails::-webkit-scrollbar-thumb,
-.region-list::-webkit-scrollbar-thumb,
-.modal-content::-webkit-scrollbar-thumb,
-.bottom-sheet-content::-webkit-scrollbar-thumb,
-.stats-nav::-webkit-scrollbar-thumb,
-.struggle-zone-events::-webkit-scrollbar-thumb,
-.incident-events::-webkit-scrollbar-thumb,
-.sync-modal-body::-webkit-scrollbar-thumb,
-.sync-category-items::-webkit-scrollbar-thumb,
-.sync-presets-list::-webkit-scrollbar-thumb,
-.sync-results-scroll::-webkit-scrollbar-thumb,
-.sync-stats-content::-webkit-scrollbar-thumb,
-.sync-stats-inline::-webkit-scrollbar-thumb,
-.sync-stats-table-container::-webkit-scrollbar-thumb,
-.tag-suggestions::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
-.themed-scrollbar::-webkit-scrollbar-thumb:hover,
-.stats-content::-webkit-scrollbar-thumb:hover,
-.notes-content::-webkit-scrollbar-thumb:hover,
-.filter-content::-webkit-scrollbar-thumb:hover,
-.layout-preset-list::-webkit-scrollbar-thumb:hover,
-.quick-start-content::-webkit-scrollbar-thumb:hover,
-.changelog-content::-webkit-scrollbar-thumb:hover,
-.changelog-body::-webkit-scrollbar-thumb:hover,
-.version-changelog::-webkit-scrollbar-thumb:hover,
-.insurance-content::-webkit-scrollbar-thumb:hover,
-.export-modal-content::-webkit-scrollbar-thumb:hover,
-.clip-info-content::-webkit-scrollbar-thumb:hover,
-.plate-results-thumbnails::-webkit-scrollbar-thumb:hover,
-.region-list::-webkit-scrollbar-thumb:hover,
-.modal-content::-webkit-scrollbar-thumb:hover,
-.bottom-sheet-content::-webkit-scrollbar-thumb:hover,
-.stats-nav::-webkit-scrollbar-thumb:hover,
-.struggle-zone-events::-webkit-scrollbar-thumb:hover,
-.incident-events::-webkit-scrollbar-thumb:hover,
-.sync-modal-body::-webkit-scrollbar-thumb:hover,
-.sync-category-items::-webkit-scrollbar-thumb:hover,
-.sync-presets-list::-webkit-scrollbar-thumb:hover,
-.sync-results-scroll::-webkit-scrollbar-thumb:hover,
-.sync-stats-content::-webkit-scrollbar-thumb:hover,
-.sync-stats-inline::-webkit-scrollbar-thumb:hover,
-.sync-stats-table-container::-webkit-scrollbar-thumb:hover,
-.tag-suggestions::-webkit-scrollbar-thumb:hover {
+*::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 

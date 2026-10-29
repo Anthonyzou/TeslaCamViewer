@@ -1,7 +1,9 @@
 <template>
-  <div v-if="isOpen" class="modal-overlay" id="driveManagementModal" @keydown.esc="close" @mousedown="close"
-    @click="close">
-    <div class="modal drive-management-modal" @click.stop>
+  <div v-if="isOpen" class="modal-overlay" id="driveManagementModal">
+    <div class="
+      settings-overlay absolute inset-0 z-10 bg-black/80 backdrop-blur-[5px]
+    " @mousedown="close" @click="close"></div>
+    <div class="modal drive-management-modal z-20" @click.stop>
       <div class="modal-header">
         <h3>{{ t('driveManager.title') }}</h3>
         <button class="modal-close-btn" id="closeDriveModal" :title="t('common.close')" @click="close">
@@ -29,8 +31,7 @@
               <div class="drive-label-row">
                 <input type="text" class="
                   drive-label-input drive-label-input-grow
-                " :value="drive.label"
-                  @change="onLabelChange(drive, $event)" />
+                " :value="drive.label" @change="onLabelChange(drive, $event)" />
                 <span v-if="drive.isArchive" class="drive-archive-badge">
                   {{ t('driveManager.archive') }}
                 </span>
@@ -58,15 +59,15 @@
             </button>
 
             <!-- Remove Button -->
-            <button class="drive-remove-btn" :title="t('driveManager.removeDrive')" @click="handleRemove(drive.id)">
+            <button class="drive-edit-btn drive-remove-btn" :title="t('driveManager.removeDrive')"
+              @click="handleRemove(drive.id)">
               <Trash2 :size="16" />
             </button>
           </div>
         </div>
 
         <!-- Add Drive Button -->
-        <button class="btn btn-primary add-drive-btn" id="addDriveModalBtn"
-          @click="handleAddDrive">
+        <button class="btn btn-primary add-drive-btn" id="addDriveModalBtn" @click="handleAddDrive">
           <Plus :size="16" class="icon-mr-2" />
           {{ t('driveManager.addDrive') }}
         </button>
@@ -253,6 +254,7 @@ defineExpose({
   @apply text-(--c-destructive);
   background-color: var(--c-destructive-tint);
 }
+
 .empty-drives {
   @apply text-center text-(--text-muted);
 }
@@ -279,5 +281,14 @@ defineExpose({
 
 .add-drive-btn {
   @apply mt-4 w-full;
+}
+
+.add-drive-btn {
+  @apply flex cursor-pointer items-center justify-center rounded-lg border border-(--border) bg-(--bg-tertiary) p-2 text-(--text-secondary) transition-all duration-200;
+}
+
+.add-drive-btn:hover {
+  @apply border-(--border-accent) bg-(--bg-elevated) text-(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 </style>
