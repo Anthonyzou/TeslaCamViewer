@@ -2,7 +2,6 @@
  * EventFilter - Handles filtering and sorting of events
  */
 import dayjs from 'dayjs';
-import { formatReason } from './teslaCamFormat';
 
 class EventFilter {
   public filters: any;
@@ -18,7 +17,6 @@ class EventFilter {
         start: null,
         end: null,
       },
-      searchQuery: '',
       sortOrder: 'newest', // 'newest' or 'oldest'
     };
   }
@@ -36,7 +34,6 @@ class EventFilter {
     return events
       .filter((event) => this.filterByType(event))
       .filter((event) => this.filterByDate(event))
-      .filter((event) => this.filterBySearch(event))
       .sort((a, b) => this.sortEvents(a, b));
   }
 
@@ -78,51 +75,6 @@ class EventFilter {
   }
 
   /**
-   * Filter by search query (searches city, street, reason)
-   * @param {Object} event
-   * @returns {boolean}
-   */
-  filterBySearch(event) {
-    const query = this.filters.searchQuery.toLowerCase().trim();
-
-    // No search query
-    if (!query) {
-      return true;
-    }
-
-    // Search in city
-    const city = event.metadata?.city || '';
-    if (city.toLowerCase().includes(query)) {
-      return true;
-    }
-
-    // Search in street
-    const street = event.metadata?.street || '';
-    if (street.toLowerCase().includes(query)) {
-      return true;
-    }
-
-    // Search in reason
-    const reason = event.metadata?.reason || '';
-    if (reason.toLowerCase().includes(query)) {
-      return true;
-    }
-
-    // Search in formatted reason
-    const formattedReason = formatReason(event.metadata?.reason);
-    if (formattedReason && formattedReason.toLowerCase().includes(query)) {
-      return true;
-    }
-
-    // Search in event type
-    if (event.type.toLowerCase().includes(query)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
    * Sort events by timestamp
    * @param {Object} a
    * @param {Object} b
@@ -153,9 +105,6 @@ class EventFilter {
         ...newFilters.dateRange,
       };
     }
-    if (newFilters.searchQuery !== undefined) {
-      this.filters.searchQuery = newFilters.searchQuery;
-    }
     if (newFilters.sortOrder !== undefined) {
       this.filters.sortOrder = newFilters.sortOrder;
     }
@@ -175,7 +124,6 @@ class EventFilter {
         start: null,
         end: null,
       },
-      searchQuery: '',
       sortOrder: 'newest',
     };
   }
@@ -197,11 +145,6 @@ class EventFilter {
 
     // Check date range
     if (this.filters.dateRange.start || this.filters.dateRange.end) {
-      count++;
-    }
-
-    // Check search query
-    if (this.filters.searchQuery.trim().length > 0) {
       count++;
     }
 

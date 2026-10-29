@@ -5,13 +5,11 @@
         <span>{{ t('filter.filters') }}</span>
         <span v-if="filterCount > 0" class="filter-badge" id="filterBadge">{{
           filterCount
-        }}</span>
+          }}</span>
       </div>
-      <ChevronDown
-        :class="{ collapsed: !isExpanded }"
-        :size="14"
-        class="collapse-icon-svg collapse-icon-animated"
-      />
+      <ChevronDown :class="{ collapsed: !isExpanded }" :size="14" class="
+        collapse-icon-svg collapse-icon-animated
+      " />
     </div>
 
     <div class="filter-content" :class="{ expanded: isExpanded }">
@@ -20,34 +18,20 @@
         <label class="filter-label">{{ t('filter.eventTypes') }}</label>
         <div class="filter-checkboxes">
           <label class="filter-checkbox-label">
-            <input
-              type="checkbox"
-              id="filterSaved"
-              v-model="filters.types.SavedClips"
-              @change="handleTypeChange('SavedClips', filters.types.SavedClips)"
-            />
+            <input type="checkbox" id="filterSaved" v-model="filters.types.SavedClips"
+              @change="handleTypeChange('SavedClips', filters.types.SavedClips)" />
             <span class="event-type saved">{{ t('filter.saved') }}</span>
           </label>
           <label class="filter-checkbox-label">
-            <input
-              type="checkbox"
-              id="filterSentry"
-              v-model="filters.types.SentryClips"
-              @change="
-                handleTypeChange('SentryClips', filters.types.SentryClips)
-              "
-            />
+            <input type="checkbox" id="filterSentry" v-model="filters.types.SentryClips" @change="
+              handleTypeChange('SentryClips', filters.types.SentryClips)
+              " />
             <span class="event-type sentry">{{ t('filter.sentry') }}</span>
           </label>
           <label class="filter-checkbox-label">
-            <input
-              type="checkbox"
-              id="filterRecent"
-              v-model="filters.types.RecentClips"
-              @change="
-                handleTypeChange('RecentClips', filters.types.RecentClips)
-              "
-            />
+            <input type="checkbox" id="filterRecent" v-model="filters.types.RecentClips" @change="
+              handleTypeChange('RecentClips', filters.types.RecentClips)
+              " />
             <span class="event-type recent">{{ t('filter.recent') }}</span>
           </label>
         </div>
@@ -57,72 +41,34 @@
       <div class="filter-group">
         <label class="filter-label" for="sortOrder">{{
           t('filter.sortBy')
-        }}</label>
-        <select
-          id="sortOrder"
-          class="filter-select"
-          v-model="filters.sortOrder"
-          @change="handleSortChange"
-        >
+          }}</label>
+        <select id="sortOrder" class="filter-select" v-model="filters.sortOrder" @change="handleSortChange">
           <option value="newest">{{ t('filter.newestFirst') }}</option>
           <option value="oldest">{{ t('filter.oldestFirst') }}</option>
         </select>
-      </div>
-
-      <!-- Search -->
-      <div class="filter-group">
-        <label class="filter-label" for="searchInput">{{
-          t('filter.search')
-        }}</label>
-        <input
-          type="text"
-          id="searchInput"
-          class="search-input"
-          :placeholder="t('filter.searchPlaceholder')"
-          v-model="searchQuery"
-          @input="handleSearchInput"
-        />
       </div>
 
       <!-- Date Range -->
       <div class="filter-group">
         <label class="filter-label">{{ t('filter.dateRange') }}</label>
         <div class="date-range-inputs">
-          <input
-            type="date"
-            id="dateStart"
-            class="date-input"
-            placeholder="Start"
-            v-model="filters.dateRange.start"
-            @change="handleDateChange('start', filters.dateRange.start)"
-          />
+          <input type="date" id="dateStart" class="date-input" placeholder="Start" v-model="filters.dateRange.start"
+            @change="handleDateChange('start', filters.dateRange.start)" />
           <span class="date-separator">{{ t('filter.dateTo') }}</span>
-          <input
-            type="date"
-            id="dateEnd"
-            class="date-input"
-            placeholder="End"
-            v-model="filters.dateRange.end"
-            @change="handleDateChange('end', filters.dateRange.end)"
-          />
+          <input type="date" id="dateEnd" class="date-input" placeholder="End" v-model="filters.dateRange.end"
+            @change="handleDateChange('end', filters.dateRange.end)" />
         </div>
-        <button
-          v-if="filters.dateRange.start || filters.dateRange.end"
-          id="clearDates"
-          class="clear-dates-btn"
-          @click="clearDates"
-        >
+        <button v-if="filters.dateRange.start || filters.dateRange.end" id="clearDates" class="
+          clear-dates-btn
+        " @click="clearDates">
           {{ t('filter.clearDates') }}
         </button>
       </div>
 
       <!-- Clear All Filters -->
-      <button
-        v-if="filterCount > 0"
-        id="clearAllFilters"
-        class="clear-all-filters-btn"
-        @click="clearAllFilters"
-      >
+      <button v-if="filterCount > 0" id="clearAllFilters" class="
+        clear-all-filters-btn
+      " @click="clearAllFilters">
         {{ t('filter.clearAllFilters') }}
       </button>
     </div>
@@ -131,14 +77,13 @@
 
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
-import { useDebounceFn } from '@vueuse/core';
-import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { onMounted, onUnmounted, reactive } from 'vue';
+import { eventsStore } from '../composables/useEvents';
 import {
   filterPanelStore,
   useFilterPanel,
 } from '../composables/useFilterPanel';
 import { useI18n } from '../composables/useI18n';
-import { eventsStore } from '../composables/useEvents';
 import type { EventFilterLike, FilterTypes } from '../types';
 
 const props = defineProps<{
@@ -152,7 +97,6 @@ function getFilter(): EventFilterLike | null {
 
 const { isExpanded, filterCount } = useFilterPanel();
 const { t } = useI18n();
-const searchQuery = ref('');
 
 const filters = reactive({
   types: {
@@ -184,7 +128,6 @@ function syncFromEventFilter(): void {
   filters.sortOrder = current.sortOrder || 'newest';
   filters.dateRange.start = current.dateRange?.start || '';
   filters.dateRange.end = current.dateRange?.end || '';
-  searchQuery.value = current.searchQuery || '';
   updateBadge();
 }
 
@@ -219,16 +162,6 @@ function handleSortChange(): void {
   }
   notifyFilterChange();
 }
-
-const handleSearchInput = useDebounceFn(() => {
-  const ef = getFilter();
-  if (ef) {
-    ef.setFilters({
-      searchQuery: searchQuery.value,
-    });
-  }
-  notifyFilterChange();
-}, 300);
 
 function handleDateChange(type: 'start' | 'end', val: string | null): void {
   const ef = getFilter();
@@ -332,7 +265,7 @@ defineExpose({
 }
 
 .filter-checkboxes {
-  @apply flex flex-col gap-2;
+  @apply flex flex-row gap-2 justify-center;
 }
 
 .filter-checkbox-label {

@@ -18,7 +18,6 @@ export interface DateRange {
 export interface FilterState {
   types: FilterTypes;
   dateRange: DateRange;
-  searchQuery: string;
   sortOrder: 'newest' | 'oldest' | string;
 }
 
