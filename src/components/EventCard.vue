@@ -390,7 +390,7 @@ function handleClick(): void {
 
 /* Empty event toast notification */
 .empty-event-toast {
-  @apply fixed bottom-25 left-1/2 z-10000 flex items-center gap-2.5 rounded-lg border border-(--danger) bg-(--bg-elevated) px-5 py-3 text-sm opacity-0 transition-[opacity, transform] duration-300;
+  @apply fixed bottom-25 left-1/2 z-10000 flex items-center gap-2.5 rounded-lg border border-(--danger) bg-(--bg-elevated) px-5 py-3 text-sm opacity-0 transition-[opacity_transform] duration-300;
   transform: translateX(-50%) translateY(20px);
   box-shadow: 0 4px 20px color-mix(in srgb, var(--c-nearmiss-critical) 30%, transparent);
 }

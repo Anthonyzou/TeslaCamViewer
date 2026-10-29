@@ -37,7 +37,7 @@
           <div class="drive-setup-field">
             <label for="dateFilter">{{
               t('driveSetup.dateFilterField')
-            }}</label>
+              }}</label>
             <select id="dateFilter" v-model="dateFilter">
               <option value="all">{{ t('driveSetup.dateFilterAll') }}</option>
               <option value="week">{{ t('driveSetup.dateFilterWeek') }}</option>
@@ -172,7 +172,7 @@ defineExpose({
 
 /* Drive Setup Dialog */
 .drive-setup-modal {
-  @apply max-w-[480px];
+  @apply max-w-120;
 }
 
 .drive-setup-modal .modal-content {
@@ -234,7 +234,7 @@ defineExpose({
 }
 
 .drive-setup-checkbox input[type='checkbox'] {
-  @apply h-[18px] w-[18px] cursor-pointer accent-(--accent);
+  @apply h-4.5 w-4.5 cursor-pointer accent-(--accent);
 }
 
 .drive-setup-checkbox-content {

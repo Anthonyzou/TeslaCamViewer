@@ -39,7 +39,7 @@
               <div class="drive-meta-row">
                 <span class="drive-event-count">{{
                   getEventCountText(drive)
-                }}</span>
+                  }}</span>
                 <span v-if="getDateFilterText(drive)" class="drive-date-filter">
                   • {{ getDateFilterText(drive) }}
                 </span>
@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
+import { Pencil, Plus, RefreshCw, Trash2, X } from '@lucide/vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { drivesStore } from '../composables/useDrives';
 import { eventsStore } from '../composables/useEvents';

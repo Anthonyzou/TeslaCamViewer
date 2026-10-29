@@ -59,34 +59,34 @@
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.totalEvents || 0
-                      }}</span>
+                    }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.totalEvents')
-                      }}</span>
+                    }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.totalClips || 0
-                      }}</span>
+                    }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.totalClips')
-                      }}</span>
+                    }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.formattedDuration || '0m'
-                      }}</span>
+                    }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.recordingTime')
-                      }}</span>
+                    }}</span>
                   </div>
                   <div class="stats-card">
                     <span class="stats-card-value">{{
                       stats?.storage?.displayValue || '0 MB'
-                      }}</span>
+                    }}</span>
                     <span class="stats-card-label">{{
                       t('statistics.estStorage')
-                      }}</span>
+                    }}</span>
                   </div>
                 </div>
               </div>
@@ -200,14 +200,14 @@
                       <span class="stats-dn-label">Day (6am-8pm)</span>
                       <span class="stats-dn-value">{{ stats?.dayVsNight?.day }} ({{
                         stats?.dayVsNight?.dayPercent
-                      }}%)</span>
+                        }}%)</span>
                     </div>
                     <div class="stats-dn-item">
                       <span class="stats-dn-color stats-dn-swatch-night"></span>
                       <span class="stats-dn-label">Night (8pm-6am)</span>
                       <span class="stats-dn-value">{{ stats?.dayVsNight?.night }} ({{
                         stats?.dayVsNight?.nightPercent
-                      }}%)</span>
+                        }}%)</span>
                     </div>
                   </div>
                 </div>
@@ -327,19 +327,19 @@
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
                         telemetryResults.withCount
-                        }}</span>
+                      }}</span>
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithTelemetry')
-                        }}</span>
+                      }}</span>
                       <span class="stats-card-percent">{{ telemetryResults.withPercent }}%</span>
                     </div>
                     <div class="stats-card stats-card-small">
                       <span class="stats-card-value">{{
                         telemetryResults.withoutCount
-                        }}</span>
+                      }}</span>
                       <span class="stats-card-label">{{
                         t('statistics.eventsWithoutTelemetry')
-                        }}</span>
+                      }}</span>
                       <span class="stats-card-percent">{{ telemetryResults.withoutPercent }}%</span>
                     </div>
                   </div>
@@ -556,11 +556,11 @@ defineExpose({
 }
 
 .stats-overlay {
-  @apply absolute inset-0 bg-black/80 backdrop-blur-[4px];
+  @apply absolute inset-0 bg-black/80 backdrop-blur-xs;
 }
 
 .stats-panel {
-  @apply relative flex max-h-[85vh] w-[90%] max-w-[800px] flex-col overflow-hidden rounded-xl border border-(--border) bg-(--bg-secondary) shadow-(--shadow-lg);
+  @apply relative flex max-h-[85vh] w-[90%] max-w-200 flex-col overflow-hidden rounded-xl border border-(--border) bg-(--bg-secondary) shadow-(--shadow-lg);
 }
 
 /* Stats sidebar layout */
@@ -844,7 +844,7 @@ defineExpose({
 }
 
 .stats-dn-center {
-  @apply flex size-[50px] items-center justify-center rounded-full;
+  @apply flex size-12.5 items-center justify-center rounded-full;
   background: var(--panel-bg);
 }
 

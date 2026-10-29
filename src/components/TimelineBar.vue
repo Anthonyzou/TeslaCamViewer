@@ -10,7 +10,9 @@
 
         <div id="timelineClips" class="timeline-clips">
           <!-- Clip Boundary Markers -->
-          <div v-for="(pct, idx) in clipMarkers" :key="'clip-' + idx" class="clip-marker" :style="{ left: pct + '%' }">
+          <div v-for="(pct, idx) in clipMarkers" :key="'clip-' + idx" class="
+            clip-marker
+          " :style="{ left: pct + '%' }">
           </div>
 
           <!-- Sentry Trigger Marker -->
@@ -202,7 +204,7 @@ onUnmounted(() => {
 }
 
 .zoom-indicator {
-  @apply pointer-events-none absolute top-[-20px] right-0 rounded border border-(--border-accent) bg-(--bg-tertiary) px-2 py-0.5 font-mono text-[0.7rem] font-semibold text-(--accent);
+  @apply pointer-events-none absolute -top-5 right-0 rounded border border-(--border-accent) bg-(--bg-tertiary) px-2 py-0.5 font-mono text-[0.7rem] font-semibold text-(--accent);
 }
 
 .clip-markers {
@@ -210,43 +212,43 @@ onUnmounted(() => {
 }
 
 .mark-in-marker {
-  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-(--c-marker-in);
+  @apply pointer-events-none absolute -top-2 z-15 h-[calc(100%+16px)] w-0.75 bg-(--c-marker-in);
   box-shadow: 0 0 8px color-mix(in srgb, var(--c-marker-in) 60%, transparent);
 }
 
 .mark-in-marker .marker-label {
-  @apply pointer-events-none absolute top-[-18px] left-[-10px] rounded-[3px] border border-(--c-marker-in) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-in);
+  @apply pointer-events-none absolute -top-4.5 -left-2.5 rounded-[3px] border border-(--c-marker-in) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-in);
 }
 
 .mark-out-marker {
-  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-(--c-marker-out);
+  @apply pointer-events-none absolute -top-2 z-15 h-[calc(100%+16px)] w-0.75 bg-(--c-marker-out);
   box-shadow: 0 0 8px color-mix(in srgb, var(--c-marker-out) 60%, transparent);
 }
 
 .mark-out-marker .marker-label {
-  @apply pointer-events-none absolute top-[-18px] left-[-14px] rounded-[3px] border border-(--c-marker-out) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-out);
+  @apply pointer-events-none absolute -top-4.5 -left-3.5 rounded-[3px] border border-(--c-marker-out) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-out);
 }
 
 .clip-marker {
-  @apply pointer-events-auto absolute top-[-6px] h-[calc(100%+12px)] w-px bg-white/20;
+  @apply pointer-events-auto absolute -top-1.5 h-[calc(100%+12px)] w-px bg-white/20;
 }
 
 .sentry-trigger-marker {
-  @apply pointer-events-auto absolute top-[-10px] z-10 h-[calc(100%+20px)] w-1 cursor-pointer bg-(--danger);
+  @apply pointer-events-auto absolute -top-2.5 z-10 h-[calc(100%+20px)] w-1 cursor-pointer bg-(--danger);
   box-shadow:
     0 0 12px var(--danger-glow),
     0 0 20px var(--danger-glow);
 }
 
 .sentry-trigger-marker::before {
-  @apply absolute top-[-16px] left-1/2 flex size-[18px] items-center justify-center rounded-full bg-(--danger) text-[12px] font-bold text-white;
+  @apply absolute -top-4 left-1/2 flex size-4.5 items-center justify-center rounded-full bg-(--danger) text-[12px] font-bold text-white;
   content: '!';
   transform: translateX(-50%);
   box-shadow: 0 0 8px var(--danger-glow);
 }
 
 .sentry-trigger-marker::after {
-  @apply absolute bottom-[-8px] left-1/2 size-0;
+  @apply absolute -bottom-2 left-1/2 size-0;
   content: '';
   transform: translateX(-50%);
   border-left: 6px solid transparent;

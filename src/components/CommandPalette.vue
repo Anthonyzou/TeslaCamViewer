@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { Search } from 'lucide-vue-next';
+import { Search } from '@lucide/vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useModals } from '../composables/useModals';
 import type { CommandItem, TeslaCamEvent } from '../types';
@@ -287,7 +287,7 @@ defineExpose({
 }
 
 .command-palette-panel {
-  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px, 90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border) bg-(--c-palette-surface);
+  @apply absolute top-[12vh] left-1/2 flex max-h-[70vh] w-[min(640px,90vw)] -translate-x-1/2 flex-col overflow-hidden rounded-[10px] border border-(--border) bg-(--c-palette-surface);
   box-shadow: 0 24px 60px var(--c-overlay-black-60);
 }
 

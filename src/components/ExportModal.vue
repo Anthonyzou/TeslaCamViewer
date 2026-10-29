@@ -110,7 +110,7 @@ function onClose() {
 }
 
 .export-btn {
-  @apply inline-flex cursor-pointer items-center justify-center rounded-md border-none px-6 py-[0.6rem] text-[0.9rem] font-semibold no-underline transition-[background, opacity] duration-150 ease-in-out;
+  @apply inline-flex cursor-pointer items-center justify-center rounded-md border-none px-6 py-[0.6rem] text-[0.9rem] font-semibold no-underline transition-[background_opacity] duration-150 ease-in-out;
 }
 
 .export-btn-cancel {

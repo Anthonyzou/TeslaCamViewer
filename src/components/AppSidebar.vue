@@ -59,7 +59,7 @@
       <Folder :size="20" class="icon-mr-2" />
       <span>{{
         t('sidebar.selectFolder')
-      }}</span>
+        }}</span>
     </button>
 
     <!-- Backblaze B2 Button -->
@@ -237,7 +237,7 @@ onUnmounted(() => {
 
 /* ==================== SIDEBAR ==================== */
 .sidebar {
-  @apply relative flex w-80 max-w-150-w-[200px] flex-col border-r border-(--border);
+  @apply relative flex max-w-150 w-50 flex-col border-r border-(--border);
   background: linear-gradient(180deg,
       var(--bg-secondary) 0%,
       var(--bg-primary) 100%);
@@ -265,7 +265,7 @@ onUnmounted(() => {
 }
 
 .sidebar-resize-handle::after {
-  @apply absolute top-1/2 left-1/2 h-10 w-1 rounded-xs-(--text-muted) opacity-0 transition-opacity duration-150;
+  @apply absolute top-1/2 left-1/2 h-10 w-1 opacity-0 transition-opacity duration-150;
   content: '';
   transform: translate(-50%, -50%);
 }
@@ -322,7 +322,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-panel-header .panel-collapse-btn {
-  @apply flex cursor-pointer items-center justify-center bg-transparent p-[0.2rem] text-(--text-muted) border-none transition-[transform, color] duration-200;
+  @apply flex cursor-pointer items-center justify-center bg-transparent p-[0.2rem] text-(--text-muted) border-none transition-[transform] duration-200;
 }
 
 .sidebar-panel-header .panel-collapse-btn:hover {
@@ -334,7 +334,7 @@ body.sidebar-resizing * {
 }
 
 .sidebar-panel-content {
-  @apply overflow-hidden opacity-100 transition-[max-height, height, opacity, padding] duration-300;
+  @apply overflow-hidden opacity-100 transition-[max-height_height_opacity_padding] duration-300;
 }
 
 .sidebar-panel.collapsed .sidebar-panel-content {
@@ -346,7 +346,7 @@ body.sidebar-resizing * {
 
 /* Bird's Eye View Panel */
 #birdsEyeContent {
-  @apply relative flex h-50hmax-h-50s-center justify-center;
+  @apply relative flex h-50 max-h-50 self-center justify-center;
 }
 
 #birdsEyeContent canvas {
@@ -412,7 +412,7 @@ body.sidebar-resizing * {
 }
 
 .drive-action-btn {
-  @apply flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-(--border) bg-(--bg-primary) p-1.5 text-(--text-muted) transition-[background, border-color, color] duration-150;
+  @apply flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-(--border) bg-(--bg-primary) p-1.5 text-(--text-muted) transition-[background_border-color_color] duration-150;
   /* don't let the icon buttons compress to nothing */
 }
 
