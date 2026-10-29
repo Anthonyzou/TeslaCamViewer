@@ -76,131 +76,75 @@ function onClose() {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .export-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  @apply fixed inset-0 z-[9999] flex items-center justify-center;
 }
 
 .export-modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
+  @apply absolute inset-0 bg-black/85 backdrop-blur-[4px];
 }
 
 .export-modal-panel {
-  position: relative;
-  background: #1e1e1e;
-  border: 1px solid #333333;
-  border-radius: 12px;
-  padding: 2rem;
-  width: 90%;
-  max-width: 440px;
+  @apply relative w-[90%] max-w-[440px] rounded-xl border border-[#333333] bg-[#1e1e1e] p-8 text-center text-white z-10000;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-  z-index: 10000;
-  color: #ffffff;
-  text-align: center;
 }
 
 .export-modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
+  @apply mb-2 text-xl font-bold text-white;
 }
 
 .export-modal-status {
-  font-size: 0.9rem;
-  color: #a0a0a0;
-  margin-bottom: 1.25rem;
-  min-height: 1.2rem;
+  @apply mb-5 min-h-[1.2rem] text-[0.9rem] text-[#a0a0a0];
 }
 
 .export-progress-track {
-  width: 100%;
-  height: 8px;
-  background: #2d2d2d;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
+  @apply mb-6 h-2 w-full overflow-hidden rounded bg-[#2d2d2d];
 }
 
 .export-progress-fill {
-  height: 100%;
+  @apply h-full rounded transition-[width] duration-150 ease-in-out;
   background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  border-radius: 4px;
-  transition: width 0.15s ease;
 }
 
 .complete-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  @apply mb-2 text-[2.5rem];
 }
 
 .complete-description {
-  font-size: 0.9rem;
-  color: #9ca3af;
-  margin-bottom: 1.5rem;
-  word-break: break-all;
+  @apply mb-6 text-[0.9rem] break-all text-[#9ca3af];
 }
 
 .export-modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
+  @apply flex justify-center gap-3;
 }
 
 .export-btn {
-  padding: 0.6rem 1.5rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition:
-    background 0.15s ease,
-    opacity 0.15s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @apply inline-flex cursor-pointer items-center justify-center rounded-md border-none px-6 py-[0.6rem] text-[0.9rem] font-semibold no-underline transition-[background,opacity] duration-150 ease-in-out;
 }
 
 .export-btn-cancel {
-  background: #dc2626;
-  color: #ffffff;
+  @apply bg-[#dc2626] text-white;
 }
 
 .export-btn-cancel:hover {
-  background: #b91c1c;
+  @apply bg-[#b91c1c];
 }
 
 .export-btn-download {
-  background: #2563eb;
-  color: #ffffff;
+  @apply bg-[#2563eb] text-white;
 }
 
 .export-btn-download:hover {
-  background: #1d4ed8;
+  @apply bg-[#1d4ed8];
 }
 
 .export-btn-close {
-  background: #374151;
-  color: #ffffff;
-  border: 1px solid #4b5563;
+  @apply border border-[#4b5563] bg-[#374151] text-white;
 }
 
 .export-btn-close:hover {
-  background: #4b5563;
+  @apply bg-[#4b5563];
 }
 </style>

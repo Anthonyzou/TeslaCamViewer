@@ -194,170 +194,108 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* Drive Setup Dialog */
 .drive-setup-modal {
-  max-width: 480px;
+  @apply max-w-[480px];
 }
 
 .drive-setup-modal .modal-content {
-  padding: 1.25rem;
+  @apply p-5;
 }
 
 .drive-setup-selected {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  @apply mb-4 flex items-center gap-2 rounded-lg bg-(--bg-tertiary) p-3 font-(family-name:--font-mono) text-[0.85rem] text-(--text-secondary);
 }
 
 .drive-setup-selected svg {
-  color: var(--accent);
-  flex-shrink: 0;
+  @apply shrink-0 text-(--accent);
 }
 
 .drive-setup-tip {
-  background: var(--accent-subtle);
-  border: 1px solid var(--border-accent);
-  border-radius: 8px;
-  padding: 0.875rem;
-  margin-bottom: 1.25rem;
+  @apply mb-5 rounded-lg border border-(--border-accent) bg-(--accent-subtle) p-3.5;
 }
 
 .drive-setup-tip-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: var(--accent);
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
+  @apply mb-2 flex items-center gap-2 text-[0.85rem] font-medium text-(--accent);
 }
 
 .drive-setup-tip ul {
-  margin: 0;
-  padding-left: 1.5rem;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.6;
+  @apply m-0 pl-6 text-[0.8rem] leading-[1.6] text-(--text-secondary);
 }
 
 .drive-setup-tip li {
-  margin-bottom: 0.25rem;
+  @apply mb-1;
 }
 
 .drive-setup-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  @apply flex flex-col gap-4;
 }
 
 .drive-setup-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  @apply flex flex-col gap-1.5;
 }
 
 .drive-setup-field label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  @apply text-[0.8rem] font-medium text-(--text-secondary);
 }
 
 .drive-setup-field input[type='text'],
 .drive-setup-field select {
-  padding: 0.625rem 0.75rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
+  @apply rounded-md border border-(--border) bg-(--bg-tertiary) px-3 py-2.5 font-(family-name:--font-ui) text-[0.9rem] text-(--text-primary);
 }
 
 .drive-setup-field input[type='text']:focus,
 .drive-setup-field select:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
 }
 
 .drive-setup-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  cursor: pointer;
-  padding: 0.625rem;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer items-center gap-2.5 rounded-md border border-(--border) bg-(--bg-tertiary) p-2.5 transition-all duration-200;
 }
 
 .drive-setup-checkbox:hover {
-  border-color: var(--accent);
+  @apply border-(--accent);
 }
 
 .drive-setup-checkbox input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-  cursor: pointer;
+  @apply h-[18px] w-[18px] cursor-pointer accent-(--accent);
 }
 
 .drive-setup-checkbox-content {
-  flex: 1;
+  @apply flex-1;
 }
 
 .drive-setup-checkbox-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  @apply text-[0.9rem] font-medium text-(--text-primary);
 }
 
 .drive-setup-checkbox-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.125rem;
+  @apply mt-0.5 text-xs text-(--text-muted);
 }
 
 .drive-setup-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  @apply mt-2 flex gap-3;
 }
 
 .drive-setup-actions .btn {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply flex-1 cursor-pointer rounded-md p-3 font-medium transition-all duration-200;
 }
 
 .drive-setup-actions .btn-secondary {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  @apply border border-(--border) bg-(--bg-tertiary) text-(--text-secondary);
 }
 
 .drive-setup-actions .btn-secondary:hover {
-  border-color: var(--text-muted);
-  color: var(--text-primary);
+  @apply border-(--text-muted) text-(--text-primary);
 }
 
 .drive-setup-actions .btn-primary {
-  background: var(--accent);
-  border: none;
-  color: var(--bg-void);
+  @apply border-none bg-(--accent) text-(--bg-void);
 }
 
 .drive-setup-actions .btn-primary:hover {
-  background: var(--accent-hover);
+  @apply bg-(--accent-hover);
 }
 </style>

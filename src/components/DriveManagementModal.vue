@@ -257,103 +257,63 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* Drive management modal */
 .drive-management-modal {
-  max-width: 500px;
+  @apply max-w-[500px];
 }
 
 .drive-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  @apply mb-4 flex flex-col gap-3;
 }
 
 .drive-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  @apply flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-tertiary) p-3;
 }
 
 .drive-color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  @apply size-3 shrink-0 rounded-full;
 }
 
 .drive-color-picker {
-  position: relative;
-  cursor: pointer;
-  flex-shrink: 0;
+  @apply relative shrink-0 cursor-pointer;
 }
 
 .drive-color-input {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  opacity: 0;
-  cursor: pointer;
+  @apply absolute size-6 cursor-pointer opacity-0;
 }
 
 .drive-color-preview {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  transition: all 0.2s ease;
+  @apply size-6 rounded-full border-2 border-(--border) transition-all duration-200;
 }
 
 .drive-color-picker:hover .drive-color-preview {
-  border-color: var(--accent);
-  transform: scale(1.1);
+  @apply scale-110 border-(--accent);
 }
 
 .drive-label-input {
-  flex: 1;
-  background: var(--bg-primary);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 0.375rem 0.5rem;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
+  @apply flex-1 rounded border border-transparent bg-(--bg-primary) px-2 py-1.5 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary);
 }
 
 .drive-label-input:hover {
-  border-color: var(--border);
+  @apply border-(--border);
 }
 
 .drive-label-input:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
 }
 
 .drive-event-count {
+  @apply text-xs whitespace-nowrap text-(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .drive-remove-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
+  @apply flex cursor-pointer items-center rounded p-1 text-(--text-muted) transition-all duration-200;
 }
 
 .drive-remove-btn:hover {
-  color: #ff5252;
-  background: rgba(255, 82, 82, 0.1);
+  @apply bg-[rgba(255,82,82,0.1)] text-[#ff5252];
 }
 </style>

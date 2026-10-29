@@ -89,89 +89,28 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== MAP ==================== */
 #mapTab,
 .map-view-wrapper {
-  width: 100%;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  @apply relative flex h-full w-full flex-1 min-h-0 flex-col;
 }
 
 #map {
-  width: 100%;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
-  background: var(--bg-tertiary);
-}
-
-.map-popup {
-  min-width: 200px;
-  font-family: var(--font-ui);
-}
-
-.map-popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.map-popup-date {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.map-popup-time {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.map-popup-location {
-  font-size: 0.85rem;
-  color: #444;
-  margin-bottom: 0.25rem;
-}
-
-.map-popup-reason {
-  font-size: 0.8rem;
-  color: #666;
-  font-style: italic;
-  margin-bottom: 0.25rem;
-}
-
-.map-popup-clips {
-  font-size: 0.75rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.map-popup-action {
-  font-size: 0.8rem;
-  color: #00b4d8;
-  font-weight: 600;
-  text-align: center;
-  padding-top: 0.5rem;
-  border-top: 1px solid #e0e0e0;
+  @apply h-full w-full min-h-0 flex-1 bg-(--bg-tertiary);
 }
 
 .custom-marker-icon {
-  background: transparent;
-  border: none;
+  @apply border-none bg-transparent;
 }
 
 .leaflet-popup-content-wrapper {
-  background: #fff;
-  border-radius: 10px;
+  @apply rounded-[10px] bg-white;
   box-shadow: var(--shadow-md);
 }
 
 .leaflet-popup-tip {
-  background: #fff;
+  @apply bg-white;
 }
 </style>

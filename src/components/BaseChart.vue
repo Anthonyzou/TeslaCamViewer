@@ -155,8 +155,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .chart-wrapper {
-  position: relative;
-  width: 100%;
+  @apply relative w-full;
 }
 </style>

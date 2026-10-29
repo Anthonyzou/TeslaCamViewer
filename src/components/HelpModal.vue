@@ -213,16 +213,10 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .help-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply fixed inset-0 z-2000 flex items-center justify-center;
 }
 
 .help-modal.hidden {
@@ -230,69 +224,34 @@ defineExpose({
 }
 
 .help-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  @apply absolute inset-0 bg-black/80 backdrop-blur-[5px];
 }
 
 .help-panel {
-  position: relative;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
+  @apply relative flex max-h-[85vh] w-[90%] max-w-[600px] flex-col rounded-2xl border border-(--border) bg-(--bg-secondary);
   box-shadow:
     var(--shadow-lg),
     0 0 60px rgba(0, 212, 255, 0.1);
 }
 
 .help-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  @apply flex items-center justify-between border-b border-(--border) px-6 py-5;
 }
 
 .help-header h2 {
-  font-family: var(--font-ui);
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  @apply m-0 font-(family-name:--font-ui) text-[1.1rem] font-semibold uppercase tracking-[0.05em];
 }
 
 .help-close-btn {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply flex cursor-pointer items-center justify-center rounded-lg border border-(--border) bg-(--bg-tertiary) p-2 text-(--text-secondary) transition-all duration-200;
 }
 
 .help-close-btn:hover {
-  color: var(--accent);
-  border-color: var(--border-accent);
+  @apply border-(--border-accent) text-(--accent);
 }
 
 .help-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem 1.5rem;
+  @apply flex-1 overflow-y-auto px-6 py-5;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
@@ -319,95 +278,57 @@ defineExpose({
 }
 
 .help-section {
-  margin-bottom: 1.75rem;
+  @apply mb-7;
 }
 
 .help-section:last-child {
-  margin-bottom: 0;
+  @apply mb-0;
 }
 
 .help-section h3 {
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 1rem;
+  @apply mb-4 font-(family-name:--font-ui) text-xs font-semibold tracking-[0.1em] text-(--accent) uppercase;
 }
 
 .help-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border);
+  @apply flex items-center justify-between gap-3.5 border-t border-(--border) px-6 py-4;
 }
 
 .help-tip {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
+  @apply text-[0.8rem] text-(--text-muted) italic;
 }
 
 .help-footer-actions {
-  display: flex;
-  gap: 8px;
+  @apply flex gap-2;
 }
 
 .help-report-btn {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply rounded text-xs cursor-pointer border border-(--border) bg-(--bg-tertiary) px-3 py-1.5 text-(--text-secondary) transition-all duration-200;
 }
 
 .help-report-btn:hover {
-  background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  @apply border-(--accent) bg-(--accent-subtle) text-(--accent);
 }
 
 .shortcut-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  @apply flex flex-col gap-1.5;
 }
 
 .shortcut-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  @apply flex items-center gap-4 py-2;
 }
 
 .shortcut-row kbd {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.625rem;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  min-width: 55px;
-  text-align: center;
-  color: var(--accent);
+  @apply min-w-[55px] rounded-md border border-(--border) bg-(--bg-tertiary) px-2.5 py-[0.3rem] text-center font-(family-name:--font-mono) text-[0.8rem] text-(--accent);
   box-shadow: inset 0 -2px 0 var(--bg-void);
 }
 
 .shortcut-row span {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  @apply text-[0.85rem] text-(--text-secondary);
 }
 
 @media only screen and (max-width: 768px) {
   .help-panel {
-    width: 95%;
-    max-height: 90vh;
+    @apply w-[95%] max-h-[90vh];
   }
 }
 </style>
