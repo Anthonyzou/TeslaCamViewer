@@ -1,10 +1,11 @@
+import { compile } from '@tailwindcss/node';
+import { Scanner } from '@tailwindcss/oxide';
 import * as esbuild from 'esbuild';
 import { existsSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { resolve, dirname } from 'node:path';
-import { compile } from '@tailwindcss/node';
-import { Scanner } from '@tailwindcss/oxide';
+import { dirname, resolve } from 'node:path';
 import vuePlugin from 'unplugin-vue/esbuild';
+import { startServer } from './server/index.ts';
 
 const args = process.argv.slice(2);
 const isWatch = args.includes('--watch');
@@ -13,7 +14,7 @@ const isProduction = !isWatch && !args.includes('--no-minify');
 /**
  * Format bytes to readable string (e.g. 120.4 KB)
  */
-function formatBytes(bytes) {
+function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
@@ -49,7 +50,7 @@ const tailwindPlugin = {
 /**
  * Common build configuration
  */
-const jsConfig = {
+const jsConfig: esbuild.BuildOptions = {
   entryPoints: ['src/index.ts'],
   bundle: true,
   outfile: 'dist/app.js',
@@ -70,7 +71,7 @@ const jsConfig = {
   },
 };
 
-const workerConfig = {
+const workerConfig: esbuild.BuildOptions = {
   entryPoints: ['src/workers/videoExportWorker.ts'],
   bundle: true,
   outfile: 'dist/videoExportWorker.js',
@@ -100,6 +101,7 @@ async function runBuild() {
       console.log(
         '[esbuild] Watching for changes in src/ and styles/ (press Ctrl+C to stop)...'
       );
+      startServer(); // START SERVER AUTOMATICALLY
     } else {
       await Promise.all([esbuild.build(jsConfig), esbuild.build(workerConfig)]);
 

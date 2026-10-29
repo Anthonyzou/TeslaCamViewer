@@ -84,7 +84,7 @@ function isEntryFile(): boolean {
   }
 }
 
-if (isEntryFile()) {
+const startServer = () => {
   process.on('unhandledRejection', (reason) => {
     console.error('[Process] Unhandled Promise Rejection:', reason);
   });
@@ -128,6 +128,10 @@ if (isEntryFile()) {
   // Optimize browser-to-server HTTP keep-alive timeouts for video scrubbing
   server.keepAliveTimeout = 65000;
   server.headersTimeout = 66000;
+};
+
+if (isEntryFile()) {
+  startServer();
 }
 
 export {
@@ -147,6 +151,7 @@ export {
   pruneVideoCache,
   scheduleVideoPreload,
   setCachedB2Data,
+  startServer,
   touchCacheFile,
   VIDEO_CACHE_DIR,
 };

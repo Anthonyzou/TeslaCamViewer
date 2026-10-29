@@ -1,24 +1,15 @@
 <template>
-  <div
-    :class="[
-      'event-item',
-      {
-        active: isSelected,
-        'event-empty': event.isEmpty,
-      },
-    ]"
-    :data-event-name="event.name"
-    :data-event-key="event.compoundKey || event.name"
-    @click="handleClick"
-  >
+  <div :class="[
+    'event-item',
+    {
+      active: isSelected,
+      'event-empty': event.isEmpty,
+    },
+  ]" :data-event-name="event.name" :data-event-key="event.compoundKey || event.name" @click="handleClick">
     <!-- Thumbnail or Placeholder -->
-    <img
-      v-if="thumbnailUrl"
-      loading="lazy"
-      :src="thumbnailUrl"
-      alt="Event thumbnail"
-      class="event-thumbnail"
-    />
+    <img v-if="thumbnailUrl" loading="lazy" :src="thumbnailUrl" alt="Event thumbnail" class="
+      event-thumbnail
+    " />
     <div v-else class="event-thumbnail-placeholder">
       <span class="placeholder-icon">🎥</span>
       <span class="placeholder-text">{{ clipCount }} Clips</span>
@@ -27,20 +18,17 @@
 
     <!-- Header -->
     <div class="event-item-header">
-      <span
-        v-if="event.driveLabel"
-        class="drive-badge"
-        :style="{ background: event.driveColor || 'var(--accent)' }"
-        :title="event.driveLabel"
-      >
+      <span v-if="event.driveLabel" class="drive-badge" :style="{ background: event.driveColor || 'var(--accent)' }"
+        :title="event.driveLabel">
         {{ event.driveLabel }}
       </span>
       <span :class="['event-type', typeClass]">{{ typeClass }}</span>
-      <span
-        v-if="health.status !== 'healthy'"
-        :class="['health-badge', `health-${health.status}`]"
-        :title="healthTooltip"
-      >
+      <span v-if="health.status !== 'healthy'" :class="[
+        'health-badge',
+        `
+          health-${health.status}
+        `,
+      ]" :title="healthTooltip">
         {{ health.icon }}
       </span>
       <span class="event-item-date">{{ dateStr }}</span>
@@ -214,12 +202,12 @@ function handleClick(): void {
   if (props.event.isEmpty) {
     const dateFormatted = !isNaN(date.value.getTime())
       ? date.value.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
       : 'selected event';
     console.warn(`No video clips available for event on ${dateFormatted}`);
   } else {
@@ -250,11 +238,9 @@ function handleClick(): void {
   left: 0;
   right: 0;
   height: 60%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      transparent 100%);
   pointer-events: none;
 }
 
@@ -266,11 +252,9 @@ function handleClick(): void {
 }
 
 .event-item.active {
-  background: linear-gradient(
-    135deg,
-    var(--accent-subtle) 0%,
-    var(--bg-elevated) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--accent-subtle) 0%,
+      var(--bg-elevated) 100%);
   border-color: var(--accent);
   box-shadow:
     0 0 25px var(--accent-glow),
@@ -301,11 +285,9 @@ function handleClick(): void {
   height: 120px;
   border-radius: 6px;
   margin-bottom: 0.625rem;
-  background: linear-gradient(
-    135deg,
-    var(--bg-void) 0%,
-    var(--bg-tertiary) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--bg-void) 0%,
+      var(--bg-tertiary) 100%);
   border: 1px dashed var(--border);
   display: flex;
   flex-direction: column;
@@ -355,7 +337,7 @@ function handleClick(): void {
 }
 
 /* Hide thumbnail when preview is playing */
-.event-item:hover .preview-video + .event-thumbnail,
+.event-item:hover .preview-video+.event-thumbnail,
 .event-item:hover .event-thumbnail:has(+ .preview-video) {
   opacity: 0;
 }
@@ -534,13 +516,11 @@ function handleClick(): void {
   left: 0;
   right: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 8px,
-    rgba(255, 59, 59, 0.05) 8px,
-    rgba(255, 59, 59, 0.05) 16px
-  );
+  background: repeating-linear-gradient(-45deg,
+      transparent,
+      transparent 8px,
+      rgba(255, 59, 59, 0.05) 8px,
+      rgba(255, 59, 59, 0.05) 16px);
   pointer-events: none;
   border-radius: 6px;
 }
@@ -653,6 +633,7 @@ function handleClick(): void {
 }
 
 @keyframes pulse-critical {
+
   0%,
   100% {
     box-shadow: 0 0 3px rgba(248, 113, 113, 0.5);
