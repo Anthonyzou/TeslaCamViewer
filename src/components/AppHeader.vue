@@ -19,7 +19,7 @@
             y2="100%"
           >
             <stop offset="0%" class="brand-gradient-start" />
-            <stop offset="100%" stop-color="#0099cc" />
+            <stop offset="100%" class="brand-gradient-end" />
           </linearGradient>
         </defs>
         <circle
@@ -181,15 +181,15 @@ const { t } = useI18n();
 /* Session button - free tier (red) */
 .session-btn {
   @apply flex cursor-pointer items-center gap-1.5 rounded-[20px] px-4 py-2 font-(family-name:--font-ui) text-[0.8rem] font-medium tracking-[0.02em] transition-all duration-250 ease-in-out;
-  background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+  background: linear-gradient(135deg, var(--c-session-start) 0%, var(--c-session-end) 100%);
   color: white !important;
-  border: 1px solid rgba(255, 77, 109, 0.3) !important;
+  border: 1px solid color-mix(in srgb, var(--c-session-start) 30%, transparent) !important;
 }
 
 .session-btn:hover {
-  background: linear-gradient(135deg, #ff6b88 0%, #e01b5e 100%);
+  background: linear-gradient(135deg, var(--c-session-hover-start) 0%, var(--c-session-hover-end) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(201, 24, 74, 0.4);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--c-session-end) 40%, transparent);
   color: white !important;
 }
 
@@ -199,7 +199,7 @@ const { t } = useI18n();
 
 .primary-btn {
   @apply flex cursor-pointer items-center gap-2 rounded-lg border-none px-6 py-3 font-(family-name:--font-ui) text-[0.9rem] font-semibold tracking-[0.02em] text-(--bg-void) transition-all duration-250 ease-in-out;
-  background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--c-brand-end) 100%);
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
@@ -228,6 +228,10 @@ const { t } = useI18n();
 
 .brand-gradient-start {
   stop-color: var(--accent);
+}
+
+.brand-gradient-end {
+  stop-color: var(--c-brand-end);
 }
 
 .brand-dot {

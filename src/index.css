@@ -81,6 +81,38 @@
   --c-overlay-black-40: rgba(0, 0, 0, 0.4);
   --c-overlay-black-80: rgba(0, 0, 0, 0.8);
   --c-overlay-white-10: rgba(255, 255, 255, 0.1);
+  --c-overlay-white-2: rgba(255, 255, 255, 0.02);
+  --c-overlay-white-3: rgba(255, 255, 255, 0.03);
+  --c-overlay-black-35: rgba(0, 0, 0, 0.35);
+  --c-overlay-black-3: rgba(0, 0, 0, 0.03);
+  --c-export-surface: #1e1e1e;
+  --c-export-border: #333333;
+  --c-export-track: #2d2d2d;
+  --c-export-text-muted: #a0a0a0;
+  --c-export-text-soft: #9ca3af;
+  --c-export-progress-start: #3b82f6;
+  --c-export-progress-end: #60a5fa;
+  --c-export-cancel: #dc2626;
+  --c-export-cancel-hover: #b91c1c;
+  --c-export-download: #2563eb;
+  --c-export-download-hover: #1d4ed8;
+  --c-export-close: #374151;
+  --c-export-close-border: #4b5563;
+  --c-export-close-hover: #4b5563;
+  --c-destructive: #ff5252;
+  --c-destructive-tint: rgba(255, 82, 82, 0.1);
+  --c-drive-cloud: #003399;
+  --c-recording-pulse: #06b6d4;
+  --c-marker-in: #4caf50;
+  --c-marker-out: #f44336;
+  --c-day-swatch: #ffc107;
+  --c-night-swatch: #1a237e;
+  --c-session-start: #ff4d6d;
+  --c-session-end: #c9184a;
+  --c-session-hover-start: #ff6b88;
+  --c-session-hover-end: #e01b5e;
+  --c-brand-end: #0099cc;
+  --c-loading-scrim: rgba(10, 12, 18, 0.85);
 }
 
 @layer base {

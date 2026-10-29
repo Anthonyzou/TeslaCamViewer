@@ -274,7 +274,7 @@ onUnmounted(() => {
 /* ==================== SELECT FOLDER BUTTON ==================== */
 .select-folder-btn {
   @apply my-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-none px-4 py-3.5 font-(family-name:--font-ui) text-[0.9rem] font-semibold tracking-[0.02em] text-(--bg-void) transition-all duration-250;
-  background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--c-brand-end) 100%);
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
@@ -580,7 +580,8 @@ body.sidebar-resizing * {
 }
 
 .drive-remove-btn:hover {
-  @apply bg-[rgba(255,82,82,0.1)] text-[#ff5252];
+  @apply text-(--c-destructive);
+  background-color: var(--c-destructive-tint);
 }
 
 /* Drive Setup Dialog */
@@ -770,7 +771,9 @@ body.sidebar-resizing * {
 /* Outlined pill — readable but quiet so it doesn't fight the rest of
  * the sidebar. Subtle pulse to nudge attention without being loud. */
 .ai-search-beta-pill {
-  @apply cursor-help rounded-lg border border-[rgba(255,184,0,0.45)] bg-[rgba(255,184,0,0.08)] px-1.5 py-px text-[0.6rem] font-bold tracking-[0.08em] text-(--warning) uppercase leading-[1.3];
+  @apply cursor-help rounded-lg border px-1.5 py-px text-[0.6rem] font-bold tracking-[0.08em] text-(--warning) uppercase leading-[1.3];
+  border-color: color-mix(in srgb, var(--c-health-minor) 45%, transparent);
+  background-color: color-mix(in srgb, var(--c-health-minor) 8%, transparent);
 }
 
 .ai-search-collapse-icon,
@@ -852,11 +855,11 @@ body.sidebar-resizing * {
 }
 
 .event-item.ai-confident {
-  @apply border-l-[3px] border-l-[#4ade80];
+  @apply border-l-[3px] border-l-(--c-launch);
 }
 
 .event-item.ai-possible {
-  @apply border-l-[3px] border-l-[#ffb800] opacity-80;
+  @apply border-l-[3px] border-l-(--c-health-minor) opacity-80;
 }
 
 .event-ai-match-label {
@@ -878,15 +881,15 @@ body.sidebar-resizing * {
 }
 
 .ai-search-tier-confident {
-  @apply text-[#4ade80];
+  @apply text-(--c-launch);
 }
 
 .ai-search-tier-possible {
-  @apply text-[#ffb800];
+  @apply text-(--c-health-minor);
 }
 
 .ai-search-tier-none {
-  @apply text-[#f87171];
+  @apply text-(--c-severity-critical);
 }
 
 /* Toast for first-run prompt — positioned TOP-right so it doesn't collide
@@ -913,6 +916,6 @@ body.sidebar-resizing * {
 }
 
 .sync-cloud-bg {
-  background: #003399;
+  background: var(--c-drive-cloud);
 }
 </style>

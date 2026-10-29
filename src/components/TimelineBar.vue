@@ -177,7 +177,7 @@ onUnmounted(() => {
   content: '';
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.03) 0%,
+    var(--c-overlay-white-3) 0%,
     transparent 50%
   );
 }
@@ -243,21 +243,21 @@ onUnmounted(() => {
 }
 
 .mark-in-marker {
-  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-[#4caf50];
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-(--c-marker-in);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-marker-in) 60%, transparent);
 }
 
 .mark-in-marker .marker-label {
-  @apply pointer-events-none absolute top-[-18px] left-[-10px] rounded-[3px] border border-[#4caf50] bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-[#4caf50];
+  @apply pointer-events-none absolute top-[-18px] left-[-10px] rounded-[3px] border border-(--c-marker-in) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-in);
 }
 
 .mark-out-marker {
-  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-[#f44336];
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-(--c-marker-out);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-marker-out) 60%, transparent);
 }
 
 .mark-out-marker .marker-label {
-  @apply pointer-events-none absolute top-[-18px] left-[-14px] rounded-[3px] border border-[#f44336] bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-[#f44336];
+  @apply pointer-events-none absolute top-[-18px] left-[-14px] rounded-[3px] border border-(--c-marker-out) bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-(--c-marker-out);
 }
 
 .clip-marker {

@@ -302,8 +302,8 @@ function getCameraObjectFit(cameraName: string): 'contain' | 'cover' | 'fill' {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
+    var(--c-overlay-black-3) 2px,
+    var(--c-overlay-black-3) 4px
   );
 }
 
@@ -577,7 +577,8 @@ button svg *,
 }
 
 .video-label.ended {
-  @apply border-(--danger) bg-[rgba(255,59,59,0.85)];
+  @apply border-(--danger);
+  background-color: color-mix(in srgb, var(--danger) 85%, transparent);
   box-shadow: 0 0 10px var(--danger-glow);
 }
 

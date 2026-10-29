@@ -196,7 +196,8 @@ useKeyboardShortcuts({
 }
 
 .loading-overlay {
-  @apply fixed inset-0 z-1000 flex flex-col items-center justify-center gap-4 bg-[rgba(10,12,18,0.85)] backdrop-blur-[8px];
+  @apply fixed inset-0 z-1000 flex flex-col items-center justify-center gap-4 backdrop-blur-[8px];
+  background-color: var(--c-loading-scrim);
 }
 
 .loading-overlay.hidden {

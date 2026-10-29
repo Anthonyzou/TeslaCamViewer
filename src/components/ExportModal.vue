@@ -87,7 +87,7 @@ function onClose() {
 }
 
 .export-modal-panel {
-  @apply relative w-[90%] max-w-[440px] rounded-xl border border-[#333333] bg-[#1e1e1e] p-8 text-center text-white z-10000;
+  @apply relative w-[90%] max-w-[440px] rounded-xl border border-(--c-export-border) bg-(--c-export-surface) p-8 text-center text-white z-10000;
   box-shadow: 0 16px 48px var(--c-overlay-black-60);
 }
 
@@ -96,16 +96,16 @@ function onClose() {
 }
 
 .export-modal-status {
-  @apply mb-5 min-h-[1.2rem] text-[0.9rem] text-[#a0a0a0];
+  @apply mb-5 min-h-[1.2rem] text-[0.9rem] text-(--c-export-text-muted);
 }
 
 .export-progress-track {
-  @apply mb-6 h-2 w-full overflow-hidden rounded bg-[#2d2d2d];
+  @apply mb-6 h-2 w-full overflow-hidden rounded bg-(--c-export-track);
 }
 
 .export-progress-fill {
   @apply h-full rounded transition-[width] duration-150 ease-in-out;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  background: linear-gradient(90deg, var(--c-export-progress-start), var(--c-export-progress-end));
 }
 
 .complete-icon {
@@ -113,7 +113,7 @@ function onClose() {
 }
 
 .complete-description {
-  @apply mb-6 text-[0.9rem] break-all text-[#9ca3af];
+  @apply mb-6 text-[0.9rem] break-all text-(--c-export-text-soft);
 }
 
 .export-modal-actions {
@@ -125,26 +125,26 @@ function onClose() {
 }
 
 .export-btn-cancel {
-  @apply bg-[#dc2626] text-white;
+  @apply bg-(--c-export-cancel) text-white;
 }
 
 .export-btn-cancel:hover {
-  @apply bg-[#b91c1c];
+  @apply bg-(--c-export-cancel-hover);
 }
 
 .export-btn-download {
-  @apply bg-[#2563eb] text-white;
+  @apply bg-(--c-export-download) text-white;
 }
 
 .export-btn-download:hover {
-  @apply bg-[#1d4ed8];
+  @apply bg-(--c-export-download-hover);
 }
 
 .export-btn-close {
-  @apply border border-[#4b5563] bg-[#374151] text-white;
+  @apply border border-(--c-export-close-border) bg-(--c-export-close) text-white;
 }
 
 .export-btn-close:hover {
-  @apply bg-[#4b5563];
+  @apply bg-(--c-export-close-hover);
 }
 </style>

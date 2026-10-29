@@ -250,7 +250,8 @@ defineExpose({
 }
 
 .drive-remove-btn:hover {
-  @apply bg-[rgba(255,82,82,0.1)] text-[#ff5252];
+  @apply text-(--c-destructive);
+  background-color: var(--c-destructive-tint);
 }
 .empty-drives {
   @apply text-center text-(--text-muted);

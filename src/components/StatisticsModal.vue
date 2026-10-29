@@ -698,7 +698,7 @@ defineExpose({
 }
 
 .stats-nav-item.active {
-  background: var(--accent-subtle, rgba(74, 158, 255, 0.15));
+  background: var(--accent-subtle);
   @apply text-(--accent);
 }
 
@@ -937,10 +937,10 @@ defineExpose({
 .stats-dn-donut {
   @apply relative flex size-20 items-center justify-center rounded-full;
   background: conic-gradient(
-    #ffc107 0deg,
-    #ffc107 calc(var(--day-percent) * 3.6deg),
-    #1a237e calc(var(--day-percent) * 3.6deg),
-    #1a237e 360deg
+    var(--c-day-swatch) 0deg,
+    var(--c-day-swatch) calc(var(--day-percent) * 3.6deg),
+    var(--c-night-swatch) calc(var(--day-percent) * 3.6deg),
+    var(--c-night-swatch) 360deg
   );
 }
 
@@ -1067,11 +1067,11 @@ defineExpose({
 }
 
 .stats-dn-swatch-day {
-  background: #ffc107;
+  background: var(--c-day-swatch);
 }
 
 .stats-dn-swatch-night {
-  background: #1a237e;
+  background: var(--c-night-swatch);
 }
 
 .stats-section-note {

@@ -235,7 +235,7 @@ function handleClick(): void {
   @apply pointer-events-none absolute top-0 left-0 right-0 h-[60%];
   content: '';
   background: linear-gradient(180deg,
-      color-mix(in srgb, #fff 2%, transparent) 0%,
+      var(--c-overlay-white-2) 0%,
       transparent 100%);
 }
 
@@ -308,7 +308,7 @@ function handleClick(): void {
   @apply inline-flex items-center rounded px-2.5 py-1 font-(family-name:--font-mono) text-[0.65rem] font-semibold tracking-[0.08em] text-white uppercase;
   /* Explicit text color — previously inherited --text-muted (#5c6370),
      * which rendered nearly invisible against the dark gradient fills. */
-  text-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent);
+  text-shadow: 0 1px 2px var(--c-overlay-black-35);
 }
 
 .event-type.saved {

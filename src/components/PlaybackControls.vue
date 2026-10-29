@@ -568,8 +568,8 @@ function onExportVideoClick(): void {
   @apply mx-1.5 my-1 flex w-[calc(100%-0.75rem)] cursor-pointer items-center gap-2 rounded-md border-none px-3 py-2.5 text-left font-[inherit] text-[0.8rem] text-(--text-primary) transition-all duration-150;
   background: linear-gradient(
     135deg,
-    rgba(74, 158, 255, 0.08),
-    rgba(74, 158, 255, 0.02)
+    color-mix(in srgb, var(--c-palette-accent) 8%, transparent),
+    color-mix(in srgb, var(--c-palette-accent) 2%, transparent)
   );
   border-left: 3px solid var(--accent);
 }
@@ -577,8 +577,8 @@ function onExportVideoClick(): void {
 .export-action-btn:hover {
   background: linear-gradient(
     135deg,
-    rgba(74, 158, 255, 0.15),
-    rgba(74, 158, 255, 0.05)
+    color-mix(in srgb, var(--c-palette-accent) 15%, transparent),
+    color-mix(in srgb, var(--c-palette-accent) 5%, transparent)
   );
 }
 
@@ -770,8 +770,8 @@ function onExportVideoClick(): void {
    amber "drifted" state. Fires briefly when a micro-seek unsticks a camera
    from GPU overlay starvation. */
 .sync-indicator.recovering {
-  @apply bg-[#06b6d4];
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.55);
+  background-color: var(--c-recording-pulse);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-recording-pulse) 55%, transparent);
   animation: pulse-recovering 0.6s ease-in-out infinite;
 }
 
@@ -800,11 +800,11 @@ function onExportVideoClick(): void {
 @keyframes pulse-recovering {
   0%,
   100% {
-    box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--c-recording-pulse) 40%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 18px rgba(6, 182, 212, 0.9);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--c-recording-pulse) 90%, transparent);
   }
 }
 
@@ -819,7 +819,9 @@ function onExportVideoClick(): void {
 
 /* GIF export warning message */
 .gif-warning {
-  @apply mx-2 my-1 flex items-center gap-1.5 rounded border border-[rgba(255,184,0,0.3)] bg-[rgba(255,184,0,0.15)] px-2 py-1.5 text-[0.7rem] text-(--warning);
+  @apply mx-2 my-1 flex items-center gap-1.5 rounded border px-2 py-1.5 text-[0.7rem] text-(--warning);
+  border-color: color-mix(in srgb, var(--c-health-minor) 30%, transparent);
+  background-color: color-mix(in srgb, var(--c-health-minor) 15%, transparent);
 }
 
 .gif-warning.hidden {
