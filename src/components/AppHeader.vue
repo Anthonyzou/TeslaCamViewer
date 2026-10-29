@@ -106,30 +106,22 @@ const { t } = useI18n();
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== HEADER ==================== */
 .app-header {
+  @apply relative z-100 flex items-center justify-between px-6 py-3.5 border-b border-(--border);
   background: linear-gradient(
     180deg,
     var(--bg-secondary) 0%,
     var(--bg-primary) 100%
   );
-  padding: 0.875rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 100;
 }
 
 /* Subtle glow line under header */
 .app-header::after {
+  @apply absolute bottom-0 left-0 right-0 h-px opacity-30;
   content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -137,22 +129,15 @@ const { t } = useI18n();
     var(--accent) 80%,
     transparent 100%
   );
-  opacity: 0.3;
 }
 
 .header-brand {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
+  @apply flex min-w-0 shrink items-center gap-4 overflow-hidden;
 }
 
 .brand-icon {
-  flex-shrink: 0;
+  @apply shrink-0 transition-[filter] duration-300 ease-in-out;
   filter: drop-shadow(0 0 8px var(--accent-glow));
-  transition: filter 0.3s ease;
 }
 
 .brand-icon:hover {
@@ -160,18 +145,11 @@ const { t } = useI18n();
 }
 
 .brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  @apply flex flex-col gap-[0.15rem];
 }
 
 .app-header h1 {
-  font-family: var(--font-ui);
-  font-size: 1.35rem;
-  font-weight: 600;
-  margin: 0;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  @apply m-0 font-(family-name:--font-ui) text-[1.35rem] leading-none font-semibold tracking-[-0.02em] whitespace-nowrap overflow-hidden text-ellipsis;
   background: linear-gradient(
     135deg,
     var(--text-primary) 0%,
@@ -180,59 +158,32 @@ const { t } = useI18n();
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 1;
-  min-width: 0;
+  @apply flex min-w-0 shrink items-center gap-2;
   /* Allow shrinking below content size */
 }
 
 .header-btn {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply flex cursor-pointer items-center justify-center rounded-lg border border-(--border) bg-(--bg-tertiary) p-2 text-(--text-secondary) transition-all duration-200;
 }
 
 .header-btn:hover {
-  color: var(--accent);
-  background-color: var(--bg-elevated);
-  border-color: var(--border-accent);
+  @apply border-(--border-accent) bg-(--bg-elevated) text-(--accent);
   box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .header-btn svg {
-  width: 20px;
-  height: 20px;
+  @apply size-5;
 }
 
 /* Session button - free tier (red) */
 .session-btn {
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  @apply flex cursor-pointer items-center gap-1.5 rounded-[20px] px-4 py-2 font-(family-name:--font-ui) text-[0.8rem] font-medium tracking-[0.02em] transition-all duration-250 ease-in-out;
   background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
   color: white !important;
   border: 1px solid rgba(255, 77, 109, 0.3) !important;
-  border-radius: 20px;
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: all 0.25s ease;
-  cursor: pointer;
 }
 
 .session-btn:hover {
@@ -243,25 +194,12 @@ const { t } = useI18n();
 }
 
 .session-btn svg {
-  width: 16px;
-  height: 16px;
+  @apply size-4;
 }
 
 .primary-btn {
+  @apply flex cursor-pointer items-center gap-2 rounded-lg border-none px-6 py-3 font-(family-name:--font-ui) text-[0.9rem] font-semibold tracking-[0.02em] text-(--bg-void) transition-all duration-250 ease-in-out;
   background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
-  color: var(--bg-void);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
@@ -281,18 +219,10 @@ const { t } = useI18n();
 
 /* Menu Toggle Button (mobile only) */
 .menu-toggle-btn {
-  display: none;
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  padding: 0.5rem;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  @apply hidden cursor-pointer rounded-md border-none bg-transparent p-2 text-(--text-primary) transition-all duration-200;
 }
 
 .menu-toggle-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent);
+  @apply bg-(--bg-tertiary) text-(--accent);
 }
 </style>

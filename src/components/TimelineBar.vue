@@ -154,78 +154,46 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== TIMELINE ==================== */
 /* Timeline row wrapper - contains timeline, zoom controls */
 .timeline-row {
-  display: flex;
-  align-items: center;
-  background: var(--bg-secondary);
+  @apply flex items-center bg-(--bg-secondary);
 }
 
 .timeline-container {
-  flex: 1;
-  padding: 0.25rem 0.75rem;
-  overflow: visible;
+  @apply flex-1 overflow-visible px-3 py-1;
 }
 
 .timeline {
-  position: relative;
-  height: 36px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  overflow: visible;
+  @apply relative h-9 cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) select-none overflow-visible;
   /* Allow markers to extend outside */
 }
 
 /* Timeline gradient overlay */
 .timeline::before {
+  @apply pointer-events-none absolute inset-0 rounded-md;
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.03) 0%,
     transparent 50%
   );
-  pointer-events: none;
-  border-radius: 6px;
 }
 
 .timeline-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
+  @apply pointer-events-none absolute top-0 left-0 h-full w-0 rounded-l-md transition-[width] duration-150 ease-out;
   background: linear-gradient(
     90deg,
     var(--accent-subtle) 0%,
     var(--accent) 100%
   );
-  border-radius: 6px 0 0 6px;
-  width: 0%;
-  transition: width 0.15s ease-out;
-  pointer-events: none;
 }
 
 .timeline-scrubber {
-  position: absolute;
-  top: 50%;
-  left: 0%;
-  width: 14px;
-  height: 14px;
-  background: var(--accent);
-  border: 2px solid var(--text-primary);
-  border-radius: 50%;
+  @apply pointer-events-none absolute top-1/2 left-0 z-10 size-3.5 cursor-grab rounded-full border-2 border-(--text-primary) bg-(--accent);
   transform: translate(-50%, -50%);
-  cursor: grab;
-  pointer-events: none;
-  z-index: 10;
   /* Tight glow (was 15px blur) — scrubber animates every frame of playback,
      * so the repaint cost for its shadow is paid ~30 times per second.
      * Reducing blur radius by ~4x cuts per-frame paint work significantly. */
@@ -237,7 +205,7 @@ onUnmounted(() => {
 }
 
 .timeline-scrubber.dragging {
-  cursor: grabbing;
+  @apply cursor-grabbing;
   transform: translate(-50%, -50%) scale(1.3);
   box-shadow: 0 0 8px var(--accent);
   transition:
@@ -253,27 +221,13 @@ onUnmounted(() => {
 }
 
 .timeline-clips {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: visible;
+  @apply pointer-events-none absolute top-0 left-0 size-full overflow-visible transition-transform duration-150 ease-out;
   /* Allow markers to extend outside */
-  transition: transform 0.15s ease-out;
 }
 
 /* Timeline Mini-map */
 .timeline-minimap {
-  position: relative;
-  height: 20px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  margin-bottom: 6px;
-  cursor: pointer;
-  overflow: hidden;
+  @apply relative mb-1.5 h-5 cursor-pointer overflow-hidden rounded border border-(--border) bg-(--bg-tertiary);
 }
 
 .timeline-minimap.hidden {
@@ -281,132 +235,53 @@ onUnmounted(() => {
 }
 
 .zoom-indicator {
-  position: absolute;
-  top: -20px;
-  right: 0;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--accent);
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-  pointer-events: none;
-  border: 1px solid var(--border-accent);
+  @apply pointer-events-none absolute top-[-20px] right-0 rounded border border-(--border-accent) bg-(--bg-tertiary) px-2 py-0.5 font-(family-name:--font-mono) text-[0.7rem] font-semibold text-(--accent);
 }
 
 .clip-markers {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 15;
+  @apply pointer-events-none absolute top-0 left-0 z-15 size-full;
 }
 
 .mark-in-marker {
-  position: absolute;
-  top: -8px;
-  height: calc(100% + 16px);
-  width: 3px;
-  background-color: #4caf50;
-  z-index: 15;
-  pointer-events: none;
+  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-[#4caf50];
   box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 }
 
 .mark-in-marker .marker-label {
-  position: absolute;
-  top: -18px;
-  left: -10px;
-  font-size: 10px;
-  font-weight: bold;
-  color: #4caf50;
-  background: rgba(0, 0, 0, 0.85);
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid #4caf50;
-  pointer-events: none;
-  white-space: nowrap;
+  @apply pointer-events-none absolute top-[-18px] left-[-10px] rounded-[3px] border border-[#4caf50] bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-[#4caf50];
 }
 
 .mark-out-marker {
-  position: absolute;
-  top: -8px;
-  height: calc(100% + 16px);
-  width: 3px;
-  background-color: #f44336;
-  z-index: 15;
-  pointer-events: none;
+  @apply pointer-events-none absolute top-[-8px] z-15 h-[calc(100%+16px)] w-[3px] bg-[#f44336];
   box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
 }
 
 .mark-out-marker .marker-label {
-  position: absolute;
-  top: -18px;
-  left: -14px;
-  font-size: 10px;
-  font-weight: bold;
-  color: #f44336;
-  background: rgba(0, 0, 0, 0.85);
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid #f44336;
-  pointer-events: none;
-  white-space: nowrap;
+  @apply pointer-events-none absolute top-[-18px] left-[-14px] rounded-[3px] border border-[#f44336] bg-black/85 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap text-[#f44336];
 }
 
 .clip-marker {
-  position: absolute;
-  top: -6px;
-  height: calc(100% + 12px);
-  width: 1px;
-  background: rgba(255, 255, 255, 0.2);
-  pointer-events: auto;
+  @apply pointer-events-auto absolute top-[-6px] h-[calc(100%+12px)] w-px bg-white/20;
 }
 
 .sentry-trigger-marker {
-  position: absolute;
-  top: -10px;
-  height: calc(100% + 20px);
-  width: 4px;
-  background: var(--danger);
-  z-index: 10;
-  cursor: pointer;
+  @apply pointer-events-auto absolute top-[-10px] z-10 h-[calc(100%+20px)] w-1 cursor-pointer bg-(--danger);
   box-shadow:
     0 0 12px var(--danger-glow),
     0 0 20px var(--danger-glow);
-  pointer-events: auto;
 }
 
 .sentry-trigger-marker::before {
+  @apply absolute top-[-16px] left-1/2 flex size-[18px] items-center justify-center rounded-full bg-(--danger) text-[12px] font-bold text-white;
   content: '!';
-  position: absolute;
-  top: -16px;
-  left: 50%;
   transform: translateX(-50%);
-  width: 18px;
-  height: 18px;
-  background: var(--danger);
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   box-shadow: 0 0 8px var(--danger-glow);
 }
 
 .sentry-trigger-marker::after {
+  @apply absolute bottom-[-8px] left-1/2 size-0;
   content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 8px solid var(--danger);

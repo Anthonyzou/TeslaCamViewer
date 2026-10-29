@@ -185,35 +185,18 @@ useKeyboardShortcuts({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .main-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
+  @apply flex flex-1 overflow-hidden;
 }
 
 .player-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg-void);
-  min-width: 0;
+  @apply flex min-w-0 flex-1 flex-col overflow-hidden bg-(--bg-void);
 }
 
 .loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(10, 12, 18, 0.85);
-  backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  z-index: 1000;
+  @apply fixed inset-0 z-1000 flex flex-col items-center justify-center gap-4 bg-[rgba(10,12,18,0.85)] backdrop-blur-[8px];
 }
 
 .loading-overlay.hidden {
@@ -221,18 +204,12 @@ useKeyboardShortcuts({
 }
 
 .loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
+  @apply size-12 rounded-full border-[3px] border-(--border) border-t-(--accent);
   animation: spin 1s linear infinite;
 }
 
 .loading-text {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.05em;
+  @apply text-[0.95rem] tracking-[0.05em] text-(--text-secondary);
 }
 
 @keyframes spin {
@@ -243,14 +220,7 @@ useKeyboardShortcuts({
 
 /* ==================== PLAYER AREA ==================== */
 .player-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-void);
-  min-height: 0;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
+  @apply relative z-1 flex min-h-0 flex-1 flex-col overflow-hidden bg-(--bg-void);
   /* Keep below sidebar (z-index: 200) on mobile */
 }
 </style>

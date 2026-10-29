@@ -1,6 +1,6 @@
 <template>
-  <div class="map-view-wrapper">
-    <div ref="mapContainer" class="map-container" id="map"></div>
+  <div class="relative flex size-full min-h-0 flex-1 flex-col">
+    <div ref="mapContainer" class="size-full min-h-0 flex-1 bg-(--bg-tertiary)" id="map"></div>
   </div>
 </template>
 
@@ -93,13 +93,6 @@ defineExpose({
 
 /* ==================== MAP ==================== */
 #mapTab,
-.map-view-wrapper {
-  @apply relative flex h-full w-full flex-1 min-h-0 flex-col;
-}
-
-#map {
-  @apply h-full w-full min-h-0 flex-1 bg-(--bg-tertiary);
-}
 
 .custom-marker-icon {
   @apply border-none bg-transparent;

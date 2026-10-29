@@ -288,180 +288,106 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== FILTER PANEL ==================== */
 .filter-panel {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border);
+  @apply bg-(--bg-primary) border-b border-(--border);
 }
 
 .filter-header {
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  transition: background-color 0.2s ease;
+  @apply flex cursor-pointer items-center justify-between px-4 py-3 transition-[background-color] duration-200 select-none;
 }
 
 .filter-header:hover {
-  background: var(--bg-tertiary);
+  @apply bg-(--bg-tertiary);
 }
 
 .filter-header-content {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  @apply flex items-center gap-2.5 font-(family-name:--font-ui) text-[0.85rem] font-semibold tracking-[0.05em] text-(--text-secondary) uppercase;
 }
 
 .filter-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  background: var(--accent);
-  color: var(--bg-void);
-  border-radius: 10px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
+  @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[10px] bg-(--accent) px-1.5 font-(family-name:--font-mono) text-[0.7rem] font-semibold text-(--bg-void);
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .collapse-icon {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  transition: transform 0.3s ease;
+  @apply text-[0.75rem] text-(--text-muted) transition-transform duration-300;
 }
 
 .filter-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
+  @apply max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out;
 }
 
 .filter-content.expanded {
-  max-height: 500px;
-  overflow-y: auto;
+  @apply max-h-[500px] overflow-y-auto;
 }
 
 .filter-group {
-  padding: 0.875rem 1rem;
-  border-top: 1px solid var(--border);
+  @apply border-t border-(--border) px-4 py-3.5;
 }
 
 .filter-label {
-  display: block;
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-bottom: 0.625rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  @apply mb-2.5 block font-(family-name:--font-ui) text-[0.75rem] font-semibold tracking-[0.05em] text-(--text-muted) uppercase;
 }
 
 .filter-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  @apply flex flex-col gap-2;
 }
 
 .filter-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  transition: color 0.2s ease;
+  @apply flex cursor-pointer items-center gap-2 text-[0.85rem] text-(--text-secondary) transition-colors duration-200;
 }
 
 .filter-checkbox-label:hover {
-  color: var(--text-primary);
+  @apply text-(--text-primary);
 }
 
 .filter-checkbox-label input[type='checkbox'] {
-  cursor: pointer;
-  accent-color: var(--accent);
-  width: 15px;
-  height: 15px;
+  @apply h-[15px] w-[15px] cursor-pointer accent-(--accent);
 }
 
 .filter-select,
 .search-input,
 .date-input {
-  width: 100%;
-  padding: 0.625rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
+  @apply w-full rounded-md border border-(--border) bg-(--bg-tertiary) p-2.5 font-(family-name:--font-ui) text-[0.85rem] text-(--text-primary) transition-all duration-200;
 }
 
 .filter-select:focus,
 .search-input:focus,
 .date-input:focus {
-  outline: none;
-  border-color: var(--accent);
+  @apply border-(--accent) outline-none;
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .search-input::placeholder {
-  color: var(--text-muted);
+  @apply text-(--text-muted);
 }
 
 .date-range-inputs {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @apply flex items-center gap-2;
 }
 
 .date-input {
-  flex: 1;
-  font-size: 0.8rem;
+  @apply flex-1 text-[0.8rem];
 }
 
 .date-separator {
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  @apply text-[0.85rem] text-(--text-muted);
 }
 
 .clear-dates-btn,
 .clear-all-filters-btn {
-  margin-top: 0.625rem;
-  padding: 0.5rem 0.875rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply mt-2.5 cursor-pointer rounded-md border border-(--border) bg-(--bg-tertiary) px-3.5 py-2 font-(family-name:--font-ui) text-[0.8rem] text-(--text-muted) transition-all duration-200;
 }
 
 .clear-dates-btn:hover,
 .clear-all-filters-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border-color: var(--border-accent);
+  @apply border-(--border-accent) bg-(--bg-elevated) text-(--text-primary);
 }
 
 .clear-all-filters-btn {
-  width: 100%;
-  color: var(--accent);
-  font-weight: 600;
+  @apply w-full font-semibold text-(--accent);
 }
 </style>

@@ -20,110 +20,75 @@ const { hasEvent } = useEvents();
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* ==================== EVENT INFO BAR ==================== */
 .event-info {
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border);
-    padding: 0.25rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  @apply flex items-center justify-between border-t border-(--border) bg-(--bg-secondary) px-4 py-1;
 }
 
 .event-info-content {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    flex: 1;
+  @apply flex flex-1 items-center gap-6;
 }
 
 .event-date {
-    font-family: var(--font-mono);
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--accent);
+  @apply text-[0.85rem] font-semibold text-(--accent);
+  font-family: var(--font-mono);
 }
 
 .event-location {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
+  @apply text-[0.85rem] text-(--text-secondary);
 }
 
 .event-reason {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-style: italic;
+  @apply text-[0.8rem] text-(--text-muted) italic;
 }
 
 .event-weather {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+  @apply text-[0.8rem] text-(--text-secondary);
 }
 
 .event-weather:empty {
-    display: none;
+  display: none;
 }
 
 .event-insights {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    opacity: 0.85;
+  @apply text-[0.8rem] text-(--text-secondary) opacity-85;
 }
 
 .event-insights:empty {
-    display: none;
+  display: none;
 }
 
 /* Scrub-preview thumbnail that appears on timeline hover. Appended to <body>
  * with position:fixed so no ancestor overflow:hidden can clip it. Positioned
  * entirely via translate3d so mouse-move updates stay on the compositor. */
 .timeline-thumb-tooltip {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 240px;
-    padding: 4px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.1s ease;
-    z-index: 10000;
-    will-change: transform;
+  @apply pointer-events-none invisible fixed top-0 left-0 z-10000 w-60 rounded-md border border-(--border) bg-black/85 p-1 opacity-0 transition-opacity duration-100 ease-in-out will-change-transform;
 }
 
 .timeline-thumb-img {
-    display: block;
-    width: 232px;
-    height: 174px;
-    object-fit: cover;
-    border-radius: 3px;
-    background: #000;
+  @apply block h-[174px] w-[232px] rounded-[3px] bg-black object-cover;
 }
 
 .timeline-thumb-time {
-    color: #fff;
-    font-size: 0.75rem;
-    font-family: monospace;
-    text-align: center;
-    padding: 4px 0 2px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  @apply py-1 pt-1 pb-0.5 text-center text-[0.75rem] text-white;
+  font-family: monospace;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 /* Drive refresh spinner */
 .drive-action-btn.spinning svg {
-    animation: tcv-spin 0.8s linear infinite;
+  animation: tcv-spin 0.8s linear infinite;
 }
 
 @keyframes tcv-spin {
-    from {
-        transform: rotate(0deg);
-    }
+  from {
+    transform: rotate(0deg);
+  }
 
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
