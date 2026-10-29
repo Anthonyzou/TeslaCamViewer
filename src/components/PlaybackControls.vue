@@ -1,5 +1,7 @@
 <template>
-  <div class="controls">
+  <div class="fixed z-20 min-h-screen min-w-screen" @mousedown="isExportDropdownOpen = false"
+    @click="isExportDropdownOpen = false"></div>
+  <div class="controls z-20">
     <!-- Primary Playback Group -->
     <div class="control-group control-group-playback">
       <button id="playPauseBtn" class="control-btn" :disabled="!hasEvent" :aria-label="isPlaying ? 'Pause' : 'Play'"
@@ -43,12 +45,12 @@
     <div class="control-group control-group-export">
       <button id="markInBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.markIn')"
         @click="emit('markIn')">
-        <StepForward :size="20" color="#4caf50" />
+        <CornerLeftUp :size="20" color="#4caf50" />
       </button>
 
       <button id="markOutBtn" class="control-btn" :disabled="!hasEvent" :title="t('controls.markOut')"
         @click="emit('markOut')">
-        <StepBack :size="20" color="#f44336" />
+        <CornerRightUp :size="20" color="#f44336" />
       </button>
 
       <div class="export-dropdown-container">
@@ -101,7 +103,7 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-          }}</span>
+        }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
@@ -195,6 +197,8 @@
 import {
   Camera,
   ChevronDown,
+  CornerLeftUp,
+  CornerRightUp,
   Download,
   Pause,
   Play,
@@ -202,10 +206,8 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
-  StepBack,
-  StepForward,
   Video,
-  X,
+  X
 } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
@@ -638,144 +640,5 @@ function onExportVideoClick(): void {
 
 .loop-label:has(input:disabled) {
   @apply cursor-not-allowed opacity-40;
-}
-
-.sync-status {
-  @apply relative ml-auto;
-}
-
-.sync-indicator {
-  @apply inline-block size-2.5 cursor-help rounded-full bg-(--text-muted) transition-all duration-300;
-}
-
-.sync-indicator.synced {
-  @apply bg-(--success);
-  box-shadow: 0 0 12px var(--success-glow);
-  animation: pulse-success 2s ease-in-out infinite;
-}
-
-.sync-indicator.drifted {
-  @apply bg-(--warning);
-  box-shadow: 0 0 12px var(--warning-glow);
-  animation: pulse-warning 1s ease-in-out infinite;
-}
-
-/* Watchdog recovery state — cyan/blue so it's visually distinct from the
-   amber "drifted" state. Fires briefly when a micro-seek unsticks a camera
-   from GPU overlay starvation. */
-.sync-indicator.recovering {
-  background-color: var(--c-recording-pulse);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c-recording-pulse) 55%, transparent);
-  animation: pulse-recovering 0.6s ease-in-out infinite;
-}
-
-@keyframes pulse-success {
-
-  0%,
-  100% {
-    box-shadow: 0 0 8px var(--success-glow);
-  }
-
-  50% {
-    box-shadow: 0 0 16px var(--success);
-  }
-}
-
-@keyframes pulse-warning {
-
-  0%,
-  100% {
-    box-shadow: 0 0 8px var(--warning-glow);
-  }
-
-  50% {
-    box-shadow: 0 0 16px var(--warning);
-  }
-}
-
-@keyframes pulse-recovering {
-
-  0%,
-  100% {
-    box-shadow: 0 0 6px color-mix(in srgb, var(--c-recording-pulse) 40%, transparent);
-  }
-
-  50% {
-    box-shadow: 0 0 18px color-mix(in srgb, var(--c-recording-pulse) 90%, transparent);
-  }
-}
-
-.sync-status::before {
-  @apply absolute right-0 bottom-full mb-2 rounded-md border border-(--border) bg-(--glass) px-3.5 py-2 font-mono text-xs whitespace-nowrap text-(--text-primary) opacity-0 transition-opacity duration-200 pointer-events-none backdrop-blur-[10px];
-  content: 'Sync: ' attr(data-status);
-}
-
-.sync-status:hover::before {
-  @apply opacity-100;
-}
-
-/* GIF export warning message */
-.gif-warning {
-  @apply mx-2 my-1 flex items-center gap-1.5 rounded border px-2 py-1.5 text-[0.7rem] text-(--warning);
-  border-color: color-mix(in srgb, var(--c-health-minor) 30%, transparent);
-  background-color: color-mix(in srgb, var(--c-health-minor) 15%, transparent);
-}
-
-.gif-warning.hidden {
-  @apply hidden;
-}
-
-.gif-warning-icon {
-  @apply text-[0.85rem];
-}
-</style>
-
-<style>
-@reference "tailwindcss";
-
-/* Style select dropdown options for dark theme */
-select,
-.export-format-select,
-.setting-select,
-.drive-select,
-.speed-select,
-.layout-select,
-.mobile-layout-select {
-  color-scheme: dark;
-  accent-color: var(--accent);
-}
-
-select option,
-.export-format-select option,
-.setting-select option,
-.drive-select option,
-.speed-select option,
-.layout-select option,
-.mobile-layout-select option {
-  background-color: var(--c-surface-select) !important;
-  color: var(--c-text-select) !important;
-  padding: 0.5rem;
-}
-
-/* Override browser's native selection highlight for checked options */
-select option:checked,
-select option:active,
-.export-format-select option:checked,
-.export-format-select option:active,
-.setting-select option:checked,
-.setting-select option:active {
-  background: var(--c-shade-select) !important;
-  background-color: var(--c-shade-select) !important;
-  color: var(--accent) !important;
-  -webkit-text-fill-color: var(--accent) !important;
-  font-weight: 500;
-  box-shadow: 0 0 10px 100px var(--c-shade-select) inset !important;
-}
-
-select option:hover,
-.export-format-select option:hover,
-.setting-select option:hover {
-  background-color: color-mix(in srgb, var(--accent) 20%, transparent) !important;
-  color: var(--accent) !important;
 }
 </style>
