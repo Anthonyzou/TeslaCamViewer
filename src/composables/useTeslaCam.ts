@@ -4,7 +4,7 @@ import { useClipMarking } from './useClipMarking';
 import { drivesStore, useDrives } from './useDrives';
 import { eventsStore, useEvents } from './useEvents';
 import { folderManager } from './useFolderManager';
-import { layoutStore, useLayout } from './useLayout';
+import { useLayout } from './useLayout';
 import {
   commandPaletteModalStore,
   helpModalStore,
@@ -109,8 +109,7 @@ function registerCommands(): void {
       title: 'Capture Screenshot',
       category: 'Capture',
       shortcut: 'S',
-      action: () =>
-        screenshotCapture.captureComposite(layoutStore.currentConfig),
+      action: () => screenshotCapture.captureComposite(),
     },
     {
       id: 'export',
@@ -159,7 +158,7 @@ export function useTeslaCam() {
   }
 
   async function captureScreenshot(): Promise<void> {
-    await screenshotCapture.captureComposite(layoutStore.currentConfig);
+    await screenshotCapture.captureComposite();
   }
 
   function openStats(): void {

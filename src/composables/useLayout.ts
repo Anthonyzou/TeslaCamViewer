@@ -1,24 +1,27 @@
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { LayoutConfig } from '../layout/layoutConfig';
-import type { LayoutConfigSchema } from '../types';
+import type {
+  LayoutCameraConfig,
+  LayoutCameraPosition,
+  LayoutConfigSchema,
+} from '../types';
 
 const PREFS_STORAGE_KEY = 'teslacam_layout_prefs';
+
+interface CameraSwap {
+  position: LayoutCameraPosition;
+  zIndex?: number;
+  objectFit?: LayoutCameraConfig['objectFit'];
+}
 
 interface LayoutPreferences {
   layout: string;
   focusCamera: string | null;
   hiddenCameras: string[];
-  cameraSwaps: Record<
-    string,
-    {
-      position: { x: number; y: number; width: number; height: number };
-      zIndex?: number;
-      objectFit?: string;
-    }
-  >;
+  cameraSwaps: Record<string, CameraSwap>;
   cameraOrder: string[];
-  customConfig: LayoutConfigSchema | any;
+  customConfig: LayoutConfigSchema | null;
 }
 
 const prefs = useLocalStorage<LayoutPreferences>(PREFS_STORAGE_KEY, {
@@ -46,7 +49,7 @@ const layout = computed({
 
 const customConfig = computed({
   get: () => prefs.value.customConfig || null,
-  set: (val: any) => {
+  set: (val: LayoutConfigSchema | null) => {
     prefs.value.customConfig = val;
   },
 });
@@ -67,7 +70,7 @@ const hiddenCameras = computed({
 
 const cameraSwaps = computed({
   get: () => prefs.value.cameraSwaps || {},
-  set: (val: any) => {
+  set: (val: Record<string, CameraSwap>) => {
     prefs.value.cameraSwaps = val;
   },
 });
@@ -89,8 +92,8 @@ const cameraOrder = computed({
 
 const hasPillarCameras: Ref<boolean> = ref(false);
 
-const activeConfig: ComputedRef<LayoutConfigSchema | any> = computed(() => {
-  let baseConfig: any = null;
+const activeConfig: ComputedRef<LayoutConfigSchema | null> = computed(() => {
+  let baseConfig: LayoutConfigSchema | null = null;
   if (customConfig.value) {
     baseConfig = JSON.parse(JSON.stringify(customConfig.value));
   } else {
@@ -100,29 +103,30 @@ const activeConfig: ComputedRef<LayoutConfigSchema | any> = computed(() => {
     baseConfig = JSON.parse(JSON.stringify(preset));
   }
 
-  if (!baseConfig || !baseConfig.cameras) {
+  const cameras = baseConfig?.cameras;
+  if (!cameras) {
     return baseConfig;
   }
 
   // Handle focus layout mode by enabling only the target focus camera
   if (layout.value === 'layout-focus') {
     const focused = focusCamera.value || 'front';
-    for (const [camName, camCfg] of Object.entries(baseConfig.cameras)) {
-      (camCfg as any).enabled = camName === focused;
+    for (const [camName, camCfg] of Object.entries(cameras)) {
+      camCfg.enabled = camName === focused;
       if (camName === focused) {
-        (camCfg as any).position = { x: 0, y: 0, width: 100, height: 100 };
-        (camCfg as any).zIndex = 10;
+        camCfg.position = { x: 0, y: 0, width: 100, height: 100 };
+        camCfg.zIndex = 10;
       }
     }
   }
 
   // Apply camera swaps if any
   for (const [cam, swap] of Object.entries(cameraSwaps.value)) {
-    if (baseConfig.cameras[cam]) {
-      baseConfig.cameras[cam].position = { ...swap.position };
-      if (swap.zIndex !== undefined) baseConfig.cameras[cam].zIndex = swap.zIndex;
-      if (swap.objectFit !== undefined)
-        baseConfig.cameras[cam].objectFit = swap.objectFit;
+    const camCfg = cameras[cam];
+    if (camCfg) {
+      camCfg.position = { ...swap.position };
+      if (swap.zIndex !== undefined) camCfg.zIndex = swap.zIndex;
+      if (swap.objectFit !== undefined) camCfg.objectFit = swap.objectFit;
     }
   }
 
@@ -136,7 +140,7 @@ export const layoutStore = {
   get currentLayout(): string {
     return layout.value;
   },
-  get currentConfig(): LayoutConfigSchema | any {
+  get currentConfig(): LayoutConfigSchema | null {
     return activeConfig.value;
   },
   get focusCamera(): string | null {
@@ -167,11 +171,11 @@ export const layoutStore = {
   get cameraOrder(): string[] {
     return [...cameraOrder.value];
   },
-  get cameraSwaps(): Record<string, any> {
+  get cameraSwaps(): Record<string, CameraSwap> {
     return cameraSwaps.value;
   },
 
-  getCurrentConfig(): LayoutConfigSchema | any {
+  getCurrentConfig(): LayoutConfigSchema | null {
     return activeConfig.value;
   },
   getCurrentLayout(): string {
@@ -184,7 +188,7 @@ export const layoutStore = {
     return !hiddenCameras.value.includes(camera);
   },
 
-  setLayout(layoutOrConfig: string | LayoutConfigSchema | any): void {
+  setLayout(layoutOrConfig: string | LayoutConfigSchema): void {
     if (typeof layoutOrConfig === 'object' && layoutOrConfig !== null) {
       customConfig.value = layoutOrConfig;
       layout.value = layoutOrConfig.id || 'custom';
