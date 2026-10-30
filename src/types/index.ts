@@ -1,4 +1,5 @@
 import type { DBSchema } from 'idb';
+import { calculateStats } from '../composables/useStatistics';
 import { ClipGroup, RawClip } from '../utils/teslaCamFormat';
 
 export type { RawClip };
@@ -254,23 +255,4 @@ export interface TrendDataPoint {
   month?: string;
 }
 
-export interface StatisticsData {
-  totalEvents: number;
-  totalClips: number;
-  formattedDuration: string;
-  averageEventLength: number;
-  storage: StorageEstimate;
-  earliestEvent: string | null;
-  latestEvent: string | null;
-  eventsByType: EventTypeStat[];
-  triggerReasons: TriggerReasonStat[];
-  topLocations: LocationStat[];
-  sentryLocations: LocationStat[];
-  timelineData: TimelineDataPoint[];
-  weeklyTrends: TrendDataPoint[];
-  monthlyTrends: TrendDataPoint[];
-  timeOfDay: HourDistributionPoint[];
-  dayOfWeek: DayOfWeekPoint[];
-  cameraDistribution: CameraDistributionStat[];
-  dayVsNight: DayVsNightStat;
-}
+export type StatisticsData = ReturnType<typeof calculateStats>;

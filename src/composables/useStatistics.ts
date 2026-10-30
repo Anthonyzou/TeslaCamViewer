@@ -243,9 +243,7 @@ export function generateCameraDistributionData(
     }));
 }
 
-export function calculateStats(
-  events: TeslaCamEvent[]
-): StatisticsData | null {
+export function calculateStats(events: TeslaCamEvent[]) {
   if (!events || events.length === 0) {
     return null;
   }
@@ -353,9 +351,7 @@ export function calculateStats(
       color: typeColors[type] || '#4a9eff',
     }));
 
-  const triggerReasons: TriggerReasonStat[] = Object.entries(
-    triggerReasonsMap
-  )
+  const triggerReasons: TriggerReasonStat[] = Object.entries(triggerReasonsMap)
     .sort((a, b) => b[1] - a[1])
     .map(([reason, count]) => ({
       reason,
@@ -383,9 +379,7 @@ export function calculateStats(
 
   const totalDayNight = dayVsNight.day + dayVsNight.night;
   const dayPercent =
-    totalDayNight > 0
-      ? Math.round((dayVsNight.day / totalDayNight) * 100)
-      : 0;
+    totalDayNight > 0 ? Math.round((dayVsNight.day / totalDayNight) * 100) : 0;
   const nightPercent = totalDayNight > 0 ? 100 - dayPercent : 0;
 
   return {
