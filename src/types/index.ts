@@ -256,3 +256,9 @@ export interface TrendDataPoint {
 }
 
 export type StatisticsData = ReturnType<typeof calculateStats>;
+
+export interface TrafficSnapshot {
+  uploadBytes: number;
+  downloadBytes: number;
+  since: string;
+}

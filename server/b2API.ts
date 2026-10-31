@@ -22,6 +22,8 @@ import type {
   VideoCacheStatus,
 } from './types.ts';
 
+process.env.UV_THREADPOOL_SIZE = '64';
+
 // Connection pooling with Keep-Alive to reuse sockets across video chunks and camera streams
 export const httpsAgent = new https.Agent({
   keepAlive: true,
@@ -652,6 +654,10 @@ function sendCachedVideo(res: Response, cacheFilePath: string): void {
   res.sendFile(
     cacheFilePath,
     {
+      maxAge: '1y',
+      immutable: true, // Tells browser the file never changes
+      lastModified: true,
+      etag: true,
       acceptRanges: true,
       // The cache lives under `.cache/`, which Express 5's `send` would otherwise hide as a dotfile
       dotfiles: 'allow',

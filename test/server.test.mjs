@@ -23,6 +23,7 @@ const {
   touchCacheFile,
 } = await import('../server/index.ts');
 const { MAX_CACHE_BYTES } = await import('../server/b2API.ts');
+const { trackInboundConnections } = await import('../server/networkTraffic.ts');
 
 test('organizeB2Events - groups files into chronological events and detects cameras', async () => {
   const mockFiles = [
@@ -138,6 +139,29 @@ test('API POST /api/b2/parse rejects missing parameters when no env is configure
     } else {
       assert.ok([200, 400, 500].includes(res.status));
     }
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('API GET /api/traffic reports bytes moved over server sockets', async () => {
+  const server = http.createServer(app);
+  trackInboundConnections(server);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+
+  try {
+    const before = await (await fetch(`http://127.0.0.1:${port}/api/traffic`)).json();
+    assert.strictEqual(typeof before.uploadBytes, 'number');
+    assert.strictEqual(typeof before.downloadBytes, 'number');
+    assert.ok(!Number.isNaN(Date.parse(before.since)));
+
+    const body = await (await fetch(`http://127.0.0.1:${port}/api/b2/config`)).text();
+    const after = await (await fetch(`http://127.0.0.1:${port}/api/traffic`)).json();
+
+    assert.ok(after.downloadBytes > before.downloadBytes);
+    assert.ok(after.uploadBytes > before.uploadBytes);
+    assert.ok(body.length > 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

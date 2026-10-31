@@ -29,6 +29,11 @@ import registerB2Routes, {
   touchCacheFile,
   VIDEO_CACHE_DIR,
 } from './b2API.ts';
+import {
+  getTrafficSnapshot,
+  trackInboundConnections,
+  trackOutboundAgent,
+} from './networkTraffic.ts';
 
 const app: Application = express();
 const PORT = process.env.PORT || 8000;
@@ -39,8 +44,15 @@ app.use(cors());
 app.use(express.json());
 app.disable('x-powered-by');
 
+trackOutboundAgent(httpAgent);
+trackOutboundAgent(httpsAgent);
+
 // API Routes FIRST
 registerB2Routes(app);
+
+app.get('/api/traffic', (_req: Request, res: Response) => {
+  res.json(getTrafficSnapshot());
+});
 
 // 4. Static File Server
 app.use(express.static(rootDir));
@@ -124,6 +136,8 @@ const startServer = () => {
       }
     }
   });
+
+  trackInboundConnections(server);
 
   // Optimize browser-to-server HTTP keep-alive timeouts for video scrubbing
   server.keepAliveTimeout = 65000;

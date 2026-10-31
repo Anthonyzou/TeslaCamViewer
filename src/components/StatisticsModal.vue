@@ -90,6 +90,29 @@
                   </div>
                 </div>
               </div>
+ 
+               <div class="stats-section">
+                 <h3>{{ t('statistics.networkTraffic') }}</h3>
+                 <div class="stats-grid stats-grid-4">
+                   <div class="stats-card">
+                     <span class="stats-card-value">{{ formatRate(downloadRate) }}</span>
+                     <span class="stats-card-label">{{ t('statistics.downloadRate') }}</span>
+                   </div>
+                   <div class="stats-card">
+                     <span class="stats-card-value">{{ formatRate(uploadRate) }}</span>
+                     <span class="stats-card-label">{{ t('statistics.uploadRate') }}</span>
+                   </div>
+                   <div class="stats-card">
+                     <span class="stats-card-value">{{ formatBytes(snapshot?.downloadBytes ?? 0) }}</span>
+                     <span class="stats-card-label">{{ t('statistics.totalDownloaded') }}</span>
+                   </div>
+                   <div class="stats-card">
+                     <span class="stats-card-value">{{ formatBytes(snapshot?.uploadBytes ?? 0) }}</span>
+                     <span class="stats-card-label">{{ t('statistics.totalUploaded') }}</span>
+                   </div>
+                 </div>
+                 <p v-if="error" class="stats-section-note">{{ t('statistics.trafficUnavailable') }}</p>
+               </div>
 
               <div class="stats-section">
                 <h3>{{ t('statistics.eventTypes') }}</h3>
@@ -369,7 +392,9 @@ import { computed, ref, watch } from 'vue';
 import { eventsStore } from '../composables/useEvents';
 import { useI18n } from '../composables/useI18n';
 import { useModals } from '../composables/useModals';
+import { useNetworkTraffic } from '../composables/useNetworkTraffic';
 import type { StatisticsData, TrendDataPoint } from '../types';
+import { formatBytes, formatRate } from '../utils/networkTraffic';
 import BaseChart from './BaseChart.vue';
 
 const {
@@ -392,6 +417,14 @@ const telemetryResults = ref<{
 } | null>(null);
 
 const stats = ref<StatisticsData | null>(null);
+
+const { snapshot, uploadRate, downloadRate, error, start, stop } =
+  useNetworkTraffic();
+
+watch(isOpen, (open) => {
+  if (open) start();
+  else stop();
+});
 
 watch(
   statisticsData,
