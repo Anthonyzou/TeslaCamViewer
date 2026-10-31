@@ -15,25 +15,25 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "axios": "^1.20.0",
+    "backblaze-b2": "1.7.1",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "5.3.0"
+  },
+  "devDependencies": {
     "@types/leaflet": "1.9.22",
     "@types/leaflet.markercluster": "1.5.6",
     "@vueuse/core": "15.0.0",
-    "axios": "^1.20.0",
-    "backblaze-b2": "1.7.1",
     "chart.js": "4.6.1",
-    "cors": "^2.8.6",
     "dayjs": "1.11.23",
-    "dotenv": "^18.0.8",
-    "express": "5.3.0",
     "idb": "8.0.4",
     "leaflet": "1.9.4",
     "leaflet.markercluster": "1.5.3",
     "@lucide/vue": "1.64.0",
     "mediabunny": "1.62.0",
     "uuid": "14.0.3",
-    "vue": "3.5.44"
-  },
-  "devDependencies": {
+    "vue": "3.5.44",
     "@tailwindcss/node": "4.3.3",
     "@tailwindcss/oxide": "4.3.3",
     "@tailwindcss/vite": "4.3.3",
