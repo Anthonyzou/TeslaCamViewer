@@ -102,31 +102,16 @@ TeslaCam/
     └── *.mp4 (rolling buffer)
 ```
 
-## Privacy and Security
-
-- **No data uploads** - All video processing happens in your browser
-- **No server backend** - The entire app runs client-side
-- **No tracking** - No analytics or telemetry collection
-- **Local storage only** - Settings stored in your browser
-
 ## External Services
 
 TeslaCamViewer connects to the following external services for enhanced functionality. **No personal information is transmitted** - only GPS coordinates when specific features are used.
 
-### Data APIs
-
-| Service                                          | Data Sent             | Purpose                              |
-| ------------------------------------------------ | --------------------- | ------------------------------------ |
-| [Open-Meteo](https://open-meteo.com)             | GPS coordinates, date | Weather conditions for events        |
-| [Nominatim](https://nominatim.openstreetmap.org) | GPS coordinates       | Address lookup for insurance reports |
-| [TeslaCamViewer.com](https://teslacamviewer.com) | None                  | Version update check only            |
 
 ### Map Tile Providers (Images Only)
 
 | Provider                                       | Attribution                   |
 | ---------------------------------------------- | ----------------------------- |
 | [OpenStreetMap](https://www.openstreetmap.org) | © OpenStreetMap contributors  |
-| [Stadia Maps](https://stadiamaps.com)          | © Stadia Maps © OpenStreetMap |
 
 ### User-Initiated Links
 
@@ -165,13 +150,7 @@ Have questions, ideas, or want to share how you use TeslaCam Viewer?
 
 MIT License - see LICENSE file for details.
 
-## Version
-
-Current version: 2026.21.1.1
-
-Click the version number in the app to view the full changelog.
-
-## b2 config
+## Backblaze config
 
 ```
 [
