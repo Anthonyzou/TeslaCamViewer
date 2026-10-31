@@ -1,6 +1,19 @@
 import type { TeslaCamEvent } from '../types';
 
 export type VideoCameraMap = Record<string, HTMLVideoElement | null>;
+export type VideoSource = 'cache' | 'b2';
+
+const VIDEO_SOURCE_HEADER = 'X-Video-Source';
+
+async function fetchVideoSource(url: string): Promise<VideoSource | null> {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    const source = response.headers.get(VIDEO_SOURCE_HEADER);
+    return source === 'cache' || source === 'b2' ? source : null;
+  } catch (_e) {
+    return null;
+  }
+}
 
 /**
  * VideoPlayer - Manages synchronized video playback for 4-6 camera systems
@@ -29,6 +42,10 @@ export class VideoPlayer {
     | null = null;
   public onEnded: (() => void) | null = null;
   public onPlayStateChange: ((isPlaying: boolean) => void) | null = null;
+  public onSourceChange:
+    | ((sources: Record<string, VideoSource>) => void)
+    | null = null;
+  public cameraSources: Record<string, VideoSource> = {};
   public videoLabels: Record<string, HTMLElement | null> = {};
 
   // Backward compatibility getters
@@ -466,6 +483,21 @@ export class VideoPlayer {
     });
 
     await Promise.all(loadPromises);
+
+    // Probed after the load: the server reports where each file was actually served from
+    const sourceEntries = await Promise.all(
+      cameras.map(async (camera) => {
+        const url = clipGroup?.clips?.[camera]?.url || '';
+        return [camera, url ? await fetchVideoSource(url) : null] as const;
+      })
+    );
+    if (clipIndex !== this.currentClipIndex) return;
+    this.cameraSources = Object.fromEntries(
+      sourceEntries.filter(
+        (entry): entry is readonly [string, VideoSource] => entry[1] !== null
+      )
+    );
+    if (this.onSourceChange) this.onSourceChange(this.cameraSources);
 
     // Ensure currentTime is applied once metadata is ready
     if (startTimeInClip > 0) {

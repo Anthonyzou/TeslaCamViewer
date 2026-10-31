@@ -103,7 +103,7 @@
         <span class="export-checkbox-label">{{ t('export.privacyMode') }}</span>
         <span class="export-option-hint">{{
           t('export.privacyModeHint')
-          }}</span>
+        }}</span>
       </label>
     </div>
     <!-- View Controls Group -->
@@ -186,9 +186,9 @@
         <RotateCcw :size="20" />
       </button>
 
-      <!-- <div class="sync-status">
-        <span id="syncStatus" class="sync-indicator"></span>
-      </div> -->
+      <div class="sync-status">
+        <span class="sync-source" :data-source="syncSource" :title="syncSourceLabel"></span>
+      </div>
     </div>
   </div>
 </template>
@@ -209,7 +209,7 @@ import {
   Video,
   X
 } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '../composables/useI18n';
 
 const props = withDefaults(
@@ -220,6 +220,7 @@ const props = withDefaults(
     isLooping?: boolean;
     layout?: string;
     focusCamera?: string | null;
+    syncSource?: 'unknown' | 'cache' | 'b2';
   }>(),
   {
     hasEvent: false,
@@ -228,7 +229,18 @@ const props = withDefaults(
     isLooping: false,
     layout: 'layout-6-3',
     focusCamera: 'front',
+    syncSource: 'unknown',
   }
+);
+
+const SYNC_SOURCE_LABELS: Record<NonNullable<typeof props.syncSource>, string> = {
+  cache: 'Video: cached',
+  b2: 'Video: streaming from B2',
+  unknown: 'Video: not loaded',
+};
+
+const syncSourceLabel = computed<string>(
+  () => SYNC_SOURCE_LABELS[props.syncSource ?? 'unknown']
 );
 
 const emit = defineEmits<{
@@ -640,5 +652,22 @@ function onExportVideoClick(): void {
 
 .loop-label:has(input:disabled) {
   @apply cursor-not-allowed opacity-40;
+}
+
+/* ==================== VIDEO SOURCE INDICATOR ==================== */
+.sync-status {
+  @apply relative ml-auto;
+}
+
+.sync-source {
+  @apply inline-block size-2.5 rounded-full bg-(--text-muted) transition-[background-color] duration-300;
+}
+
+.sync-source[data-source="cache"] {
+  @apply bg-(--success) shadow-[0_0_10px_var(--success-glow)];
+}
+
+.sync-source[data-source="b2"] {
+  @apply bg-(--danger) shadow-[0_0_10px_var(--danger-glow)];
 }
 </style>

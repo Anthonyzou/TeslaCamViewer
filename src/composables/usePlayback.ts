@@ -1,6 +1,6 @@
-import { ref, type Ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { settingsStore } from './useSettings';
-import { videoPlayer, VideoPlayer } from './useVideoPlayer';
+import { videoPlayer, VideoPlayer, type VideoSource } from './useVideoPlayer';
 import { timelineStore } from './useTimeline';
 
 export { videoPlayer, VideoPlayer };
@@ -12,6 +12,16 @@ const isLooping: Ref<boolean> = ref(false);
 const currentClipIndex: Ref<number> = ref(0);
 const currentTime: Ref<number> = ref(0);
 const duration: Ref<number> = ref(0);
+const cameraSources: Ref<Record<string, VideoSource>> = ref({});
+
+export type SyncSource = 'unknown' | VideoSource;
+
+// Any camera served from B2 marks the whole view as B2; cache only when every loaded camera is cached
+const syncSource = computed<SyncSource>(() => {
+  const sources = Object.values(cameraSources.value);
+  if (sources.length === 0) return 'unknown';
+  return sources.every((s) => s === 'cache') ? 'cache' : 'b2';
+});
 
 // Auto-wire video player callbacks directly to reactive state and timelineStore
 videoPlayer.onPlayStateChange = (playing: boolean) => {
@@ -20,6 +30,10 @@ videoPlayer.onPlayStateChange = (playing: boolean) => {
 
 videoPlayer.onClipChange = (clipIdx: number) => {
   currentClipIndex.value = clipIdx;
+};
+
+videoPlayer.onSourceChange = (sources: Record<string, VideoSource>) => {
+  cameraSources.value = sources;
 };
 
 videoPlayer.onTimeUpdate = (time: number, dur: number) => {
@@ -49,6 +63,9 @@ export const playbackStore = {
   },
   get duration(): number {
     return duration.value;
+  },
+  get syncSource(): SyncSource {
+    return syncSource.value;
   },
   get videoPlayer() {
     return videoPlayer;
@@ -140,6 +157,7 @@ export function usePlayback() {
     currentClipIndex,
     currentTime,
     duration,
+    syncSource,
     videoPlayer,
     play: playbackStore.play,
     pause: playbackStore.pause,

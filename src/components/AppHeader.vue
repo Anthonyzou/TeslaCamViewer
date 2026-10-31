@@ -39,6 +39,14 @@
         </svg>
         <span>{{ t('header.github') }}</span>
       </a> -->
+      <div class="traffic-rates" :title="trafficTooltip">
+        <span class="traffic-rate traffic-rate-down">
+          <ArrowDown :size="12" />{{ formatRate(downloadRate) }}
+        </span>
+        <span class="traffic-rate traffic-rate-up">
+          <ArrowUp :size="12" />{{ formatRate(uploadRate) }}
+        </span>
+      </div>
       <button id="statsBtn" class="header-btn" :title="t('header.statistics')" @click="emit('openStats')">
         <BarChart3 :size="20" />
       </button>
@@ -53,8 +61,11 @@
 </template>
 
 <script setup lang="ts">
-import { BarChart3, HelpCircle, Menu, Settings } from '@lucide/vue';
+import { ArrowDown, ArrowUp, BarChart3, HelpCircle, Menu, Settings } from '@lucide/vue';
+import { computed, onMounted } from 'vue';
 import { useI18n } from '../composables/useI18n';
+import { useNetworkTraffic } from '../composables/useNetworkTraffic';
+import { formatBytes, formatRate } from '../utils/networkTraffic';
 
 const emit = defineEmits<{
   (e: 'toggleSidebar'): void;
@@ -64,6 +75,18 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const { snapshot, uploadRate, downloadRate, error, start } = useNetworkTraffic();
+
+const trafficTooltip = computed<string>(() => {
+  if (error.value) return t('statistics.trafficUnavailable');
+  return [
+    `${t('statistics.totalDownloaded')}: ${formatBytes(snapshot.value?.downloadBytes ?? 0)}`,
+    `${t('statistics.totalUploaded')}: ${formatBytes(snapshot.value?.uploadBytes ?? 0)}`,
+  ].join('\n');
+});
+
+onMounted(start);
 </script>
 
 <style scoped>
@@ -118,6 +141,22 @@ const { t } = useI18n();
 .header-actions {
   @apply flex min-w-0 shrink items-center gap-2;
   /* Allow shrinking below content size */
+}
+
+.traffic-rates {
+  @apply flex flex-col items-end font-mono text-[0.65rem] leading-tight whitespace-nowrap text-(--text-muted);
+}
+
+.traffic-rate {
+  @apply flex items-center gap-0.5;
+}
+
+.traffic-rate-down {
+  color: var(--accent);
+}
+
+.traffic-rate-up {
+  color: var(--text-secondary);
 }
 
 .header-btn {

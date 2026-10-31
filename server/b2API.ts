@@ -987,6 +987,19 @@ export default function registerB2Routes(app: Application): void {
   });
 
   // 4. Video Streaming Proxy with Concurrent Streaming & Local Disk Caching
+  // Reports where a video would be served from without fetching it from B2
+  app.head('/api/b2/video', (req: Request, res: Response) => {
+    const fileParam = req.query.file as string | undefined;
+    const urlParam = req.query.url as string | undefined;
+    const safeRelative = resolveRequestedFile(fileParam, urlParam);
+    if (!safeRelative) {
+      return res.status(400).end();
+    }
+    const cacheFilePath = path.join(VIDEO_CACHE_DIR, safeRelative);
+    const source: VideoSource = fs.existsSync(cacheFilePath) ? 'cache' : 'b2';
+    res.set(VIDEO_SOURCE_HEADER, source).status(200).end();
+  });
+
   app.get('/api/b2/video', async (req: Request, res: Response) => {
     try {
       const fileParam = req.query.file as string | undefined;

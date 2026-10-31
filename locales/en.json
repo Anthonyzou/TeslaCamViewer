@@ -384,9 +384,6 @@
     "eventsWithoutTelemetry": "Events without Telemetry",
     "noTriggeringCameraData": "No triggering camera data available",
     "noEventData": "No event data available",
-    "networkTraffic": "Network Traffic",
-    "downloadRate": "Download Rate",
-    "uploadRate": "Upload Rate",
     "totalDownloaded": "Total Downloaded",
     "totalUploaded": "Total Uploaded",
     "trafficUnavailable": "Traffic data unavailable"

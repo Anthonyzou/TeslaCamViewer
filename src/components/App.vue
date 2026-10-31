@@ -23,7 +23,7 @@
 
         <TimelineBar :hasEvent="hasEvent" />
 
-        <PlaybackControls :hasEvent="hasEvent" :isPlaying="isPlaying" :speed="speed" :isLooping="isLooping"
+        <PlaybackControls :hasEvent="hasEvent" :isPlaying="isPlaying" :speed="speed" :isLooping="isLooping" :syncSource="syncSource"
           :layout="layout" :focusCamera="focusCamera" @togglePlay="togglePlay" @prevClip="prevClip" @nextClip="nextClip"
           @changeSpeed="changeSpeed" @toggleLoop="toggleLoop" @markIn="markIn" @markOut="markOut"
           @clearMarks="clearMarks" @exportVideo="exportVideo" @captureScreenshot="captureScreenshot"
@@ -75,6 +75,7 @@ const {
   filteredEvents,
   selectEvent,
   isPlaying,
+  syncSource,
   speed,
   isLooping,
   layout,

@@ -167,6 +167,37 @@ test('API GET /api/traffic reports bytes moved over server sockets', async () =>
   }
 });
 
+test('API HEAD /api/b2/video reports cache or b2 without fetching from B2', async () => {
+  const cachedName = 'head-probe/cached.mp4';
+  const cachedPath = path.join(VIDEO_CACHE_DIR, cachedName);
+  fs.mkdirSync(path.dirname(cachedPath), { recursive: true });
+  fs.writeFileSync(cachedPath, 'abc');
+
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+
+  try {
+    const cached = await fetch(
+      `http://127.0.0.1:${port}/api/b2/video?file=${encodeURIComponent(cachedName)}`,
+      { method: 'HEAD' }
+    );
+    assert.strictEqual(cached.status, 200);
+    assert.strictEqual(cached.headers.get('x-video-source'), 'cache');
+
+    const uncached = await fetch(
+      `http://127.0.0.1:${port}/api/b2/video?file=${encodeURIComponent('head-probe/missing.mp4')}`,
+      { method: 'HEAD' }
+    );
+    assert.strictEqual(uncached.status, 200);
+    assert.strictEqual(uncached.headers.get('x-video-source'), 'b2');
+    assert.ok(!fs.existsSync(path.join(VIDEO_CACHE_DIR, 'head-probe/missing.mp4')));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(path.join(VIDEO_CACHE_DIR, 'head-probe'), { recursive: true, force: true });
+  }
+});
+
 test('API GET /api/b2/cache/status returns cache info', async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
