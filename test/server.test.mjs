@@ -198,24 +198,6 @@ test('API HEAD /api/b2/video reports cache or b2 without fetching from B2', asyn
   }
 });
 
-test('API GET /api/b2/cache/status returns cache info', async () => {
-  const server = http.createServer(app);
-  await new Promise((resolve) => server.listen(0, resolve));
-  const port = server.address().port;
-
-  try {
-    const res = await fetch(`http://127.0.0.1:${port}/api/b2/cache/status`);
-    assert.strictEqual(res.status, 200);
-    const data = await res.json();
-    assert.strictEqual(data.enabled, true);
-    assert.ok(typeof data.totalFiles === 'number');
-    assert.ok(typeof data.totalBytes === 'number');
-    assert.ok(typeof data.maxBytes === 'number');
-  } finally {
-    await new Promise((resolve) => server.close(resolve));
-  }
-});
-
 test('API GET /api/b2/video rejects requests with missing parameters', async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
@@ -268,14 +250,6 @@ test('API GET /api/b2/video streams cached video with HTTP 206 Range support', a
     const rangeBody = await rangeRes.arrayBuffer();
     assert.strictEqual(rangeBody.byteLength, 128);
 
-    // 3. Clear cache route test
-    const clearRes = await fetch(`http://127.0.0.1:${port}/api/b2/cache/clear`, {
-      method: 'POST',
-    });
-    assert.strictEqual(clearRes.status, 200);
-    const clearData = await clearRes.json();
-    assert.strictEqual(clearData.success, true);
-    assert.strictEqual(fs.existsSync(testFileAbs), false);
   } finally {
     await clearVideoCache();
     await new Promise((resolve) => server.close(resolve));
@@ -374,7 +348,7 @@ test('API GET /api/b2/video serves range seek requests immediately without block
       setTimeout(() => {
         try {
           res.end(fullPayload.subarray(10));
-        } catch (_e) {}
+        } catch (_e) { }
       }, 150);
     }
   });

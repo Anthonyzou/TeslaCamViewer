@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "B2 Proxy and Static Server for TeslaCamViewer",
   "type": "module",
-  "main": "server.js",
   "scripts": {
     "build": "node build.ts",
     "dev": "node build.ts --watch",

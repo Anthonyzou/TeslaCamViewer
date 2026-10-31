@@ -918,26 +918,6 @@ export default function registerB2Routes(app: Application): void {
     });
   });
 
-  // 2. Server-Side B2 Video Cache Status
-  app.get('/api/b2/cache/status', async (_req: Request, res: Response) => {
-    try {
-      const status = await getVideoCacheStatus();
-      res.json(status);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // 3. Clear Server-Side Video Cache
-  app.post('/api/b2/cache/clear', async (_req: Request, res: Response) => {
-    try {
-      await clearVideoCache();
-      res.json({ success: true, message: 'Video cache cleared' });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
   // 3b. Server-Side Video Cache Preload / Warming Route
   app.post('/api/b2/cache/preload', async (req: Request, res: Response) => {
     try {
